@@ -41,7 +41,10 @@ Plots expression for one or more genes as a jittered,
 grouped points
 }
 \examples{
+\dontrun{
+data(HSMM)
 MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1"))),]
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
+}
 }
 

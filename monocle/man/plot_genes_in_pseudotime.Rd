@@ -34,8 +34,11 @@ Plots expression for one or more genes as a function of
 pseudotime
 }
 \examples{
+\dontrun{
+data(HSMM)
 my_genes <- row.names(subset(fData(HSMM), gene_short_name \%in\% c("CDK1", "MEF2C", "MYH3")))
 cds_subset <- HSMM[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Time")
+}
 }
 

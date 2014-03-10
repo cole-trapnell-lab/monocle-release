@@ -36,8 +36,11 @@ a ggplot2 plot object
 Plots the minimum spanning tree on cells.
 }
 \examples{
+\dontrun{
+data(HSMM)
 plot_spanning_tree(HSMM)
 plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=F)
 plot_spanning_tree(HSMM, marker="MYH3")
+}
 }
 

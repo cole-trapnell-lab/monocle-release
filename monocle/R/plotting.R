@@ -25,9 +25,12 @@ monocle_theme_opts <- function()
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
+#' \dontrun{
+#' data(HSMM)
 #' plot_spanning_tree(HSMM)
 #' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=F)
 #' plot_spanning_tree(HSMM, marker="MYH3")
+#' }
 plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, show_backbone=T, backbone_color="black", marker=NULL){
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
@@ -107,8 +110,11 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
+#' \dontrun{
+#' data(HSMM)
 #' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
 #' plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
+#' }
 plot_genes_jitter <- function(cds_subset, grouping = "State", 
                               min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
                               color_by=NULL,
@@ -171,9 +177,12 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
+#' \dontrun{
+#' data(HSMM)
 #' my_genes <- row.names(subset(fData(HSMM), gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 #' cds_subset <- HSMM[my_genes,]
 #' plot_genes_in_pseudotime(cds_subset, color_by="Time")
+#' }
 plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, color_by="State"){
   
   cds_exprs <- melt(exprs(cds_subset))
