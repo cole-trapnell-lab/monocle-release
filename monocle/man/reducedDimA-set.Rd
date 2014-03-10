@@ -1,0 +1,19 @@
+\name{reducedDimA<-}
+\alias{reducedDimA<-}
+\title{Sets the weights transform the cells' coordinates in the reduced dimension space back to the full (whitened) space.}
+\usage{
+reducedDimA(cds) <- value
+}
+\arguments{
+  \item{cds}{A CellDataSet object.}
+
+  \item{value}{A whitened expression data matrix}
+}
+\value{
+An updated CellDataSet object
+}
+\description{
+Sets the weights transform the cells' coordinates in the
+reduced dimension space back to the full (whitened) space.
+}
+

@@ -1,0 +1,21 @@
+\name{setOrderingFilter}
+\alias{setOrderingFilter}
+\title{Sets the features (e.g. genes) to be used for ordering cells in pseudotime.}
+\usage{
+setOrderingFilter(cds, ordering_genes)
+}
+\arguments{
+  \item{cds}{the CellDataSet upon which to perform this
+  operation}
+
+  \item{ordering_genes}{a vector of feature ids (from the
+  CellDataSet's featureData) used for ordering cells}
+}
+\value{
+an updated CellDataSet object
+}
+\description{
+Sets the features (e.g. genes) to be used for ordering
+cells in pseudotime.
+}
+

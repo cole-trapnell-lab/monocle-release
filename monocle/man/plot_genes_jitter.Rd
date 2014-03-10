@@ -1,0 +1,47 @@
+\name{plot_genes_jitter}
+\alias{plot_genes_jitter}
+\title{Plots expression for one or more genes as a jittered, grouped points}
+\usage{
+plot_genes_jitter(cds_subset, grouping = "State", min_expr = 0.1,
+  cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
+  color_by = NULL, plot_trend = F)
+}
+\arguments{
+  \item{cds_subset}{CellDataSet for the experiment}
+
+  \item{grouping}{the cell attribute (e.g. the column of
+  pData(cds)) to group cells by on the horizontal axis}
+
+  \item{min_expr}{the minimum (untransformed) expression
+  level to use in plotted the genes.}
+
+  \item{cell_size}{the size (in points) of each cell used
+  in the plot}
+
+  \item{nrow}{the number of rows used when laying out the
+  panels for each gene's expression}
+
+  \item{ncol}{the number of columns used when laying out
+  the panels for each gene's expression}
+
+  \item{panel_order}{the order in which genes should be
+  layed out (left-to-right, top-to-bottom)}
+
+  \item{color_by}{the cell attribute (e.g. the column of
+  pData(cds)) to be used to color each cell}
+
+  \item{plot_trend}{whether to plot a trendline tracking
+  the average expression across the horizontal axis.}
+}
+\value{
+a ggplot2 plot object
+}
+\description{
+Plots expression for one or more genes as a jittered,
+grouped points
+}
+\examples{
+MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1"))),]
+plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
+}
+

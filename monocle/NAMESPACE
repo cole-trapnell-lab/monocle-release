@@ -1,0 +1,28 @@
+exportClasses( "CellDataSet" )
+
+export( 
+   newCellDataSet,
+   detectGenes,
+   reduceDimension,
+   reducedDimS,
+   "reducedDimS<-",
+   reducedDimW,
+   "reducedDimW<-",
+   reducedDimA,
+   "reducedDimA<-",
+   minSpanningTree,
+   "minSpanningTree<-",
+   cellPairwiseDistances,
+   "cellPairwiseDistances<-",
+   setOrderingFilter,
+   orderCells,
+   plot_spanning_tree,
+   plot_genes_in_pseudotime,
+   plot_genes_jitter,
+   plot_clusters,
+   differentialGeneTest,
+   fitModel,
+   compareModels,
+   responseMatrix,
+   clusterGenes
+)
