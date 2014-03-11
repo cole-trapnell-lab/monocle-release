@@ -22,8 +22,7 @@
 
 <<include=FALSE>>=
 library(knitr)
-opts_chunk$set(eval=TRUE, warning=FALSE, message=FALSE, tidy=TRUE)
-@
+@ %def
 
 \maketitle
 
@@ -35,6 +34,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 
 <<init_monocle, include=FALSE, cache=FALSE, eval=TRUE>>=
 library(monocle)
+data(HSMM)
 @ %def 
 
 \section{Introduction}
@@ -188,7 +188,7 @@ Now that the space is reduced, it's time to order the cells.  The call below has
 HSMM <- orderCells(HSMM, num_paths=2, reverse=F)
 @ %def
 
-<<plot_ordering_mst, eval = true, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<plot_ordering_mst, eval = true, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 plot_spanning_tree(HSMM)
 @ %def 
 

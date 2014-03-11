@@ -2,7 +2,8 @@
 \alias{reduceDimension}
 \title{Computes a projection of a CellDataSet object into a lower dimensional space}
 \usage{
-reduceDimension(cds, max_components = 2, use_irlba = TRUE)
+reduceDimension(cds, max_components = 2, use_irlba = TRUE,
+  pseudo_expr = 1)
 }
 \arguments{
   \item{cds}{the CellDataSet upon which to perform this
@@ -13,6 +14,9 @@ reduceDimension(cds, max_components = 2, use_irlba = TRUE)
 
   \item{use_irlba}{Whether to use the IRLBA package for ICA
   reduction.}
+
+  \item{pseudo_expr}{amount to increase expression values
+  before dimensionality reduction}
 }
 \value{
 an updated CellDataSet object

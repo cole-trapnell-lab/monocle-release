@@ -31,13 +31,3 @@ setClass( "CellDataSet",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.0.0" ) ))
 )
 
-
-#' The HSMM single-cell RNA-Seq timeseries from Trapnell, Cacchiarelli et al. 
-#'
-#' @name HSMM
-#' @docType HSMM
-#' @author Cole Trapnell \email{cole@@broadinstitute.org}
-#' @references \url{http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52529}
-#' @keywords data
-NULL
-

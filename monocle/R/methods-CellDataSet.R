@@ -1007,15 +1007,16 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
 #' @param use_irlba Whether to use the IRLBA package for ICA reduction.
+#' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE){
+reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1){
   FM <- exprs(cds)
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     FM <- FM[fData(cds)$use_for_ordering,]
   FM <- FM[rowSds(FM) > 0,]
-  FM <- log10(FM + 1)
+  FM <- log10(FM + pseudo_expr)
   #FM <- t(scale(t(FM)))
   #FM <- FM[rowSds(FM) > 0,]
   init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba)
@@ -1073,7 +1074,6 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE){
 }
 
 fit_model_helper <- function(x, modelFormulaStr, min_expr=0.1, max_expr=Inf){
-  require(VGAM)
   expression <- log10(x)
   tryCatch({
     FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=tobit(Lower=log10(min_expr), Upper=Inf)))
@@ -1081,7 +1081,7 @@ fit_model_helper <- function(x, modelFormulaStr, min_expr=0.1, max_expr=Inf){
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { NULL }
-           )
+  )
 }
 
 mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
@@ -1198,9 +1198,22 @@ differentialGeneTest <- function(cds,
   test_res
 }
 
-
+#' Plots the minimum spanning tree on cells.
+#'
+#' @param expr_matrix a matrix of expression values to cluster together
+#' @param k how many clusters to create
+#' @param method the distance function to use during clustering
+#' @param ... extra parameters to pass to pam() during clustering
+#' @return a pam cluster object
+#' @export
+#' @examples
+#' \dontrun{
+#' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' expression_curve_matrix <- responseMatrix(full_model_fits)
+#' clusters <- clusterGenes(expression_curve_matrix, k=4)
+#' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
+#' }
 clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(t(x)))/2)}, ...){
-  require(cluster)
   expr_matrix <- expr_matrix[rowSums(is.na(expr_matrix)) == 0,] 
   expr_matrix <- t(scale(t(log10(expr_matrix))))
   expr_matrix <- expr_matrix[is.nan(rowSums(expr_matrix)) == FALSE,] 

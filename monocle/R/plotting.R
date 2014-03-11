@@ -257,19 +257,32 @@ plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nr
   
 }
 
+#' Plots the minimum spanning tree on cells.
+#'
+#' @param cds CellDataSet for the experiment
+#' @param clustering a clustering object produced by clusterCells
+#' @param drawSummary whether to draw the summary line for each cluster
+#' @param sumFun whether the function used to generate the summary for each cluster
+#' @param ncol number of columns used to layout the faceted cluster panels
+#' @param nrow number of columns used to layout the faceted cluster panels
+#' @param row_samples how many genes to randomly select from the data
+#' @param callout_ids a vector of gene names or gene ids to manually render as part of the plot
+#' @return a ggplot2 plot object
+#' @export
+#' @examples
+#' \dontrun{
+#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' expression_curve_matrix <- responseMatrix(full_model_fits)
+#' clusters <- clusterGenes(expression_curve_matrix, k=4)
+#' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
+#' }
 plot_clusters<-function(cds, 
                         clustering,
-                        logMode=FALSE,
                         drawSummary=TRUE, 
                         sumFun=mean_cl_boot,
-                        alpha=0.2,
                         ncol=NULL, 
                         nrow=NULL, 
                         row_samples=NULL, 
-                        draw_cluster_size=T, 
-                        cluster_label_text_size=2,
-                        cluster_label_text_x=15,
-                        cluster_label_text_y=2,
                         callout_ids=NULL){
   m <- as.data.frame(clustering$exprs)
   m$ids <- rownames(clustering$exprs)
