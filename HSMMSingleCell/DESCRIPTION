@@ -1,0 +1,9 @@
+Package: HSMMSingleCell
+Type: Package
+Title: Single-cell RNA-Seq for differentiating human skeletal muscle myoblasts (HSMM)
+Version: 1.0
+Date: 2014-03-11
+Author: Cole Trapnell
+Maintainer: Cole Trapnell <cole@broadinstitute.org>
+Description: This package includes the 
+License: Artistic-2.0
