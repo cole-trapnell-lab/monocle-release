@@ -1,3 +1,4 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Monocle - Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments</title>
@@ -52,10 +53,12 @@
             <ul>
               <li><a href="index.html">Home</a></li>
               <li><a href="tutorial.html">Getting started</a></li>
-              <li><a href="monocle-manual.pdf">Manual (PDF)</a></li>
-			  <li><a href="monocle.pdf">Vignette (PDF)</a></li>
-			  <li><a href="igenomes.html">Index and annotation downloads</a></li>
-			  <li><a href="protocol.html">Protocol</a></li>
+  			  <li><a href="monocle-vignette.pdf" onclick="javascript:
+                        pageTracker._trackPageview('/vignette');
+                        ">Vignette (PDF)</a></li>
+              <li><a href="monocle-manual.pdf" onclick="javascript:
+                        pageTracker._trackPageview('manual');
+                        ">Manual (PDF)</a></li>
             </ul>
           </div>
 
@@ -98,28 +101,20 @@
               <table width="100%">
                 <tbody>
                   <tr>
-                    <td>version XXX</td>
-                    <td align="right">XXX</td>
+                    <td>Monocle version 0.99.0</td>
+                    <td align="right">5/23/2014</td>
                   </tr>
                   <tr>
-                    <td><a href="./downloads/cufflinks-2.1.1.tar.gz"
+                    <td><a href="./downloads/monocle_0.99.0.tar.gz"
                         onclick="javascript:
-                        pageTracker._trackPageview('/downloads/cufflinks_source');
+                        pageTracker._trackPageview('/downloads/monocle_source');
                         ">&nbsp;&nbsp;&nbsp;Source code</a></td>
                   </tr>
                   <tr>
-                    <td><a
-                        href="./downloads/cufflinks-2.1.1.Linux_x86_64.tar.gz"
+                    <td><a href="./downloads/HSMMSingleCell_0.99.0.tar.gz"
                         onclick="javascript:
-                        pageTracker._trackPageview('/downloads/cufflinks');
-                        ">&nbsp;&nbsp;&nbsp;Linux x86_64 binary</a></td>
-                  </tr>
-                  <tr>
-                    <td><a
-                        href="./downloads/cufflinks-2.1.1.OSX_x86_64.tar.gz"
-                        onclick="javascript:
-                        pageTracker._trackPageview('/downloads/cufflinks');
-                        ">&nbsp;&nbsp;&nbsp;Mac OS X x86_64 binary</a></td>
+                        pageTracker._trackPageview('/downloads/HSMM_data');
+                        ">&nbsp;&nbsp;&nbsp;HSMM expression data</a></td>
                   </tr>
                 </tbody>
               </table>
@@ -145,13 +140,14 @@
             <ul>
               <li style="font-size: x-small; line-height: 130%">
                 <p>Trapnell C, Cacchiarelli D, Grimsby J, Pokharel P, Li S, Morse M, Lennon NJ, Livak KJ, Mikkelsen TS, Rinn JL<b> <a
-                      href="http://XXX">the dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells</a></b> <br>
+                      href="http://www.nature.com/nbt/journal/vaop/ncurrent/full/nbt.2859.html">the dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells</a></b> <br>
                   <i><a href="http://www.nature.com/nbt">Nature
-                      Biotechnology</a></i> XXX</p>
+                      Biotechnology</a></i> doi:10.1038/nbt.2859</p>
                 <br>
               </li>
             </ul>
           </div>
+
           <h2>Contributors</h2>
           <div class="box">
             <ul>
@@ -164,7 +160,7 @@
 			  <li>Niall J. Lennon</li>
 			  <li>Kenneth J. Livak</li>
 			  <li>Tarjei S. Mikkelsen</li>
-			  <li>John L. Rinn</li>
+			  <li><a href="http://www.rinnlab.com/">John L. Rinn</a></li>
             </ul>
           </div>
         </div>
@@ -222,22 +218,16 @@
 					</blockquote>
 					
                   <br/>
-				  <br/>
-                  <strong>Installing a pre-compiled binary release</strong><br/>
-                  <p>In order to make it easy to install Monocle, we
-                    provide a few binary packages to save users from
-                    occasionally frustrating process of building
-                    Monocle. To use the binary packages, simply
-                    download the appropriate one for your machine, change to the directory in which you saved it, and type: .</p>
-					<br/>
-					<br/>
-					<blockquote>
-					$ R CMD INSTALL monocle_0.99.0.tar.gz  <br>
-					</blockquote>
-                  <br/>
+				  <strong>Installing the Myoblast example data</strong><br/>
+				  <p>Monocle includes a detailed documentation vignette and snippets of example code that depend on the skeletal muscle myoblast data described in Trapnell and Cacchiarelli et al.  You'll need to install the data package containing it before installing Monocle.  To do so, type:
+				  </p>
+ 					<br/>
+ 					<blockquote>
+ 					$ R CMD INSTALL HSMMSingleCell_0.99.0.tar.gz  <br>
+ 					</blockquote>
+                   <br/>
                   <strong>Installing Monocle from source</strong><br/>
-                  <p>You can also build Monocle from the source code if you prefer. To do so, download the source tarball, change to the directory in which you saved it, and type</p>
-					<br/>
+                  <p>To install the Monocle package, download the source tarball, change to the directory in which you saved it, and type</p>
 					<br/>
 					<blockquote>
 					$ R CMD INSTALL monocle_0.99.0.tar.gz  <br>
@@ -316,22 +306,6 @@
 						  CELL_T24_A03_cuffquant_out/abundances.cxb  T24_A03<br/>
 					  </blockquote>
 				      <br/>
-				  <p>Now we need to prepare files to use with Monocle from the Cufflinks package's output.  <a href="http://compbio.mit.edu/cummeRbund/">CummeRbund</a> provides an easy way to do this. You will need to <a href="http://www.bioconductor.org/packages/release/bioc/html/cummeRbund.html">install the CummeRbund package</a> through Bioconductor to do this.  Alternatively, see the Monocle vignette for instructions on how to prepare the input files if you wish to do so by other means.  The following R script loads the output from <tt>cuffnorm</tt>, converts it into a set of three tables, and writes these out as tab delimited files ready for use with Monocle. 
-					  <br/>
-					  <br/>
-					  <blockquote>
-					  > library(cummeRbund)<br/>
-					  > cd <- readCufflinks("sc_expr_out")<br/>
-					  > write.table(fpkmMatrix(genes(cd)), "expr_matrix.txt", quote=F, col.names=T, row.names=T, sep="\t")<br/>
-					  > gene_ann <-annotation(genes(cd))<br/>
-					  > row.names(gene_ann) <- gene_ann$gene_id<br/>
-					  > write.table(gene_ann[,c("gene_short_name")]), "feature_data.txt", quote=F, col.names=T, row.names=T, sep="\t")<br/>
-					  > cell_ann <-data.frame(row.names=samples(cd)$sample_id,
-					  						cell_type="MyCellType")<br/>
-					  > write.table(cell_ann, "pheno_data.txt", quote=F, col.names=T, row.names=T, sep="\t")<br/>
-					  </blockquote>
-					  <br/>
-					  
 					  Now, you are ready to load the expression data into Monocle and start analyzing your experiment.
 					  <br/>
 					  <br/>
@@ -340,9 +314,9 @@
 				  Monocle provides a number of tools you can use to analyze your single cell expression experiments. To get started, we must create a CellDataSet object.  You can do this with the commands below: 
 				  <blockquote>
 				  > library(monocle)<br/>
-				  > sample_sheet <- read.delim("pheno_data.txt", row.names=1)<br/>
-				  > gene_annotations <- read.delim("feature_data.txt", row.names=1)<br/>
-				  > fpkm_matrix <- read.delim("expr_matrix.txt")<br/>
+				  > sample_sheet <- read.delim("sc_expr_out/samples.table", row.names=1)<br/>
+				  > gene_annotations <- read.delim("sc_expr_out/genes.attr_table", row.names=1)<br/>
+				  > fpkm_matrix <- read.delim("sc_expr_out/genes.fpkm_table", row.names=1)<br/>
 				  > pd <- new("AnnotatedDataFrame", data = sample_sheet)<br/>
 				  > my_data <- new("CellDataSet", exprs = as.matrix(fpkm_matrix), phenoData = pd, featureData = fd)<br/>			  
 			      </blockquote>
@@ -373,16 +347,16 @@
                   </div>
 
                   <!-- Google analytics code -->
-                  <script type="text/javascript">
-var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-</script>
-                  <script type="text/javascript">
-try {
-var pageTracker = _gat._getTracker("UA-6101038-2");
-pageTracker._trackPageview();
-} catch(err) {}</script>
-                  <!-- End google analytics code --> </td>
+				  <script>
+				    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+				    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+				    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+				    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+				    ga('create', 'UA-6101038-4', 'sourceforge.net');
+				    ga('send', 'pageview');
+
+				  </script>                  <!-- End google analytics code --> </td>
               </tr>
             </tbody>
           </table>

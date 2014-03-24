@@ -7,7 +7,8 @@ Author: Cole Trapnell
 Maintainer: Cole Trapnell <cole@broadinstitute.org>
 Description: Monocle performs differential expression and time-series analysis for single-cell expression experiments. It orders individual cells according to progress through a biological process, without knowing ahead of time which genes define progress through that process. Monocle also performs differential expression analysis, clustering, visualization, and other useful tasks on single cell expression data.  It is designed to work with RNA-Seq and qPCR data, but could be used with other types as well.
 License: Artistic-2.0
-Depends: Biobase, VGAM, irlba, matrixStats, igraph, combinat, fastICA, grid, ggplot2, reshape2, plyr, parallel, methods, HSMMSingleCell, cluster
+Depends: R (>= 2.7.0), Biobase, VGAM, irlba, matrixStats, igraph (>= 0.7.0), combinat, fastICA, grid, ggplot2 (>= 0.9.3.1), reshape2, Hmisc, plyr, parallel, methods, HSMMSingleCell, cluster
 VignetteBuilder: knitr
 Suggests:knitr
 LazyData: true
+biocViews: HighThroughputSequencing, HighThroughputSequencingData, RNAseq, RNAseqData, GeneExpression, DifferentialExpression, Infrastructure, DataImport, DataRepresentation, Visualization, Bioinformatics, Clustering, MultipleComparisons, QualityControl

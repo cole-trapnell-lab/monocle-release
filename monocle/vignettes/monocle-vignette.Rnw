@@ -1,4 +1,5 @@
 % \VignetteIndexEntry{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments.} 
+% \VignetteEngine{knitr::knitr}
 % \VignetteDepends{} 
 % \VignettePackage{monocle}
 \documentclass[10pt,oneside]{article}
@@ -16,11 +17,13 @@
 
 \title{\textsf{\textbf{\thetitle}}}
 \author{Cole Trapnell\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
-\texttt{cole@broadinstitute.org}}
+\texttt{cole@broadinstitute.org} \and
+Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
+\texttt{davide@broadinstitute.org}}
 
 \begin{document}
 
-<<include=FALSE>>=
+<<include=FALSE, eval=TRUE>>=
 library(knitr)
 @ %def
 
@@ -100,7 +103,7 @@ HSMM <- HSMM[,valid_cells]
 @ %def
 
 Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your \Rclass{CellDataSet} follow a distribution that is roughly lognormal:  
-<<lognormal_plot, eval = true, fig.width = 3, fig.height = 2, fig.align="center">>=
+<<lognormal_plot, eval=TRUE, fig.width = 3, fig.height = 2, fig.align="center">>=
 # Log-transform each value in the expression matrix.
 L <- log(exprs(HSMM[expressed_genes,]))
 
@@ -119,7 +122,7 @@ ylab("Density")
 Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the \Robject{phenoData} table of each \Robject{CellDataSet}.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
 
 Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from \cite{TRAPNELL_CACCHIARELLI}, which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities: 
-<<select_genes, eval = true>>=
+<<select_genes, eval=TRUE>>=
 marker_genes <- row.names(subset(fData(HSMM), 
                                  gene_short_name %in% c("MEF2C", "MEF2D", "MYF5", "ANPEP", "PDGFRA",
                                                         "MYOG", "TPM1", "TPM2", "MYH2", "MYH3", "NCAM1", "TNNT1", "TNNT2", "TNNC1",
@@ -127,7 +130,7 @@ marker_genes <- row.names(subset(fData(HSMM),
 @ %def
 
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
-<<basic_diff, eval = true>>=
+<<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM[marker_genes,], 
                                       fullModelFormulaStr="expression~Media")
 
@@ -141,7 +144,7 @@ sig_genes[,c("gene_short_name", "pval", "qval")]
 
 So 18 of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
 
-<<plot_myog_jitter, eval = true, fig.width = 4, fig.height = 2, fig.align="center">>=
+<<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
 MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), 
                                  gene_short_name %in% c("MYOG", "ID1"))),]
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
@@ -165,7 +168,7 @@ ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 
 However, for the sake of keeping the running time in this vignette short, we will leverage the developmental biology community's extensive knowledge of expression dynamics during skeletal myogenesis, and use the small set of genes discussed above.
 
-<<select_ordering_cells, eval = true>>=
+<<select_ordering_cells, eval=TRUE>>=
 ordering_genes <- row.names (subset(diff_test_res, qval < 0.1))
 
 #Only use genes are detectably expressed in a sufficient number of cells
@@ -174,25 +177,25 @@ ordering_genes <- intersect(ordering_genes, expressed_genes)
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
 
-<<set_ordering_filter, eval = true>>=
+<<set_ordering_filter, eval=TRUE>>=
 HSMM <- setOrderingFilter(HSMM, ordering_genes)
 @ %def
 
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
-<<reduce_dimension, eval = true>>=
+<<reduce_dimension, eval=TRUE>>=
 HSMM <- reduceDimension(HSMM, use_irlba=F)
 @ %def
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know there are contaminating fibroblasts in the culture, so by setting \Robject{num\_paths}$=2$, the fibroblasts wind up on their own trajectory in response to the serum switch, instead of getting mixed in with the myoblasts.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on.
-<<order_cells, eval = true>>=
+<<order_cells, eval=TRUE>>=
 HSMM <- orderCells(HSMM, num_paths=2, reverse=F)
 @ %def
 
-<<plot_ordering_mst, eval = true, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+<<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 plot_spanning_tree(HSMM)
 @ %def 
 
-<<plot_markers, eval = true, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_filtered <- HSMM[expressed_genes, pData(HSMM)$State != 3]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
@@ -210,7 +213,7 @@ To keep the vignette simple and fast, we'll be working with small sets of genes.
 
 \subsection{Finding genes that distinguish cell type or state}
 
-During a dynamic biological process such as differentiation, cells might assume distinct intermediate or final states.  When we ordered the myoblasts, we allowed them to ultimately select one of two outcomes. As discussed in Trapnell and Cacchiarelli \emph{et al}, these two outcomes correspond to myoblasts and a comtaminating fibroblast population  \(States 2 and 3\) when cultured in low-mitogen medium (DM).  Monocle also identified a third state \(State 1\), which corresponds to actively proliferating cells cultured in growth medium (GM). Let's look at several genes that should distinguish between fibroblasts and myoblasts in DM. We'll exclude all cells from state 1 for now.
+During a dynamic biological process such as differentiation, cells might assume distinct intermediate or final states.  When we ordered the myoblasts, we allowed them to ultimately select one of two outcomes. As discussed in Trapnell and Cacchiarelli \emph{et al}, these two outcomes correspond to myoblasts and a contaminating fibroblast population  (States 2 and 3) when cultured in low-mitogen medium (DM).  Monocle also identified a third state (State 1), which corresponds to actively proliferating cells cultured in growth medium (GM). Let's look at several genes that should distinguish between fibroblasts and myoblasts in DM. We'll exclude all cells from state 1 for now.
 <<setup_test_genes, eval=TRUE>>=
 to_be_tested <- row.names(subset(fData(HSMM), 
                              gene_short_name %in% c("TBP", "MYH3", "NCAM1", "PDGFRA", "ANPEP"))) 
@@ -269,7 +272,7 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 
 We can plot the expression levels of these genes, all of which show significant changes as a function of differentiation, using the function \Rfunction{plot\_genes\_in\_pseudotime}. This function has a number of cosmetic options you can use to control the layout and appearance of your plot.
 
-<<plot_diff_res_pt, eval = true, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<plot_diff_res_pt, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 plot_genes_in_pseudotime(cds_subset, color_by="Time")
 @ %def 
 
@@ -279,7 +282,7 @@ Monocle can perform differential analysis in the presence of multiple factors, w
 
 When we plot the expression levels of these genes, we can modify the resulting object returned by \Rfunction{plot\_genes\_jitter} to allow them to have independent y-axis ranges, to better highlight the differences between cell states.
 
-<<plot_diff_res_multi, eval = true, fig.width = 8, fig.height = 4, fig.align="center">>=
+<<plot_diff_res_multi, eval=TRUE, fig.width = 8, fig.height = 4, fig.align="center">>=
 to_be_tested <- row.names(subset(fData(HSMM), 
                              gene_short_name %in% c("MT2A", "REXO2", "HDAC4"))) 
 cds_subset <- HSMM[to_be_tested, pData(HSMM)$Media == "DM" & pData(HSMM)$State != 1]

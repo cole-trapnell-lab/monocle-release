@@ -38,6 +38,10 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
   #print (lib_info_with_pseudo)
   S_matrix <- reducedDimS(cds)
 
+  if (is.null(S_matrix)){
+    stop("You must first call reduceDimension() before using this function")
+  }
+  
   ica_space_df <- data.frame(t(S_matrix[c(x,y),]))
   colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
 
@@ -45,6 +49,11 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
   ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
+ 
+  if (is.null(dp_mst)){
+    stop("You must first call orderCells() before using this function")
+  }
+  
   
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
@@ -75,13 +84,13 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
     g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid")
+    g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid", na.rm=TRUE)
   }
   
-  g <- g +geom_point(aes_string(color=color_by)) 
+  g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
   if (show_backbone){
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam) + 
-    geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam, na.rm=TRUE) + 
+    geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam, na.rm=TRUE)
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
@@ -160,7 +169,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   
    q <- q + scale_y_log10() + facet_wrap(~gene_label, nrow=nrow, ncol=ncol, scales="free_y")
   
-  q <- q + ylab("Expression") + xlab("State")
+  q <- q + ylab("Expression") + xlab(grouping)
   q <- q + monocle_theme_opts()
   q
 }
