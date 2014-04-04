@@ -799,11 +799,12 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   res <- extract_branched_ordering_helper(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_main_path)
   cell_ordering_tree <- res$subtree
   
+  curr_state <- 1
+  
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
   {
     cell_tree <- ordering_tree_res$subtree
-    curr_cell_state <- ordering_tree_res$last_cell_state
-    V(cell_tree)[curr_cell]$cell_state = curr_cell_state
+    V(cell_tree)[curr_cell]$cell_state = curr_state
     
     children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
     ordering_tree_res$subtree <- cell_tree
@@ -811,11 +812,9 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     if (length(children) == 1){
       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
     }else{
-      next_state = 1
       for (child in children)	{
-        ordering_tree_res$last_cell_state <- curr_cell_state + next_state
+        curr_state <<- curr_state + 1
         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
-        next_state <- next_state + 1
       }
     }
     return (ordering_tree_res)
