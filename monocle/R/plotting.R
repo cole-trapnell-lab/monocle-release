@@ -31,7 +31,7 @@ monocle_theme_opts <- function()
 #' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=F)
 #' plot_spanning_tree(HSMM, marker="MYH3")
 #' }
-plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, show_backbone=T, backbone_color="black", marker=NULL){
+plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, show_backbone=T, backbone_color="black", marker=NULL, show_cell_names=FALSE){
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
@@ -92,6 +92,10 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
     g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam, na.rm=TRUE) + 
     geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam, na.rm=TRUE)
   }
+  
+  if (show_cell_names){
+    g <- g +geom_text(aes(label=sample_name, size=1))
+  }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
     theme(panel.border = element_blank(), axis.line = element_line()) +
@@ -142,7 +146,6 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
   #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
   
-  # TODO: fix labeling to use gene_short_names
   if (is.null(cds_exprs$gene_short_name) == FALSE){
     cds_exprs$gene_label <- cds_exprs$gene_short_name
     cds_exprs$gene_label[is.na(cds_exprs$gene_label)]  <- cds_exprs$gene_id
@@ -173,7 +176,66 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   q <- q + monocle_theme_opts()
   q
 }
-                              
+
+#' Plots the number of cells expressing one or more genes as a barplot 
+#'
+#' @param cds_subset CellDataSet for the experiment
+#' @param grouping the cell attribute (e.g. the column of pData(cds)) to group cells by on the horizontal axis
+#' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
+#' @param nrow the number of rows used when laying out the panels for each gene's expression
+#' @param ncol the number of columns used when laying out the panels for each gene's expression
+#' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
+#' @param plot_as_fraction whether to show the percent instead of the number of cells expressing each gene 
+#' @return a ggplot2 plot object
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
+#' plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
+#' }
+plot_genes_positive_cells <- function(cds_subset, grouping = "State", 
+                                      min_expr=0.1, nrow=NULL, ncol=1, panel_order=NULL, plot_as_fraction=T){
+  
+  marker_exprs <- exprs(cds_subset)
+  
+  marker_exprs_melted <- melt(t(marker_exprs))
+  
+
+  marker_exprs_melted <- merge(marker_exprs_melted, pData(cds_subset), by.x="Var1", by.y="row.names")
+  marker_exprs_melted <- merge(marker_exprs_melted, fData(cds_subset), by.x="Var2", by.y="row.names")
+  
+  if (is.null(marker_exprs_melted$gene_short_name) == FALSE){
+    marker_exprs_melted$gene_label <- marker_exprs_melted$gene_short_name
+    marker_exprs_melted$gene_label[is.na(marker_exprs_melted$gene_label)]  <- marker_exprs_melted$gene_id
+  }else{
+    marker_exprs_melted$gene_label <- marker_exprs_melted$gene_id
+  }
+  
+  if (is.null(panel_order) == FALSE)
+  {
+    marker_exprs_melted$gene_label <- factor(marker_exprs_melted$gene_label, levels=panel_order)
+  }
+  
+  marker_counts <- ddply(marker_exprs_melted, c("gene_label", grouping), function(x) { 
+    data.frame(target=sum(x$value > min_expr), 
+               target_fraction=sum(x$value > min_expr)/nrow(x)) } )
+  
+  if (plot_as_fraction){
+    qp <- ggplot(aes_string(x=grouping, y="target_fraction", fill=grouping), data=marker_counts) +
+      scale_y_continuous(labels=percent, limits=c(0,1)) 
+  }else{
+    qp <- ggplot(aes_string(x=grouping, y="target", fill=grouping), data=marker_counts)
+  }
+  
+  qp <- qp + facet_wrap(~gene_label, nrow=nrow, ncol=ncol, scales="free_y")
+  qp <-  qp + geom_bar(stat="identity") +
+    ylab("Cells") + monocle_theme_opts()
+
+  return(qp)
+}
+
+
 #' Plots expression for one or more genes as a function of pseudotime
 #'
 #' @param cds_subset CellDataSet for the experiment

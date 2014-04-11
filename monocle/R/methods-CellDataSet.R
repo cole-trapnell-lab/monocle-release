@@ -185,7 +185,7 @@ get_next_node_id <- function()
 }
 
 # Recursively builds and returns a PQ tree for the MST
-pq_helper<-function(mst, use_weights=T)
+pq_helper<-function(mst, use_weights=T, root_node=NULL)
 {
   new_subtree <- graph.empty()
   
@@ -193,11 +193,22 @@ pq_helper<-function(mst, use_weights=T)
   
   new_subtree <- new_subtree + vertex(root_node_id, type="Q", color="black")
   
-  if (use_weights){
-    diam <- V(mst)[get.diameter(mst)]
+  if (is.null(root_node) == FALSE){
+    sp <- get.all.shortest.paths(mst, from=V(mst)[root_node])
+    #print(sp)
+    sp_lengths <- sapply(sp$res, length)
+    target_node_idx <- which(sp_lengths == max(sp_lengths))
+    #print(unlist(sp$res[target_node_idx]))
+    diam <- V(mst)[unlist(sp$res[target_node_idx])]
+    #print(diam)
   }else{
-    diam <- V(mst)[get.diameter(mst, weights=NA)]
+    if (use_weights){
+      diam <- V(mst)[get.diameter(mst)]
+    }else{
+      diam <- V(mst)[get.diameter(mst, weights=NA)]
+    }
   }
+
   
   
   
@@ -744,7 +755,6 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       # find the closest cell in the parent branch for each of the head and the tail
       
       curr_branch_cell_names <- names(branch_pseudotimes[[curr_branch]])
-      
       head_dist_to_curr <- dist_matrix[child_head, curr_branch_cell_names]
       closest_to_head <- names(head_dist_to_curr)[which(head_dist_to_curr == min(head_dist_to_curr))]
       
@@ -768,7 +778,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
         reverse_child <- FALSE
       }
       
-      res <- extract_branched_ordering_helper(branch_tree, child, child_cell_ordering_subtree, branch_pseudotimes, reverse_child)
+      res <- extract_branched_ordering_helper(branch_tree, child, child_cell_ordering_subtree, branch_pseudotimes, dist_matrix, reverse_child)
       child_cell_ordering_subtree <- res$subtree
       child_subtree_root <- res$root
       
@@ -1010,7 +1020,7 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1){
+reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, ...){
   FM <- exprs(cds)
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     FM <- FM[fData(cds)$use_for_ordering,]
@@ -1018,7 +1028,7 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
   FM <- log10(FM + pseudo_expr)
   #FM <- t(scale(t(FM)))
   #FM <- FM[rowSds(FM) > 0,]
-  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba)
+  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
   
   x_pca <- t(t(FM) %*% init_ICA$K)
   W <- t(init_ICA$W)
@@ -1051,7 +1061,7 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE){
+orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   
   adjusted_S <- t(cds@reducedDimS)
   dp <- as.matrix(dist(adjusted_S))
@@ -1062,7 +1072,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE){
   minSpanningTree(cds) <- dp_mst
   # Build the PQ tree
   next_node <<- 0
-  res <- pq_helper(dp_mst, use_weights=F)
+  res <- pq_helper(dp_mst, use_weights=F, root_node=root_cell)
   
   cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, dp, num_paths, reverse)
   row.names(cc_ordering) <- cc_ordering$sample_name
