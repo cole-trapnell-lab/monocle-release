@@ -24,7 +24,10 @@ Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
 \begin{document}
 
 <<include=FALSE, eval=TRUE>>=
+library(Biobase)
 library(knitr)
+library(reshape2)
+library(ggplot2)
 @ %def
 
 \maketitle
@@ -183,12 +186,12 @@ HSMM <- setOrderingFilter(HSMM, ordering_genes)
 
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
 <<reduce_dimension, eval=TRUE>>=
-HSMM <- reduceDimension(HSMM, use_irlba=F)
+HSMM <- reduceDimension(HSMM, use_irlba=FALSE)
 @ %def
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know there are contaminating fibroblasts in the culture, so by setting \Robject{num\_paths}$=2$, the fibroblasts wind up on their own trajectory in response to the serum switch, instead of getting mixed in with the myoblasts.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on.
 <<order_cells, eval=TRUE>>=
-HSMM <- orderCells(HSMM, num_paths=2, reverse=F)
+HSMM <- orderCells(HSMM, num_paths=2, reverse=FALSE)
 @ %def
 
 <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
@@ -233,7 +236,7 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 Note that all the genes are significantly differentially expressed as a function of \Robject{State} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in \Robject{State} 2) versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
 <<jitter_plot_diff_res, eval=TRUE, fig.width = 8, fig.height = 2.5, fig.align="center">>=
-plot_genes_jitter(cds_subset, nrow=1, ncol=NULL, plot_trend=T)
+plot_genes_jitter(cds_subset, nrow=1, ncol=NULL, plot_trend=TRUE)
 @ %def
 
 Note that we could also simply compute summary statistics such as mean or median expression level on a per-\Robject{State} basis to see this, which might be handy if we are looking at more than a handful of genes.
@@ -292,7 +295,7 @@ diff_test_res <- differentialGeneTest(cds_subset,
                                       reducedModelFormulaStr="expression~Time")
 diff_test_res <- merge(fData(cds_subset), diff_test_res, by="row.names")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
-plot_genes_jitter(cds_subset, grouping="Time", color_by="State", plot_trend=T) + facet_wrap( ~ gene_label, scales="free_y")
+plot_genes_jitter(cds_subset, grouping="Time", color_by="State", plot_trend=TRUE) + facet_wrap( ~ gene_label, scales="free_y")
 @ %def 
 
 \section{Clustering genes by pseudotemporal expression pattern}
