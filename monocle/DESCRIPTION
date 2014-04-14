@@ -14,7 +14,7 @@ Imports: Biobase, BiocGenerics, cluster, combinat, fastICA, ggplot2(>=
 VignetteBuilder: knitr
 Suggests: knitr
 LazyData: true
-biocViews : Sequencing, RNASeq, GeneExpression, DifferentialExpression,
+biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
         Infrastructure, DataImport, DataRepresentation, Visualization,
         Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
