@@ -1,0 +1,11 @@
+CHANGES IN monocle 0.99.3:
+
+* orderCells() now accepts the root_cell_name argument to specify the root of 
+  the ordering tree.
+
+  * various fixes to accomodate the BioConductor build system and coding 
+  standards. Thanks to Sonali Arora for help with this.
+
+CHANGES IN monocle 0.99.0:
+
+  INITIAL RELEASE
