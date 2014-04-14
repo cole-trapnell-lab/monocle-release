@@ -28,10 +28,10 @@ monocle_theme_opts <- function()
 #' \dontrun{
 #' data(HSMM)
 #' plot_spanning_tree(HSMM)
-#' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=F)
+#' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 #' plot_spanning_tree(HSMM, marker="MYH3")
 #' }
-plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, show_backbone=T, backbone_color="black", marker=NULL, show_cell_names=FALSE){
+plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, show_backbone=TRUE, backbone_color="black", marker=NULL, show_cell_names=FALSE){
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
@@ -58,10 +58,10 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
 
-  edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=T)
+  edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
   
   edge_df <- rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
-  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "ICA_dim_1", "ICA_dim_2")], by.x="target", by.y="sample_name", all=T)
+  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "ICA_dim_1", "ICA_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- rename(edge_df, c("ICA_dim_1"="target_ICA_dim_1", "ICA_dim_2"="target_ICA_dim_2"))
   
   diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
@@ -131,7 +131,7 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=T, sho
 plot_genes_jitter <- function(cds_subset, grouping = "State", 
                               min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
                               color_by=NULL,
-                              plot_trend=F){
+                              plot_trend=FALSE){
   
   cds_exprs <- melt(exprs(cds_subset))
   
@@ -195,7 +195,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
 #' }
 plot_genes_positive_cells <- function(cds_subset, grouping = "State", 
-                                      min_expr=0.1, nrow=NULL, ncol=1, panel_order=NULL, plot_as_fraction=T){
+                                      min_expr=0.1, nrow=NULL, ncol=1, panel_order=NULL, plot_as_fraction=TRUE){
   
   marker_exprs <- exprs(cds_subset)
   
@@ -283,7 +283,7 @@ plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nr
       #vg <- vgam(formula = adjusted_fpkm ~ s(pseudo_time), family = cennormal, data = x, extra=Extra, maxit=30, trace = TRUE) 
       vg <- suppressWarnings(vgam(formula = adjusted_expression ~ VGAM::bs(Pseudotime, df=3), 
                                   family = tobit(Lower=log10(min_expr)), 
-                                  data = x, maxit=30, checkwz=F))
+                                  data = x, maxit=30, checkwz=FALSE))
       res <- 10^(predict(vg, type="response"))
       res[res < log10(min_expr)] <- log10(min_expr)
       res
@@ -406,7 +406,7 @@ plot_clusters<-function(cds,
   c
 }
 
-plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labCol=F, labRow=T, logMode=T, pseudocount=0.1, 
+plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labCol=FALSE, labRow=TRUE, logMode=TRUE, pseudocount=0.1, 
                                     border=FALSE, heatscale=c(low='steelblue',mid='white',high='tomato'), heatMidpoint=0,
                                     method="none",scaleMax=2, scaleMin=-2, ...){
   
@@ -453,13 +453,13 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
     m=rescaling(m)
   } else {
     if(rescaling=='column'){
-      m=scale(m, center=T)
+      m=scale(m, center=TRUE)
       m[is.nan(m)] = 0
       m[m>scaleMax] = scaleMax
       m[m<scaleMin] = scaleMin
     }
     if(rescaling=='row'){ 
-      m=t(scale(t(m),center=T))
+      m=t(scale(t(m),center=TRUE))
       m[is.nan(m)] = 0
       m[m>scaleMax] = scaleMax
       m[m<scaleMin] = scaleMin
@@ -500,21 +500,21 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   
   ## add axis labels either supplied or from the colnames rownames of the matrix
   
-  if(labCol==T) 
+  if(labCol==TRUE) 
   {
     g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=colnames(m))
   }
-  if(labCol==F) 
+  if(labCol==FALSE) 
   {
     g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=rep('',cols))
   }
   
   
-  if(labRow==T) 
+  if(labRow==TRUE) 
   {
     g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rownames(m))	
   }
-  if(labRow==F)
+  if(labRow==FALSE)
   { 
     g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rep('',rows))	
   }

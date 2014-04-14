@@ -185,7 +185,7 @@ get_next_node_id <- function()
 }
 
 # Recursively builds and returns a PQ tree for the MST
-pq_helper<-function(mst, use_weights=T, root_node=NULL)
+pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 {
   new_subtree <- graph.empty()
   
@@ -651,7 +651,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
   }
 }
 
-extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=F)
+extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
   pq_tree <- orig_pq_tree
   
@@ -660,13 +660,13 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   # children_counts <- count_leaf_descendents(pq_tree, curr_node, children_counts)
   # 
   # branch_node_counts <- children_counts[V(res$subtree)[type == "P"]]
-  # branch_node_counts <- sort(branch_node_counts, decreasing=T)
+  # branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
   # print (branch_node_counts)
   
   
   branch_node_counts <- V(pq_tree)[type == "Q"]$diam_path_len
   names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
-  branch_node_counts <- sort(branch_node_counts, decreasing=T)
+  branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
   #print (branch_node_counts)
   
   
@@ -720,7 +720,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   cell_ordering_tree <- graph.empty()
   curr_branch <- "Q_1"
   
-  extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=F)
+  extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
   {
     curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
     #print (curr_branch_pseudotimes)
@@ -1072,7 +1072,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   minSpanningTree(cds) <- dp_mst
   # Build the PQ tree
   next_node <<- 0
-  res <- pq_helper(dp_mst, use_weights=F, root_node=root_cell)
+  res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
   
   cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, dp, num_paths, reverse)
   row.names(cc_ordering) <- cc_ordering$sample_name
@@ -1182,7 +1182,7 @@ compareModels <- function(full_models, reduced_models){
       pval=lrt@Body["Pr(>Chisq)"][2,]
       data.frame(pval=pval)
     } else { data.frame(pval=1.0) } 
-  } , full_models, reduced_models, SIMPLIFY=F, USE.NAMES=T)
+  } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
   
   test_res <- do.call(rbind.data.frame, test_res)
   test_res$qval <- p.adjust(test_res$pval)
