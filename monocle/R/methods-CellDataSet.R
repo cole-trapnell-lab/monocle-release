@@ -197,7 +197,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
     sp <- get.all.shortest.paths(mst, from=V(mst)[root_node])
     #print(sp)
     sp_lengths <- sapply(sp$res, length)
-    target_node_idx <- which(sp_lengths == max(sp_lengths))
+    target_node_idx <- which(sp_lengths == max(sp_lengths))[1]
     #print(unlist(sp$res[target_node_idx]))
     diam <- V(mst)[unlist(sp$res[target_node_idx])]
     #print(diam)
@@ -208,9 +208,9 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
       diam <- V(mst)[get.diameter(mst, weights=NA)]
     }
   }
-
   
   
+  #print (diam)
   
   V(new_subtree)[root_node_id]$diam_path_len = length(diam)
   
@@ -219,19 +219,32 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
   
   first_diam_path_node_idx <- head(as.vector(diam), n=1)
   last_diam_path_node_idx <- tail(as.vector(diam), n=1)
-  if (sum(ind_nodes) == 0 || (igraph::degree(mst, first_diam_path_node_idx) == 1 && igraph::degree(mst, last_diam_path_node_idx) == 1))
-  {
-    ind_backbone <- diam
-  }
-  else 
-  {
-    last_bb_point <- names(tail(ind_nodes, n=1))[[1]]
-    first_bb_point <- names(head(ind_nodes, n=1))[[1]]	
-    
-    ind_backbone <- diam[first_bb_point:last_bb_point]
-  }
+    if (sum(ind_nodes) == 0 || 
+          (igraph::degree(mst, first_diam_path_node_idx) == 1 && 
+             igraph::degree(mst, last_diam_path_node_idx) == 1))
+    {
+      ind_backbone <- diam
+    }
+    else 
+    {
+      last_bb_point <- names(tail(ind_nodes, n=1))[[1]]
+      first_bb_point <- names(head(ind_nodes, n=1))[[1]]	
+      #diam_path_vertex_names <- as.vector()
+      #print (last_bb_point)
+      #print (first_bb_point)
+      diam_path_names <- V(mst)[as.vector(diam)]$name
+      last_bb_point_idx <- which(diam_path_names == last_bb_point)[1]
+      first_bb_point_idx <- which(diam_path_names == first_bb_point)[1]
+      ind_backbone_idxs <- as.vector(diam)[first_bb_point_idx:last_bb_point_idx]
+      #print (ind_backbone_idxs)
+      ind_backbone <- V(mst)[ind_backbone_idxs]
+      
+      #ind_backbone <- diam[first_bb_point:last_bb_point]
+    }
   
-  mst_no_backbone <- mst - diam
+  
+  
+  mst_no_backbone <- mst - ind_backbone
   #print (V(mst_no_backbone)$name)
   
   for (backbone_n in ind_backbone)
@@ -1073,6 +1086,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   # Build the PQ tree
   next_node <<- 0
   res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
+  #stopifnot(length(V(res$subtree)[type == "leaf"]) == nrow(pData(cds)))
   
   cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, dp, num_paths, reverse)
   row.names(cc_ordering) <- cc_ordering$sample_name
