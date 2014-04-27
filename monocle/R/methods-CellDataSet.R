@@ -1115,7 +1115,7 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-  clusterEvalQ(cl, {library(VGAM);})
+  clusterEvalQ(cl, {require(VGAM);})
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
