@@ -289,8 +289,8 @@ plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nr
       res
     }
                         ,error = function(e) {
-                        					traceback()
                         					print("Error!")
+                                  print(e)
                         					res <- rep(NA, nrow(x))
                         					res
                         			}

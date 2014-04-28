@@ -205,7 +205,7 @@ my_genes <- row.names(subset(fData(HSMM_filtered),
                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 
 cds_subset <- HSMM_filtered[my_genes,]
-plot_genes_in_pseudotime(cds_subset, color_by="Time")
+plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
 \section{Advanced differential expression analysis}
@@ -236,7 +236,7 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 Note that all the genes are significantly differentially expressed as a function of \Robject{State} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in \Robject{State} 2) versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
 <<jitter_plot_diff_res, eval=TRUE, fig.width = 8, fig.height = 2.5, fig.align="center">>=
-plot_genes_jitter(cds_subset, nrow=1, ncol=NULL, plot_trend=TRUE)
+plot_genes_jitter(cds_subset, color_by="Hours", nrow=1, ncol=NULL, plot_trend=TRUE)
 @ %def
 
 Note that we could also simply compute summary statistics such as mean or median expression level on a per-\Robject{State} basis to see this, which might be handy if we are looking at more than a handful of genes.
@@ -276,12 +276,12 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 We can plot the expression levels of these genes, all of which show significant changes as a function of differentiation, using the function \Rfunction{plot\_genes\_in\_pseudotime}. This function has a number of cosmetic options you can use to control the layout and appearance of your plot.
 
 <<plot_diff_res_pt, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-plot_genes_in_pseudotime(cds_subset, color_by="Time")
+plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
 \subsection{Multi-factorial differential expression analysis}
 
-Monocle can perform differential analysis in the presence of multiple factors, which can help you subtract some factors to see the effects of others.  In the simple example below, Monocle tests three genes for differential expression between \Robject{State} 2 and 3, while subtracting the effect of \Robject{Time}, which encodes the day on which each cell was collected. To do this, we must specify both the full model and the reduced model. The full model captures the effects of both \Robject{State} and \Robject{Time}, while the reduced model only knows about \Robject{Time}.  
+Monocle can perform differential analysis in the presence of multiple factors, which can help you subtract some factors to see the effects of others.  In the simple example below, Monocle tests three genes for differential expression between \Robject{State} 2 and 3, while subtracting the effect of \Robject{Hours}, which encodes the day on which each cell was collected. To do this, we must specify both the full model and the reduced model. The full model captures the effects of both \Robject{State} and \Robject{Hours}, while the reduced model only knows about \Robject{Hours}.  
 
 When we plot the expression levels of these genes, we can modify the resulting object returned by \Rfunction{plot\_genes\_jitter} to allow them to have independent y-axis ranges, to better highlight the differences between cell states.
 
@@ -291,11 +291,11 @@ to_be_tested <- row.names(subset(fData(HSMM),
 cds_subset <- HSMM[to_be_tested, pData(HSMM)$Media == "DM" & pData(HSMM)$State != 1]
 
 diff_test_res <- differentialGeneTest(cds_subset,  
-                                      fullModelFormulaStr="expression~State * Time", 
-                                      reducedModelFormulaStr="expression~Time")
+                                      fullModelFormulaStr="expression~State * Hours", 
+                                      reducedModelFormulaStr="expression~Hours")
 diff_test_res <- merge(fData(cds_subset), diff_test_res, by="row.names")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
-plot_genes_jitter(cds_subset, grouping="Time", color_by="State", plot_trend=TRUE) + facet_wrap( ~ gene_label, scales="free_y")
+plot_genes_jitter(cds_subset, grouping="Hours", color_by="State", plot_trend=TRUE) + facet_wrap( ~ gene_label, scales="free_y")
 @ %def 
 
 \section{Clustering genes by pseudotemporal expression pattern}
