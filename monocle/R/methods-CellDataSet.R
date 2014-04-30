@@ -1030,6 +1030,7 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @param max_components the dimensionality of the reduced space
 #' @param use_irlba Whether to use the IRLBA package for ICA reduction.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
@@ -1072,6 +1073,7 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' @param root_cell the name of a cell to use as the root of the ordering tree.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
@@ -1115,7 +1117,7 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-  clusterEvalQ(cl, {require(VGAM);})
+  #clusterEvalQ(cl, {require(VGAM);})
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
