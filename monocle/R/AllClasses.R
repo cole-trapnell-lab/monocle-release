@@ -26,7 +26,9 @@ setClass( "CellDataSet",
                     reducedDimW = "matrix",
                     reducedDimA = "matrix",
                     minSpanningTree="igraph",
-                    cellPairwiseDistances="matrix"),
+                    cellPairwiseDistances="matrix",
+                    expressionFamily="vglmff",
+                    lowerDetectionLimit="numeric"),
           prototype = prototype( new( "VersionedBiobase",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.0.0" ) ))
 )

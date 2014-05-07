@@ -22,6 +22,7 @@ monocle_theme_opts <- function()
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param marker a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -254,10 +255,30 @@ plot_genes_positive_cells <- function(cds_subset, grouping = "State",
 #' cds_subset <- HSMM[my_genes,]
 #' plot_genes_in_pseudotime(cds_subset, color_by="Time")
 #' }
-plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, color_by="State"){
+plot_genes_in_pseudotime <-function(cds_subset, 
+                                    min_expr=NULL, 
+                                    cell_size=0.75, 
+                                    nrow=NULL, 
+                                    ncol=1, 
+                                    panel_order=NULL, 
+                                    color_by="State",
+                                    spline_formula="adjusted_expression ~ VGAM::bs(Pseudotime, df=3)"){
   
-  cds_exprs <- melt(exprs(cds_subset))
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+    integer_expression <- TRUE
+  }else{
+    integer_expression <- FALSE
+  }
   
+  if (integer_expression)
+  {
+    cds_exprs <- melt(round(exprs(cds_subset)))
+  }else{
+    cds_exprs <- melt(exprs(cds_subset))
+  }
+  if (is.null(min_expr)){
+    min_expr <- cds_subset@lowerDetectionLimit
+  }
   colnames(cds_exprs) <- c("gene_id", "Cell", "expression")
   
   cds_pData <- pData(cds_subset)
@@ -266,7 +287,13 @@ plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nr
   cds_exprs <- merge(cds_exprs, cds_fData, by.x="gene_id", by.y="row.names")
   cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
   
-  cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+  if (integer_expression)
+  {
+    cds_exprs$adjusted_expression <- cds_exprs$expression
+  }else{
+    cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+  }
+  
   #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
   
   # TODO: fix labeling to use gene_short_names
@@ -281,19 +308,24 @@ plot_genes_in_pseudotime <-function(cds_subset, min_expr=0.1, cell_size=0.75, nr
     fit_res <- tryCatch({
       #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
       #vg <- vgam(formula = adjusted_fpkm ~ s(pseudo_time), family = cennormal, data = x, extra=Extra, maxit=30, trace = TRUE) 
-      vg <- suppressWarnings(vgam(formula = adjusted_expression ~ VGAM::bs(Pseudotime, df=3), 
-                                  family = tobit(Lower=log10(min_expr)), 
+      vg <- suppressWarnings(vgam(formula = as.formula(spline_formula), 
+                                  family = cds_subset@expressionFamily, 
                                   data = x, maxit=30, checkwz=FALSE))
-      res <- 10^(predict(vg, type="response"))
-      res[res < log10(min_expr)] <- log10(min_expr)
+      if (integer_expression){
+        res <- predict(vg, type="response")
+        res[res < min_expr] <- min_expr
+      }else{
+        res <- 10^(predict(vg, type="response"))
+        res[res < log10(min_expr)] <- log10(min_expr)
+      }
       res
     }
-                        ,error = function(e) {
-                        					print("Error!")
-                                  print(e)
-                        					res <- rep(NA, nrow(x))
-                        					res
-                        			}
+    ,error = function(e) {
+      print("Error!")
+      print(e)
+      res <- rep(NA, nrow(x))
+      res
+    }
     )
     
     expectation = fit_res

@@ -16,7 +16,11 @@
 #' fd <- new("AnnotatedDataFrame", data = gene_annotations_small)
 #' HSMM <- new("CellDataSet", exprs = as.matrix(fpkm_matrix_small), phenoData = pd, featureData = fd)
 #' }
-newCellDataSet <- function( cellData, phenoData = NULL, featureData = NULL )
+newCellDataSet <- function( cellData, 
+                            phenoData = NULL, 
+                            featureData = NULL, 
+                            lowerDetectionLimit = 0.1, 
+                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit)))
 {
   cellData <- as.matrix( cellData )
   
@@ -27,7 +31,10 @@ newCellDataSet <- function( cellData, phenoData = NULL, featureData = NULL )
   
   cds <- new( "CellDataSet",
               assayData = assayDataNew( "environment", exprs=cellData ),
-              phenoData=phenoData, featureData=featureData  )
+              phenoData=phenoData, 
+              featureData=featureData, 
+              lowerDetectionLimit=lowerDetectionLimit,
+              expressionFamily=expressionFamily )
   
   validObject( cds )
   cds
@@ -920,8 +927,12 @@ weight_of_ordering <- function(ordering, dist_matrix)
 #' @examples
 #' data(HSMM)
 #' HSMM <- detectGenes(HSMM, min_expr=0.1)
-detectGenes <- function(cds, min_expr){
+detectGenes <- function(cds, min_expr=NULL){
   FM <- exprs(cds)
+  if (is.null(min_expr))
+  {
+    min_expr <- cds@lowerDetectionLimit
+  }
   FM_genes <- do.call(rbind, apply(FM, 1, 
                                        function(x) {
                                          return(data.frame(
@@ -1098,10 +1109,15 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   cds
 }
 
-fit_model_helper <- function(x, modelFormulaStr, min_expr=0.1, max_expr=Inf){
-  expression <- log10(x)
+fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
+  if (expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+    expression <- round(x)
+  }else{
+    expression <- log10(x)
+  }
+  
   tryCatch({
-    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=tobit(Lower=log10(min_expr), Upper=Inf)))
+    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily))
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
@@ -1144,13 +1160,17 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
 #' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 #' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 fitModel <- function(cds,
-                      modelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
-                      min_expr=0.1, max_expr=Inf, cores=1){
+                     modelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
+                     cores=1){
   if (cores > 1){
-    f<-mcesApply(cds,1,fit_model_helper, cores=cores, modelFormulaStr=modelFormulaStr, min_expr=min_expr, max_expr=max_expr)
+    f<-mcesApply(cds, 1, fit_model_helper, cores=cores, 
+                 modelFormulaStr=modelFormulaStr, 
+                 expressionFamily=cds@expressionFamily)
     f
   }else{
-    f<-esApply(cds,1,fit_model_helper, modelFormulaStr=modelFormulaStr, min_expr=min_expr, max_expr=max_expr)
+    f<-esApply(cds,1,fit_model_helper, 
+               modelFormulaStr=modelFormulaStr, 
+               expressionFamily=cds@expressionFamily)
     f
   }
 }
@@ -1162,7 +1182,15 @@ fitModel <- function(cds,
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @export
 responseMatrix <- function(models){
-  res_list <- lapply(models, function(x) { if (is.null(x)) { NA } else { 10^predict(x, type="response") } } )
+  res_list <- lapply(models, function(x) { 
+    if (is.null(x)) { NA } else { 
+      if (x@family@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+        predict(x, type="response") 
+      }else{
+        10^predict(x, type="response") 
+      }
+    } 
+  } )
   res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE], length)
   
   stopifnot(length(unique(res_list_lengths)) == 1)
@@ -1216,9 +1244,9 @@ compareModels <- function(full_models, reduced_models){
 #' @export
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
-                                 reducedModelFormulaStr="expression~1",min_expr=0.1, max_expr=Inf, cores=1){
-  full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, min_expr = min_expr, cores=cores)
-  reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, min_expr = min_expr, cores=cores)
+                                 reducedModelFormulaStr="expression~1", cores=1){
+  full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, cores=cores)
+  reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, cores=cores)
   test_res <- compareModels(full_model_fits, reduced_model_fits)
   test_res
 }
@@ -1248,6 +1276,56 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(t(x))
   class(clusters)<-"list"
   clusters$exprs<-expr_matrix
   clusters
+}
+
+
+####
+
+selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
+                                  upper_negentropy_bound="75%", 
+                                  expression_lower_thresh=1,
+                                  expression_upper_thresh=100){
+  negentropy_exp <- esApply(cds,1,function(x) { 
+    
+    expression <- log10(x); 
+    expression <- expression[is.finite(expression)]
+    expression <- expression[expression > log10(expression_lower_thresh)]
+    if (length(expression)){
+      expression <- scale(expression)
+      mean(-exp(-(expression^2)/2))^2
+    }else{
+      0
+    }
+  }
+  
+  )
+  
+  
+  means <- esApply(cds,1,function(x) { 
+    expression <- log10(x); 
+    expression[is.finite(expression) == FALSE] <- NA; 
+    expression <- expression[expression > log10(expression_lower_thresh)]
+    if (length(expression)){
+      mean(expression, na.rm=T)
+    }else{
+      NA
+    }
+  }
+  )
+  ordering_df <- data.frame(log_expression = means, negentropy = negentropy_exp)
+  ordering_df <- subset(ordering_df, 
+                        log_expression > log10(expression_lower_thresh) & 
+                          log_expression < log10(expression_upper_thresh) & 
+                          is.na(log_expression) == FALSE)
+  negentropy_fit <- vglm(negentropy~ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
+  ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
+  ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response
+  lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
+  upper_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[upper_negentropy_bound]
+  
+  ordering_genes <- row.names(subset(ordering_df, negentropy_residual >= lower_negentropy_thresh & 
+                                       negentropy_residual <= upper_negentropy_thresh))
+  ordering_genes
 }
 
 
