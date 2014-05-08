@@ -1,0 +1,20 @@
+\name{reducedDimW<-}
+\alias{reducedDimW<-}
+\title{Sets the whitened expression values for each cell prior to independent component analysis. Not intended to be called directly.}
+\usage{
+reducedDimW(cds) <- value
+}
+\arguments{
+  \item{cds}{A CellDataSet object.}
+
+  \item{value}{A whitened expression data matrix}
+}
+\value{
+An updated CellDataSet object
+}
+\description{
+Sets the whitened expression values for each cell prior to
+independent component analysis. Not intended to be called
+directly.
+}
+

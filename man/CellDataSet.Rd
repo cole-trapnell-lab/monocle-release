@@ -1,0 +1,34 @@
+\docType{class}
+\name{CellDataSet}
+\alias{CellDataSet}
+\alias{CellDataSet-class}
+\title{The CellDataSet class}
+\description{
+The main class used by Monocle to hold single cell
+expression data. CellDataSet extends the basic Bioconductor
+ExpressionSet class.
+}
+\details{
+This class is initialized from a matrix of expression
+values Methods that operate on CellDataSet objects
+constitute the basic Monocle workflow.
+}
+\section{Slots}{
+  \describe{ \item{\code{reducedDimS}:}{Matrix of class
+  \code{"numeric"}, containing the source values computed
+  by Independent Components Analysis.}
+  \item{\code{reducedDimW}:}{Matrix of class
+  \code{"numeric"}, containing the whitened expression
+  values computed during Independent Components Analysis.}
+  \item{\code{reducedDimA}:}{Matrix of class
+  \code{"numeric"}, containing the weight values computed
+  by Independent Components Analysis.}
+  \item{\code{minSpanningTree}:}{Object of class
+  \code{"igraph"}, containing the minimum spanning tree
+  used by Monocle to order cells according to progress
+  through a biological process.}
+  \item{\code{cellPairwiseDistances}:}{Matrix of class
+  \code{"numeric"}, containing the pairwise distances
+  between cells in the reduced dimension space.} }
+}
+

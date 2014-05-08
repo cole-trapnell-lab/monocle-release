@@ -1,0 +1,20 @@
+\name{minSpanningTree<-}
+\alias{minSpanningTree<-}
+\title{Sets the minimum spanning tree used by Monocle during cell ordering. Not intended to be called directly.}
+\usage{
+minSpanningTree(cds) <- value
+}
+\arguments{
+  \item{cds}{A CellDataSet object.}
+
+  \item{value}{an igraph object describing the minimum
+  spanning tree.}
+}
+\value{
+An updated CellDataSet object
+}
+\description{
+Sets the minimum spanning tree used by Monocle during cell
+ordering. Not intended to be called directly.
+}
+

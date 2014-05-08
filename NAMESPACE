@@ -1,0 +1,80 @@
+import(Biobase)
+import(HSMMSingleCell)
+
+importClassesFrom(methods, character, matrix, oldClass)
+
+importMethodsFrom(BiocGenerics, as.data.frame, as.vector, cbind,
+                  clusterEvalQ, colnames, do.call, lapply, mapply,
+                  ncol, nrow, parCapply, parRapply, paste, rbind,
+                  rownames, sort, unique, unlist)
+
+importMethodsFrom(VGAM, lrtest, predict)
+
+importFrom(cluster, pam)
+
+importFrom(combinat, permn)
+
+importFrom(fastICA, ica.R.def, ica.R.par)
+
+importFrom(ggplot2, aes, aes_string, element_blank, element_line,
+           element_rect, element_text, facet_wrap, geom_jitter,
+           geom_line, geom_path, geom_point, geom_rect, geom_segment,
+           ggplot, mean_cl_boot, scale_color_hue, scale_fill_gradient,
+           scale_fill_gradient2, scale_x_continuous,
+           scale_y_continuous, scale_y_log10, stat_density2d,
+           stat_summary, qplot, theme, xlab, ylab)
+
+importFrom(grid, unit)
+
+importFrom(igraph, delete.vertices, E, ecount, edge, get.diameter,
+           get.edgelist, get.shortest.paths, graph.adjacency,
+           graph.empty, graph.neighborhood, induced.subgraph,
+           minimum.spanning.tree, subcomponent, V, "V<-", vertex)
+
+importFrom(irlba, irlba)
+
+importFrom(matrixStats, rowSds)
+
+importFrom(methods, is, new, validObject)
+
+importFrom(parallel, makeCluster, stopCluster)
+
+importFrom(plyr, ., arrange, ddply, rename)
+
+importFrom(reshape2, melt)
+
+importFrom(stats, as.dist, as.formula, cor, dist, hclust, p.adjust,
+           rnorm, runif)
+
+importFrom(utils, head, tail)
+
+importFrom(VGAM, tobit, vgam)
+
+exportClasses( "CellDataSet" )
+
+export( 
+   newCellDataSet,
+   detectGenes,
+   reduceDimension,
+   reducedDimS,
+   "reducedDimS<-",
+   reducedDimW,
+   "reducedDimW<-",
+   reducedDimA,
+   "reducedDimA<-",
+   minSpanningTree,
+   "minSpanningTree<-",
+   cellPairwiseDistances,
+   "cellPairwiseDistances<-",
+   setOrderingFilter,
+   orderCells,
+   plot_spanning_tree,
+   plot_genes_in_pseudotime,
+   plot_genes_jitter,
+   plot_clusters,
+   differentialGeneTest,
+   fitModel,
+   compareModels,
+   responseMatrix,
+   clusterGenes
+)
