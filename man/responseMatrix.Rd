@@ -1,0 +1,19 @@
+\name{responseMatrix}
+\alias{responseMatrix}
+\title{Response values}
+\usage{
+responseMatrix(models)
+}
+\arguments{
+  \item{models}{a list of models, e.g. as returned by
+  fitModels()}
+}
+\value{
+a matrix where each row is a vector of response values for
+a particular feature's model, and columns are cells.
+}
+\description{
+Generates a matrix of response values for a set of fitted
+models
+}
+

@@ -1,0 +1,43 @@
+\name{plot_genes_positive_cells}
+\alias{plot_genes_positive_cells}
+\title{Plots the number of cells expressing one or more genes as a barplot}
+\usage{
+plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
+  nrow = NULL, ncol = 1, panel_order = NULL, plot_as_fraction = TRUE)
+}
+\arguments{
+  \item{cds_subset}{CellDataSet for the experiment}
+
+  \item{grouping}{the cell attribute (e.g. the column of
+  pData(cds)) to group cells by on the horizontal axis}
+
+  \item{min_expr}{the minimum (untransformed) expression
+  level to use in plotted the genes.}
+
+  \item{nrow}{the number of rows used when laying out the
+  panels for each gene's expression}
+
+  \item{ncol}{the number of columns used when laying out
+  the panels for each gene's expression}
+
+  \item{panel_order}{the order in which genes should be
+  layed out (left-to-right, top-to-bottom)}
+
+  \item{plot_as_fraction}{whether to show the percent
+  instead of the number of cells expressing each gene}
+}
+\value{
+a ggplot2 plot object
+}
+\description{
+Plots the number of cells expressing one or more genes as a
+barplot
+}
+\examples{
+\dontrun{
+data(HSMM)
+MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1"))),]
+plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
+}
+}
+
