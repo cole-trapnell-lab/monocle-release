@@ -1036,6 +1036,46 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   return(list(X = t(X), K = t(K), W = t(a), A = t(A), S = t(S), svs=svs))
 }
 
+## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
+parametricDispersionFit <- function( means, disps )
+{
+  coefs <- c( .1, 1 )
+  iter <- 0
+  while(TRUE) {
+    residuals <- disps / ( coefs[1] + coefs[2] / means )
+    good <- which( (residuals > 1e-4) & (residuals < 15) )
+    fit <- glm( disps[good] ~ I(1/means[good]),
+                family=Gamma(link="identity"), start=coefs )
+    oldcoefs <- coefs
+    coefs <- coefficients(fit)
+    if( !all( coefs > 0 ) )
+      stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
+    if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+      break
+    iter <- iter + 1
+    if( iter > 10 ) {
+      warning( "Dispersion fit did not converge." )
+      break }
+  }
+  
+  names( coefs ) <- c( "asymptDisp", "extraPois" )
+  ans <- function( q )
+    coefs[1] + coefs[2] / q
+  coefs
+}
+
+## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
+getVarianceStabilizedData <- function( cds, coefs ) {
+  ncounts <- exprs(cds)
+  vst <- function( q )
+    log( (1 + coefs["extraPois"] + 2 * coefs["asymptDisp"] * q +
+            2 * sqrt( coefs["asymptDisp"] * q * ( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) ) )
+         / ( 4 * coefs["asymptDisp"] ) ) / log(2)
+  vst( ncounts )
+  
+}
+
+
 #' Computes a projection of a CellDataSet object into a lower dimensional space
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
@@ -1045,9 +1085,29 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, ...){
+reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, use_vst = FALSE, ...){
   FM <- exprs(cds)
-
+  
+  if (use_vst){
+    cell_mean_var <- adply(exprs(cds), 1, function(cell_exprs) {
+      #cell_exprs <- cell_exprs[cell_exprs > 0]
+      if (length(cell_exprs) > 0){
+        expr_mean <- mean(cell_exprs)
+        expr_var <- var(cell_exprs)
+        expr_disp <- (expr_var - expr_mean) /  expr_mean^2
+      }else{
+        expr_mean <- NA
+        expr_var <- NA
+        expr_disp <- NA
+      }
+      data.frame(expr_mean, expr_var, expr_disp)
+    })
+    
+    coefs <- parametricDispersionFit(cell_mean_var$expr_mean, cell_mean_var$expr_disp)
+    
+    FM <- 2^getVarianceStabilizedData(cds, coefs)
+  }
+  
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     FM <- FM[fData(cds)$use_for_ordering,]
   FM <- FM[rowSds(FM) > 0,]
