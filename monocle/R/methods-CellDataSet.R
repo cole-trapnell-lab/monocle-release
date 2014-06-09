@@ -936,7 +936,7 @@ detectGenes <- function(cds, min_expr=NULL){
   FM_genes <- do.call(rbind, apply(FM, 1, 
                                        function(x) {
                                          return(data.frame(
-                                           num_detected=sum(unlist(as.list(x)) >= min_expr)
+                                           num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
                                          )
                                          )
                                        })
@@ -945,7 +945,7 @@ detectGenes <- function(cds, min_expr=NULL){
   FM_cells <- do.call(rbind, apply(FM, 2, 
                                        function(x) {
                                          return(data.frame(
-                                           num_cells_detected=sum(unlist(as.list(x)) >= min_expr)
+                                           num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
                                          )
                                          )
                                        })
@@ -1045,12 +1045,25 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, ...){
+reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, ...){
   FM <- exprs(cds)
+
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     FM <- FM[fData(cds)$use_for_ordering,]
   FM <- FM[rowSds(FM) > 0,]
-  FM <- log10(FM + pseudo_expr)
+  FM <- FM + pseudo_expr
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
+  {
+    FM <- t(t(FM)/colSums(FM))
+    FM <- log2(FM)
+  }else{
+    FM <- log2(FM)
+  }
+  if (is.null(batch) == FALSE || is.null(covariates) == FALSE)
+  {
+    FM <- removeBatchEffect(FM, batch=batch, covariates=covariates)
+  }
+  
   #FM <- t(scale(t(FM)))
   #FM <- FM[rowSds(FM) > 0,]
   init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
@@ -1121,9 +1134,32 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
-  error = function(e) { NULL }
+  error = function(e) { print (e); NULL }
   )
 }
+
+diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily){
+  if (expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+    expression <- round(x)
+  }else{
+    expression <- log10(x)
+  }
+  
+  test_res <- tryCatch({
+    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
+    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
+    compareModels(list(full_model_fit), list(reduced_model_fit))
+  }, 
+  #warning = function(w) { FM_fit },
+  error = function(e) { 
+    print (e); 
+    NULL
+    #data.frame(status = "FAIL", pval=1.0) 
+  }
+  )
+  test_res
+}
+
 
 mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   parent <- environment(FUN)
@@ -1133,7 +1169,7 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-  #clusterEvalQ(cl, {require(VGAM);})
+  clusterEvalQ(cl, {require(VGAM);})
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
@@ -1224,12 +1260,12 @@ compareModels <- function(full_models, reduced_models){
     if (is.null(x) == FALSE && is.null(y) == FALSE) {
       lrt <- lrtest(x,y) 
       pval=lrt@Body["Pr(>Chisq)"][2,]
-      data.frame(pval=pval)
-    } else { data.frame(pval=1.0) } 
+      data.frame(status = "OK", pval=pval)
+    } else { data.frame(status = "FAIL", pval=1.0) } 
   } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
   
   test_res <- do.call(rbind.data.frame, test_res)
-  test_res$qval <- p.adjust(test_res$pval)
+  test_res$qval <- p.adjust(test_res$pval, method="BH")
   test_res
 }
 
@@ -1245,11 +1281,34 @@ compareModels <- function(full_models, reduced_models){
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
                                  reducedModelFormulaStr="expression~1", cores=1){
-  full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, cores=cores)
-  reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, cores=cores)
-  test_res <- compareModels(full_model_fits, reduced_model_fits)
-  test_res
+  if (cores > 1){
+    diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
+                             fullModelFormulaStr=fullModelFormulaStr,
+                             reducedModelFormulaStr=reducedModelFormulaStr,
+                             expressionFamily=cds@expressionFamily)
+    diff_test_res
+  }else{
+    diff_test_res<-esApply(cds,1,diff_test_helper, 
+               fullModelFormulaStr=fullModelFormulaStr,
+               reducedModelFormulaStr=reducedModelFormulaStr, 
+               expressionFamily=cds@expressionFamily)
+    diff_test_res
+  }
+  
+  diff_test_res <- do.call(rbind.data.frame, diff_test_res)
+  diff_test_res$qval <- p.adjust(diff_test_res$pval, method="BH")
+  diff_test_res
 }
+
+# differentialGeneTest <- function(cds, 
+#                                  fullModelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
+#                                  reducedModelFormulaStr="expression~1", cores=1){
+#   full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, cores=cores)
+#   reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, cores=cores)
+#   test_res <- compareModels(full_model_fits, reduced_model_fits)
+#   test_res
+# }
+
 
 #' Plots the minimum spanning tree on cells.
 #'
@@ -1285,11 +1344,21 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
                                   upper_negentropy_bound="75%", 
                                   expression_lower_thresh=1,
                                   expression_upper_thresh=100){
-  negentropy_exp <- esApply(cds,1,function(x) { 
+  
+  FM <- exprs(cds)
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
+  {
+    expression_lower_thresh <- expression_lower_thresh / colSums(FM)
+    expression_upper_thresh <- expression_upper_thresh / colSums(FM)
+    FM <- t(t(FM)/colSums(FM))
+  }
+
+  negentropy_exp <- apply(FM,1,function(x) { 
     
-    expression <- log10(x); 
+    expression <- x[x > expression_lower_thresh]
+    expression <- log2(x); 
     expression <- expression[is.finite(expression)]
-    expression <- expression[expression > log10(expression_lower_thresh)]
+    
     if (length(expression)){
       expression <- scale(expression)
       mean(-exp(-(expression^2)/2))^2
@@ -1301,10 +1370,11 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
   )
   
   
-  means <- esApply(cds,1,function(x) { 
-    expression <- log10(x); 
+  means <- apply(FM,1,function(x) { 
+    expression <- x[x > expression_lower_thresh]
+    expression <- log2(x); 
     expression[is.finite(expression) == FALSE] <- NA; 
-    expression <- expression[expression > log10(expression_lower_thresh)]
+
     if (length(expression)){
       mean(expression, na.rm=T)
     }else{
@@ -1314,9 +1384,12 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
   )
   ordering_df <- data.frame(log_expression = means, negentropy = negentropy_exp)
   ordering_df <- subset(ordering_df, 
-                        log_expression > log10(expression_lower_thresh) & 
-                          log_expression < log10(expression_upper_thresh) & 
-                          is.na(log_expression) == FALSE)
+                        #log_expression > log10(expression_lower_thresh) & 
+                        #log_expression < log10(expression_upper_thresh) & 
+                          is.na(log_expression) == FALSE &
+                          is.nan(log_expression) == FALSE &
+                          is.na(negentropy) == FALSE &
+                          is.nan(negentropy) == FALSE)
   negentropy_fit <- vglm(negentropy~ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
   ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
   ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response

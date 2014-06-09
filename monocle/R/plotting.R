@@ -21,7 +21,7 @@ monocle_theme_opts <- function()
 #' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
-#' @param marker a gene name or gene id to use for setting the size of each cell in the plot
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @return a ggplot2 plot object
 #' @export
@@ -30,9 +30,9 @@ monocle_theme_opts <- function()
 #' data(HSMM)
 #' plot_spanning_tree(HSMM)
 #' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-#' plot_spanning_tree(HSMM, marker="MYH3")
+#' plot_spanning_tree(HSMM, markers="MYH3")
 #' }
-plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, show_backbone=TRUE, backbone_color="black", marker=NULL, show_cell_names=FALSE){
+plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, show_backbone=TRUE, backbone_color="black", markers=NULL, show_cell_names=FALSE){
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
@@ -69,18 +69,21 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, 
   colnames(diam) <- c("sample_name")
   diam <- arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
 
-  marker_exprs <- NULL
-  if (is.null(marker) == FALSE){
-    marker_fData <- subset(fData(cds), gene_short_name == marker)
-    if (nrow(marker_fData) == 1){
-      marker_exprs <- melt(exprs(cds[row.names(marker_fData),]))
-    }else if (marker %in% row.names(fData(cds))){
-      marker_exprs <- melt(exprs(cds[marker,]))
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- melt(exprs(cds[row.names(markers_fData),]))
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
+      print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$gene_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$gene_label[is.na(markers_exprs$gene_label)] <- markers_exprs$Var1
     }
   }
-  if (is.null(marker_exprs) == FALSE && nrow(marker_exprs) > 0){
-    edge_df <- merge(edge_df, marker_exprs, by.x="sample_name", by.y="Var2")
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) 
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    edge_df <- merge(edge_df, markers_exprs, by.x="sample_name", by.y="Var2")
+    #print (head(edge_df))
+    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~gene_label)
   }else{
     g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
   }
