@@ -73,6 +73,7 @@ export(
    plot_spanning_tree,
    plot_genes_in_pseudotime,
    plot_genes_jitter,
+   plot_genes_positive_cells,
    plot_clusters,
    differentialGeneTest,
    fitModel,

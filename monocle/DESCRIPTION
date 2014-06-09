@@ -1,7 +1,7 @@
 Package: monocle
 Type: Package
 Title: Analysis tools for single-cell expression experiments.
-Version: 0.99.5
+Version: 0.99.6
 Date: 2013-11-19
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <cole@broadinstitute.org>
@@ -10,7 +10,7 @@ License: Artistic-2.0
 Depends: R (>= 2.7.0), HSMMSingleCell, Biobase, ggplot2(>=
         0.9.3.1), splines, VGAM, igraph
 Imports:  BiocGenerics, cluster, combinat, fastICA, grid, igraph(>= 0.7.0), irlba, matrixStats, methods,
-        parallel, plyr, reshape2, stats, utils
+        parallel, plyr, reshape2, stats, utils, limma
 VignetteBuilder: knitr
 Suggests: knitr, Hmisc
 Roxygen: list(wrap = FALSE)
