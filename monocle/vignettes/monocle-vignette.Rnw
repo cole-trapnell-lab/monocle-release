@@ -75,7 +75,7 @@ sample_sheet <- read.delim("cell_sample_sheet.txt")
 gene_ann <- read.delim("gene_annotations.txt")
 pd <- new("AnnotatedDataFrame", data = sample_sheet)
 fd <- new("AnnotatedDataFrame", data = gene_ann)
-HSMM <- new("CellDataSet", exprs = as.matrix(fpkm_matrix), phenoData = pd, featureData = fd)
+HSMM <- newCellDataSet(as.matrix(fpkm_matrix), phenoData = pd, featureData = fd)
 @ %def
 
 It is often convenient to know how many express a particular gene, or how many genes are expressed by a given cell. Monocle provides a simple function to compute those statistics: 
