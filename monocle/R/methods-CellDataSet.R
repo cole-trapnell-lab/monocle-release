@@ -1005,6 +1005,8 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
     message("Whitening")
   V <- X %*% t(X)/n
   
+  if (verbose) 
+    message("Finding SVD")
   if (use_irlba)
   {
     s <- irlba(V, min(n,p), min(n,p))  
@@ -1020,6 +1022,9 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   K <- D %*% t(s$u)
   K <- matrix(K[1:n.comp, ], n.comp, p)
   X1 <- K %*% X
+  
+  if (verbose) 
+    message("Running ICA")
   if (alg.typ == "deflation") {
     a <- ica.R.def(X1, n.comp, tol = tol, fun = fun, 
                    alpha = alpha, maxit = maxit, verbose = verbose, 
@@ -1075,6 +1080,13 @@ getVarianceStabilizedData <- function( cds, coefs ) {
   
 }
 
+estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
+{
+  loggeomeans <- rowMeans( log(counts) )
+  apply( counts, 2, function(cnts)
+    exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
+}
+
 
 #' Computes a projection of a CellDataSet object into a lower dimensional space
 #' @param cds the CellDataSet upon which to perform this operation
@@ -1088,8 +1100,33 @@ getVarianceStabilizedData <- function( cds, coefs ) {
 reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, use_vst = FALSE, ...){
   FM <- exprs(cds)
   
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
+  {
+    size_factors <- estimateSizeFactorsForMatrix(round(FM))
+    #print (size_factors)
+    FM <- t(t(FM) / size_factors)
+    #FM <- log2(FM)
+  }
+  
+  if (is.null(fData(cds)$use_for_ordering) == FALSE)
+    FM <- FM[fData(cds)$use_for_ordering,]
+  
+  
+  FM <- FM + pseudo_expr
+  FM <- FM[rowSds(FM) > 0,]
+  
+  if (is.null(batch) == FALSE || is.null(covariates) == FALSE)
+  {
+    message("Removing batch effects")
+      FM <- log2(FM)
+      FM <- removeBatchEffect(FM, batch=batch, covariates=covariates)
+      FM <- 2^FM
+  }
+  
   if (use_vst){
-    cell_mean_var <- adply(exprs(cds), 1, function(cell_exprs) {
+    message("Running variance-stabilizing transformation")
+    #FM <- t(t(FM)/colSums(FM))
+    cell_mean_var <- adply(FM, 1, function(cell_exprs) {
       #cell_exprs <- cell_exprs[cell_exprs > 0]
       if (length(cell_exprs) > 0){
         expr_mean <- mean(cell_exprs)
@@ -1105,24 +1142,14 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
     
     coefs <- parametricDispersionFit(cell_mean_var$expr_mean, cell_mean_var$expr_disp)
     
-    FM <- 2^getVarianceStabilizedData(cds, coefs)
-  }
-  
-  if (is.null(fData(cds)$use_for_ordering) == FALSE)
-    FM <- FM[fData(cds)$use_for_ordering,]
-  FM <- FM[rowSds(FM) > 0,]
-  FM <- FM + pseudo_expr
-  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
-  {
-    FM <- t(t(FM)/colSums(FM))
-    FM <- log2(FM)
+    corrected_FM <- getVarianceStabilizedData(cds, coefs)
+    FM <- corrected_FM[row.names(FM), colnames(FM)]
+    #
   }else{
     FM <- log2(FM)
   }
-  if (is.null(batch) == FALSE || is.null(covariates) == FALSE)
-  {
-    FM <- removeBatchEffect(FM, batch=batch, covariates=covariates)
-  }
+  
+  message("Reducing to independent components")
   
   #FM <- t(scale(t(FM)))
   #FM <- FM[rowSds(FM) > 0,]
@@ -1160,11 +1187,47 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
 #' @param root_cell the name of a cell to use as the root of the ordering tree.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
+orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, bootstrap_fraction=1.0, bootstrap_samples=1){
   
   adjusted_S <- t(cds@reducedDimS)
-  dp <- as.matrix(dist(adjusted_S))
-  cellPairwiseDistances(cds) <- dp
+  
+  bootstrap_fraction <- min(1.0, bootstrap_fraction)
+  
+  if (bootstrap_fraction < 1.0){
+    dp <- matrix(0, nrow(adjusted_S), nrow(adjusted_S))
+    row.names(dp) <- row.names(adjusted_S)
+    colnames(dp) <- row.names(adjusted_S)
+    
+    for (i in seq(1:bootstrap_samples)){
+      sampled_cells <- adjusted_S[sample(nrow(adjusted_S), nrow(adjusted_S) * bootstrap_fraction),]
+      dp_base <- matrix(Inf, nrow(adjusted_S), nrow(adjusted_S))
+      row.names(dp_base) <- row.names(adjusted_S)
+      colnames(dp_base) <- row.names(adjusted_S)
+      
+      dp_i <- as.matrix(dist(sampled_cells))
+      dp_base[row.names(dp_i), colnames(dp_i)] <- dp_i
+      
+      gp <- graph.adjacency(dp_base, mode="undirected", weighted=TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      #print (get.adjacency(dp_mst))
+      dp <- dp + as.matrix(get.adjacency(dp_mst))
+      
+      #print ("**************")
+    }
+    
+    dp <- dp / bootstrap_samples
+    dp <- -log2(dp)
+    #dp[dp == 1.0] <- Inf
+    
+    #dp[is.nan(dp)] <- 1.0
+    print (dp)
+  }else{
+    dp <- as.matrix(dist(adjusted_S))
+  }
+  #print (sum(rowSums(dp)))
+  #dp <- as.matrix(dist(dp))
+  #dp <- as.matrix(dist(adjusted_S))
+  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
   # Build an MST of the cells in ICA space.
   gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
   dp_mst <- minimum.spanning.tree(gp)
@@ -1174,7 +1237,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
   #stopifnot(length(V(res$subtree)[type == "leaf"]) == nrow(pData(cds)))
   
-  cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, dp, num_paths, reverse)
+  cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, reverse)
   row.names(cc_ordering) <- cc_ordering$sample_name
   
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
@@ -1456,8 +1519,9 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
   lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
   upper_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[upper_negentropy_bound]
   
-  ordering_genes <- row.names(subset(ordering_df, negentropy_residual >= lower_negentropy_thresh & 
-                                       negentropy_residual <= upper_negentropy_thresh))
+  ordering_genes <- row.names(subset(ordering_df, 
+                                     negentropy_residual >= lower_negentropy_thresh & 
+                                     negentropy_residual <= upper_negentropy_thresh))
   ordering_genes
 }
 

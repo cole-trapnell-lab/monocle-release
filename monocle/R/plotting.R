@@ -32,7 +32,16 @@ monocle_theme_opts <- function()
 #' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 #' plot_spanning_tree(HSMM, markers="MYH3")
 #' }
-plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, show_backbone=TRUE, backbone_color="black", markers=NULL, show_cell_names=FALSE){
+plot_spanning_tree <- function(cds, 
+                               x=1, 
+                               y=2, 
+                               color_by="State", 
+                               show_tree=TRUE, 
+                               show_backbone=TRUE, 
+                               backbone_color="black", 
+                               markers=NULL, 
+                               show_cell_names=FALSE, 
+                               cell_name_size=1){
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
@@ -75,7 +84,7 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, 
     if (nrow(markers_fData) >= 1){
       markers_exprs <- melt(exprs(cds[row.names(markers_fData),]))
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
-      print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
       markers_exprs$gene_label <- as.character(markers_exprs$gene_short_name)
       markers_exprs$gene_label[is.na(markers_exprs$gene_label)] <- markers_exprs$Var1
     }
@@ -93,12 +102,13 @@ plot_spanning_tree <- function(cds, x=1, y=2, color_by="State", show_tree=TRUE, 
   
   g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
   if (show_backbone){
+    #print (diam)
     g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam, na.rm=TRUE) + 
     geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
-    g <- g +geom_text(aes(label=sample_name, size=1))
+    g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
