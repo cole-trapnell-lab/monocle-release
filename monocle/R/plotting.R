@@ -275,9 +275,12 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     ncol=1, 
                                     panel_order=NULL, 
                                     color_by="State",
-                                    spline_formula="adjusted_expression ~ VGAM::bs(Pseudotime, df=3)"){
+                                    spline_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)"){
   
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+  if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
+                                                 "negbinomial", 
+                                                 "poissonff", 
+                                                 "quasipoissonff")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE

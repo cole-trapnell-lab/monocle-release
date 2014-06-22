@@ -20,7 +20,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit)))
+                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
 {
   cellData <- as.matrix( cellData )
   
@@ -1100,7 +1100,7 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, use_vst = FALSE, ...){
   FM <- exprs(cds)
   
-  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
+  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
   {
     size_factors <- estimateSizeFactorsForMatrix(round(FM))
     #print (size_factors)
@@ -1246,7 +1246,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, bootstra
 }
 
 fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
-  if (expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else{
     expression <- log10(x)
@@ -1262,7 +1262,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
 }
 
 diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily){
-  if (expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else{
     expression <- log10(x)
@@ -1319,7 +1319,7 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
 #' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 #' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 fitModel <- function(cds,
-                     modelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
+                     modelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
                      cores=1){
   if (cores > 1){
     f<-mcesApply(cds, 1, fit_model_helper, cores=cores, 
@@ -1343,7 +1343,7 @@ fitModel <- function(cds,
 responseMatrix <- function(models){
   res_list <- lapply(models, function(x) { 
     if (is.null(x)) { NA } else { 
-      if (x@family@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff")){
+      if (x@family@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
         predict(x, type="response") 
       }else{
         10^predict(x, type="response") 
@@ -1402,7 +1402,7 @@ compareModels <- function(full_models, reduced_models){
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 differentialGeneTest <- function(cds, 
-                                 fullModelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
+                                 fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
                                  reducedModelFormulaStr="expression~1", cores=1){
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
@@ -1424,7 +1424,7 @@ differentialGeneTest <- function(cds,
 }
 
 # differentialGeneTest <- function(cds, 
-#                                  fullModelFormulaStr="expression~VGAM::bs(Pseudotime, df=3)",
+#                                  fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
 #                                  reducedModelFormulaStr="expression~1", cores=1){
 #   full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, cores=cores)
 #   reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, cores=cores)
@@ -1443,7 +1443,7 @@ differentialGeneTest <- function(cds,
 #' @export
 #' @examples
 #' \dontrun{
-#' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~sm.ns(Pseudotime)")
 #' expression_curve_matrix <- responseMatrix(full_model_fits)
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
@@ -1469,7 +1469,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
                                   expression_upper_thresh=100){
   
   FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily %in% c("negbinomial", "poissonff", "quasipoissonff"))
+  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
