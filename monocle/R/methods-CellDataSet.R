@@ -4,6 +4,8 @@
 #' @param cellData expression data matrix for an experiment
 #' @param phenoData data frame containing attributes of individual cells
 #' @param featureData data frame containing attributes of features (e.g. genes)
+#' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
+#' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
 #' @export
 #' @examples
@@ -1093,11 +1095,13 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 #' @param max_components the dimensionality of the reduced space
 #' @param use_irlba Whether to use the IRLBA package for ICA reduction.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
+#' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, use_vst = FALSE, ...){
+reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL,  ...){
   FM <- exprs(cds)
   
   if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
@@ -1123,31 +1127,33 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
       FM <- 2^FM
   }
   
-  if (use_vst){
-    message("Running variance-stabilizing transformation")
-    #FM <- t(t(FM)/colSums(FM))
-    cell_mean_var <- adply(FM, 1, function(cell_exprs) {
-      #cell_exprs <- cell_exprs[cell_exprs > 0]
-      if (length(cell_exprs) > 0){
-        expr_mean <- mean(cell_exprs)
-        expr_var <- var(cell_exprs)
-        expr_disp <- (expr_var - expr_mean) /  expr_mean^2
-      }else{
-        expr_mean <- NA
-        expr_var <- NA
-        expr_disp <- NA
-      }
-      data.frame(expr_mean, expr_var, expr_disp)
-    })
-    
-    coefs <- parametricDispersionFit(cell_mean_var$expr_mean, cell_mean_var$expr_disp)
-    
-    corrected_FM <- getVarianceStabilizedData(cds, coefs)
-    FM <- corrected_FM[row.names(FM), colnames(FM)]
-    #
-  }else{
-    FM <- log2(FM)
-  }
+#   if (use_vst){
+#     message("Running variance-stabilizing transformation")
+#     #FM <- t(t(FM)/colSums(FM))
+#     cell_mean_var <- adply(FM, 1, function(cell_exprs) {
+#       #cell_exprs <- cell_exprs[cell_exprs > 0]
+#       if (length(cell_exprs) > 0){
+#         expr_mean <- mean(cell_exprs)
+#         expr_var <- var(cell_exprs)
+#         expr_disp <- (expr_var - expr_mean) /  expr_mean^2
+#       }else{
+#         expr_mean <- NA
+#         expr_var <- NA
+#         expr_disp <- NA
+#       }
+#       data.frame(expr_mean, expr_var, expr_disp)
+#     })
+#     
+#     coefs <- parametricDispersionFit(cell_mean_var$expr_mean, cell_mean_var$expr_disp)
+#     
+#     corrected_FM <- getVarianceStabilizedData(cds, coefs)
+#     FM <- corrected_FM[row.names(FM), colnames(FM)]
+#     #
+#   }else{
+#     FM <- log2(FM)
+#   }
+
+  FM <- log2(FM)
   
   message("Reducing to independent components")
   
@@ -1187,43 +1193,12 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
 #' @param root_cell the name of a cell to use as the root of the ordering tree.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, bootstrap_fraction=1.0, bootstrap_samples=1){
+orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   
   adjusted_S <- t(cds@reducedDimS)
   
-  bootstrap_fraction <- min(1.0, bootstrap_fraction)
+  dp <- as.matrix(dist(adjusted_S))
   
-  if (bootstrap_fraction < 1.0){
-    dp <- matrix(0, nrow(adjusted_S), nrow(adjusted_S))
-    row.names(dp) <- row.names(adjusted_S)
-    colnames(dp) <- row.names(adjusted_S)
-    
-    for (i in seq(1:bootstrap_samples)){
-      sampled_cells <- adjusted_S[sample(nrow(adjusted_S), nrow(adjusted_S) * bootstrap_fraction),]
-      dp_base <- matrix(Inf, nrow(adjusted_S), nrow(adjusted_S))
-      row.names(dp_base) <- row.names(adjusted_S)
-      colnames(dp_base) <- row.names(adjusted_S)
-      
-      dp_i <- as.matrix(dist(sampled_cells))
-      dp_base[row.names(dp_i), colnames(dp_i)] <- dp_i
-      
-      gp <- graph.adjacency(dp_base, mode="undirected", weighted=TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
-      #print (get.adjacency(dp_mst))
-      dp <- dp + as.matrix(get.adjacency(dp_mst))
-      
-      #print ("**************")
-    }
-    
-    dp <- dp / bootstrap_samples
-    dp <- -log2(dp)
-    #dp[dp == 1.0] <- Inf
-    
-    #dp[is.nan(dp)] <- 1.0
-    print (dp)
-  }else{
-    dp <- as.matrix(dist(adjusted_S))
-  }
   #print (sum(rowSums(dp)))
   #dp <- as.matrix(dist(dp))
   #dp <- as.matrix(dist(adjusted_S))
@@ -1306,8 +1281,6 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
 #' Fits a model for each gene in a CellDataSet object.
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
-#' @param min_expr the minimum expression value considered reliably measured in the experiment.
-#' @param max_expr the maxmium expression value considered reliably measured in the experiment
 #' @param cores the number of processor cores to be used during fitting.
 #' @return a list of VGAM model objects
 #' @export
@@ -1396,8 +1369,6 @@ compareModels <- function(full_models, reduced_models){
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param min_expr the minimum expression value considered reliably measured in the experiment
-#' @param max_expr the maximum expression value considered reliably measured in the experiment
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
@@ -1462,11 +1433,23 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(t(x))
 
 
 ####
-
-selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
-                                  upper_negentropy_bound="75%", 
-                                  expression_lower_thresh=1,
-                                  expression_upper_thresh=100){
+#' Filter genes with extremely high or low negentropy
+#'
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param lower_negentropy_bound the centile below which to exclude to genes 
+#' @param upper_negentropy_bound the centile above which to exclude to genes
+#' @param expression_lower_thresh the expression level below which to exclude genes used to determine negentropy
+#' @param expression_upper_thresh the expression level above which to exclude genes used to determine negentropy
+#' @return a vector of gene names
+#' @export
+#' @examples
+#' \dontrun{
+#' reasonableNegentropy <- selectNegentropyGenes(HSMM, "07%", "95%", 1, 100)
+#' }
+selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
+                                  upper_negentropy_bound="99%", 
+                                  expression_lower_thresh=0.1,
+                                  expression_upper_thresh=Inf){
   
   FM <- exprs(cds)
   if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
@@ -1506,9 +1489,12 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="25%",
   }
   )
   ordering_df <- data.frame(log_expression = means, negentropy = negentropy_exp)
+  
+  negentropy <- NULL
+  log_express <- NULL
+  negentropy_residual <- NULL
+  
   ordering_df <- subset(ordering_df, 
-                        #log_expression > log10(expression_lower_thresh) & 
-                        #log_expression < log10(expression_upper_thresh) & 
                           is.na(log_expression) == FALSE &
                           is.nan(log_expression) == FALSE &
                           is.na(negentropy) == FALSE &

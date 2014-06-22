@@ -14,6 +14,8 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #'    \item{\code{reducedDimA}:}{Matrix of class \code{"numeric"}, containing the weight values computed by Independent Components Analysis.}
 #'    \item{\code{minSpanningTree}:}{Object of class \code{"igraph"}, containing the minimum spanning tree used by Monocle to order cells according to progress through a biological process.}
 #'    \item{\code{cellPairwiseDistances}:}{Matrix of class \code{"numeric"}, containing the pairwise distances between cells in the reduced dimension space.}
+#'    \item{\code{expressionFamily}:}{Object of class \code{"vglmff"}, specifying the VGAM family function used for expression responses.}
+#'    \item{\code{lowerDetectionLimit}:}{A \code{"numeric"} value specifying the minimum expression level considered to be true expression.}
 #'  }
 #'
 #' @name CellDataSet 

@@ -18,6 +18,8 @@ importFrom(combinat, permn)
 
 importFrom(fastICA, ica.R.def, ica.R.par)
 
+importFrom(limma, removeBatchEffect)
+
 importFrom(ggplot2, aes, aes_string, element_blank, element_line,
            element_rect, element_text, facet_wrap, geom_jitter,
            geom_line, geom_path, geom_point, geom_rect, geom_segment,

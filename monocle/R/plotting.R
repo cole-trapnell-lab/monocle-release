@@ -23,6 +23,7 @@ monocle_theme_opts <- function()
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_name_size the size of cell name labels
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -258,7 +259,8 @@ plot_genes_positive_cells <- function(cds_subset, grouping = "State",
 #' @param nrow the number of rows used when laying out the panels for each gene's expression
 #' @param ncol the number of columns used when laying out the panels for each gene's expression
 #' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
-#' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell  
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell 
+#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime 
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -275,7 +277,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     ncol=1, 
                                     panel_order=NULL, 
                                     color_by="State",
-                                    spline_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)"){
+                                    trend_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)"){
   
   if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
                                                  "negbinomial", 
@@ -324,7 +326,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
     fit_res <- tryCatch({
       #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
       #vg <- vgam(formula = adjusted_fpkm ~ s(pseudo_time), family = cennormal, data = x, extra=Extra, maxit=30, trace = TRUE) 
-      vg <- suppressWarnings(vgam(formula = as.formula(spline_formula), 
+      vg <- suppressWarnings(vgam(formula = as.formula(trend_formula), 
                                   family = cds_subset@expressionFamily, 
                                   data = x, maxit=30, checkwz=FALSE))
       if (integer_expression){
