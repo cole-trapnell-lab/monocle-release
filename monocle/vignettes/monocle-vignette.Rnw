@@ -68,7 +68,7 @@ The expression value matrix \emph{must} have the same number of columns as the \
 
 You can create a new \Rclass{CellDataSet} object as follows:  
 
-<<set_up_cds, eval=FALSE>>=
+<<load_data_tables, eval=FALSE>>=
 #not run
 fpkm_matrix <- read.table("fpkm_matrix.txt")
 sample_sheet <- read.delim("cell_sample_sheet.txt")
@@ -191,7 +191,7 @@ HSMM <- reduceDimension(HSMM, use_irlba=FALSE)
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know there are contaminating fibroblasts in the culture, so by setting \Robject{num\_paths}$=2$, the fibroblasts wind up on their own trajectory in response to the serum switch, instead of getting mixed in with the myoblasts.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on.
 <<order_cells, eval=TRUE>>=
-HSMM <- orderCells(HSMM, num_paths=2, reverse=FALSE)
+HSMM <- orderCells(HSMM, num_paths=2, reverse=TRUE)
 @ %def
 
 <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
@@ -236,7 +236,7 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 Note that all the genes are significantly differentially expressed as a function of \Robject{State} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in \Robject{State} 2) versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
 <<jitter_plot_diff_res, eval=TRUE, fig.width = 8, fig.height = 2.5, fig.align="center">>=
-plot_genes_jitter(cds_subset, color_by="Hours", nrow=1, ncol=NULL, plot_trend=TRUE)
+plot_genes_jitter(cds_subset, color_by="Media", nrow=1, ncol=NULL, plot_trend=TRUE)
 @ %def
 
 Note that we could also simply compute summary statistics such as mean or median expression level on a per-\Robject{State} basis to see this, which might be handy if we are looking at more than a handful of genes.
@@ -262,10 +262,10 @@ cds_subset <- HSMM[to_be_tested, pData(HSMM)$State != 3]
 
 Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between \Robject{State}.  Monocle assigns each cell a ``pseudotime'' value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the \Rpackage{VGAM} package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
 <<piecewise_test_pt, eval=TRUE>>=
-diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="expression~VGAM::bs(Pseudotime)")
+diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="expression~sm.ns(Pseudotime)")
 @ %def
 
-The \Rfunction{VGAM::bs} function states that Monocle should fit a B-spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
+The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
 
 Once again, let's add in the gene annotations so it's easy to see which genes are significant.
 <<all_in_one_test_pt, eval=TRUE>>=
@@ -305,7 +305,7 @@ A common question that arises when studying time-series gene expression studies 
 We start by using the model fitting function that's used during differential expression testing.  This fitting procedure works gene by gene and can take a while, so we'll just work with 100 randomly chosen genes to keep the vignette small and fast.
 
 <<fit_full_model_for_cluster, eval=TRUE>>=
-full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~sm.ns(Pseudotime, df=3)")
 @ %def
 
 The \Robject{full\_model\_fits} list contains a model for each gene that we've chosen.  We can generate a matrix of values where each row holds the predicted exression values for a gene over each cell, which correspond to the columns. Monocle provides the \Rfunction{responseMatrix} function to make this easy.
