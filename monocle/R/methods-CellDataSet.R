@@ -1223,6 +1223,8 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
 fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
   if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
+  }else if (expressionFamily@vfamily %in% c("gaussianff")){
+    expression <- x
   }else{
     expression <- log10(x)
   }
@@ -1239,6 +1241,8 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
 diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily){
   if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
+  }else if (expressionFamily@vfamily %in% c("gaussianff")){
+    expression <- x
   }else{
     expression <- log10(x)
   }
@@ -1318,6 +1322,8 @@ responseMatrix <- function(models){
     if (is.null(x)) { NA } else { 
       if (x@family@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
         predict(x, type="response") 
+      }else if (x@family@vfamily %in% c("gaussianff")){
+        predict(x, type="response")
       }else{
         10^predict(x, type="response") 
       }
@@ -1499,7 +1505,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                           is.nan(log_expression) == FALSE &
                           is.na(negentropy) == FALSE &
                           is.nan(negentropy) == FALSE)
-  negentropy_fit <- vglm(negentropy~ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
+  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
   ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
   ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response
   lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
