@@ -18,10 +18,6 @@
     </url>
     
     <url>
-        <loc>//localhost:4000/news/</loc>
-    </url>
-    
-    <url>
         <loc>//localhost:4000/getting-started/</loc>
     </url>
     

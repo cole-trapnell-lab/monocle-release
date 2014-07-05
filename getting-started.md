@@ -7,288 +7,129 @@ modified: 2013-09-11
 tags: [monocle, install, setup]
 ---
 
-General notes and suggestions for customizing **So Simple Theme**.
+Getting started
 
 * Table of Contents
 {:toc}
 
-## Basic Setup for a new Jekyll site
 
-1. [Install Bundler](http://bundler.io) `gem install bundler` and then install [Jekyll](http://jekyllrb.com) and all dependencies `bundle install`.
-2. Fork the [So Simple Theme repo](https://github.com/mmistakes/so-simple-theme/fork).
-3. Clone the repo you just forked and rename it.
-4. Edit `_config.yml` to personalize your site.
-5. Check out the sample posts in `_posts` to see examples for pulling in large feature images, assigning categories and tags, and other YAML data.
-6. Read the documentation below for further customization pointers and documentation.
+##Install quick-start
 
-<div markdown="0"><a href="https://github.com/mmistakes/so-simple-theme/archive/master.zip" class="btn">Download the Theme</a></div>
+Required software
+Monocle runs in the R statistical computing environment. You will need R version 3.0 or higher. You will need to install the following packages through CRAN:
 
-**Pro-tip:** Delete the `gh-pages` branch after cloning and start fresh by branching off `master`. There is a bunch of garbage in `gh-pages` used for the theme's demo site that I'm guessing you don't want on your site.
-{: .notice}
+- VGAM
+- irlba
+- matrixStats
+- igraph (version >= 0.7.0)
+- combinat
+- fastICA
+- grid
+- ggplot2
+- reshape2
+- plyr
+- parallel
+- methods
 
----
+You can install these packages by starting an R session and typing: 
 
-## Setup for an Existing Jekyll site
-
-1. Clone the following folders: `_includes`, `_layouts`, `assets`, and `images`.
-2. Clone the following files and personalize content as need: `about.md`, `articles.html`, `index.html`, `tags.html`, `feed.xml`, and `sitemap.xml`.
-3. Set the following variables in your `config.yml` file:
-
-{% highlight yaml %}
-title:            Site Title
-description:      Site description for the metas.
-logo:             site-logo.png
-disqus_shortname: shortname
-search:           true
-# Your site's domain goes here. When working locally use localhost server leave blank
-# PS. If you set this wrong stylesheets and scripts won't load and most links will break.
-# PPS. If you leave it blank for local testing home links won't work, they'll be fine for live domains though.
-url:              http://localhost:4000
-
-# Owner/author information
-owner:
-  name:           Your Name
-  avatar:         your-photo.jpg
-  email:          your@email.com
-  # Social networking links used in footer. Update and remove as you like.
-  twitter:
-  facebook:
-  github:
-  linkedin:
-  instagram:
-  tumblr:
-  # For Google Authorship https://plus.google.com/authorship
-  google_plus:    "http://plus.google.com/123123123123132123"
-
-# Analytics and webmaster tools stuff goes here
-google_analytics:
-google_verify:
-# https://ssl.bing.com/webmaster/configure/verify/ownership Option 2 content= goes here
-bing_verify:
-
-# Links to include in top navigation
-# For external links add external: true
-links:
-  - title: About
-    url: /about/
-  - title: Articles
-    url: /articles/
-  - title: Google
-    url: http://google.com
-    external: true
-
-# http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-timezone:    America/New_York
-pygments:    true
-markdown:    kramdown
-
-# https://github.com/mojombo/jekyll/wiki/Permalinks
-permalink:   /:categories/:title/
+{% highlight R %}
+> install.packages(c("VGAM", "irlba", "matrixStats", "igraph", 
+"combinat", "fastICA", "grid", "ggplot2", 
+"reshape2", "plyr", "parallel", "methods"))
 {% endhighlight %}
 
----
+You will also need to install Bioconductor: 
 
-## Folder Structure
+{% highlight R %}
+> source("http://bioconductor.org/biocLite.R") 
+> biocLite()
+{% endhighlight %}
+
+###Installing the Myoblast example data
+Monocle includes a detailed documentation vignette and snippets of example code that depend on the skeletal muscle myoblast data described in Trapnell and Cacchiarelli et al. You'll need to install the data package containing it before installing Monocle. To do so, type:
 
 {% highlight bash %}
-so-simple-theme/
-├── _includes/
-|    ├── browser-upgrade.html  #prompt to upgrade browser on < IE8
-|    ├── footer.html  #site footer
-|    ├── head.html  #site head
-|    ├── navigation.html #site navigation and masthead
-|    └── scripts.html  #jQuery, plugins, GA, etc.
-├── _layouts/
-|    ├── page.html  #page layout
-|    └── post.html  #post layout
-├── _posts/
-├── assets/
-|    ├── css/  #preprocessed less styles
-|    ├── fonts/  #icon webfonts
-|    ├── js/
-|    |   ├── _main.js  #main JavaScript file, plugin settings, etc
-|    |   ├── plugins  #jQuery plugins
-|    |   └── vendor/  #jQuery and Modernizr
-|    └── less/
-├── images  #images for posts and pages
-├── _config.yml  #Jekyll site options
-├── about.md  #about page
-├── articles.html  #lists all posts from latest to oldest
-├── index.html  #homepage. lists 10 latest posts
-├── tags.html  #lists all posts sorted by tag
-└── sitemap.xml  #autogenerated sitemap for search engines
+$ R CMD INSTALL HSMMSingleCell_0.99.0.tar.gz 
 {% endhighlight %}
 
----
-
-## Customization
-
-### _config.yml
-
-Most of the variables found here are used in the .html files found in `_includes` if you need to add or remove anything. A good place to start would be to change the title, tagline, description, and url of your site. Links are absolute and prefixed with `{{ "{{ site.url " }}}}` in the various `_includes` and `_layouts`, so remember to properly set `url`[^1] and use `http://localhost:4000` when developing locally or else the theme's stylesheet and scripts won't load.
-#### Disqus Comments
-
-Create a [Disqus](http://disqus.com) account and change `disqus_shortname` in `_config.yml` to the Disqus *shortname* you just setup. To enable commenting on a post, add the following to its front matter:
-
-{% highlight yaml %}
-comments: true
-{% endhighlight %}
-
-#### Owner/Author Information
-
-Change your name, and avatar photo (200x200 pixels or larger), email, and social networking urls. If you want to link to an external image on Gravatar or something similiar you'll need to edit the path in `head.html` since it assumes it is located in `/images`.
-
-Including a link to your Google+ profile has the added benefit of displaying [Google Authorship](https://plus.google.com/authorship) in Google search results if you've went ahead and applied for it.
-
-#### Google Analytics and Webmaster Tools
-
-Your Google Analytics ID goes here along with meta tags for [Google Webmaster Tools](http://support.google.com/webmasters/bin/answer.py?hl=en&answer=35179) and [Bing Webmaster Tools](https://ssl.bing.com/webmaster/configure/verify/ownershi) site verification.
-
-#### Top Navigation Links
-
-Edit page/post titles and URLs to include in the site's navigation. For external links add `external: true`.
-
-{% highlight yaml %}
-# sample top navigation links
-links:
-  - title: About Page
-    url: /about/
-  - title: Articles
-    url: /articles/
-  - title: Other Page
-    url: /other-page/
-  - title: External Link
-    url: http://mademistakes.com
-    external: true 
-{% endhighlight %}
-
-#### Simple Search
-
-Adding the following to `_config.yml` enables search using Christian Fei's [Simple Jekyll jQuery plugin](https://github.com/christian-fei/Simple-Jekyll-Search). Clicking search will trigger a fullscreen overlay that searches post titles' using an autogenerated JSON file.
-
-{% highlight yaml %}
-search: true
-{% endhighlight %}
-
-<figure>
-  <img src="{{ site.url }}/images/simple-search-screenshot.jpg" alt="search screenshot">
-  <figcaption>Clicking search triggers an overlay that allows you to search by post title.</figcaption>
-</figure>
-
-#### Other Stuff
-
-The rest is just your average Jekyll config settings. Nothing too crazy here...
-
-### _includes
-
-For the most part you can leave these as is since the author/owner details are pulled from `_config.yml`. That said you'll probably want to customize the copyright stuff in `footer.html` to your liking.
-
-### Adding Posts and Pages
-
-There are two main content layouts: `post.html` (for posts) and `page.html` (for pages). Both have support for large **feature images** that span the full-width of the screen, and both are meant for text heavy blog posts (or articles).
-
-There are two rake tasks that can be used to create a new post or page with all YAML Front Matter. Using either `rake new_post` or `rake new_page` will prompt you for a title and tags to classify them. Example below:
+###Installing Monocle from source
+To install the Monocle package, download the source tarball, change to the directory in which you saved it, and type
 
 {% highlight bash %}
-rake new_post
-
-Enter a title for your post: My Awesome Post
-Enter tags to classify your post (comma separated): web development, code
-Creating new post: _posts/2014-02-10-my-awesome-post.md
+$ R CMD INSTALL monocle_0.99.0.tar.gz 
 {% endhighlight %}
 
-There are a few configuration variables that can be changed in `Rakefile.rb`. By default posts and pages will be created in MarkDown using the `.md` extension.
+###Testing the installation
+To ensure that Monocle was installed correctly, start a new R session and type:
 
-#### Feature Images
-
-A good rule of thumb is to keep feature images nice and wide so you don't push the body text too far down. An image cropped around around 1024 x 256 pixels will keep file size down with an acceptable resolution for most devices. If you want to serve these images responsively I'd suggest looking at [Picturefill](https://github.com/scottjehl/picturefill) or [Adaptive Images](http://adaptive-images.com/).
-
-The two layouts make the assumption that the feature images live in the *images* folder. To add a feature image to a post or page just include the filename in the front matter like so. 
-
-{% highlight yaml %}
-image:
-  feature: feature-image-filename.jpg
-  thumb: thumbnail-image.jpg #keep it square 200x200 px is good
+{% highlight R %}
+> library(monocle)
 {% endhighlight %}
 
-If you want to apply attribution to a feature image use the following YAML front matter on posts or pages. Image credits appear directly below the feature image with a link back to the original source.
+##Computing expression values for single cells
 
-{% highlight yaml %}
-image:
-  feature: feature-image-filename.jpg
-  credit: Michael Rose #name of the person or site you want to credit
-  creditlink: http://mademistakes.com #url to their site or licensing
-{% endhighlight %}
+To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use RSEM, eXpress, Sailfish, or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression here.
+To estimate gene and transcript expression levels for single-cell RNA-Seq using TopHat and Cufflinks, you must have a file of RNA-Seq reads for each cell you captured. If you performed paired-end RNA-Seq, you should have two files for each cell. Depending on how the base calling was performed, the naming conventions for these files may differ. In the examples below, we assume that each file follows the format:
 
-#### Categories
+CELL_TXX_YYY.RZ.fastq.gz
 
-In the sample `_posts` folder you may have noticed `category: articles` in the front matter. I like keeping all posts grouped in the same folder. If you decide to rename or add categories you will need to modify the permalink in `articles.md` along with the filename (if renaming).
-
-For example. Say you want to group all your posts under `blog/` instead of `articles/`. In your post add `category: blog` to the front matter, rename or duplicate `articles.html` to `blog.html` and change the permalink in that file to `permalink: /blog/`.
-
-If done correctly `/blog/` should be a page listing all of the site's posts.
-
-**ProTip:** To create multiple category pages, listing posts assigned to just that category modify the `for post` loop found in `articles.html` to something like `{{ "{% for post in site.categories.articles " }}%}`. Just be careful if you decide to paginate this page, Jekyll won't limit it to the category and will pull from all of your posts unless you use a plugin or a mess of Liquid if statements.
-{: .notice}
-
-#### Post/Page Thumbnails for OG and Twitter Cards
-
-Post and page thumbnails work the same way. These are used by [Open Graph](https://developers.facebook.com/docs/opengraph/) and [Twitter Cards](https://dev.twitter.com/docs/cards) meta tags found in `head.html`. If you don't assign a thumbnail the image you assigned to `site.owner.avatar` in `_config.yml will be used.
-
-Here's an example of what a tweet to your site could look like if you activate Twitter Cards and include all the metas in your post's YAML.
-
-![Twitter Card summary large image screenshot]({{ site.url }}/images/twitter-card-summary-large-image.jpg)
-
-#### Videos
-
-Video embeds are responsive and scale with the width of the main content block with the help of [FitVids](http://fitvidsjs.com/).
-
-Not sure if this only effects Kramdown or if it's an issue with Markdown in general. But adding YouTube video embeds causes errors when building your Jekyll site. To fix add a space between the `<iframe>` tags and remove `allowfullscreen`. Example below:
-
-{% highlight html %}
-<iframe width="560" height="315" src="http://www.youtube.com/embed/PWf4WUoMXwg" frameborder="0"> </iframe>
-{% endhighlight %}
-
-#### Social Share Links
-
-To enable Facebook, Twitter, and Google+ share links on a post or page, add the following to its front matter:
-
-{% highlight yaml %}
-share: true
-{% endhighlight %}
-
-#### Twitter Cards
-
-Twitter cards make it possible to attach images and post summaries to Tweets that link to your content. Summary Card meta tags have been added to `head.html` to support this, you just need to [validate and apply your domain](https://dev.twitter.com/docs/cards) to turn it on.
-
-#### Link Post Type
-
-So Simple Theme now supports **link posts**, made famous by John Gruber. To activate just add `link: http://url-you-want-linked` to the post's YAML front matter and you're done. Here's an [example of a link post]({{ site.url }}/articles/sample-link-post) if you need a visual.
-
----
-
-## Theme Development
-
-If you want to easily skin the themes' colors and fonts, take a look at `variables.less` in `assets/less/` and make the necessary changes to the color and font variables. To make development easier I setup a Grunt build script to compile/minify the LESS files into `main.min.css` and lint/concatenate/minify all scripts into `scripts.min.js`. [Install Node.js](http://nodejs.org/), then [install Grunt](http://gruntjs.com/getting-started), and then finally install the dependencies for the theme contained in `package.json`:
+Where XX is the time point at which the cell was collected in our experiment, YY is the well of the 96-well plate used during library prep, and Z is either 1 or 2 depending on whether we are looking at the left mate or the right mate in a paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at the left mate file for a cell collected 24 hours into our experiment and which was prepped in well A01 of the 24-hour capture plate. We begin by aligning each cell's reads separately, so we will have one BAM file for each cell. The commands below show how to run each cell's reads through TopHat. These alignment commands can take a while, but they can be run in parallel if you have access to a compute cluster. If so, contact your cluster administrator for more information on how to run TopHat in a cluster environment. 
 
 {% highlight bash %}
-npm install
+tophat -o CELL_T24_A01_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A01.R1.fastq.gz CELL_T24_A01.R2.fastq.gz 
+tophat -o CELL_T24_A02_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A02.R1.fastq.gz CELL_T24_A02.R2.fastq.gz 
+tophat -o CELL_T24_A03_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A03.R1.fastq.gz CELL_T24_A03.R2.fastq.gz 
 {% endhighlight %}
 
-From the theme's root, use `grunt` to rebuild the CSS, concatenate JavaScript files, and optimize .jpg, .png, and .svg files in the `images/` folder. You can also use `grunt watch` in combination with `jekyll build --watch` to watch for updates to your LESS and JS files that Grunt will then automatically re-build as you write your code which will in turn auto-generate your Jekyll site when developing locally.
+The commands above show how to align the reads for each of three cells in the experiment. You will need to run a similar command for each cell you wish to include in your analysis. These TopHat alignment commands are simplified for brevity - there are options to control the number of CPUs used by TopHat and otherwise control how TopHat aligns reads that you may want to explore on the TopHat manual. The key components of the above commands are:
 
-And if the command line isn't your thing (you're using Jekyll so it probably is), [CodeKit](http://incident57.com/codekit/) for Mac OS X and [Prepros](http://alphapixels.com/prepros/) for Windows are great alternatives.
+- The -o option, which sets the directory in which each cell's output will be written.
+- The gene annotation file, specified with -G, which tells TopHat where to look for splice junctions.
+- The Bowtie index for genome of your organism, in this case build hg19 of the human genome.
+- The read files for each cell as mentioned above.
 
----
+When the commands finish, there will be a BAM file in each cell's TopHat output directory. For example, CELL_T24_A01_thout/accepted_hits.bam will contain the alignments for cell T24_A01.
+Next, we will use Cufflinks to estimate gene expression levels for each cell in your study. 
 
-## Questions?
+{% highlight bash %}
+cuffquant -o CELL_T24_A01_cuffquant_out GENCODE.gtf CELL_T24_A01_thout/accepted_hits.bam 
+cuffquant -o CELL_T24_A02_cuffquant_out GENCODE.gtf CELL_T24_A02_thout/accepted_hits.bam 
+cuffquant -o CELL_T24_A03_cuffquant_out GENCODE.gtf CELL_T24_A03_thout/accepted_hits.bam 
+{% endhighlight %}
 
-Having a problem getting something to work or want to know why I setup something in a certain way? Ping me on Twitter [@mmistakes](http://twitter.com/mmistakes) or [file a GitHub Issue](https://github.com/mmistakes/so-simple-theme/issues/new).
+The commands above show how to convert aligned reads for each cell into gene expression values for that cell. You will need to run a similar command for each cell you wish to include in your analysis. These commands are simplified for brevity - there are options to control the number of CPUs used by the cuffquant utility and otherwise control how cuffquant estimates expression that you may want to explore on the Cufflinks manual. The key components of the above commands are:
 
-## License
+- The -o option, which sets the directory in which each cell's output will be written.
+- The gene annotation file, which tells cuffquant what the gene structures are in the genome.
+- The BAM file containing the aligned reads.
+Next, you will need to merge the expression estimates into a single table for use with Monocle. You can do this with the following command: 
 
-This theme is free and open source software, distributed under the [GNU General Public License]({{ site.url }}/LICENSE) version 2 or later. So feel free to to modify this theme to suit your needs. 
+{% highlight bash %}
+cuffnorm --use-sample-sheet -o sc_expr_out GENCODE.gtf sample_sheet.txt
+{% endhighlight %}
 
-If you'd like to give me credit somewhere on your blog or tweet a shout out to [@mmistakes](https://twitter.com/mmistakes), that would be pretty sweet.
+The option --use-sample-sheet tells cuffnorm that it should look in the file sample_sheet.txt for the expression files, to make the above command simpler. If you choose not to use a sample sheet, you will need to specify the expression files on the command line directly. The sample sheet is a tab-delimited file that looks like this: 
 
-[^1]: Used to generate absolute urls in `sitemap.xml`, `feed.xml`, and for canonical urls in `head.html`. Don't include a trailing `/` in your base url ie: http://mademistakes.com. When developing locally I suggest using `http://localhost:4000` or whatever server you're using to properly load the theme's stylesheet, scripts, and image assets. If you leave this variable blank all links will resolve correctly except those pointing home.
+| sample_name | group |
+|:--------|:-------:|--------:|
+| CELL_T24_A01_cuffquant_out/abundances.cxb   | T24_A01 |
+| CELL_T24_A02_cuffquant_out/abundances.cxb   | T24_A02 |
+| CELL_T24_A03_cuffquant_out/abundances.cxb   | T24_A03 |
+
+Now, you are ready to load the expression data into Monocle and start analyzing your experiment. 
+
+##Analyzing data with Monocle
+
+Monocle provides a number of tools you can use to analyze your single cell expression experiments. To get started, we must create a CellDataSet object. You can do this with the commands below:
+
+{% highlight R %}
+> library(monocle)
+> sample_sheet <- read.delim("sc_expr_out/samples.table", row.names=1)
+> gene_annotations <- read.delim("sc_expr_out/genes.attr_table", row.names=1)
+> fpkm_matrix <- read.delim("sc_expr_out/genes.fpkm_table", row.names=1)
+> pd <- new("AnnotatedDataFrame", data = sample_sheet)
+> my_data <- new("CellDataSet", exprs = as.matrix(fpkm_matrix), phenoData = pd, featureData = fd)
+{% endhighlight %}
+
+Now, you have created an object named "my_data" that stores your single-cell expression data. This object is the central object in Monocle. You will use it to identify differentially expressed genes and perform other analyses. To see what Monocle can do for you and how to proceed, please have a look at the vignette (PDF). Good luck! 
