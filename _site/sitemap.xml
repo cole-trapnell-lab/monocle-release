@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>http://yourdomain.com</loc>
+    </url>
+    
+    
+    <url>
+        <loc>http://yourdomain.com/404/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/about/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/feed.xml</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/search.json</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/sitemap.xml</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/tags/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/theme-setup/</loc>
+    </url>
+    
+
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2014/06/19/author-override/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2013/08/16/code-highlighting-post/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2013/08/12/sample-link-post/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2013/06/25/video-post/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2013/05/23/readability-feature-post/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2013/05/22/sample-post-images/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2012/05/22/readability-post/</loc>
+    </url>
+    
+    <url>
+        <loc>http://yourdomain.com/articles/2011/03/10/sample-post/</loc>
+    </url>
+    
+</urlset>
