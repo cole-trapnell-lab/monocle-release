@@ -3,64 +3,64 @@
 		{
 		  "title"      : "Override Author Byline Test Post",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2014/06/19/author-override/",
-		  "date"       : "2014-06-19 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/author-override/",
+		  "date"       : "2014-06-19 00:00:00 -0400",
 		  "shortdate"  : "June 19, 2014"
 		} ,
 	
 		{
 		  "title"      : "Syntax Highlighting Post",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2013/08/16/code-highlighting-post/",
-		  "date"       : "2013-08-16 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/code-highlighting-post/",
+		  "date"       : "2013-08-16 00:00:00 -0400",
 		  "shortdate"  : "August 16, 2013"
 		} ,
 	
 		{
 		  "title"      : "Sample Link Post",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2013/08/12/sample-link-post/",
-		  "date"       : "2013-08-12 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/sample-link-post/",
+		  "date"       : "2013-08-12 00:00:00 -0400",
 		  "shortdate"  : "August 12, 2013"
 		} ,
 	
 		{
 		  "title"      : "A Post with a Video",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2013/06/25/video-post/",
-		  "date"       : "2013-06-25 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/video-post/",
+		  "date"       : "2013-06-25 00:00:00 -0400",
 		  "shortdate"  : "June 25, 2013"
 		} ,
 	
 		{
 		  "title"      : "Post with Large Feature Image and Text",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2013/05/23/readability-feature-post/",
-		  "date"       : "2013-05-23 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/readability-feature-post/",
+		  "date"       : "2013-05-23 00:00:00 -0400",
 		  "shortdate"  : "May 23, 2013"
 		} ,
 	
 		{
 		  "title"      : "A Post with Images",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2013/05/22/sample-post-images/",
-		  "date"       : "2013-05-22 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/sample-post-images/",
+		  "date"       : "2013-05-22 00:00:00 -0400",
 		  "shortdate"  : "May 22, 2013"
 		} ,
 	
 		{
 		  "title"      : "Testing Readability with a Bunch of Text",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2012/05/22/readability-post/",
-		  "date"       : "2012-05-22 00:00:00 -0700",
+		  "url"        : "http://localhost:4000/articles/readability-post/",
+		  "date"       : "2012-05-22 00:00:00 -0400",
 		  "shortdate"  : "May 22, 2012"
 		} ,
 	
 		{
 		  "title"      : "Sample Post",
 		  "category"   : "articles",
-		  "url"        : "http://yourdomain.com/articles/2011/03/10/sample-post/",
-		  "date"       : "2011-03-10 00:00:00 -0800",
+		  "url"        : "http://localhost:4000/articles/sample-post/",
+		  "date"       : "2011-03-10 00:00:00 -0500",
 		  "shortdate"  : "March 10, 2011"
 		} 
 	

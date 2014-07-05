@@ -1,78 +1,78 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
-        <loc>http://yourdomain.com</loc>
+        <loc>http://localhost:4000</loc>
     </url>
     
     
     <url>
-        <loc>http://yourdomain.com/404/</loc>
+        <loc>http://localhost:4000/404.html</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/about/</loc>
+        <loc>http://localhost:4000/about/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/</loc>
+        <loc>http://localhost:4000/articles/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/feed.xml</loc>
+        <loc>http://localhost:4000/feed.xml</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/</loc>
+        <loc>http://localhost:4000/index.html</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/search.json</loc>
+        <loc>http://localhost:4000/search.json</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/sitemap.xml</loc>
+        <loc>http://localhost:4000/sitemap.xml</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/tags/</loc>
+        <loc>http://localhost:4000/tags/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/theme-setup/</loc>
+        <loc>http://localhost:4000/theme-setup/</loc>
     </url>
     
 
     
     <url>
-        <loc>http://yourdomain.com/articles/2014/06/19/author-override/</loc>
+        <loc>http://localhost:4000/articles/author-override/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2013/08/16/code-highlighting-post/</loc>
+        <loc>http://localhost:4000/articles/code-highlighting-post/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2013/08/12/sample-link-post/</loc>
+        <loc>http://localhost:4000/articles/sample-link-post/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2013/06/25/video-post/</loc>
+        <loc>http://localhost:4000/articles/video-post/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2013/05/23/readability-feature-post/</loc>
+        <loc>http://localhost:4000/articles/readability-feature-post/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2013/05/22/sample-post-images/</loc>
+        <loc>http://localhost:4000/articles/sample-post-images/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2012/05/22/readability-post/</loc>
+        <loc>http://localhost:4000/articles/readability-post/</loc>
     </url>
     
     <url>
-        <loc>http://yourdomain.com/articles/2011/03/10/sample-post/</loc>
+        <loc>http://localhost:4000/articles/sample-post/</loc>
     </url>
     
 </urlset>

@@ -5,8 +5,8 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>About the Jekyll Theme &#8211; Your awesome title</title>
-<meta name="description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.">
+<title>About the Jekyll Theme &#8211; Site Title</title>
+<meta name="description" content="Describe your website here.">
 <meta name="keywords" content="Jekyll, theme, simple, minimal, minimalism, responsive">
 
 
@@ -15,16 +15,16 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
 <meta property="og:title" content="About the Jekyll Theme">
-<meta property="og:description" content="Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.">
-<meta property="og:url" content="http://yourdomain.com/about/">
-<meta property="og:site_name" content="Your awesome title">
+<meta property="og:description" content="Describe your website here.">
+<meta property="og:url" content="http://localhost:4000/about/">
+<meta property="og:site_name" content="Site Title">
 
 
 
 
 
-<link rel="canonical" href="http://yourdomain.com/about/">
-<link href="http://yourdomain.com/feed.xml" type="application/atom+xml" rel="alternate" title="Your awesome title Feed">
+<link rel="canonical" href="http://localhost:4000/about/">
+<link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="Site Title Feed">
 
 
 <!-- http://t.co/dKP3o1e -->
@@ -33,28 +33,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- For all browsers -->
-<link rel="stylesheet" href="http://yourdomain.com/assets/css/main.min.css">
+<link rel="stylesheet" href="http://localhost:4000/assets/css/main.min.css">
 <!-- Webfonts -->
 <script src="//use.edgefonts.net/source-sans-pro:n2,i2,n3,i3,n4,i4,n6,i6,n7,i7,n9,i9;source-code-pro:n4,n7;volkhov.js"></script>
 
 <meta http-equiv="cleartype" content="on">
 
 <!-- Load Modernizr -->
-<script src="http://yourdomain.com/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+<script src="http://localhost:4000/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
 
 <!-- Icons -->
 <!-- 16x16 -->
-<link rel="shortcut icon" href="http://yourdomain.com/favicon.ico">
+<link rel="shortcut icon" href="http://localhost:4000/favicon.ico">
 <!-- 32x32 -->
-<link rel="shortcut icon" href="http://yourdomain.com/favicon.png">
+<link rel="shortcut icon" href="http://localhost:4000/favicon.png">
 <!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
-<link rel="apple-touch-icon-precomposed" href="http://yourdomain.com/images/apple-touch-icon-precomposed.png">
+<link rel="apple-touch-icon-precomposed" href="http://localhost:4000/images/apple-touch-icon-precomposed.png">
 <!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
-<link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://yourdomain.com/images/apple-touch-icon-72x72-precomposed.png">
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="http://localhost:4000/images/apple-touch-icon-72x72-precomposed.png">
 <!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
-<link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://yourdomain.com/images/apple-touch-icon-114x114-precomposed.png">
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="http://localhost:4000/images/apple-touch-icon-114x114-precomposed.png">
 <!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
-<link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://yourdomain.com/images/apple-touch-icon-144x144-precomposed.png">
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="http://localhost:4000/images/apple-touch-icon-144x144-precomposed.png">
 
 </head>
 
@@ -64,17 +64,51 @@
 	<nav role="navigation" id="site-nav" class="animated drop">
 	    <ul>
 	        
-	        <li><a href="http://yourdomain.com/feed.xml" title="Atom/RSS feed"><i class="icon-rss"></i> Feed</a></li>
+			<li>
+				
+					<a href="http://localhost:4000/about/">About</a>
+				 
+			</li>
 	        
+			<li>
+				
+					<a href="http://localhost:4000/articles/">Articles</a>
+				 
+			</li>
+	        
+			<li>
+				
+					<a href="http://localhost:4000/theme-setup/">Theme Setup</a>
+				 
+			</li>
+	        
+			<li>
+				
+					<a href="http://mademistakes.com">Made Mistakes</a>
+				 
+			</li>
+	        
+	        <li><a href="http://localhost:4000/feed.xml" title="Atom/RSS feed"><i class="icon-rss"></i> Feed</a></li>
+	        <li class="dosearch"><i class="icon-search"></i> Search</li>
 	    </ul>
 	</nav>
 </div><!-- /.navigation-wrapper -->
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 
-
+<div class="search-wrapper">
+	<div class="search-form">
+		<input type="text" class="search-field" placeholder="Search...">
+		<i class="icon-remove-sign icon-2x"></i>
+		<ul class="search-results post-list"></ul><!-- /.search-results -->
+	</div><!-- /.search-form -->
+</div><!-- ./search-wrapper -->
 
 <header class="masthead">
+	
+		<div class="wrap">
+			<a href="http://localhost:4000/" class="site-logo" rel="home" title="Site Title"><img src="http://localhost:4000/images/site-logo.png" width="200" height="200" alt="Site Title logo" class="animated bounceInDown"></a>
+		</div>
 	
 </header><!-- /.masthead -->
 
@@ -82,7 +116,7 @@
 
 <div id="main" role="main">
   <article class="entry">
-    <img src="http://yourdomain.com/images/so-simple-sample-image-4.jpg" class="entry-feature-image" alt="About the Jekyll Theme" style="margin-top:0;"><p class="image-credit">Photo Credit: <a href="http://mademistakes.com">Michael Rose</a>
+    <img src="http://localhost:4000/images/so-simple-sample-image-4.jpg" class="entry-feature-image" alt="About the Jekyll Theme" ><p class="image-credit">Photo Credit: <a href="http://mademistakes.com">Michael Rose</a>
     <div class="entry-wrapper">
       <header class="entry-header">
         <h1 class="entry-title">About the Jekyll Theme</h1>
@@ -101,14 +135,14 @@
   <li>Disqus comments if you choose to enable.</li>
   <li>Simple and clear permalink structure<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>.</li>
   <li>Tags for <a href="https://developers.facebook.com/docs/opengraph/">Open Graph</a> and <a href="https://dev.twitter.com/docs/cards">Twitter Cards</a> for a better social sharing experience.</li>
-  <li>Vanilla <a href="http://yourdomain.com/404.html">custom 404 page</a> to get you started.</li>
+  <li>Vanilla <a href="http://localhost:4000/404.html">custom 404 page</a> to get you started.</li>
   <li>Stylesheets for Pygments and Coderay <a href="http://mmistakes.github.io/articles/so-simple-theme/code-highlighting-post/">syntax highlighting</a> to make your code examples look snazzy.</li>
   <li>Simple search that overlays results based on post title.</li>
-  <li><a href="http://yourdomain.com/theme-setup/index.html#theme-development">Grunt build script</a> for easier theme development.</li>
+  <li><a href="http://localhost:4000/theme-setup/index.html#theme-development">Grunt build script</a> for easier theme development.</li>
   <li><a href="https://github.com/mmistakes/so-simple-theme/blob/master/sitemap.xml">Sitemap</a> for search engines</li>
 </ul>
 
-<p><a href="http://yourdomain.com/theme-setup" class="btn">Install Minimal Mistakes Theme</a></p>
+<p><a href="http://localhost:4000/theme-setup" class="btn">Install Minimal Mistakes Theme</a></p>
 
 <div class="footnotes">
   <ol>
@@ -125,7 +159,7 @@
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2014 . Powered by <a href="http://jekyllrb.com">Jekyll</a> using the <a href="http://mademistakes.com/so-simple/">So Simple Theme</a>.</span>
+    <span>&copy; 2014 Your Name. Powered by <a href="http://jekyllrb.com">Jekyll</a> using the <a href="http://mademistakes.com/so-simple/">So Simple Theme</a>.</span>
 <div class="social-icons">
 	
 	
@@ -141,8 +175,43 @@
 </div><!-- /.footer-wrapper -->
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script>window.jQuery || document.write('<script src="http://yourdomain.com/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
-<script src="http://yourdomain.com/assets/js/scripts.min.js"></script>
+<script>window.jQuery || document.write('<script src="http://localhost:4000/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="http://localhost:4000/assets/js/scripts.min.js"></script>
+
+<!-- Jekyll Simple Search option -->
+<script>
+  $(document).ready(function() {
+      $('.search-field').simpleJekyllSearch({
+          jsonFile : 'http://localhost:4000/search.json',
+          searchResults : '.search-results',
+          template : '<li><article><a href="{url}">{title} <span class="entry-date"><time datetime="{date}">{shortdate}</time></span></a></article></li>',
+          noResults: '<p>Nothing found.</p>'
+        });
+  });
+
+  (function( $, window, undefined ) {
+    
+     var bs = {
+          close: $(".icon-remove-sign"),
+          searchform: $(".search-form"),
+          canvas: $("body"),
+          dothis: $('.dosearch')
+      };
+    
+    bs.dothis.on('click', function() {
+      $('.search-wrapper').css({ display: "block" });
+      bs.searchform.toggleClass('active');
+      bs.searchform.find('input').focus();
+      bs.canvas.toggleClass('search-overlay');
+    });
+    
+      bs.close.on('click', function() {
+        $('.search-wrapper').removeAttr( 'style' );
+        bs.searchform.toggleClass('active');
+        bs.canvas.removeClass('search-overlay');
+    });
+  })( jQuery, window );
+</script>
 
 
           

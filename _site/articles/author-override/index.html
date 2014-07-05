@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>Latest Posts &#8211; Site Title</title>
-<meta name="description" content="A simple and clean responsive Jekyll theme for words and photos.">
-<meta name="keywords" content="Jekyll, theme, themes, responsive, blog, minimalism">
+<title>Override Author Byline Test Post &#8211; Site Title</title>
+<meta name="description" content="An article to test overriding the default site author.">
+<meta name="keywords" content="sample post, readability, test">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Latest Posts">
-<meta property="og:description" content="A simple and clean responsive Jekyll theme for words and photos.">
-<meta property="og:url" content="http://localhost:4000/index.html">
+<meta property="og:title" content="Override Author Byline Test Post">
+<meta property="og:description" content="An article to test overriding the default site author.">
+<meta property="og:url" content="http://localhost:4000/articles/author-override/">
 <meta property="og:site_name" content="Site Title">
 
 
 
 
 
-<link rel="canonical" href="http://localhost:4000/">
+<link rel="canonical" href="http://localhost:4000/articles/author-override/">
 <link href="http://localhost:4000/feed.xml" type="application/atom+xml" rel="alternate" title="Site Title Feed">
 
 
@@ -58,7 +58,7 @@
 
 </head>
 
-<body id="page">
+<body id="post">
 
 <div class="navigation-wrapper">
 	<nav role="navigation" id="site-nav" class="animated drop">
@@ -116,34 +116,55 @@
 
 
 <div id="main" role="main">
-  <article class="entry">
+  <article class="hentry">
     
     <div class="entry-wrapper">
       <header class="entry-header">
-        <h1 class="entry-title">Latest Posts</h1>
+        <span class="entry-tags"><a href="http://localhost:4000/tags/#sample post" title="Pages tagged sample post">sample post</a>&nbsp;&bull;&nbsp;<a href="http://localhost:4000/tags/#readability" title="Pages tagged readability">readability</a>&nbsp;&bull;&nbsp;<a href="http://localhost:4000/tags/#test" title="Pages tagged test">test</a></span>
+        
+          <h1 class="entry-title">Override Author Byline Test Post</h1>
+        
       </header>
+      <footer class="entry-meta">
+        
+        <img src="http://localhost:4000/images/bio-photo-alt.jpg" alt="Billy Rick photo" class="author-photo">
+        <span class="author vcard">By <span class="fn">Billy Rick</span></span>
+        
+        <span class="entry-date date published"><time datetime="2014-06-19T00:00:00-04:00"><i class="icon-calendar-empty"></i> June 19, 2014</time></span>
+        
+        
+        <span><a href="http://localhost:4000/articles/author-override/" rel="bookmark" title="Override Author Byline Test Post"><i class="icon-link"></i> Permalink</a></span>
+        
+        <span class="social-share-facebook">
+            <a href="https://www.facebook.com/sharer/sharer.php?u=http://localhost:4000/articles/author-override/" title="Share on Facebook" itemprop="Facebook"><i class="icon-facebook-sign"></i> Like</a></span>
+        <span class="social-share-twitter">
+            <a href="https://twitter.com/intent/tweet?hashtags=articles&text=Override Author Byline Test Post&url=http://localhost:4000/articles/author-override/&via=" title="Share on Twitter" itemprop="Twitter"><i class="icon-twitter-sign"></i> Tweet</a></span>
+        <span class="social-share-googleplus">
+            <a href="https://plus.google.com/share?url=http://localhost:4000/articles/author-override/" title="Share on Google Plus" itemprop="GooglePlus"><i class="icon-google-plus-sign"></i> +1</a></span>
+            <!-- /.social-share -->
+      </footer>
       <div class="entry-content">
-        <ul class="post-list">
- 
-  <li><article><a href="http://localhost:4000/articles/author-override/">Override Author Byline Test Post <span class="entry-date"><time datetime="2014-06-19T00:00:00-04:00">June 19, 2014</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/code-highlighting-post/">Syntax Highlighting Post <span class="entry-date"><time datetime="2013-08-16T00:00:00-04:00">August 16, 2013</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/sample-link-post/">Sample Link Post <span class="entry-date"><time datetime="2013-08-12T00:00:00-04:00">August 12, 2013</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/video-post/">A Post with a Video <span class="entry-date"><time datetime="2013-06-25T00:00:00-04:00">June 25, 2013</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/readability-feature-post/">Post with Large Feature Image and Text <span class="entry-date"><time datetime="2013-05-23T00:00:00-04:00">May 23, 2013</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/sample-post-images/">A Post with Images <span class="entry-date"><time datetime="2013-05-22T00:00:00-04:00">May 22, 2013</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/readability-post/">Testing Readability with a Bunch of Text <span class="entry-date"><time datetime="2012-05-22T00:00:00-04:00">May 22, 2012</time></span></a></article></li>
- 
-  <li><article><a href="http://localhost:4000/articles/sample-post/">Sample Post <span class="entry-date"><time datetime="2011-03-10T00:00:00-05:00">March 10, 2011</time></span></a></article></li>
+        <p>For those of you who may have content written by multiple authors on your site, here’s a new feature I added to So Simple.</p>
 
-</ul>
+<p>Traditionally you would assign a global author for the entire site and those attributes would be used in all post bylines, social networking links in the footer, Twitter Cards, and Google Authorship. These <code>owner</code> variables still work the same way when set in your <code>config.yml</code>, but now if you add an author variable to a post’s YAML front matter, you can override a post’s author byline.</p>
+
+<p>Let’s say we have an author Billy Rick — he wrote this post and we want his name and photo to appear on the page instead of whoever the default site author is. To do so we’d add the following YAML front matter.</p>
+
+<div class="highlight"><pre><code class="language-yaml" data-lang="yaml"><span class="l-Scalar-Plain">author</span><span class="p-Indicator">:</span>
+  <span class="l-Scalar-Plain">name</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">Billy Rick</span>
+  <span class="l-Scalar-Plain">avatar</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">billy-photo.jpg</span>    <span class="c1">#place in /images</span>
+  <span class="l-Scalar-Plain">twitter</span><span class="p-Indicator">:</span> <span class="l-Scalar-Plain">billyrick</span>         <span class="c1">#marked as a creator for Twitter Card links</span></code></pre></div>
+
+
+        
       </div><!-- /.entry-content -->
     </div><!-- /.entry-wrapper -->
+    <nav class="pagination" role="navigation">
+      
+        <a href="http://localhost:4000/articles/code-highlighting-post/" class="btn" title="Syntax Highlighting Post">Previous article</a>
+      
+      
+    </nav><!-- /.pagination -->
   </article>
 </div><!-- /#main -->
 
@@ -204,7 +225,27 @@
 </script>
 
 
-          
+<script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = ''; // required: replace example with your forum shortname
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function () {
+        var s = document.createElement('script'); s.async = true;
+        s.type = 'text/javascript';
+        s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+        (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+    }());
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>	        
 
 </body>
 </html>
