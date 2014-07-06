@@ -1,6 +1,6 @@
 title:            Monocle
 description:      Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments.
-logo:             site-logo.png
+#logo:             monocle-logo.png
 disqus_shortname:
 search:           true
 # Change url to your domain. Leave localhost server or blank when working locally.
