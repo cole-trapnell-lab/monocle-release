@@ -10,7 +10,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="http://localhost:4000/feed.xml" />
 <link rel="alternate" type="text/html" href="http://localhost:4000/" />
-<updated>2014-07-06T15:32:57-04:00</updated>
+<updated>2014-07-06T15:51:49-04:00</updated>
 <id>http://localhost:4000/</id>
 <author>
   <name>Cole Trapnell</name>
@@ -37,8 +37,6 @@
     &lt;p&gt;The first public release of Monocle is now available for download. Monocle is a toolkit for analyzing single cell expression experiments. It runs on the R statistical computing platform.
 Monocle takes as input a matrix of gene or transcript expression values, along with information about each cell in the experiment, and some annotation about each gene/transcript, both provided as simple tables. It is designed for single-cell RNA-Seq experiments, but in principle Monocle can be used with other data types such as qPCR. For RNA-Seq, you can use &lt;a href=&quot;http://cufflinks.cbcb.umd.edu&quot;&gt;Cufflinks&lt;/a&gt; to estimate your expression values.
 This software is a work in progress - it is a beta release, and new features will continue to be added over the next couple of weeks. To suggest a feature or report a bug, please post your comments on the Monocle user’s group.&lt;/p&gt;
-
-&lt;p&gt;Below is just about everything you’ll need to style in the theme. Check the source code to see the many embedded elements within paragraphs.&lt;/p&gt;
 
   
   &lt;p&gt;&lt;a href=&quot;http://localhost:4000/articles/v0.99.0/&quot;&gt;Monocle 0.99.0 released&lt;/a&gt; was originally published by Cole Trapnell at &lt;a href=&quot;http://localhost:4000&quot;&gt;Monocle&lt;/a&gt; on March 10, 2011.&lt;/p&gt;</content>
