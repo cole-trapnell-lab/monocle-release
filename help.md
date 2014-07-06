@@ -1,7 +1,6 @@
 ---
 layout: page
 permalink: /help/
-title: Getting Help
 description: "How to get help using Monocle."
 modified: 2013-09-11
 tags: [Jekyll, theme, install, setup]

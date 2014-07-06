@@ -14,6 +14,10 @@
     </url>
     
     <url>
+        <loc>//localhost:4000/docs/</loc>
+    </url>
+    
+    <url>
         <loc>//localhost:4000/feed.xml</loc>
     </url>
     
@@ -27,10 +31,6 @@
     
     <url>
         <loc>//localhost:4000/index.html</loc>
-    </url>
-    
-    <url>
-        <loc>//localhost:4000/manual/</loc>
     </url>
     
     <url>

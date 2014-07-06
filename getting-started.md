@@ -1,13 +1,10 @@
 ---
 layout: page
 permalink: /getting-started/
-title: Getting Started
 description: "Instructions on how to install Monocle."
 modified: 2013-09-11
 tags: [monocle, install, setup]
 ---
-
-Getting started
 
 * Table of Contents
 {:toc}

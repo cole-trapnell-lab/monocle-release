@@ -1,7 +1,6 @@
 ---
 layout: page
 permalink: /tools/
-title: Related Tools
 description: "Other tools for analysis high-throughput experiments."
 modified: 2013-09-11
 tags: [Bowtie, Tophat, Cufflinks, CummeRbund]
