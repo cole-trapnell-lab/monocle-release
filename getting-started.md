@@ -12,8 +12,8 @@ tags: [monocle, install, setup]
 
 ##Install quick-start
 
-Required software
-Monocle runs in the R statistical computing environment. You will need R version 3.0 or higher. You will need to install the following packages through CRAN:
+###Required software
+Monocle runs in the [R statistical computing environment](http://www.r-project.org/). You will need R version 3.0 or higher. You will need to install the following packages through CRAN:
 
 - VGAM
 - irlba
@@ -36,14 +36,14 @@ You can install these packages by starting an R session and typing:
 "reshape2", "plyr", "parallel", "methods"))
 {% endhighlight %}
 
-You will also need to install Bioconductor: 
+You will also need to install [Bioconductor](http://bioconductor.org/install/): 
 
 {% highlight R %}
 > source("http://bioconductor.org/biocLite.R") 
 > biocLite()
 {% endhighlight %}
 
-###Installing the Myoblast example data
+###Installing the myoblast example data
 Monocle includes a detailed documentation vignette and snippets of example code that depend on the skeletal muscle myoblast data described in Trapnell and Cacchiarelli et al. You'll need to install the data package containing it before installing Monocle. To do so, type:
 
 {% highlight bash %}
@@ -66,12 +66,16 @@ To ensure that Monocle was installed correctly, start a new R session and type:
 
 ##Computing expression values for single cells
 
-To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use RSEM, eXpress, Sailfish, or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression here.
-To estimate gene and transcript expression levels for single-cell RNA-Seq using TopHat and Cufflinks, you must have a file of RNA-Seq reads for each cell you captured. If you performed paired-end RNA-Seq, you should have two files for each cell. Depending on how the base calling was performed, the naming conventions for these files may differ. In the examples below, we assume that each file follows the format:
+To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use [RSEM](http://deweylab.biostat.wisc.edu/rsem/), [eXpress](http://bio.math.berkeley.edu/eXpress/), Sailfish, or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression [here](http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html).
+
+To estimate gene and transcript expression levels for single-cell RNA-Seq using [TopHat](http://ccb.jhu.edu/software/tophat/index.shtml) and [Cufflinks](http://cufflinks.cbcb.umd.edu/), you must have a file of RNA-Seq reads for each cell you captured. If you performed paired-end RNA-Seq, you should have two files for each cell. Depending on how the base calling was performed, the naming conventions for these files may differ. In the examples below, we assume that each file follows the format:
 
 CELL_TXX_YYY.RZ.fastq.gz
 
-Where XX is the time point at which the cell was collected in our experiment, YY is the well of the 96-well plate used during library prep, and Z is either 1 or 2 depending on whether we are looking at the left mate or the right mate in a paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at the left mate file for a cell collected 24 hours into our experiment and which was prepped in well A01 of the 24-hour capture plate. We begin by aligning each cell's reads separately, so we will have one BAM file for each cell. The commands below show how to run each cell's reads through TopHat. These alignment commands can take a while, but they can be run in parallel if you have access to a compute cluster. If so, contact your cluster administrator for more information on how to run TopHat in a cluster environment. 
+Where XX is the time point at which the cell was collected in our experiment, YY is the well of the 96-well plate used during library prep, and Z is either 1 or 2 depending on whether we are looking at the left mate or the right mate in a paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at the left mate file for a cell collected 24 hours into our experiment and which was prepped in well A01 of the 24-hour capture plate. 
+
+###Aligning reads to the genome with TopHat
+We begin by aligning each cell's reads separately, so we will have one BAM file for each cell. The commands below show how to run each cell's reads through TopHat. These alignment commands can take a while, but they can be run in parallel if you have access to a compute cluster. If so, contact your cluster administrator for more information on how to run TopHat in a cluster environment. 
 
 {% highlight bash %}
 tophat -o CELL_T24_A01_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A01.R1.fastq.gz CELL_T24_A01.R2.fastq.gz 
@@ -87,7 +91,9 @@ The commands above show how to align the reads for each of three cells in the ex
 - The read files for each cell as mentioned above.
 
 When the commands finish, there will be a BAM file in each cell's TopHat output directory. For example, CELL_T24_A01_thout/accepted_hits.bam will contain the alignments for cell T24_A01.
-Next, we will use Cufflinks to estimate gene expression levels for each cell in your study. 
+
+###Computing gene expression using Cufflinks
+Now, we will use Cufflinks to estimate gene expression levels for each cell in your study. 
 
 {% highlight bash %}
 cuffquant -o CELL_T24_A01_cuffquant_out GENCODE.gtf CELL_T24_A01_thout/accepted_hits.bam 
@@ -95,11 +101,12 @@ cuffquant -o CELL_T24_A02_cuffquant_out GENCODE.gtf CELL_T24_A02_thout/accepted_
 cuffquant -o CELL_T24_A03_cuffquant_out GENCODE.gtf CELL_T24_A03_thout/accepted_hits.bam 
 {% endhighlight %}
 
-The commands above show how to convert aligned reads for each cell into gene expression values for that cell. You will need to run a similar command for each cell you wish to include in your analysis. These commands are simplified for brevity - there are options to control the number of CPUs used by the cuffquant utility and otherwise control how cuffquant estimates expression that you may want to explore on the Cufflinks manual. The key components of the above commands are:
+The commands above show how to convert aligned reads for each cell into gene expression values for that cell. You will need to run a similar command for each cell you wish to include in your analysis. These commands are simplified for brevity - there are options to control the number of CPUs used by the cuffquant utility and otherwise control how cuffquant estimates expression that you may want to explore on the [Cufflinks](http://cufflinks.cbcb.umd.edu/) manual. The key components of the above commands are:
 
 - The -o option, which sets the directory in which each cell's output will be written.
 - The gene annotation file, which tells cuffquant what the gene structures are in the genome.
 - The BAM file containing the aligned reads.
+
 Next, you will need to merge the expression estimates into a single table for use with Monocle. You can do this with the following command: 
 
 {% highlight bash %}
@@ -129,4 +136,4 @@ Monocle provides a number of tools you can use to analyze your single cell expre
 > my_data <- new("CellDataSet", exprs = as.matrix(fpkm_matrix), phenoData = pd, featureData = fd)
 {% endhighlight %}
 
-Now, you have created an object named "my_data" that stores your single-cell expression data. This object is the central object in Monocle. You will use it to identify differentially expressed genes and perform other analyses. To see what Monocle can do for you and how to proceed, please have a look at the vignette (PDF). Good luck! 
+Now, you have created an object named "my_data" that stores your single-cell expression data. This object is the central object in Monocle. You will use it to identify differentially expressed genes and perform other analyses. To see what Monocle can do for you and how to proceed, please have a look at the [vignette (PDF)](http://www.bioconductor.org/packages/devel/bioc/vignettes/monocle/inst/doc/monocle-vignette.pdf). Good luck! 
