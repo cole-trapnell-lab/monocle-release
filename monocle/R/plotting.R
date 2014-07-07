@@ -1,5 +1,5 @@
 utils::globalVariables(c("Pseudotime", "value", "ids", "ICA_dim_1", "ICA_dim_2", "State", 
-                         "value", "gene_label", "expectation", "colInd", "rowInd", "value", 
+                         "value", "f_label", "expectation", "colInd", "rowInd", "value", 
                          "source_ICA_dim_1", "source_ICA_dim_2"))
 
 monocle_theme_opts <- function()
@@ -86,14 +86,14 @@ plot_spanning_tree <- function(cds,
       markers_exprs <- melt(exprs(cds[row.names(markers_fData),]))
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
-      markers_exprs$gene_label <- as.character(markers_exprs$gene_short_name)
-      markers_exprs$gene_label[is.na(markers_exprs$gene_label)] <- markers_exprs$Var1
+      markers_exprs$f_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$f_label[is.na(markers_exprs$f_label)] <- markers_exprs$Var1
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     edge_df <- merge(edge_df, markers_exprs, by.x="sample_name", by.y="Var2")
     #print (head(edge_df))
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~gene_label)
+    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~f_label)
   }else{
     g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
   }
@@ -146,31 +146,36 @@ plot_spanning_tree <- function(cds,
 plot_genes_jitter <- function(cds_subset, grouping = "State", 
                               min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
                               color_by=NULL,
-                              plot_trend=FALSE){
+                              plot_trend=FALSE,
+                              label_by_short_name=TRUE){
   
   cds_exprs <- melt(exprs(cds_subset))
   
-  colnames(cds_exprs) <- c("gene_id", "Cell", "expression")
+  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
   cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
   cds_pData <- pData(cds_subset)
   cds_fData <- fData(cds_subset)
   
-  cds_exprs <- merge(cds_exprs, cds_fData, by.x="gene_id", by.y="row.names")
+  cds_exprs <- merge(cds_exprs, cds_fData, by.x="f_id", by.y="row.names")
   cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
   
   cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
   #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
   
-  if (is.null(cds_exprs$gene_short_name) == FALSE){
-    cds_exprs$gene_label <- cds_exprs$gene_short_name
-    cds_exprs$gene_label[is.na(cds_exprs$gene_label)]  <- cds_exprs$gene_id
+  if (label_by_short_name == TRUE){
+    if (is.null(cds_exprs$gene_short_name) == FALSE){
+      cds_exprs$f_label <- cds_exprs$gene_short_name
+      cds_exprs$f_label[is.na(cds_exprs$f_label)]  <- cds_exprs$f_id
+    }else{
+      cds_exprs$f_label <- cds_exprs$f_id
+    }
   }else{
-    cds_exprs$gene_label <- cds_exprs$gene_id
+    cds_exprs$f_label <- cds_exprs$f_id
   }
   
-   if (is.null(panel_order) == FALSE)
+  if (is.null(panel_order) == FALSE)
   {
-    cds_subset$gene_label <- factor(cds_subset$gene_label, levels=panel_order)
+    cds_subset$f_label <- factor(cds_subset$f_label, levels=panel_order)
   }
   
   q <- ggplot(aes_string(x=grouping, y="expression"), data=cds_exprs) 
@@ -185,7 +190,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     q <- q + stat_summary(aes_string(x=grouping, y="expression", color=color_by, group=color_by), fun.data = "mean_cl_boot", size=0.35, geom="line")
   }
   
-   q <- q + scale_y_log10() + facet_wrap(~gene_label, nrow=nrow, ncol=ncol, scales="free_y")
+   q <- q + scale_y_log10() + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
   
   q <- q + ylab("Expression") + xlab(grouping)
   q <- q + monocle_theme_opts()
@@ -209,30 +214,40 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
 #' plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
 #' }
-plot_genes_positive_cells <- function(cds_subset, grouping = "State", 
-                                      min_expr=0.1, nrow=NULL, ncol=1, panel_order=NULL, plot_as_fraction=TRUE){
+plot_genes_positive_cells <- function(cds_subset, 
+                                      grouping = "State", 
+                                      min_expr=0.1, 
+                                      nrow=NULL, 
+                                      ncol=1, 
+                                      panel_order=NULL, 
+                                      plot_as_fraction=TRUE,
+                                      label_by_short_name=TRUE){
   
   marker_exprs <- exprs(cds_subset)
   
   marker_exprs_melted <- melt(t(marker_exprs))
+  colnames(marker_exprs_melted) <- c("f_id", "Cell", "expression")
   
-
-  marker_exprs_melted <- merge(marker_exprs_melted, pData(cds_subset), by.x="Var1", by.y="row.names")
-  marker_exprs_melted <- merge(marker_exprs_melted, fData(cds_subset), by.x="Var2", by.y="row.names")
+  marker_exprs_melted <- merge(marker_exprs_melted, pData(cds_subset), by.x="Cell", by.y="row.names")
+  marker_exprs_melted <- merge(marker_exprs_melted, fData(cds_subset), by.x="f_id", by.y="row.names")
   
-  if (is.null(marker_exprs_melted$gene_short_name) == FALSE){
-    marker_exprs_melted$gene_label <- marker_exprs_melted$gene_short_name
-    marker_exprs_melted$gene_label[is.na(marker_exprs_melted$gene_label)]  <- marker_exprs_melted$gene_id
+  if (label_by_short_name == TRUE){
+    if (is.null(marker_exprs_melted$gene_short_name) == FALSE){
+      marker_exprs_melted$f_label <- marker_exprs_melted$gene_short_name
+      marker_exprs_melted$f_label[is.na(marker_exprs_melted$f_label)]  <- marker_exprs_melted$f_id
+    }else{
+      marker_exprs_melted$f_label <- marker_exprs_melted$f_id
+    }    
   }else{
-    marker_exprs_melted$gene_label <- marker_exprs_melted$gene_id
+    marker_exprs_melted$f_label <- marker_exprs_melted$f_id
   }
   
   if (is.null(panel_order) == FALSE)
   {
-    marker_exprs_melted$gene_label <- factor(marker_exprs_melted$gene_label, levels=panel_order)
+    marker_exprs_melted$f_label <- factor(marker_exprs_melted$f_label, levels=panel_order)
   }
   
-  marker_counts <- ddply(marker_exprs_melted, c("gene_label", grouping), function(x) { 
+  marker_counts <- ddply(marker_exprs_melted, c("f_label", grouping), function(x) { 
     data.frame(target=sum(x$value > min_expr), 
                target_fraction=sum(x$value > min_expr)/nrow(x)) } )
   
@@ -243,7 +258,7 @@ plot_genes_positive_cells <- function(cds_subset, grouping = "State",
     qp <- ggplot(aes_string(x=grouping, y="target", fill=grouping), data=marker_counts)
   }
   
-  qp <- qp + facet_wrap(~gene_label, nrow=nrow, ncol=ncol, scales="free_y")
+  qp <- qp + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
   qp <-  qp + geom_bar(stat="identity") +
     ylab("Cells") + monocle_theme_opts()
 
@@ -277,7 +292,8 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     ncol=1, 
                                     panel_order=NULL, 
                                     color_by="State",
-                                    trend_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)"){
+                                    trend_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)",
+                                    label_by_short_name=TRUE){
   
   if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
                                                  "negbinomial", 
@@ -297,12 +313,12 @@ plot_genes_in_pseudotime <-function(cds_subset,
   if (is.null(min_expr)){
     min_expr <- cds_subset@lowerDetectionLimit
   }
-  colnames(cds_exprs) <- c("gene_id", "Cell", "expression")
+  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
   
   cds_pData <- pData(cds_subset)
   cds_fData <- fData(cds_subset)
   
-  cds_exprs <- merge(cds_exprs, cds_fData, by.x="gene_id", by.y="row.names")
+  cds_exprs <- merge(cds_exprs, cds_fData, by.x="f_id", by.y="row.names")
   cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
   
   if (integer_expression)
@@ -314,15 +330,20 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
   
-  # TODO: fix labeling to use gene_short_names
-  if (is.null(cds_exprs$gene_short_name) == FALSE){
-    cds_exprs$gene_label <- as.character(cds_exprs$gene_short_name)
-    cds_exprs$gene_label[is.na(cds_exprs$gene_label)]  <- cds_exprs$gene_id
+  if (label_by_short_name == TRUE){
+    if (is.null(cds_exprs$gene_short_name) == FALSE){
+      cds_exprs$f_label <- as.character(cds_exprs$gene_short_name)
+      cds_exprs$f_label[is.na(cds_exprs$f_label)]  <- cds_exprs$f_id
+    }else{
+      cds_exprs$f_label <- cds_exprs$f_id
+    }
   }else{
-    cds_exprs$gene_label <- cds_exprs$gene_id
+    cds_exprs$f_label <- cds_exprs$f_id
   }
-  cds_exprs$gene_label <- factor(cds_exprs$gene_label)
-  merged_df_with_vgam <- ddply(cds_exprs, .(gene_label), function(x) { 
+  
+  cds_exprs$f_label <- factor(cds_exprs$f_label)
+   
+  merged_df_with_vgam <- ddply(cds_exprs, .(f_label), function(x) { 
     fit_res <- tryCatch({
       #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
       #vg <- vgam(formula = adjusted_fpkm ~ s(pseudo_time), family = cennormal, data = x, extra=Extra, maxit=30, trace = TRUE) 
@@ -353,7 +374,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   if (is.null(panel_order) == FALSE)
   {
-    cds_subset$gene_label <- factor(cds_subset$gene_label, levels=panel_order)
+    cds_subset$f_label <- factor(cds_subset$f_label, levels=panel_order)
   }
   
   q <- ggplot(aes(Pseudotime, expression), data=cds_exprs) 
@@ -368,7 +389,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   #q <- q + geom_ribbon(aes(x=pseudo_time, ymin=conf_lo, ymax=conf_hi), alpha=I(0.15), data=merged_df_with_vgam)
   
-  q <- q + scale_y_log10() + facet_wrap(~gene_label, nrow=nrow, ncol=ncol, scales="free_y")
+  q <- q + scale_y_log10() + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
   
   q <- q + ylab("Expression") + xlab("Pseudo-time")
   
@@ -471,9 +492,9 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   m = m[,as.character(arrange(pData(cds), Pseudotime)$Cell)]
   
   if (is.null(fData(cds)$gene_short_name) == FALSE){
-    gene_labels <- fData(cds)$gene_short_name
-    gene_labels[is.na(gene_labels)]  <- fData(cds)$gene_id
-    row.names(m) <- gene_labels
+    f_labels <- fData(cds)$gene_short_name
+    f_labels[is.na(f_labels)]  <- fData(cds)$f_id
+    row.names(m) <- f_labels
   }
   
   #remove genes with no expression in any condition
