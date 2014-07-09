@@ -4,7 +4,8 @@
 \title{Plots the number of cells expressing one or more genes as a barplot}
 \usage{
 plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
-  nrow = NULL, ncol = 1, panel_order = NULL, plot_as_fraction = TRUE)
+  nrow = NULL, ncol = 1, panel_order = NULL, plot_as_fraction = TRUE,
+  label_by_short_name = TRUE)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}
@@ -20,6 +21,8 @@ plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
 \item{panel_order}{the order in which genes should be layed out (left-to-right, top-to-bottom)}
 
 \item{plot_as_fraction}{whether to show the percent instead of the number of cells expressing each gene}
+
+\item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 }
 \value{
 a ggplot2 plot object

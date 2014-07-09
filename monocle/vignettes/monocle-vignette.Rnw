@@ -295,7 +295,7 @@ diff_test_res <- differentialGeneTest(cds_subset,
                                       reducedModelFormulaStr="expression~Hours")
 diff_test_res <- merge(fData(cds_subset), diff_test_res, by="row.names")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
-plot_genes_jitter(cds_subset, grouping="Hours", color_by="State", plot_trend=TRUE) + facet_wrap( ~ gene_label, scales="free_y")
+plot_genes_jitter(cds_subset, grouping="Hours", color_by="State", plot_trend=TRUE) + facet_wrap( ~ feature_label, scales="free_y")
 @ %def 
 
 \section{Clustering genes by pseudotemporal expression pattern}
@@ -305,7 +305,8 @@ A common question that arises when studying time-series gene expression studies 
 We start by using the model fitting function that's used during differential expression testing.  This fitting procedure works gene by gene and can take a while, so we'll just work with 100 randomly chosen genes to keep the vignette small and fast.
 
 <<fit_full_model_for_cluster, eval=TRUE>>=
-full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~sm.ns(Pseudotime, df=3)")
+sampled_gene_cds <- HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),]
+full_model_fits <- fitModel(sampled_gene_cds,  modelFormulaStr="expression~sm.ns(Pseudotime, df=3)")
 @ %def
 
 The \Robject{full\_model\_fits} list contains a model for each gene that we've chosen.  We can generate a matrix of values where each row holds the predicted exression values for a gene over each cell, which correspond to the columns. Monocle provides the \Rfunction{responseMatrix} function to make this easy.

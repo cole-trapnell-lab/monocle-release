@@ -1,5 +1,5 @@
 utils::globalVariables(c("Pseudotime", "value", "ids", "ICA_dim_1", "ICA_dim_2", "State", 
-                         "value", "f_label", "expectation", "colInd", "rowInd", "value", 
+                         "value", "feature_label", "expectation", "colInd", "rowInd", "value", 
                          "source_ICA_dim_1", "source_ICA_dim_2"))
 
 monocle_theme_opts <- function()
@@ -86,14 +86,14 @@ plot_spanning_tree <- function(cds,
       markers_exprs <- melt(exprs(cds[row.names(markers_fData),]))
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
-      markers_exprs$f_label <- as.character(markers_exprs$gene_short_name)
-      markers_exprs$f_label[is.na(markers_exprs$f_label)] <- markers_exprs$Var1
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     edge_df <- merge(edge_df, markers_exprs, by.x="sample_name", by.y="Var2")
     #print (head(edge_df))
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~f_label)
+    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
   }else{
     g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
   }
@@ -135,6 +135,7 @@ plot_spanning_tree <- function(cds,
 #' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell  
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
+#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -164,18 +165,20 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   
   if (label_by_short_name == TRUE){
     if (is.null(cds_exprs$gene_short_name) == FALSE){
-      cds_exprs$f_label <- cds_exprs$gene_short_name
-      cds_exprs$f_label[is.na(cds_exprs$f_label)]  <- cds_exprs$f_id
+      cds_exprs$feature_label <- cds_exprs$gene_short_name
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)]  <- cds_exprs$f_id
     }else{
-      cds_exprs$f_label <- cds_exprs$f_id
+      cds_exprs$feature_label <- cds_exprs$f_id
     }
   }else{
-    cds_exprs$f_label <- cds_exprs$f_id
+    cds_exprs$feature_label <- cds_exprs$f_id
   }
+  
+  #print (head(cds_exprs))
   
   if (is.null(panel_order) == FALSE)
   {
-    cds_subset$f_label <- factor(cds_subset$f_label, levels=panel_order)
+    cds_subset$feature_label <- factor(cds_subset$feature_label, levels=panel_order)
   }
   
   q <- ggplot(aes_string(x=grouping, y="expression"), data=cds_exprs) 
@@ -190,7 +193,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     q <- q + stat_summary(aes_string(x=grouping, y="expression", color=color_by, group=color_by), fun.data = "mean_cl_boot", size=0.35, geom="line")
   }
   
-   q <- q + scale_y_log10() + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
+   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
   q <- q + ylab("Expression") + xlab(grouping)
   q <- q + monocle_theme_opts()
@@ -206,6 +209,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @param ncol the number of columns used when laying out the panels for each gene's expression
 #' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
 #' @param plot_as_fraction whether to show the percent instead of the number of cells expressing each gene 
+#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -233,21 +237,21 @@ plot_genes_positive_cells <- function(cds_subset,
   
   if (label_by_short_name == TRUE){
     if (is.null(marker_exprs_melted$gene_short_name) == FALSE){
-      marker_exprs_melted$f_label <- marker_exprs_melted$gene_short_name
-      marker_exprs_melted$f_label[is.na(marker_exprs_melted$f_label)]  <- marker_exprs_melted$f_id
+      marker_exprs_melted$feature_label <- marker_exprs_melted$gene_short_name
+      marker_exprs_melted$feature_label[is.na(marker_exprs_melted$feature_label)]  <- marker_exprs_melted$f_id
     }else{
-      marker_exprs_melted$f_label <- marker_exprs_melted$f_id
+      marker_exprs_melted$feature_label <- marker_exprs_melted$f_id
     }    
   }else{
-    marker_exprs_melted$f_label <- marker_exprs_melted$f_id
+    marker_exprs_melted$feature_label <- marker_exprs_melted$f_id
   }
   
   if (is.null(panel_order) == FALSE)
   {
-    marker_exprs_melted$f_label <- factor(marker_exprs_melted$f_label, levels=panel_order)
+    marker_exprs_melted$feature_label <- factor(marker_exprs_melted$feature_label, levels=panel_order)
   }
   
-  marker_counts <- ddply(marker_exprs_melted, c("f_label", grouping), function(x) { 
+  marker_counts <- ddply(marker_exprs_melted, c("feature_label", grouping), function(x) { 
     data.frame(target=sum(x$value > min_expr), 
                target_fraction=sum(x$value > min_expr)/nrow(x)) } )
   
@@ -258,7 +262,7 @@ plot_genes_positive_cells <- function(cds_subset,
     qp <- ggplot(aes_string(x=grouping, y="target", fill=grouping), data=marker_counts)
   }
   
-  qp <- qp + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
+  qp <- qp + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   qp <-  qp + geom_bar(stat="identity") +
     ylab("Cells") + monocle_theme_opts()
 
@@ -276,6 +280,7 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell 
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime 
+#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @return a ggplot2 plot object
 #' @export
 #' @examples
@@ -332,18 +337,18 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   if (label_by_short_name == TRUE){
     if (is.null(cds_exprs$gene_short_name) == FALSE){
-      cds_exprs$f_label <- as.character(cds_exprs$gene_short_name)
-      cds_exprs$f_label[is.na(cds_exprs$f_label)]  <- cds_exprs$f_id
+      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)]  <- cds_exprs$f_id
     }else{
-      cds_exprs$f_label <- cds_exprs$f_id
+      cds_exprs$feature_label <- cds_exprs$f_id
     }
   }else{
-    cds_exprs$f_label <- cds_exprs$f_id
+    cds_exprs$feature_label <- cds_exprs$f_id
   }
   
-  cds_exprs$f_label <- factor(cds_exprs$f_label)
+  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
    
-  merged_df_with_vgam <- ddply(cds_exprs, .(f_label), function(x) { 
+  merged_df_with_vgam <- ddply(cds_exprs, .(feature_label), function(x) { 
     fit_res <- tryCatch({
       #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
       #vg <- vgam(formula = adjusted_fpkm ~ s(pseudo_time), family = cennormal, data = x, extra=Extra, maxit=30, trace = TRUE) 
@@ -374,7 +379,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   if (is.null(panel_order) == FALSE)
   {
-    cds_subset$f_label <- factor(cds_subset$f_label, levels=panel_order)
+    cds_subset$feature_label <- factor(cds_subset$feature_label, levels=panel_order)
   }
   
   q <- ggplot(aes(Pseudotime, expression), data=cds_exprs) 
@@ -389,7 +394,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   #q <- q + geom_ribbon(aes(x=pseudo_time, ymin=conf_lo, ymax=conf_hi), alpha=I(0.15), data=merged_df_with_vgam)
   
-  q <- q + scale_y_log10() + facet_wrap(~f_label, nrow=nrow, ncol=ncol, scales="free_y")
+  q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
   q <- q + ylab("Expression") + xlab("Pseudo-time")
   
@@ -492,9 +497,9 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   m = m[,as.character(arrange(pData(cds), Pseudotime)$Cell)]
   
   if (is.null(fData(cds)$gene_short_name) == FALSE){
-    f_labels <- fData(cds)$gene_short_name
-    f_labels[is.na(f_labels)]  <- fData(cds)$f_id
-    row.names(m) <- f_labels
+    feature_labels <- fData(cds)$gene_short_name
+    feature_labels[is.na(feature_labels)]  <- fData(cds)$f_id
+    row.names(m) <- feature_labels
   }
   
   #remove genes with no expression in any condition

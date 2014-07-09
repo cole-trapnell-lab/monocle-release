@@ -5,7 +5,7 @@
 \usage{
 plot_genes_jitter(cds_subset, grouping = "State", min_expr = 0.1,
   cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
-  color_by = NULL, plot_trend = FALSE)
+  color_by = NULL, plot_trend = FALSE, label_by_short_name = TRUE)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}
@@ -25,6 +25,8 @@ plot_genes_jitter(cds_subset, grouping = "State", min_expr = 0.1,
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
 
 \item{plot_trend}{whether to plot a trendline tracking the average expression across the horizontal axis.}
+
+\item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 }
 \value{
 a ggplot2 plot object
