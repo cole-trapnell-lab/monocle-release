@@ -1,3 +1,115 @@
+#use the deconvoluated linear regression parameters to normalize the log_fpkm
+norm_kb <- function(kb, exprs_cds) {
+  k <- kb[1] 
+  b <- kb[2]
+  valid_genes <- which(exprs_cds > 0)
+  tmp <- k * log10(exprs_cds[valid_genes]) + b
+  norm_exprs <- exprs_cds
+  norm_exprs[valid_genes] <- 10^tmp
+  
+  norm_exprs
+}
+
+#peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
+smsn_mode_test <- function(fpkm, g = 2, fpkm_thresh = 0.1, return_all = F) {
+  log_fpkms <- log10(fpkm[fpkm > fpkm_thresh]) #only look the transcripts above a certain threshold
+  sm_2 <- smsn.mix(log_fpkms, nu = 3, g = 2, get.init = TRUE, criteria = TRUE, iter.max=1000,calc.im = FALSE, family="Normal")
+  #   print (sm_2)
+  
+  sm_1 <- smsn.mix(log_fpkms, nu = 3, g = 1, get.init = TRUE, criteria = TRUE, iter.max=1000, calc.im = FALSE, family="Normal")
+  #   print (sm_1)
+  
+  if (sm_1$aic >= sm_2$aic){
+    trick_location_max <- 10^max(sm_2$mu)
+    trick_location_min <- 10^min(sm_2$mu) #use the min / max 
+  }else{
+    trick_location_max <- 10^max(sm_1$mu)
+    trick_location_min <- 10^min(sm_1$mu)
+  }
+  
+  #best_cov <- 10^sm_analysis$mu[best_location]
+  trick_location_dmode <- 10^(dmode(log_fpkms))
+  
+  best_cov_max <- trick_location_max
+  best_cov_min <- trick_location_min
+  best_cov_dmode <- trick_location_dmode 
+  sd_fpkm <- 0
+  #   print (c(best_cov_max, best_cov_min, best_cov_dmode))
+  if(return_all) {
+    data.frame(best_cov_dmode = best_cov_dmode,
+               best_cov_max = best_cov_max,
+               best_cov_min = best_cov_min
+    ) 
+  }
+  else {
+    best_cov_min
+  }
+}  
+
+#' Transform FPKM matrix to absolute transcript matrix.
+#'
+#' @param fpkm_matrix an matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
+#' @return an matrix of absolute count for isoforms or genes after the transformation  
+#' @export 
+#' @example
+#' \dontrun{
+#' HSMM_fpkm_matrix <- exprs(HSMM)
+#' abs_count_matrix <- fpkm2abs(HSMM_fpkm_matrix)
+#'}
+#use the deconvoluated linear regression parameters to normalize the log_fpkm
+
+#accept an log fpkm matrix and transform it into the absolute transcript matrix
+#row and column names of the matrix are genes and cells respectively 
+fpkm2abs <- function(fpkm_matrix, return_trick_cds = F) {
+  #estimate the t^* by smsn two gaussian model, choose minial peak  1
+  t_estimate <- apply(fpkm_matrix, 2, smsn_mode_test) #best coverage estimate
+  names(t_estimate) <- colnames(fpkm_matrix)
+  
+  total_rna_df <- data.frame(Cell = colnames(fpkm_matrix), t_estimate = t_estimate)
+  #regression line between b^* = m * k^* + c 
+  m <- -4.595369 
+  c <- 2.661302
+  
+  #solve k and b for t by matrix formulation (B = Ax)
+  k_b_solution <- ddply(total_rna_df, .(Cell), function(x){
+    a_matrix <- matrix(c(log10(x[, "t_estimate"]), 1, m, -1), ncol = 2, nrow = 2, byrow = T)
+    
+    colnames(a_matrix) <- c("k", "b")
+    b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
+    k_b_solution <- t(solve(a_matrix, b_matrix)) 
+  })
+  
+  print(k_b_solution[1:5, ])
+  #predict the absolute isoform based on the adjustment 
+  
+  rownames(k_b_solution) <- k_b_solution$Cell
+  k_b_solution <- t(k_b_solution[, c(2, 3)]) #ddply give Cell, k, b columns, take the last two 
+  split_kb <- split(k_b_solution, col(k_b_solution, as.factor =  T))
+  split_fpkm <- split(fpkm_matrix, col(fpkm_matrix, as.factor = T))
+  
+  adj_split_fpkm <- mapply(norm_kb, split_kb, split_fpkm)
+  
+  #confirm our adjustment
+  #genes only have one isoform 
+  #qplot(x = adj_est_iso_cds[1,], y = exprs(isoform_trick_exprs)[1, ])
+  
+  total_rna_df$estimate_k <- k_b_solution[1, ]
+  total_rna_df$estimate_b <- k_b_solution[2, ]
+  
+  #global normalization
+  median_intercept <- median(total_rna_df$estimate_b)
+  scaling_factor <- 10^(median_intercept - total_rna_df$estimate_b) #ensure the cells with intercept close to median_intercept don't scale
+  
+  split_scaling_factor <- split(scaling_factor, factor(1:length(scaling_factor)))
+  split_gene_cds <- split(adj_split_fpkm, col(adj_split_fpkm, as.factor = T))
+  norm_cds <- mapply(function(x, y) x *y, split_gene_cds, split_scaling_factor)
+  row.names(norm_cds) <- row.names(fpkm_matrix)
+  
+  if(return_trick_cds == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
+    return (list(norm_cds = norm_cds, k_b_solution = k_b_solution, scaling_factor = scaling_factor))
+  }
+  norm_cds
+}
 
 #' Creates a new CellDateSet object.
 #'
