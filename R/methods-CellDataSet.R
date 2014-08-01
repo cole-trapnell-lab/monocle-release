@@ -67,8 +67,8 @@ fpkm2abs <- function(fpkm_matrix, return_trick_cds = F) {
   
   total_rna_df <- data.frame(Cell = colnames(fpkm_matrix), t_estimate = t_estimate)
   #regression line between b^* = m * k^* + c 
-  m <- -4.595369 
-  c <- 2.661302
+  m <- -3.652201 
+  c <- 2.263576
   
   #solve k and b for t by matrix formulation (B = Ax)
   k_b_solution <- ddply(total_rna_df, .(Cell), function(x){
