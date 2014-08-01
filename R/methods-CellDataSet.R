@@ -10,65 +10,99 @@ norm_kb <- function(kb, exprs_cds) {
   norm_exprs
 }
 
-#peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
-smsn_mode_test <- function(fpkm, g = 2, fpkm_thresh = 0.1, return_all = F) {
-  log_fpkms <- log10(fpkm[fpkm > fpkm_thresh]) #only look the transcripts above a certain threshold
-  sm_2 <- smsn.mix(log_fpkms, nu = 3, g = 2, get.init = TRUE, criteria = TRUE, iter.max=1000,calc.im = FALSE, family="Normal")
-  #   print (sm_2)
-  
-  sm_1 <- smsn.mix(log_fpkms, nu = 3, g = 1, get.init = TRUE, criteria = TRUE, iter.max=1000, calc.im = FALSE, family="Normal")
-  #   print (sm_1)
-  
-  if (sm_1$aic >= sm_2$aic){
-    trick_location_max <- 10^max(sm_2$mu)
-    trick_location_min <- 10^min(sm_2$mu) #use the min / max 
-  }else{
-    trick_location_max <- 10^max(sm_1$mu)
-    trick_location_min <- 10^min(sm_1$mu)
+#' Find the most abundant FPKM estimator of single cell FPKM matrix 
+#' @param fpkm_matrix a matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
+#' @param return_all parameter for the intended return results. If setting TRUE, matrix of dmode as well as max mu and min mu of two gaussian distribution mixture will be returned 
+#' @param fpkm_thresh the threshold for FPKM value used in detecting the most abundant FPKM value
+#' @return an vector of most abundant fpkm value corresponding to the transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian density function and the max or min 
+#' mode from the mixture gaussian model 
+#' @detail This function estimates the most abundant FPKM (t^*) using gaussian kernel density function. It can also optionally output the t^* based on a two gaussian mixture model 
+#' based on the smsn.mixture from mixsmsn package 
+#' @export 
+#' @example 
+#' \dontrun{ 
+#' HSMM_fpkm_matrix <- exprs(HSMM)
+#' t_estimate = estimate_t(HSMM_fpkm_matrix)
+#'}
+estimate_t <- function(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...) {
+ #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
+  dmode <- function(x, breaks="Sturges") {
+    den <- density(x, kernel=c("gaussian"))
+    ( den$x[den$y==max(den$y)] )   
   }
   
-  #best_cov <- 10^sm_analysis$mu[best_location]
-  trick_location_dmode <- 10^(dmode(log_fpkms))
-  
-  best_cov_max <- trick_location_max
-  best_cov_min <- trick_location_min
-  best_cov_dmode <- trick_location_dmode 
-  sd_fpkm <- 0
-  #   print (c(best_cov_max, best_cov_min, best_cov_dmode))
-  if(return_all) {
+  smsn_mode_test <- function(fpkm, g = 2, fpkm_thresh = 0.1) {
+    log_fpkms <- log10(fpkm[fpkm > fpkm_thresh]) #only look the transcripts above a certain threshold
+    sm_2 <- smsn.mix(log_fpkms, nu = 3, g = 2, get.init = TRUE, criteria = TRUE, iter.max=1000,calc.im = FALSE, family="Normal")
+    #   print (sm_2)
+    
+    sm_1 <- smsn.mix(log_fpkms, nu = 3, g = 1, get.init = TRUE, criteria = TRUE, iter.max=1000, calc.im = FALSE, family="Normal")
+    #   print (sm_1)
+    
+    if (sm_1$aic >= sm_2$aic){
+      trick_location_max <- 10^max(sm_2$mu)
+      trick_location_min <- 10^min(sm_2$mu) #use the min / max 
+    }else{
+      trick_location_max <- 10^max(sm_1$mu)
+      trick_location_min <- 10^min(sm_1$mu)
+    }
+    
+    #best_cov <- 10^sm_analysis$mu[best_location]
+    trick_location_dmode <- 10^(dmode(log_fpkms))
+    
+    best_cov_max <- trick_location_max
+    best_cov_min <- trick_location_min
+    sd_fpkm <- 0
+    #   print (c(best_cov_max, best_cov_min, best_cov_dmode))
     data.frame(best_cov_dmode = best_cov_dmode,
                best_cov_max = best_cov_max,
                best_cov_min = best_cov_min
-    ) 
+      ) 
   }
-  else {
-    best_cov_min
-  }
-}  
 
-#' Transform FPKM matrix to absolute transcript matrix.
+  #apply each column   
+  if(return_all){
+    do.call(rbind, apply(fpkm_matrix, 2, function(fpkm) smsn_mode_test(fpkm, ...)))
+  }
+  else{
+    apply(fpkm_matrix, 2, function(fpkm) 10^dmode(log10(fpkm[fpkm > fpkm_thresh]))) #best coverage estimate}
+  }
+}
+
+#' Transform FPKM matrix to absolute transcript matrix based on the decomposed linear regression parameters from most abundant isoform fpkm value.
 #'
 #' @param fpkm_matrix an matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
-#' @return an matrix of absolute count for isoforms or genes after the transformation  
+#' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene FPKM can also give good approximation but estimators
+#' based on isoform FPKM will give better results in general 
+#' @param global_scaling parameter for globaling scaling. Not perform global scaling by default (global_scaling = 1)
+#' @param return_all parameter for the intended return results. If setting TRUE, matrix of k^*, b^* and vector of global_scaling as well the transformed absolute cds will be returned 
+#' in a list format 
+#' @return an matrix of absolute count for isoforms or genes after the transformation. For more details on other output, please refer to detail
+#' @detail This function takes a FPKM matrix and a vector of estimated most abundant FPKM value from the isoform FPKM matrix and transform it into absolute transcript number. 
+#' It is based on the fact that most isoforms of gene in a single cell only express one copy so that the most abundant isoform FPKM (t^*) will corresponding to 1 copy transcript. The 
+#' function takes the the vector t^* and then decomposes it into two parameters vectors k^* and b^* (corresponding to each cell) which correspond to the slope and intercept when 
+#' we perform the robust linear regression for the spikein data. This decomposition is based on an observed relationship between k and b in terms of b = -3.652201 k + 2.263576. The 
+#' function will then apply a linear transformation to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The function can also apply a global 
+#' adjustment if setting global_scaling = TRUE. The k*, b* parameters vectors and the global scaling factor can be output in a list format (together with norm_cds) if setting return_all
+#' == TRUE
 #' @export 
 #' @example
 #' \dontrun{
 #' HSMM_fpkm_matrix <- exprs(HSMM)
-#' abs_count_matrix <- fpkm2abs(HSMM_fpkm_matrix)
+#' HSMM_abs_matrix <- fpkm2abs(HSMM_fpkm_matrix, t_estimate = estimate_t(fpkm_matrix))
 #'}
 #use the deconvoluated linear regression parameters to normalize the log_fpkm
 
 #accept an log fpkm matrix and transform it into the absolute transcript matrix
 #row and column names of the matrix are genes and cells respectively 
-fpkm2abs <- function(fpkm_matrix, return_trick_cds = F) {
+fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), global_scaling = FALSE, return_all = FALSE) {
   #estimate the t^* by smsn two gaussian model, choose minial peak  1
-  t_estimate <- apply(fpkm_matrix, 2, smsn_mode_test) #best coverage estimate
   names(t_estimate) <- colnames(fpkm_matrix)
   
   total_rna_df <- data.frame(Cell = colnames(fpkm_matrix), t_estimate = t_estimate)
   #regression line between b^* = m * k^* + c 
-  m <- -3.652201 
-  c <- 2.263576
+  m <- -4.595369 
+  c <- 2.661302
   
   #solve k and b for t by matrix formulation (B = Ax)
   k_b_solution <- ddply(total_rna_df, .(Cell), function(x){
@@ -97,15 +131,22 @@ fpkm2abs <- function(fpkm_matrix, return_trick_cds = F) {
   total_rna_df$estimate_b <- k_b_solution[2, ]
   
   #global normalization
-  median_intercept <- median(total_rna_df$estimate_b)
-  scaling_factor <- 10^(median_intercept - total_rna_df$estimate_b) #ensure the cells with intercept close to median_intercept don't scale
-  
-  split_scaling_factor <- split(scaling_factor, factor(1:length(scaling_factor)))
-  split_gene_cds <- split(adj_split_fpkm, col(adj_split_fpkm, as.factor = T))
-  norm_cds <- mapply(function(x, y) x *y, split_gene_cds, split_scaling_factor)
+  if(global_scaling == TRUE) {
+    median_intercept <- median(total_rna_df$estimate_b)
+    scaling_factor <- 10^(median_intercept - total_rna_df$estimate_b) #ensure the cells with intercept close to median_intercept don't scale
+    split_scaling_factor <- split(scaling_factor, factor(1:length(scaling_factor)))
+    split_gene_cds <- split(adj_split_fpkm, col(adj_split_fpkm, as.factor = T))
+    norm_cds <- mapply(function(x, y) x *y, split_gene_cds, split_scaling_factor)
+  }
+  else {
+    global_scaling = 1
+    norm_cds <- adj_split_fpkm
+  }
+
   row.names(norm_cds) <- row.names(fpkm_matrix)
+  colnames(norm_cds) <- colnames(fpkm_matrix)
   
-  if(return_trick_cds == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
+  if(return_all == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
     return (list(norm_cds = norm_cds, k_b_solution = k_b_solution, scaling_factor = scaling_factor))
   }
   norm_cds
