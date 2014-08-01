@@ -2,10 +2,9 @@
 norm_kb <- function(kb, exprs_cds) {
   k <- kb[1] 
   b <- kb[2]
-  valid_genes <- which(exprs_cds > 0)
-  tmp <- k * log10(exprs_cds[valid_genes]) + b
+  tmp <- k * log10(exprs_cds) + b
   norm_exprs <- exprs_cds
-  norm_exprs[valid_genes] <- 10^tmp
+  norm_exprs <- 10^tmp
   
   norm_exprs
 }
