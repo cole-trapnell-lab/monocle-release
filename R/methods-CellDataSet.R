@@ -3,7 +3,6 @@ norm_kb <- function(kb, exprs_cds) {
   k <- kb[1] 
   b <- kb[2]
   tmp <- k * log10(exprs_cds) + b
-  norm_exprs <- exprs_cds
   norm_exprs <- 10^tmp
   
   norm_exprs
@@ -118,7 +117,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), global_s
   rownames(k_b_solution) <- k_b_solution$Cell
   k_b_solution <- t(k_b_solution[, c(2, 3)]) #ddply give Cell, k, b columns, take the last two 
   split_kb <- split(k_b_solution, col(k_b_solution, as.factor =  T))
-  split_fpkm <- split(fpkm_matrix, col(fpkm_matrix, as.factor = T))
+  split_fpkm <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
   
   adj_split_fpkm <- mapply(norm_kb, split_kb, split_fpkm)
   
