@@ -82,5 +82,7 @@ export(
    compareModels,
    responseMatrix,
    clusterGenes,
-   selectNegentropyGenes
+   selectNegentropyGenes,
+   fpkm2abs,
+   estimate_t
 )
