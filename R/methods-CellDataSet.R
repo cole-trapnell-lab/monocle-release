@@ -1527,11 +1527,14 @@ compareModels <- function(full_models, reduced_models){
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param cores the number of cores to be used while testing each gene for differential expression
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @param fc_list A list specifying the comparison group. For example list(type = 'Time', comparison = c('E18.5', 'E14.5') means calculating the mean fold changes between
+#' cell group 'E18.5' to group 'E14.5' in pData Time column
+#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models. A log2 fold change between two groups will
+#' also returned if fc_list is properly setted 
 #' @export
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-                                 reducedModelFormulaStr="expression~1", cores=1){
+                                 reducedModelFormulaStr="expression~1", cores=1, fc_list = NULL){
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
@@ -1548,6 +1551,9 @@ differentialGeneTest <- function(cds,
   
   diff_test_res <- do.call(rbind.data.frame, diff_test_res)
   diff_test_res$qval <- p.adjust(diff_test_res$pval, method="BH")
+  #provide the fold_change between two groups
+  diff_test_res$fc <- log2(mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]) / 
+                      mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]))
   diff_test_res
 }
 
