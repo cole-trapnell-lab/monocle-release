@@ -1552,8 +1552,10 @@ differentialGeneTest <- function(cds,
   diff_test_res <- do.call(rbind.data.frame, diff_test_res)
   diff_test_res$qval <- p.adjust(diff_test_res$pval, method="BH")
   #provide the fold_change between two groups
-  diff_test_res$fc <- log2(mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]) / 
-                      mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]))
+  if(fc_list != NULL) {
+    diff_test_res$fc <- log2(mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]) / 
+                        mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]))
+  }
   diff_test_res
 }
 
@@ -1565,7 +1567,6 @@ differentialGeneTest <- function(cds,
 #   test_res <- compareModels(full_model_fits, reduced_model_fits)
 #   test_res
 # }
-
 
 #' Plots the minimum spanning tree on cells.
 #'
