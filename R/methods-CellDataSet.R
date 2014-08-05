@@ -46,7 +46,7 @@ estimate_t <- function(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...) {
     }
     
     #best_cov <- 10^sm_analysis$mu[best_location]
-    trick_location_dmode <- 10^(dmode(log_fpkms))
+    best_cov_dmode <- 10^(dmode(log_fpkms))
     
     best_cov_max <- trick_location_max
     best_cov_min <- trick_location_min
