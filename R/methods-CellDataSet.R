@@ -8,6 +8,11 @@ norm_kb <- function(kb, exprs_cds) {
     norm_exprs
 }
 
+dmode <- function(x, breaks="Sturges") {
+    den <- density(x, kernel=c("gaussian"))
+    ( den$x[den$y==max(den$y)] )
+}
+
 #' Find the most abundant FPKM estimator of single cell FPKM matrix
 #' @param fpkm_matrix a matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of dmode as well as max mu and min mu of two gaussian distribution mixture will be returned
@@ -24,10 +29,6 @@ norm_kb <- function(kb, exprs_cds) {
 #'}
 estimate_t <- function(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...) {
     #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
-    dmode <- function(x, breaks="Sturges") {
-        den <- density(x, kernel=c("gaussian"))
-        ( den$x[den$y==max(den$y)] )
-    }
     
     smsn_mode_test <- function(fpkm, g = 2, fpkm_thresh = 0.1) {
         log_fpkms <- log10(fpkm[fpkm > fpkm_thresh]) #only look the transcripts above a certain threshold
@@ -95,13 +96,14 @@ opt_norm_kb <- function(fpkm, kb) {
 }
 
 #rmse between the dmode from t estimate based linear transformation and the spike-dmode
-t_rmse_abs_cnt <- function (par, alpha = 1, cores = 1, ...) {
-    t_estimate <- par[1:sample_number] #t*: the estimates for the best coverage
-    names(t_estimate) <- colnames(fpkm_matrix[, sample_cell])
+t_rmse_abs_cnt <- function (par, alpha = 1, cores = 1, fpkm_mat = fpkm_matrix, ...) {
+    cell_num <- ncol(fpkm_mat)
+    t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
+    names(t_estimate) <- colnames(fpkm_mat)
     split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
     print(paste("t_estimate is: ", paste(as.character(t_estimate), sep = '', collapse = ' '), sep = '', collapse = ''))
     
-    mc_guess <- par[(sample_number + 1):(sample_number + 2)] #m, c parameters: b = m k + c
+    mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
     print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
     
     m_val <- mc_guess[1]
@@ -124,10 +126,11 @@ t_rmse_abs_cnt <- function (par, alpha = 1, cores = 1, ...) {
 }
 
 #rmse between the dmode from kb based (without t estimate) linear transformation and the spike-dmode
-kb_rmse_abs_cnt <- function (par, ...) {
-    kb <- as.data.frame(matrix(par[1:(2 * sample_number)], nrow = 2, byrow = T)) #t*: the estimates for the best coverage
+kb_rmse_abs_cnt <- function (par, cores = 1, fpkm_mat = fpkm_matrix, ...) {
+    cell_num <- ncol(fpkm_mat)
+    kb <- as.data.frame(matrix(par[1:(2 * cell_num)], nrow = 2, byrow = T)) #t*: the estimates for the best coverage
     split_kb <- split(as.matrix(kb), col(kb, as.factor = T))
-    dimnames(kb) <- list(c('k', 'b'), colnames(fpkm_matrix[, sample_cell]))
+    dimnames(kb) <- list(c('k', 'b'), colnames(fpkm_mat))
     #   print("kb is")
     print(kb)
     
@@ -181,19 +184,22 @@ kb_rmse_abs_cnt <- function (par, ...) {
 
 #accept an log fpkm matrix and transform it into the absolute transcript matrix
 #row and column names of the matrix are genes and cells respectively
-fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fragment = 1.5e6, alpha_v = 1, global_scaling = FALSE, return_all = FALSE, num_cores = 1) {
+fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fragment = 1.5e6, alpha_v = 1, m = -3.652201, c = 2.263576, global_scaling = FALSE, return_all = FALSE, num_cores = 1) {
     #alpha_v <- exp(log10(1.5 * 10e6  / sample_sheet$Mapped.Fragments)) #we can estimate alpha_v by certain function
     print('optimizing t_estimates and m and c...') #silence the optimization output
-    optim_para <- optim(par = c(as.vector(t_estimate), -3.652201, 2.263576), #m, c
+
+    split_fpkm <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
+
+    optim_para <- optim(par = c(as.vector(t_estimate), m, c), #m, c
     t_rmse_abs_cnt, gr = NULL, alpha = alpha_v, cores = num_cores,
     method = c("L-BFGS-B"),
     lower = c(rep(as.vector(t_estimate) - as.vector(t_estimate) / 2, 1), -10, 0.1), #search half low or up of the t_estimate
     upper = c(rep(as.vector(t_estimate) + as.vector(t_estimate) / 2, 1), -0.1, 10), #m, c is between (-0.1 to -10 and 0.1 to 10)
-    control = list(factr = 1e7, pgtol = 1e-3, trace = TRUE),
+    control = list(factr = 1e12, pgtol = 1e-3, trace = TRUE),
     hessian = FALSE)
     print('optimization is done!')
     
-    t_estimate <- optim_para$par[length(t_estimate)]
+    t_estimate <- optim_para$par[1:length(t_estimate)]
     #regression line between b^* = m * k^* + c
     m <- optim_para$par[length(t_estimate) + 1]
     c <- optim_para$par[length(t_estimate) + 2]
@@ -218,7 +224,6 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
     rownames(k_b_solution) <- k_b_solution$Cell
     k_b_solution <- t(k_b_solution[, c(2, 3)]) #ddply give Cell, k, b columns, take the last two
     split_kb <- split(k_b_solution, col(k_b_solution, as.factor =  T))
-    split_fpkm <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
     
     adj_split_fpkm <- mcmapply(norm_kb, split_kb, split_fpkm, mc.cores = num_cores)
     
@@ -251,6 +256,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
     }
     norm_cds
 }
+
 #' Creates a new CellDateSet object.
 #'
 #' @param cellData expression data matrix for an experiment
