@@ -97,14 +97,15 @@ opt_norm_kb <- function(fpkm, kb) {
 }
 
 #rmse between the dmode from t estimate based linear transformation and the spike-dmode
-t_rmse_abs_cnt <- function (par, fpkm_mat, split_fpkm, alpha = 1, cores = 1, ...) {
+t_rmse_abs_cnt <- function (par, t_estimate, fpkm_mat, split_fpkm, alpha = 1, cores = 1, ...) {
   cell_num <- ncol(fpkm_mat)
-  t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
+  #t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
   names(t_estimate) <- colnames(fpkm_mat)
   split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
   print(paste("t_estimate is: ", paste(as.character(t_estimate), sep = '', collapse = ' '), sep = '', collapse = ''))
   
-  mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
+  #mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
+  mc_guess <- par
   print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
   
   m_val <- mc_guess[1]
