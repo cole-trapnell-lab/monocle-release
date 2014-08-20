@@ -69,7 +69,7 @@ estimate_t <- function(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...) {
 }
 
 #linear transform by t* and m, c
-opt_norm_t <- function(t, fpkm, m, c) {
+opt_norm_t <- function(t, fpkm, m, c, return_norm = FALSE) {
     a_matrix <- matrix(c(log10(t), 1, m,
     -1), ncol = 2, nrow = 2, byrow = T)
     colnames(a_matrix) <- c("k", "b")
@@ -81,6 +81,7 @@ opt_norm_t <- function(t, fpkm, m, c) {
     tmp <- k * log10(fpkm) + b
     abs_cnt <- 10^tmp
     
+    if(return_norm) return(abs_cnt)
     10^dmode(log10(abs_cnt[abs_cnt > 0]))
 }
 
@@ -96,64 +97,39 @@ opt_norm_kb <- function(fpkm, kb) {
 }
 
 #rmse between the dmode from t estimate based linear transformation and the spike-dmode
-t_rmse_abs_cnt <- function (par, alpha = 1, cores = 1, fpkm_mat = fpkm_matrix, ...) {
-    cell_num <- ncol(fpkm_mat)
-    t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
-    names(t_estimate) <- colnames(fpkm_mat)
-    split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
-    print(paste("t_estimate is: ", paste(as.character(t_estimate), sep = '', collapse = ' '), sep = '', collapse = ''))
-    
-    mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
-    print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
-    
-    m_val <- mc_guess[1]
-    c_val <- mc_guess[2]
-    cell_dmode <- tryCatch({
-        if(cores){
-            cell_dmode <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, mc.cores = cores)
-        }
-        else {
-            cell_dmode <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val)
-        }
-        cell_dmode},
+t_rmse_abs_cnt <- function (par, fpkm_mat, split_fpkm, alpha = 1, cores = 1, ...) {
+  cell_num <- ncol(fpkm_mat)
+  t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
+  names(t_estimate) <- colnames(fpkm_mat)
+  split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
+  print(paste("t_estimate is: ", paste(as.character(t_estimate), sep = '', collapse = ' '), sep = '', collapse = ''))
+  
+  mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
+  print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
+  
+  m_val <- mc_guess[1]
+  c_val <- mc_guess[2]
+  cell_dmode <- tryCatch({
+    if(cores > 1){
+      cell_dmode <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, mc.cores = cores)
+      adj_est_std_cds <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, return_norm = T, mc.cores = cores)
+    }
+    else {
+      cell_dmode <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val)
+      adj_est_std_cds <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, return_norm = T)
+    }
+    cell_dmode},
     error = function(e) {print(e); t_estimate} #return what is better?
-    )
-    print(paste("cell_dmode is: ", paste(as.character(cell_dmode), sep = '', collapse = ' '), sep = '', collapse = ''))
-    
-    rmse <- sqrt(mean((cell_dmode - alpha)^2)) #rmse between the estimated cell_dmode and the 1 copy of transcripts
-    print(paste('rmse is:', rmse, sep = ' '))
-    rmse
-}
-
-#rmse between the dmode from kb based (without t estimate) linear transformation and the spike-dmode
-kb_rmse_abs_cnt <- function (par, cores = 1, fpkm_mat = fpkm_matrix, ...) {
-    cell_num <- ncol(fpkm_mat)
-    kb <- as.data.frame(matrix(par[1:(2 * cell_num)], nrow = 2, byrow = T)) #t*: the estimates for the best coverage
-    split_kb <- split(as.matrix(kb), col(kb, as.factor = T))
-    dimnames(kb) <- list(c('k', 'b'), colnames(fpkm_mat))
-    #   print("kb is")
-    print(kb)
-    
-    #   mc_guess <- par[(sample_number + 1):(sample_number + 2)] #m, c parameters: b = m k + c
-    #   print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
-    
-    m_val <- mc_guess[1]
-    c_val <- mc_guess[2]
-    cell_dmode <- tryCatch({
-        if(cores){
-            cell_dmode <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, mc.cores = cores)
-        }
-        else {
-            cell_dmode <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val)
-        }
-        cell_dmode},
-    error = function(e) {print(e); t_estimate} #return what is better?
-    )
-    
-    print(paste("cell_dmode is: ", paste(as.character(cell_dmode), sep = '', collapse = ' '), sep = '', collapse = ''))
-    rmse <- sqrt(mean((cell_dmode - alpha)^2)) #rmse between the estimated cell_dmode and the 1 copy of transcripts
-    print(paste('rmse is:', rmse, sep = ' '))
-    rmse
+  )
+  print(paste("cell_dmode is: ", paste(as.character(cell_dmode), sep = '', collapse = ' '), sep = '', collapse = ''))
+  
+  rmse <- sqrt(mean((cell_dmode - alpha)^2)) #rmse between the estimated cell_dmode and the 1 copy of transcripts
+  print(paste('rmse is:', rmse, sep = ' '))
+  
+  sum_total_cells_rna <- colSums(adj_est_std_cds)
+  #sum_total_cells_rna[is.infinite(sum_total_cells_rna)] <- 7861584 * 2
+  print(paste('sum of all total RNA is', sum_total_cells_rna))
+  sqrt(mean(((cell_dmode - alpha) / sum_total_cells_rna)^2)) #new 
 }
 
 #' Transform FPKM matrix to absolute transcript matrix based on the decomposed linear regression parameters from most abundant isoform fpkm value.
@@ -188,21 +164,23 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
     #alpha_v <- exp(log10(1.5 * 10e6  / sample_sheet$Mapped.Fragments)) #we can estimate alpha_v by certain function
     print('optimizing t_estimates and m and c...') #silence the optimization output
 
-    split_fpkm <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
+    split_fpkms <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
 
-    optim_para <- optim(par = c(as.vector(t_estimate), m, c), #m, c
-    t_rmse_abs_cnt, gr = NULL, alpha = alpha_v, cores = num_cores,
-    method = c("L-BFGS-B"),
-    lower = c(rep(as.vector(t_estimate) - as.vector(t_estimate) / 2, 1), -10, 0.1), #search half low or up of the t_estimate
-    upper = c(rep(as.vector(t_estimate) + as.vector(t_estimate) / 2, 1), -0.1, 10), #m, c is between (-0.1 to -10 and 0.1 to 10)
-    control = list(factr = 1e12, pgtol = 1e-3, trace = TRUE),
-    hessian = FALSE)
+    optim_para <- optim(par = c(m, c), 
+                    t_rmse_abs_cnt, gr = NULL, t_estimate = t_estimate, alpha = alpha_v, cores = num_cores, fpkm_mat = fpkm_matrix, split_fpkm = split_fpkms,
+                    method = c("L-BFGS-B"),
+                    lower = c(rep(as.vector(t_estimate) - 0, 0), -10, 0.1), #search half low or up of the t_estimate
+                    upper = c(rep(as.vector(t_estimate) + 0, 0), -0.1, 10), #m, c is between (-0.1 to -10 and 0.1 to 10)
+                    control = list(factr = 1e12, pgtol = 1e-3, trace = 1, ndeps = c(1e-3, 1e-3) ), #as.vector(t_estimate) / 1000,
+                    hessian = FALSE)
     print('optimization is done!')
     
-    t_estimate <- optim_para$par[1:length(t_estimate)]
+    #t_estimate <- optim_para$par[1:length(t_estimate)]
     #regression line between b^* = m * k^* + c
-    m <- optim_para$par[length(t_estimate) + 1]
-    c <- optim_para$par[length(t_estimate) + 2]
+    #m <- optim_para$par[length(t_estimate) + 1]
+    #c <- optim_para$par[length(t_estimate) + 2]
+    m <- optim_para$par[1]
+    c <- optim_para$par[2]
     
     #estimate the t^* by smsn two gaussian model, choose minial peak  1
     names(t_estimate) <- colnames(fpkm_matrix)
@@ -225,7 +203,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
     k_b_solution <- t(k_b_solution[, c(2, 3)]) #ddply give Cell, k, b columns, take the last two
     split_kb <- split(k_b_solution, col(k_b_solution, as.factor =  T))
     
-    adj_split_fpkm <- mcmapply(norm_kb, split_kb, split_fpkm, mc.cores = num_cores)
+    adj_split_fpkm <- mcmapply(norm_kb, split_kb, split_fpkms, mc.cores = num_cores)
     
     #confirm our adjustment
     #genes only have one isoform
@@ -244,7 +222,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
         norm_cds <- mcmapply(function(x, y) x *y, split_gene_cds, split_scaling_factor, mc.cores = num_cores)
     }
     else {
-        global_scaling = 1
+        scaling_factor = 1
         norm_cds <- adj_split_fpkm
     }
     
@@ -252,7 +230,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
     colnames(norm_cds) <- colnames(fpkm_matrix)
     
     if(return_all == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
-        return (list(norm_cds = norm_cds, k_b_solution = k_b_solution, scaling_factor = scaling_factor))
+        return (list(norm_cds = norm_cds, k_b_solution = k_b_solution, scaling_factor = scaling_factor, optim_para = optim_para))
     }
     norm_cds
 }
@@ -1659,7 +1637,7 @@ differentialGeneTest <- function(cds,
   diff_test_res <- do.call(rbind.data.frame, diff_test_res)
   diff_test_res$qval <- p.adjust(diff_test_res$pval, method="BH")
   #provide the fold_change between two groups
-  if(fc_list != NULL) {
+  if(!is.null(fc_list)) {
     diff_test_res$fc <- log2(mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]) / 
                         mean(exprs(cds)[, pData(cds)[, fc_list[[1]]] == fc_list[[2]][1]]))
   }
