@@ -1,27 +1,24 @@
-MONOCLE 0.99.0-alpha1
+MONOCLE 0.99.6
 =======================
 
-This is an ALPHA release of the Monocle analysis toolkit for
+This is a BETA release of the Monocle analysis toolkit for
 single-cell RNA-Seq experiments.  To use this package, you 
 will need the R statistical computing environment (version 3.0 or later)
 and several packages available through Bioconductor and CRAN.
 
-This package is in the ALPHA stage of development, meaning
-features and interfaces are subject to change as newer
-versions are released.  Updates to Monocle will be distributed
-through the Monocle website at:
+This package is in the BETA stage of development, meaning
+features will continue to be added, though we will try to keep interfaces as 
+consistent as possible as new versions are released.  
+
+Updates to Monocle will be distributed through the Monocle website at:
 
 http://monocle-bio.sourceforge.net
 
 This release supports Mac OS X and Linux. Windows may support this 
 build, but Monocle has not been tested on Windows yet.
 
-To install this package, type the command below at the terminal:
 
-R CMD INSTALL monocle_0.99.0.tar.gz
 
-To view a "vignette" describing what Monocle can do, start an R session
-and type:
 
 
 
