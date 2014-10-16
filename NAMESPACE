@@ -45,6 +45,9 @@ importFrom(parallel, makeCluster, stopCluster)
 
 importFrom(plyr, ., arrange, ddply, rename)
 
+importFrom(dplyr, select, distinct)
+
+
 importFrom(reshape2, melt)
 
 importFrom(stats, as.dist, as.formula, cor, dist, hclust, p.adjust,
@@ -66,6 +69,8 @@ export(
    "reducedDimW<-",
    reducedDimA,
    "reducedDimA<-",
+   vstExprs,
+   "vstExprs<-",
    minSpanningTree,
    "minSpanningTree<-",
    cellPairwiseDistances,
@@ -83,6 +88,8 @@ export(
    responseMatrix,
    clusterGenes,
    selectNegentropyGenes,
+   selectGenesInExpressionRange,
    fpkm2abs,
-   estimate_t
+   estimate_t,
+   computeVarianceStabilizedValues
 )
