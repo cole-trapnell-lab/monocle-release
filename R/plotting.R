@@ -298,20 +298,27 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     panel_order=NULL, 
                                     color_by="State",
                                     trend_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)",
-                                    label_by_short_name=TRUE){
+                                    label_by_short_name=TRUE,
+                                    relative_expr=TRUE){
   
-  if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
-                                                 "negbinomial", 
-                                                 "poissonff", 
-                                                 "quasipoissonff")){
+  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
+    relative_expr <- TRUE
   }
   
   if (integer_expression)
   {
-    cds_exprs <- melt(round(exprs(cds_subset)))
+    cds_exprs <- exprs(cds_subset)
+    if (relative_expr){
+      if (is.null(sizeFactors(cds_subset)))
+      {
+        stop("Error: you must call estimateSizeFactors() first")
+      }
+      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+    }
+    cds_exprs <- melt(round(cds_exprs))
   }else{
     cds_exprs <- melt(exprs(cds_subset))
   }
@@ -396,7 +403,12 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
-  q <- q + ylab("Expression") + xlab("Pseudo-time")
+  if (relative_expr){
+    q <- q + ylab("Relative Expression")
+  }else{
+    q <- q + ylab("Absolute Expression")
+  }
+  q <- q + xlab("Pseudo-time")
   
   q <- q + monocle_theme_opts()
   

@@ -71,6 +71,8 @@ export(
    "reducedDimA<-",
    vstExprs,
    "vstExprs<-",
+   sizeFactors,
+   "sizeFactors<-",
    minSpanningTree,
    "minSpanningTree<-",
    cellPairwiseDistances,
@@ -91,5 +93,6 @@ export(
    selectGenesInExpressionRange,
    fpkm2abs,
    estimate_t,
-   computeVarianceStabilizedValues
+   computeVarianceStabilizedValues,
+   estimateSizeFactors
 )

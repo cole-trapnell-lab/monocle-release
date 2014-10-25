@@ -1,3 +1,12 @@
+CHANGES in monocle 1.1.0:
+
+* VARIANCE STABILIZATION
+
+* clusterGenes no longer scales and log-transforms the input matrix.
+
+CHANGES in monocle 1.0.0:
+  This is the first version available through the stable Bioconductor and is identical to 0.99.6
+
 CHANGES in monocle 0.99.6:
 
 * plot_genes_jitter, plot_genes_in_pseudotime, and plot_genes_positive_cells now accept a new parameter, labe_by_short_name, to help control faceting 
