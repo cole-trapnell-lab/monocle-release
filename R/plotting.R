@@ -148,9 +148,31 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
                               min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
                               color_by=NULL,
                               plot_trend=FALSE,
-                              label_by_short_name=TRUE){
+                              label_by_short_name=TRUE,
+                              relative_expr=TRUE){
   
-  cds_exprs <- melt(exprs(cds_subset))
+  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+    integer_expression <- TRUE
+  }else{
+    integer_expression <- FALSE
+    relative_expr <- TRUE
+  }
+  
+  if (integer_expression)
+  {
+    cds_exprs <- exprs(cds_subset)
+    if (relative_expr){
+      if (is.null(sizeFactors(cds_subset)))
+      {
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+      }
+      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+    }
+    cds_exprs <- melt(round(cds_exprs))
+  }else{
+    cds_exprs <- melt(exprs(cds_exprs))
+  }
+  
   
   colnames(cds_exprs) <- c("f_id", "Cell", "expression")
   cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
@@ -193,7 +215,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     q <- q + stat_summary(aes_string(x=grouping, y="expression", color=color_by, group=color_by), fun.data = "mean_cl_boot", size=0.35, geom="line")
   }
   
-   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
+  q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
   q <- q + ylab("Expression") + xlab(grouping)
   q <- q + monocle_theme_opts()
@@ -225,11 +247,32 @@ plot_genes_positive_cells <- function(cds_subset,
                                       ncol=1, 
                                       panel_order=NULL, 
                                       plot_as_fraction=TRUE,
-                                      label_by_short_name=TRUE){
+                                      label_by_short_name=TRUE,
+                                      relative_expr=TRUE){
   
-  marker_exprs <- exprs(cds_subset)
   
-  marker_exprs_melted <- melt(t(marker_exprs))
+  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+    integer_expression <- TRUE
+  }else{
+    integer_expression <- FALSE
+    relative_expr <- TRUE
+  }
+  
+  if (integer_expression)
+  {
+    marker_exprs <- exprs(cds_subset)
+    if (relative_expr){
+      if (is.null(sizeFactors(cds_subset)))
+      {
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+      }
+      marker_exprs <- t(t(marker_exprs) / sizeFactors(cds_subset))
+    }
+    marker_exprs_melted <- melt(round(marker_exprs))
+  }else{
+    marker_exprs_melted <- melt(exprs(marker_exprs))
+  }
+   
   colnames(marker_exprs_melted) <- c("f_id", "Cell", "expression")
   
   marker_exprs_melted <- merge(marker_exprs_melted, pData(cds_subset), by.x="Cell", by.y="row.names")
@@ -251,10 +294,13 @@ plot_genes_positive_cells <- function(cds_subset,
     marker_exprs_melted$feature_label <- factor(marker_exprs_melted$feature_label, levels=panel_order)
   }
   
-  marker_counts <- ddply(marker_exprs_melted, c("feature_label", grouping), function(x) { 
-    data.frame(target=sum(x$value > min_expr), 
-               target_fraction=sum(x$value > min_expr)/nrow(x)) } )
+  print (head(marker_exprs_melted))
   
+  marker_counts <- ddply(marker_exprs_melted, c("feature_label", grouping), function(x) { 
+    data.frame(target=sum(x$expression > min_expr), 
+               target_fraction=sum(x$expression > min_expr)/nrow(x)) } )
+  
+  print (head(marker_counts))
   if (plot_as_fraction){
     qp <- ggplot(aes_string(x=grouping, y="target_fraction", fill=grouping), data=marker_counts) +
       scale_y_continuous(labels=percent, limits=c(0,1)) 
@@ -314,7 +360,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
     if (relative_expr){
       if (is.null(sizeFactors(cds_subset)))
       {
-        stop("Error: you must call estimateSizeFactors() first")
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
       }
       cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
     }
@@ -496,7 +542,7 @@ plot_clusters<-function(cds,
 
 plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labCol=FALSE, labRow=TRUE, logMode=TRUE, pseudocount=0.1, 
                                     border=FALSE, heatscale=c(low='steelblue',mid='white',high='tomato'), heatMidpoint=0,
-                                    method="none",scaleMax=2, scaleMin=-2, ...){
+                                    method="none",scaleMax=2, scaleMin=-2, relative_expr=TRUE, ...){
   
   
   ## the function can be be viewed as a two step process
@@ -504,6 +550,27 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   ## using simple options or by a user supplied function
   ## 2. with the now resahped data the plot, the chosen labels and plot style are built
   FM <- exprs(cds)
+  
+  if (cds@expressionFamily@vfamily == "negbinomial"){
+    integer_expression <- TRUE
+  }else{
+    integer_expression <- FALSE
+    relative_expr <- TRUE
+  }
+  
+  if (integer_expression)
+  {
+    if (relative_expr){
+      if (is.null(sizeFactors(cds)))
+      {
+        stop("Error: you must call estimateSizeFactors() first")
+      }
+      FM <- t(t(FM) / sizeFactors(cds_subset))
+    }
+    FM <- round(exprs(cds_exprs))
+  }
+  
+  
   m=FM
   
   m = m[,as.character(arrange(pData(cds), Pseudotime)$Cell)]
@@ -572,8 +639,6 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   # }else{
   #   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), melt(m))
   # }
-  
-  
   
   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), melt(m))
   
