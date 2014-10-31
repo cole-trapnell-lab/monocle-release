@@ -1427,11 +1427,11 @@ vst_helper <- function(x, modelFormulaStr, expressionFamily){
 estimateDispersions <- function(cds, modelFormulaStr, relative_expr, cores=1)
 {
   if (cores > 1){
-    disp_table<-mcesApply(cds_subset, 1, vst_helper, cores=cores, 
+    disp_table<-mcesApply(cds, 1, vst_helper, cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
-    disp_table<-esApply(cds_subset,1,vst_helper, 
+    disp_table<-esApply(cds,1,vst_helper, 
                         modelFormulaStr=modelFormulaStr, 
                         expressionFamily=cds@expressionFamily)
   }
