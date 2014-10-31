@@ -1388,8 +1388,9 @@ estimateSizeFactors <- function( cds, locfunc = median )
 
 estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 {
-  loggeomeans <- rowMeans( log(counts) )
-  apply( counts, 2, function(cnts)
+  CM <- round(counts)
+  loggeomeans <- rowMeans( log(CM) )
+  apply( CM, 2, function(cnts)
     exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
 }
 
@@ -1426,11 +1427,11 @@ vst_helper <- function(x, modelFormulaStr, expressionFamily){
 estimateDispersions <- function(cds, modelFormulaStr, relative_expr, cores=1)
 {
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, vst_helper, cores=cores,
+    disp_table<-mcesApply(cds_subset, 1, vst_helper, cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
-    disp_table<-esApply(cds,1,vst_helper, 
+    disp_table<-esApply(cds_subset,1,vst_helper, 
                         modelFormulaStr=modelFormulaStr, 
                         expressionFamily=cds@expressionFamily)
   }
