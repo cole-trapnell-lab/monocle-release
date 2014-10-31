@@ -378,7 +378,7 @@ reducedDimA <- function( cds ) {
 #' A <- reducedDimA(HSMM)
 vstExprs <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
-  cds@vstExprs[row.names(fData(cds)), row.names(fData(cds))]
+  cds@vstExprs[row.names(fData(cds)), row.names(pData(cds))]
 }   
 
 #' Sets the variance-stabilized expression matrix for the CellDataSet.
@@ -1467,7 +1467,7 @@ computeVarianceStabilizedValues <- function(cds,
     checkSizeFactors(cds_subset)
   }
   
-  coefs <- estimateDispersions(cds, 
+  coefs <- estimateDispersions(cds_subset, 
                                modelFormulaStr=modelFormulaStr, 
                                relative_expr=relative_expr, 
                                cores=cores)
