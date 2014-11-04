@@ -59,6 +59,13 @@ importFrom(VGAM, tobit, vgam)
 
 exportClasses( "CellDataSet" )
 
+exportMethods(
+   sizeFactors, "sizeFactors<-",
+#   dispTable, "dispTable",
+   estimateSizeFactors,
+   estimateDispersions
+)
+
 export( 
    newCellDataSet,
    detectGenes,
@@ -69,8 +76,6 @@ export(
    "reducedDimW<-",
    reducedDimA,
    "reducedDimA<-",
-   vstExprs,
-   "vstExprs<-",
    sizeFactors,
    "sizeFactors<-",
    minSpanningTree,
@@ -93,6 +98,5 @@ export(
    selectGenesInExpressionRange,
    fpkm2abs,
    estimate_t,
-   computeVarianceStabilizedValues,
-   estimateSizeFactors
+   vstExprs
 )

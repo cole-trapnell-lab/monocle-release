@@ -27,12 +27,12 @@ setClass( "CellDataSet",
           slots = c(reducedDimS = "matrix",
                     reducedDimW = "matrix",
                     reducedDimA = "matrix",
-                    vstExprs = "matrix",
                     minSpanningTree="igraph",
                     cellPairwiseDistances="matrix",
                     expressionFamily="vglmff",
-                    lowerDetectionLimit="numeric"),
+                    lowerDetectionLimit="numeric",
+                    dispFitInfo = "environment"),
           prototype = prototype( new( "VersionedBiobase",
-                                      versions = c( classVersion("ExpressionSet"), CellDataSet = "1.0.0" ) ))
+                                      versions = c( classVersion("ExpressionSet"), CellDataSet = "1.1.0" ) ))
 )
 
