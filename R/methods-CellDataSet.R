@@ -1255,8 +1255,8 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   #warning = function(w) { FM_fit },
   error = function(e) { 
     print (e); 
-    NULL
-    #data.frame(status = "FAIL", pval=1.0) 
+    #NULL
+    data.frame(status = "FAIL", pval=1.0, qval=1.0) 
   }
   )
   test_res
