@@ -2,7 +2,7 @@
 layout: page
 permalink: /getting-started/
 description: "Instructions on how to install Monocle."
-modified: 2013-09-11
+modified: 2014-11-04
 tags: [monocle, install, setup]
 ---
 
