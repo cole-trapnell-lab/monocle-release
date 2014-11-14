@@ -1415,7 +1415,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, cores)
 {
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, disp_calc_helper, cores=cores, 
+    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "VGAM", "dplyr"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
@@ -1614,7 +1614,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
 
 diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily, relative_expr){
   if (expressionFamily@vfamily == "negbinomial"){
-    if (relative_expr)
+    if (relative_expr == TRUE)
     {
       x <- x / Size_Factor
     }
@@ -1626,22 +1626,22 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   }
   
   test_res <- tryCatch({
-    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
+    full_model_fit <- vgam(as.formula(fullModelFormulaStr), family=expressionFamily)
     reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
     compareModels(list(full_model_fit), list(reduced_model_fit))
-  }, 
+  }
+  , 
   #warning = function(w) { FM_fit },
   error = function(e) { 
     print (e); 
-    NULL
-    #data.frame(status = "FAIL", pval=1.0) 
+    #NULL
+    data.frame(status = "FAIL", pval=1.0, qval=1.0) 
   }
   )
   test_res
 }
 
-
-mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
+mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
     parent <- emptyenv()
@@ -1649,14 +1649,26 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-  clusterEvalQ(cl, {require(VGAM); require(dplyr);})
+  
+  cleanup <- function(){
+    stopCluster(cl)
+  }
+  on.exit(cleanup)
+  
+  if (is.null(required_packages) == FALSE){
+    clusterCall(cl, function(pkgs) {
+      for (req in pkgs) {
+        library(req, character.only=TRUE)
+      }
+    }, required_packages)
+  }
+  
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
     res <- parCapply(cl, exprs(X), FUN, ...)
   }
-
-  stopCluster(cl)
+  
   res
 }
 
@@ -1678,7 +1690,7 @@ fitModel <- function(cds,
                      relative_expr=TRUE,
                      cores=1){
   if (cores > 1){
-    f<-mcesApply(cds, 1, fit_model_helper, cores=cores, 
+    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
                  expressionFamily=cds@expressionFamily,
                  relative_expr=relative_expr)
@@ -1762,14 +1774,16 @@ compareModels <- function(full_models, reduced_models){
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
                                  reducedModelFormulaStr="expression~1", cores=1, relative_expr=TRUE){
-  if (cds@expressionFamily@vfamily == "negbinomial"){
+  if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }
   }
   
   if (cores > 1){
-    diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
+    diff_test_res<-mcesApply(cds, 1, diff_test_helper, 
+                             c("BiocGenerics", "VGAM"), 
+                             cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
                              reducedModelFormulaStr=reducedModelFormulaStr,
                              expressionFamily=cds@expressionFamily,
