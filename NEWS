@@ -1,3 +1,8 @@
+
+CHANGES in monocle 1.1.1:
+
+* Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
+
 CHANGES in monocle 0.99.6:
 
 * plot_genes_jitter, plot_genes_in_pseudotime, and plot_genes_positive_cells now accept a new parameter, labe_by_short_name, to help control faceting 
