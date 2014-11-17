@@ -1829,6 +1829,108 @@ differentialGeneTest <- function(cds,
 #   test_res
 # }
 
+#' find the branch genes
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param progenitor_state state id for the progenitor cell which obtained from lineage construction based on MST
+#' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @export
+branchTest <- function(cds, fullModelFormulaStr = "expression~State * ns(Pseudotime, df = 3)", #log10(Total_mRNAs) + spike_total_mRNAs
+              reducedModelFormulaStr = "expression~ns(Pseudotime, df = 3)", 
+              progenitor_state = 1, lineage_states = c(2, 3), stretch = FALSE, add_weight = T,
+              cores = detectCores()) {
+  if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
+    stop('Please first ordering the cells in pseudotime by spanning tree')
+
+  cds <- cds[, pData(cds)$State %in% c(progenitor_state, lineage_states)] #limit to specific lineage branches
+  State <- pData(cds)$State 
+  progenitor_ind <- which(State == progenitor_state)
+  pData <- pData(cds)
+  exprs_data <- exprs(cds)
+
+  Pseudotime <- pData(absolute_cds)$Pseudotime
+  range_df <- aggregate(Pseudotime, by = list(State), range) #pseudotime range for each state
+  groups <- range_df[, 1]
+  names(groups) <- groups
+  range_df <- range_df[, 2]
+  attr(range_df, 'dimnames') <- list(groups, c('min', 'max'))
+
+  longest_branch <- groups[which(range_df[, 2] == max(range_df[, 2]))] 
+  
+  #first stretch pseudotime and then duplicate 
+  if(stretch) { #should we stretch each lineage's pseudotime to have the same length (assume the same maturation real time)
+     short_branches <- setdiff(groups, c(progenitor_state, longest_branch))
+
+     #stretch (condense) the pseudotime from 0 to 100 
+     longest_branch_multiplier <- 100 / (range_df[longest_branch, 'max'] - range_df[progenitor_state, 'min']) 
+     T_0 <- range_df[progenitor_state, 'max'] * longest_branch_multiplier
+     short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - range_df[progenitor_state, 'max'])
+
+     heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
+     names(heterochrony_constant) <- c(longest_branch, groups[short_branches])
+     message('stretch ratio are: ')
+     print(heterochrony_constant)
+
+     pData[pData$State %in% c(progenitor_state, longest_branch), 'Pseudotime'] <- 
+                            pData[pData$State %in% c(progenitor_state, longest_branch), 'Pseudotime'] * longest_branch_multiplier
+
+     for(i in 1:length(short_branches)) { #stretch short branches
+        pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
+          (pData[pData$State == short_branches[i], 'Pseudotime'] - range_df[progenitor_state, 'max']) * 
+            short_branches_multipliers[i] + T_0
+      }
+   }
+
+  pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
+  for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+    exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    pData <- rbind(pData, pData[progenitor_ind, ])
+    
+    pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+    row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+  }
+
+  fData <- fData(cds)
+
+  new_cds <- monocle::newCellDataSet(exprs_data,
+    phenoData = new("AnnotatedDataFrame", data = pData),
+    featureData = new("AnnotatedDataFrame", data = fData),
+    expressionFamily=negbinomial(),
+    lowerDetectionLimit=1)
+
+  new_cds <- monocle::estimateSizeFactors(new_cds)
+
+  #calculate the weight vector for the vglm fitting: 
+  if(add_weight) {
+    weight_vec <- rep(1, nrow(pData(new_cds)))
+    weight_vec[which(pData(cds)$State == 1)] <- 0.5
+    weight_vec[nrow(pData(cds)):length(pData)] <- 0.5
+    message('provide weight:')
+    print(weight_vec)
+    print(dim(new_cds))
+
+    branchTest_res <- differentialGeneTest((new_cds), 
+        fullModelFormulaStr = fullModelFormulaStr, #log10(Total_mRNAs) + spike_total_mRNAs
+        reducedModelFormulaStr = reducedModelFormulaStr, cores = cores, relative_expr = F, weights = weight_vec)
+  }
+
+  else
+    #perform the branch test 
+    branchTest_res <- differentialGeneTest((new_cds), 
+        fullModelFormulaStr = fullModelFormulaStr, #log10(Total_mRNAs) + spike_total_mRNAs
+        reducedModelFormulaStr = reducedModelFormulaStr, cores = cores, relative_expr = F)
+
+  return(branchTest_res)
+}
+
+
+
 #' Plots the minimum spanning tree on cells.
 #'
 #' @param expr_matrix a matrix of expression values to cluster together

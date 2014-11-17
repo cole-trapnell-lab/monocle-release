@@ -722,3 +722,206 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
   return (g2)
 }
 
+#' Plot the branch genes in pseduotime with separate lineage curves 
+#' TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data
+#' @param cds CellDataSet for the experiment
+#' @param ncol number of columns used to layout the faceted cluster panels
+#' @param nrow number of columns used to layout the faceted cluster panels
+#' @param row_samples how many genes to randomly select from the data
+#' @return a ggplot2 plot object
+#' @export
+#' @examples
+#' \dontrun{
+#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' expression_curve_matrix <- responseMatrix(full_model_fits)
+#' clusters <- clusterGenes(expression_curve_matrix, k=4)
+#' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
+#' }
+plot_branch_genes <- function (cds, progenitor_state = 1, lineage_states = c(2, 3), method = 'fitting', stretch = FALSE, 
+    min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
+    fullModelFormulaStr = "expression ~ s(Pseudotime, df=3) * State", label_by_short_name = TRUE) 
+{
+  if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
+    stop('Please first ordering the cells in pseudotime by spanning tree')
+
+  cds <- cds[, pData(cds)$State %in% c(progenitor_state, lineage_states)] #limit to specific lineage branches
+  State <- pData(cds)$State 
+  progenitor_ind <- which(State == progenitor_state)
+  pData <- pData(cds)
+  exprs_data <- exprs(cds)
+
+  range_df <- aggregate(Pseudotime, by = list(State), range) #pseudotime range for each state
+  groups <- range_df[, 1]
+  names(groups) <- groups
+  range_df <- range_df[, 2]
+  attr(range_df, 'dimnames') <- list(groups, c('min', 'max'))
+
+  longest_branch <- groups[which(range_df[, 2] == max(range_df[, 2]))] 
+
+  #first stretch pseudotime and then duplicate 
+  if(stretch) { #should we stretch each lineage's pseudotime to have the same length (assume the same maturation real time)
+     short_branches <- setdiff(groups, c(progenitor_state, longest_branch))
+
+     #stretch (condense) the pseudotime from 0 to 100 
+     longest_branch_multiplier <- 100 / (range_df[longest_branch, 'max'] - range_df[progenitor_state, 'min']) 
+     T_0 <- range_df[progenitor_state, 'max'] * longest_branch_multiplier
+     short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - range_df[progenitor_state, 'max'])
+
+     heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
+     names(heterochrony_constant) <- c(longest_branch, groups[short_branches])
+     message('stretch ratio are: ')
+     print(heterochrony_constant)
+
+     pData[pData$State %in% c(progenitor_state, longest_branch), 'Pseudotime'] <- 
+                            pData[pData$State %in% c(progenitor_state, longest_branch), 'Pseudotime'] * longest_branch_multiplier
+
+     for(i in 1:length(short_branches)) { #stretch short branches
+        pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
+          (pData[pData$State == short_branches[i], 'Pseudotime'] - range_df[progenitor_state, 'max']) * 
+            short_branches_multipliers[i] + T_0
+      }
+   }
+
+  pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
+  for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+    exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    pData <- rbind(pData, pData[progenitor_ind, ])
+    
+    pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+    row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+  }
+  pData$State <- as.factor(pData$State)
+
+  fData <- fData(cds)
+
+  cds_subset <- newCellDataSet(exprs_data,
+    phenoData = new("AnnotatedDataFrame", data = pData),
+    featureData = new("AnnotatedDataFrame", data = fData),
+    expressionFamily=negbinomial(),
+    lowerDetectionLimit=1)
+  pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
+
+  if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff", 
+      "negbinomial", "poissonff", "quasipoissonff")) {
+      integer_expression <- TRUE
+  }
+  else {
+      integer_expression <- FALSE
+  }
+
+ if (integer_expression) {
+    cds_exprs <- melt(round(exprs(cds_subset)))
+ }
+ else {
+    cds_exprs <- melt(exprs(cds_subset))
+ }
+ if (is.null(min_expr)) {
+    min_expr <- cds_subset@lowerDetectionLimit
+ }
+
+colnames(cds_exprs) <- c("f_id", "Cell", "expression")
+cds_pData <- pData(cds_subset)
+cds_fData <- fData(cds_subset)
+cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
+cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+if (integer_expression) {
+    cds_exprs$adjusted_expression <- cds_exprs$expression
+}
+else {
+    cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+}
+if (label_by_short_name == TRUE) {
+    if (is.null(cds_exprs$gene_short_name) == FALSE) {
+        cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+        cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+    }
+    else {
+        cds_exprs$feature_label <- cds_exprs$f_id
+    }
+}
+else {
+    cds_exprs$feature_label <- cds_exprs$f_id
+}
+cds_exprs$feature_label <- factor(cds_exprs$feature_label)
+
+  #fit by VGAM: 
+  res <- apply(exprs(cds_subset), 1, function(x, pData) {
+    fit_res <- tryCatch({
+      expression <- x
+      
+      df <- data.frame(expression = round(x))
+      df <- cbind(df, pData)
+     
+      vg <- suppressWarnings(vgam(formula = as.formula(fullModelFormulaStr), 
+        family = cds_subset@expressionFamily, data = df, 
+        maxit = 30, checkwz = FALSE))
+      if (integer_expression) {
+        res <- predict(vg, type = "response")
+        res[res < min_expr] <- min_expr
+      }
+      else {
+        res <- 10^(predict(vg, type = "response"))
+        res[res < log10(min_expr)] <- log10(min_expr)
+      }
+      res
+    }, error = function(e) {
+      print("Error!")
+      print(e)
+      res <- rep(NA, length(x))
+      res
+    })
+
+    return(fit_res)
+}, pData(cds_subset))
+
+mlt_df <- data.frame(expectation = as.vector(res), Pseudotime = pData$Pseudotime, State = pData$State, 
+            feature_label = rep(as.character(fData$gene_short_name), each = nrow(res))) 
+mlt_df$State <- as.factor(mlt_df$State)
+
+if(method == 'loess')
+   cds_exprs$expression <-  cds_exprs$expression + cds@lowerDetectionLimit
+
+if (label_by_short_name == TRUE) {
+        if (is.null(cds_exprs$gene_short_name) == FALSE) {
+            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+        }
+        else {
+            cds_exprs$feature_label <- cds_exprs$f_id
+        }
+    }
+    else {
+        cds_exprs$feature_label <- cds_exprs$f_id
+    }
+    cds_exprs$feature_label <- factor(cds_exprs$feature_label)
+
+  if (is.null(panel_order) == FALSE) {
+      cds_subset$feature_label <- factor(cds_subset$feature_label, 
+          levels = panel_order)
+  }
+  q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
+  if (is.null(color_by) == FALSE) {
+      q <- q + geom_point(aes_string(color = I(color_by)), size = I(cell_size))
+  }
+  # else {
+  #     q <- q + geom_point(size = I(cell_size))
+  # }
+  q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow, 
+      ncol = ncol, scales = "free_y")
+
+  if(method == 'loess')
+    q  <- q + stat_smooth(method = 'loess', aes_string(fill = I(color_by), color = I(color_by)))
+  else if(method == 'fitting') {
+    q <- q + geom_line(aes_string("Pseudotime", "expectation", color = I(color_by)), data = mlt_df)
+  }
+
+  if(stretch)
+      q <- q + ylab("Expression") + xlab("Maturation levels")
+  else 
+      q <- q + ylab("Expression") + xlab("Pseudo-time")
+  q <- q + monocle_theme_opts()
+  q
+}
