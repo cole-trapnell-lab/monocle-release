@@ -1626,13 +1626,8 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   }
   
   test_res <- tryCatch({
-<<<<<<< HEAD
     full_model_fit <- suppressWarnings(vglm(as.formula(fullModelFormulaStr), family=expressionFamily, ...))
     reduced_model_fit <- suppressWarnings(vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, ...))
-=======
-    full_model_fit <- vgam(as.formula(fullModelFormulaStr), family=expressionFamily)
-    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
->>>>>>> 2975b529d69a822bae9123febdcdfc59154d804a
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }
   , 
@@ -1654,9 +1649,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-<<<<<<< HEAD
   clusterEvalQ(cl, {require(VGAM); require(splines); require(dplyr); require(BiocGenerics)})
-=======
   
   cleanup <- function(){
     stopCluster(cl)
@@ -1671,7 +1664,6 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
     }, required_packages)
   }
   
->>>>>>> 2975b529d69a822bae9123febdcdfc59154d804a
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
@@ -1781,17 +1773,12 @@ compareModels <- function(full_models, reduced_models){
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 differentialGeneTest <- function(cds, 
-<<<<<<< HEAD
                                  fullModelFormulaStr="expression~s(Pseudotime, df=3)",
                                  reducedModelFormulaStr="expression~1", cores=1, relative_expr=TRUE, ...){
   print('test')
   #if (cds@expressionFamily@vfamily == "negbinomial"){
    if(relative_expr){
-=======
-                                 fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-                                 reducedModelFormulaStr="expression~1", cores=1, relative_expr=TRUE){
-  if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
->>>>>>> 2975b529d69a822bae9123febdcdfc59154d804a
+   #if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }
