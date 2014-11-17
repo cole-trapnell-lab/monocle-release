@@ -170,7 +170,8 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     }
     cds_exprs <- melt(round(cds_exprs))
   }else{
-    cds_exprs <- melt(exprs(cds_exprs))
+    cds_exprs <- exprs(cds_subset)
+    cds_exprs <- melt(round(cds_exprs))
   }
   
   
@@ -567,7 +568,7 @@ plot_pseudotime_heatmap <- function(cds, rescaling='row', clustering='row', labC
       }
       FM <- t(t(FM) / sizeFactors(cds_subset))
     }
-    FM <- round(exprs(cds_exprs))
+    FM <- round(FM)
   }
   
   
