@@ -242,7 +242,7 @@ fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fr
 #' @param phenoData data frame containing attributes of individual cells
 #' @param featureData data frame containing attributes of features (e.g. genes)
 #' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
-#' @param expressionFamily the VGAM family function to be used for expression response variables
+#' @param expressionFamily the vglm family function to be used for expression response variables
 #' @return a new CellDataSet object
 #' @export
 #' @examples
@@ -259,7 +259,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
+                            expressionFamily=vglm::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
 {
   cellData <- as.matrix( cellData )
   
@@ -1395,7 +1395,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
   }
   
   disp_vals <- tryCatch({
-    fitted_model <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily))
+    fitted_model <-  suppressWarnings(vglm(as.formula(modelFormulaStr), family=expressionFamily))
     disp_vals <- as.data.frame(predict(fitted_model))
     colnames(disp_vals) <- c("mu", "disp")
     disp_vals$disp <- signif(disp_vals$disp)
@@ -1604,7 +1604,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
   }
   
   tryCatch({
-    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily))
+    FM_fit <-  suppressWarnings(vglm(as.formula(modelFormulaStr), family=expressionFamily))
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
@@ -1612,7 +1612,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
   )
 }
 
-diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily, relative_expr){
+diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily, relative_expr, ...){
   if (expressionFamily@vfamily == "negbinomial"){
     if (relative_expr)
     {
@@ -1626,8 +1626,8 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   }
   
   test_res <- tryCatch({
-    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
-    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
+    full_model_fit <- suppressWarnings(vglm(as.formula(fullModelFormulaStr), family=expressionFamily, ...))
+    reduced_model_fit <- suppressWarnings(vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, ...))
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
@@ -1649,7 +1649,7 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
   cl <- makeCluster(cores)
-  clusterEvalQ(cl, {require(VGAM); require(dplyr);})
+  clusterEvalQ(cl, {require(VGAM); require(splines); require(dplyr); require(BiocGenerics)})
   if (MARGIN == 1){
     res <- parRapply(cl, exprs(X), FUN, ...)
   }else{
@@ -1664,11 +1664,11 @@ mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
 #' @param cores the number of processor cores to be used during fitting.
-#' @return a list of VGAM model objects
+#' @return a list of vglm model objects
 #' @export
 #' @details
 #' 
-#' This function fits a Tobit-family vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
+#' This function fits a Tobit-family vector generalized additive model (vglm) from the vglm package for each gene in a CellDataSet. 
 #' The default formula string speficies that the (log transformed) expression values follow a Tobit distribution with upper and lower bounds
 #' specificed by max_expr and min_expr, respectively. By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
 #' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
@@ -1760,9 +1760,11 @@ compareModels <- function(full_models, reduced_models){
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 differentialGeneTest <- function(cds, 
-                                 fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-                                 reducedModelFormulaStr="expression~1", cores=1, relative_expr=TRUE){
-  if (cds@expressionFamily@vfamily == "negbinomial"){
+                                 fullModelFormulaStr="expression~s(Pseudotime, df=3)",
+                                 reducedModelFormulaStr="expression~1", cores=1, relative_expr=TRUE, ...){
+  print('test')
+  #if (cds@expressionFamily@vfamily == "negbinomial"){
+   if(relative_expr){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }
@@ -1773,14 +1775,14 @@ differentialGeneTest <- function(cds,
                              fullModelFormulaStr=fullModelFormulaStr,
                              reducedModelFormulaStr=reducedModelFormulaStr,
                              expressionFamily=cds@expressionFamily,
-                             relative_expr=relative_expr)
+                             relative_expr=relative_expr, ...)
     diff_test_res
   }else{
     diff_test_res<-esApply(cds,1,diff_test_helper, 
                fullModelFormulaStr=fullModelFormulaStr,
                reducedModelFormulaStr=reducedModelFormulaStr, 
                expressionFamily=cds@expressionFamily, 
-               relative_expr=relative_expr)
+               relative_expr=relative_expr, ...)
     diff_test_res
   }
   
@@ -1893,7 +1895,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                           is.nan(log_expression) == FALSE &
                           is.na(negentropy) == FALSE &
                           is.nan(negentropy) == FALSE)
-  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
+  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=vglm::gaussianff())
   ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
   ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response
   lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
