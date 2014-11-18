@@ -22,7 +22,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
+                            expressionFamily=VGAM::cennormal())
 {
   cellData <- as.matrix( cellData )
   
@@ -1220,7 +1220,8 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   cds
 }
 
-fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
+fit_model_helper <- function(x, modelFormulaStr, expressionFamily, lowerDetectionLimit){
+  leftcensored <- x < lowerDetectionLimit
   if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff")){
@@ -1230,7 +1231,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
   }
   
   tryCatch({
-    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily))
+    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily, extra = list(leftcensored = leftcensored)))
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
@@ -1238,7 +1239,8 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
   )
 }
 
-diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily){
+diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily, lowerDetectionLimit){
+  leftcensored <- x < lowerDetectionLimit
   if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff")){
@@ -1248,15 +1250,15 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   }
   
   test_res <- tryCatch({
-    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
-    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
+    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily, extra=list(leftcensored = leftcensored)))
+    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily, extra=list(leftcensored = leftcensored)))
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { 
     print (e); 
-    NULL
-    #data.frame(status = "FAIL", pval=1.0) 
+    #NULL
+    data.frame(status = "FAIL", pval=1.0, qval=1.0) 
   }
   )
   test_res
@@ -1301,12 +1303,14 @@ fitModel <- function(cds,
   if (cores > 1){
     f<-mcesApply(cds, 1, fit_model_helper, cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
-                 expressionFamily=cds@expressionFamily)
+                 expressionFamily=cds@expressionFamily,
+                 lowerDetectionLimit=cds@lowerDetectionLimit)
     f
   }else{
     f<-esApply(cds,1,fit_model_helper, 
                modelFormulaStr=modelFormulaStr, 
-               expressionFamily=cds@expressionFamily)
+               expressionFamily=cds@expressionFamily,
+               lowerDetectionLimit=cds@lowerDetectionLimit)
     f
   }
 }
@@ -1321,14 +1325,18 @@ responseMatrix <- function(models){
   res_list <- lapply(models, function(x) { 
     if (is.null(x)) { NA } else { 
       if (x@family@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
-        predict(x, type="response") 
+        fit_res <- predict(x, type="response") 
       }else if (x@family@vfamily %in% c("gaussianff")){
-        predict(x, type="response")
+        fit_res <- predict(x, type="response")
       }else{
-        10^predict(x, type="response") 
+        fit_res <- 10^predict(x, type="response") 
       }
+      names(fit_res) <- row.names(predict(x))
+      fit_res
     } 
   } )
+  
+  
   res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE], length)
   
   stopifnot(length(unique(res_list_lengths)) == 1)
@@ -1336,14 +1344,18 @@ responseMatrix <- function(models){
   if (num_na_fits > 0){
     na_matrix<- matrix(rep(rep(NA, res_list_lengths[[1]]), num_na_fits),nrow=num_na_fits) 
     row.names(na_matrix) <- names(res_list[is.na(res_list)])
+    colnames(na_matrix) <- names(res_list[[1]])
     
     non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) == FALSE], unlist)))
     row.names(non_na_matrix) <- names(res_list[is.na(res_list) == FALSE])
+    colnames(non_na_matrix) <- names(res_list[[1]])
+    print (head(non_na_matrix))
     res_matrix <- rbind(non_na_matrix, na_matrix)
     res_matrix <- res_matrix[names(res_list),]
   }else{
     res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
     row.names(res_matrix) <- names(res_list[is.na(res_list) == FALSE])
+    colnames(res_matrix) <- names(res_list[[1]])
   }
   
   res_matrix
@@ -1385,13 +1397,15 @@ differentialGeneTest <- function(cds,
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
                              reducedModelFormulaStr=reducedModelFormulaStr,
-                             expressionFamily=cds@expressionFamily)
+                             expressionFamily=cds@expressionFamily,
+                             lowerDetectionLimit=cds@lowerDetectionLimit)
     diff_test_res
   }else{
     diff_test_res<-esApply(cds,1,diff_test_helper, 
                fullModelFormulaStr=fullModelFormulaStr,
                reducedModelFormulaStr=reducedModelFormulaStr, 
-               expressionFamily=cds@expressionFamily)
+               expressionFamily=cds@expressionFamily,
+               lowerDetectionLimit=cds@lowerDetectionLimit)
     diff_test_res
   }
   
