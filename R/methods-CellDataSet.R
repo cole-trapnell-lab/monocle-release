@@ -22,7 +22,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::cennormal())
+                            expressionFamily=VGAM::tobit(Lower = log10(lowerDetectionLimit), lmu = "identitylink"))
 {
   cellData <- as.matrix( cellData )
   
