@@ -1250,8 +1250,8 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
   }
   
   test_res <- tryCatch({
-    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily, extra=list(leftcensored = leftcensored)))
-    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily, extra=list(leftcensored = leftcensored)))
+    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
+    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
@@ -1349,7 +1349,6 @@ responseMatrix <- function(models){
     non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) == FALSE], unlist)))
     row.names(non_na_matrix) <- names(res_list[is.na(res_list) == FALSE])
     colnames(non_na_matrix) <- names(res_list[[1]])
-    print (head(non_na_matrix))
     res_matrix <- rbind(non_na_matrix, na_matrix)
     res_matrix <- res_matrix[names(res_list),]
   }else{

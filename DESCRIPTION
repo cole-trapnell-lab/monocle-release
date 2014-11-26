@@ -1,13 +1,13 @@
 Package: monocle
 Type: Package
 Title: Analysis tools for single-cell expression experiments.
-Version: 1.1.2
+Version: 1.1.3
 Date: 2013-11-19
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
 Description: Monocle performs differential expression and time-series analysis for single-cell expression experiments. It orders individual cells according to progress through a biological process, without knowing ahead of time which genes define progress through that process. Monocle also performs differential expression analysis, clustering, visualization, and other useful tasks on single cell expression data.  It is designed to work with RNA-Seq and qPCR data, but could be used with other types as well.
 License: Artistic-2.0
-Depends: R (>= 2.7.0), HSMMSingleCell (>= 0.99.6), Biobase, ggplot2(>=
+Depends: R (>= 2.7.0), HSMMSingleCell (>= 0.101.2), Biobase, ggplot2(>=
         0.9.3.1), splines, VGAM (>= 0.9-5), igraph(>= 0.7.0), plyr
 Imports:  BiocGenerics, cluster, combinat, fastICA, grid, irlba, matrixStats, methods,
         parallel, reshape2, stats, utils, limma
