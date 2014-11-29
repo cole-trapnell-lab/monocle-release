@@ -1,4 +1,10 @@
 
+CHANGES in monocle 1.1.4:
+
+* After grappling with Bioconductor build issues in HSMMSingleCell related to
+  VGAM updates, we have moved to a different data layout in HSMMSingleCell, 
+  which has caused some changes in the vignette.
+
 CHANGES in monocle 1.1.1:
 
 * Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
