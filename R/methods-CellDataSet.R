@@ -259,7 +259,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=vglm::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
+                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
 {
   cellData <- as.matrix( cellData )
   
@@ -2013,7 +2013,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                           is.nan(log_expression) == FALSE &
                           is.na(negentropy) == FALSE &
                           is.nan(negentropy) == FALSE)
-  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=vglm::gaussianff())
+  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
   ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
   ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response
   lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
