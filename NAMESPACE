@@ -74,6 +74,8 @@ export(
    "reducedDimS<-",
    reducedDimW,
    "reducedDimW<-",
+   reducedDimK,
+   "reducedDimK<-",
    reducedDimA,
    "reducedDimA<-",
    sizeFactors,
