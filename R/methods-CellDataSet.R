@@ -58,8 +58,10 @@ setValidity( "CellDataSet", function( object ) {
 #' reduced space.
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' S <- reducedDimS(HSMM)
+#' }
 reducedDimS <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS
@@ -84,8 +86,10 @@ reducedDimS <- function( cds ) {
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' W <- reducedDimW(HSMM)
+#' }
 reducedDimW <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW
@@ -111,8 +115,10 @@ reducedDimW <- function( cds ) {
 #' recovers a matrix in the full (whitened) space
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' A <- reducedDimA(HSMM)
+#' }
 reducedDimA <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA
@@ -137,8 +143,10 @@ reducedDimA <- function( cds ) {
 #' @return An igraph object representing the CellDataSet's minimum spanning tree.
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' T <- minSpanningTree(HSMM)
+#' }
 minSpanningTree <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree
@@ -163,8 +171,10 @@ minSpanningTree <- function( cds ) {
 #' @return A square, symmetric matrix containing the distances between each cell in the reduced-dimensionality space.
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' D <- cellPairwiseDistances(HSMM)
+#' }
 cellPairwiseDistances <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances
@@ -927,8 +937,10 @@ weight_of_ordering <- function(ordering, dist_matrix)
 #' @return an updated CellDataSet object
 #' @export
 #' @examples
+#' \dontrun{
 #' data(HSMM)
 #' HSMM <- detectGenes(HSMM, min_expr=0.1)
+#' }
 detectGenes <- function(cds, min_expr=NULL){
   FM <- exprs(cds)
   if (is.null(min_expr))
