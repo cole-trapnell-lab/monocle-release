@@ -1,5 +1,5 @@
 
-CHANGES in monocle 1.1.4:
+CHANGES in monocle 1.1.5:
 
 * After grappling with Bioconductor build issues in HSMMSingleCell related to
   VGAM updates, we have moved to a different data layout in HSMMSingleCell, 
