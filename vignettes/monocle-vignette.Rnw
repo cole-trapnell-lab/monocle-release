@@ -39,6 +39,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 \tableofcontents
 
 <<init_monocle, include=FALSE, cache=FALSE, eval=TRUE>>=
+library(HSMMSingleCell)
 library(monocle)
 data(HSMM_expr_matrix)
 data(HSMM_gene_annotation)
