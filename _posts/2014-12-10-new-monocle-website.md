@@ -2,7 +2,7 @@
 layout: post
 title: Monocle has moved!
 description: "Monocle has moved!"
-modified: 2014-11-10
+modified: 2014-12-10
 category: articles
 comments: false
 share: true
