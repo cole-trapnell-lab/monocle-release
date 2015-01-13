@@ -91,6 +91,8 @@ export(
    plot_genes_jitter,
    plot_genes_positive_cells,
    plot_clusters,
+   plot_genes_branched_pseudotime,
+   plot_genes_heatmap,
    differentialGeneTest,
    fitModel,
    compareModels,

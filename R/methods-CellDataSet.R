@@ -1145,6 +1145,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     cell_tree <- ordering_tree_res$subtree
     curr_cell_pseudotime <- last_pseudotime
     V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
+    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ nei(curr_cell, mode="in") ]$name
     #print (curr_cell_pseudotime)
     
     ordering_tree_res$subtree <- cell_tree
@@ -1164,12 +1165,14 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   cell_names <- V(res$subtree)$name
   cell_states <- V(res$subtree)$cell_state
   cell_pseudotime <- V(res$subtree)$pseudotime
+  cell_parents <- V(res$subtree)$parent
   # print (cell_names)
   # print (cell_states)
   # print (cell_pseudotime)
   ordering_df <- data.frame(sample_name = cell_names,
                             cell_state = factor(cell_states),
-                            pseudo_time = cell_pseudotime)
+                            pseudo_time = cell_pseudotime,
+                            parent = cell_parents)
   
   ordering_df <- arrange(ordering_df, pseudo_time)
   return(ordering_df)
@@ -1341,9 +1344,13 @@ parametricDispersionFit <- function( means, disps )
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
-    if( !all( coefs > 0 ) )
+    if( !all( coefs > 0 ) ){
+      #print(data.frame(means,disps))
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
-    if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+      
+      
+    }
+     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
     iter <- iter + 1
     if( iter > 10 ) {
@@ -1385,14 +1392,16 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
 
 .estimateSizeFactors<-function( object, locfunc=median, ... ) 
 {
-  sizeFactors(object) <- estimateSizeFactorsForMatrix(exprs(object), locfunc=locfunc)
+  sizeFactors(object) <- estimateSizeFactorsForMatrix(exprs(object), locfunc=locfunc, ...)
   object
 }
 setMethod("estimateSizeFactors", signature(object="CellDataSet"),.estimateSizeFactors)
 
-estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
+estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=TRUE)
 {
-  CM <- round(counts)
+  CM <- counts
+  if (round_exprs)
+    CM <- round(CM)
   loggeomeans <- rowMeans( log(CM) )
   apply( CM, 2, function(cnts)
     exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
@@ -1402,7 +1411,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
   if (expressionFamily@vfamily == "negbinomial"){
     x <- x / Size_Factor
     expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff")){
+  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     expression <- x
   }else{
     expression <- log10(x)
@@ -1496,7 +1505,14 @@ checkSizeFactors <- function(cds)
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL, use_vst=F, ...){
+reduceDimension <- function(cds, 
+                            max_components=2, 
+                            use_irlba=TRUE, 
+                            pseudo_expr=1, 
+                            batch=NULL, 
+                            batch2=NULL, 
+                            covariates=NULL, 
+                            use_vst=F, ...){
   FM <- exprs(cds)
   
   # If we aren't using VST, then normalize the expression values by size factor
@@ -1528,13 +1544,15 @@ reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1
     FM <- log2(FM)
   }
 
-  # TODO: get rid of this if possible.  Would be good just to subtract batch effects through the VST
-  if (is.null(batch) == FALSE || is.null(covariates) == FALSE)
+  # TODO: get rid of this if possible.
+  if (is.null(batch) == FALSE || is.null(batch2) == FALSE|| is.null(covariates) == FALSE)
   {
     message("Removing batch effects")
     #FM <- log2(FM)
-    FM <- removeBatchEffect(FM, batch=batch, covariates=covariates)
-    FM <- 2^FM
+    FM <- removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
+    if (use_vst == FALSE) {
+      FM <- 2^FM
+    }
   }
   
   #FM <- log2(FM)
@@ -1602,6 +1620,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
   pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
+  pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
   cds
 }
 
@@ -1612,7 +1631,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
       x <- x / Size_Factor
     }
     expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff")){
+  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     expression <- x
   }else{
     expression <- log10(x)
@@ -1634,7 +1653,7 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
       x <- x / Size_Factor
     }
     expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff")){
+  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     expression <- x
   }else{
     expression <- log10(x)
@@ -1729,7 +1748,7 @@ responseMatrix <- function(models){
     if (is.null(x)) { NA } else { 
       if (x@family@vfamily  == "negbinomial"){
         predict(x, type="response") 
-      }else if (x@family@vfamily %in% c("gaussianff")){
+      }else if (x@family@vfamily %in% c("gaussianff", "uninormal")){
         predict(x, type="response")
       }else{
         10^predict(x, type="response") 
@@ -1934,8 +1953,22 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 }
 
 
-selectGenesInExpressionRange <- function(cds, min_expression_threshold = -Inf, max_expression_threshold = Inf, detectionLimit=-Inf, stat_fun=median){
+selectGenesInExpressionRange <- function(cds, 
+                                         min_expression_threshold = -Inf, 
+                                         max_expression_threshold = Inf, 
+                                         detectionLimit=-Inf, 
+                                         stat_fun=median, 
+                                         relative_expr=TRUE){
   gene_nz_median = apply(exprs(cds), 1, function(x) { x <- x[x > detectionLimit]; stat_fun(x)})
+  gene_nz_median<-esApply(cds,1,
+                          function(x) { 
+                            if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
+                              x <- x / Size_Factor
+                            }
+                            x <- x[x > detectionLimit]
+                            stat_fun(x)
+                            })
+  
   #gene_nz_median
   names(gene_nz_median[is.na(gene_nz_median) == FALSE & gene_nz_median > min_expression_threshold & gene_nz_median < max_expression_threshold ])
 }
