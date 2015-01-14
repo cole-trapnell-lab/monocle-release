@@ -1,0 +1,3 @@
+library(monocle)
+context("clusterCells")
+
