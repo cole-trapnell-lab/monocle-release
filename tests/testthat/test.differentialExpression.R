@@ -37,3 +37,7 @@ test_that("differentialGeneTest() reports valid test results for markers", {
                                              "CDK1",
                                              "TPM2"))
 })
+
+test_that("differentialGeneTest() properly validates its input",{
+  
+})

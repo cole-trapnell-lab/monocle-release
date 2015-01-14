@@ -22,3 +22,7 @@ test_that("reduceDimension() correctly distills expression to the plane", {
   expect_equivalent(dim(reducedDimK(small_set)), c(21, 2))
   
   })
+
+test_that("reduceDimension() properly validates its input",{
+  
+})
