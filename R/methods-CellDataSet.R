@@ -81,8 +81,9 @@ checkSizeFactors <- function(cds)
 #' reduced space.
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' S <- reducedDimS(HSMM)
+#' }
 reducedDimS <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS
@@ -93,6 +94,10 @@ reducedDimS <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A matrix of coordinates specifying each cell's position in the reduced-dimensionality space.
 #' @return An update CellDataSet object
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimS(S)
+#' }
 `reducedDimS<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS <- value
@@ -106,8 +111,9 @@ reducedDimS <- function( cds ) {
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' W <- reducedDimW(HSMM)
+#' }
 reducedDimW <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW
@@ -121,8 +127,9 @@ reducedDimW <- function( cds ) {
 #' @docType methods
 #' @rdname CellDataSet-methods
 #' @examples
-#' data(HSMM)
-#' W <- reducedDimW(HSMM)
+#' \dontrun{
+#' cds <- reducedDimK(K)
+#' }
 `reducedDimK<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimK <- value
@@ -138,8 +145,9 @@ reducedDimW <- function( cds ) {
 #' @rdname CellDataSet-methods
 #' @export
 #' @examples
-#' data(HSMM)
-#' W <- reducedDimW(HSMM)
+#' \dontrun{
+#' K <- reducedDimW(HSMM)
+#' }
 reducedDimK <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimK
@@ -152,6 +160,10 @@ reducedDimK <- function( cds ) {
 #' @return An updated CellDataSet object
 #' @docType methods
 #' @rdname CellDataSet-methods
+#' @examples
+#' \dontrun{
+#' #' cds <- reducedDimA(A)
+#' }
 `reducedDimW<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW <- value
@@ -168,8 +180,9 @@ reducedDimK <- function( cds ) {
 #' @docType methods
 #' @rdname CellDataSet-methods
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' A <- reducedDimA(HSMM)
+#' }
 reducedDimA <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA
@@ -183,6 +196,10 @@ reducedDimA <- function( cds ) {
 #' @docType methods
 #' @rdname CellDataSet-methods
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimA(A)
+#' }
 `reducedDimA<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA <- value
@@ -198,8 +215,9 @@ reducedDimA <- function( cds ) {
 #' @rdname CellDataSet-methods
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' T <- minSpanningTree(HSMM)
+#' }
 minSpanningTree <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree
@@ -213,6 +231,10 @@ minSpanningTree <- function( cds ) {
 #' @rdname CellDataSet-methods
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- minSpanningTree(T)
+#' }
 `minSpanningTree<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree <- value
@@ -228,8 +250,9 @@ minSpanningTree <- function( cds ) {
 #' @rdname CellDataSet-methods
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' D <- cellPairwiseDistances(HSMM)
+#' }
 cellPairwiseDistances <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances
@@ -243,6 +266,10 @@ cellPairwiseDistances <- function( cds ) {
 #' @rdname CellDataSet-methods
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- cellPairwiseDistances(D)
+#' }
 `cellPairwiseDistances<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances <- value

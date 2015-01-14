@@ -24,7 +24,8 @@ above a minimum threshold. Also counts the number of genes above this threshold 
 detectable in each cell.
 }
 \examples{
-data(HSMM)
+\dontrun{
 HSMM <- detectGenes(HSMM, min_expr=0.1)
+}
 }
 

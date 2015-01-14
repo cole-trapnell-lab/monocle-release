@@ -19,7 +19,8 @@ Retrieves the coordinates of each cell in the reduced-dimensionality space gener
 reduceDimension.
 }
 \examples{
-data(HSMM)
+\dontrun{
 S <- reducedDimS(HSMM)
+}
 }
 

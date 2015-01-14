@@ -39,8 +39,11 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 \tableofcontents
 
 <<init_monocle, include=FALSE, cache=FALSE, eval=TRUE>>=
+library(HSMMSingleCell)
 library(monocle)
-data(HSMM)
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
 @ %def 
 
 \section{Introduction}
@@ -70,13 +73,19 @@ You can create a new \Rclass{CellDataSet} object as follows:
 
 <<load_data_tables, eval=FALSE>>=
 #not run
-gene_fpkm_matrix <- read.table("gene_fpkm_matrix.txt")
-sample_sheet <- read.delim("cell_sample_sheet.txt")
-gene_ann <- read.delim("gene_annotations.txt")
-pd <- new("AnnotatedDataFrame", data = sample_sheet)
-fd <- new("AnnotatedDataFrame", data = gene_ann)
-HSMM <- newCellDataSet(as.matrix(gene_fpkm_matrix), phenoData = pd, featureData = fd)
+HSMM_expr_matrix <- read.table("fpkm_matrix.txt")
+HSMM_sample_sheet <- read.delim("cell_sample_sheet.txt")
+HSMM_gene_annotation <- read.delim("gene_annotations.txt")
 @ %def
+
+Once these tables are loaded, you can create the CellDataSet object like this:
+
+<<build_cell_data_Set, eval=TRUE>>=
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
+@ %def
+
 
 It is often convenient to know how many express a particular gene, or how many genes are expressed by a given cell. Monocle provides a simple function to compute those statistics: 
 <<detect_genes, eval=TRUE>>=

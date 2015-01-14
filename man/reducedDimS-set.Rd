@@ -17,4 +17,9 @@ An update CellDataSet object
 \description{
 Sets the coordinates of each cell in the reduced-dimensionality space.  Not intended to be called directly.
 }
+\examples{
+\dontrun{
+cds <- reducedDimS(S)
+}
+}
 

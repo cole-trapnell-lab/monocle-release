@@ -118,15 +118,32 @@ Retrieves a matrix capturing distances between each cell in the reduced-dimensio
 Sets the matrix containing distances between each pair of cells used by Monocle during cell ordering. Not intended to be called directly.
 }
 \examples{
-data(HSMM)
-W <- reducedDimW(HSMM)
-data(HSMM)
-W <- reducedDimW(HSMM)
-data(HSMM)
+\dontrun{
+cds <- reducedDimK(K)
+}
+\dontrun{
+K <- reducedDimW(HSMM)
+}
+\dontrun{
+#' cds <- reducedDimA(A)
+}
+\dontrun{
 A <- reducedDimA(HSMM)
-data(HSMM)
+}
+\dontrun{
+cds <- reducedDimA(A)
+}
+\dontrun{
 T <- minSpanningTree(HSMM)
-data(HSMM)
+}
+\dontrun{
+cds <- minSpanningTree(T)
+}
+\dontrun{
 D <- cellPairwiseDistances(HSMM)
+}
+\dontrun{
+cds <- cellPairwiseDistances(D)
+}
 }
 

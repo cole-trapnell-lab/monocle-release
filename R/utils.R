@@ -200,8 +200,9 @@ selectGenesInExpressionRange <- function(cds,
 #' @return an updated CellDataSet object
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' HSMM <- detectGenes(HSMM, min_expr=0.1)
+#' }
 detectGenes <- function(cds, min_expr=NULL){
   FM <- exprs(cds)
   if (is.null(min_expr))

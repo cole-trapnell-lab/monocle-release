@@ -75,9 +75,9 @@ plot_spanning_tree <- function(cds,
 
   edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
   
-  edge_df <- rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
+  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
   edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "ICA_dim_1", "ICA_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
-  edge_df <- rename(edge_df, c("ICA_dim_1"="target_ICA_dim_1", "ICA_dim_2"="target_ICA_dim_2"))
+  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="target_ICA_dim_1", "ICA_dim_2"="target_ICA_dim_2"))
   
   diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
   colnames(diam) <- c("sample_name")
@@ -241,7 +241,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom plyr dplyr
+#' @importFrom plyr ddply
 #' @importFrom reshape2 melt
 #' @export
 #' @examples
@@ -339,7 +339,7 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom plyr ddply
+#' @importFrom plyr ddply .
 #' @importFrom reshape2 melt
 #' @importFrom VGAM vgam predict
 #' @export
