@@ -5,17 +5,45 @@ Version: 1.1.1
 Date: 2013-11-19
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
-Description: Monocle performs differential expression and time-series analysis for single-cell expression experiments. It orders individual cells according to progress through a biological process, without knowing ahead of time which genes define progress through that process. Monocle also performs differential expression analysis, clustering, visualization, and other useful tasks on single cell expression data.  It is designed to work with RNA-Seq and qPCR data, but could be used with other types as well.
+Description: Monocle performs differential expression and time-series analysis
+    for single-cell expression experiments. It orders individual cells
+    according to progress through a biological process, without knowing ahead
+    of time which genes define progress through that process. Monocle also
+    performs differential expression analysis, clustering, visualization, and
+    other useful tasks on single cell expression data.  It is designed to work
+    with RNA-Seq and qPCR data, but could be used with other types as well.
 License: Artistic-2.0
-Depends: R (>= 2.7.0), HSMMSingleCell, Biobase, ggplot2(>=
-        0.9.3.1), splines, VGAM (>= 0.9-4), igraph(>= 0.7.0), plyr
-Imports:  BiocGenerics, cluster, combinat, fastICA, grid, irlba, matrixStats, methods,
-        parallel, reshape2, stats, utils, limma, dplyr
+Depends:
+    R (>= 2.7.0),
+    Biobase,
+    VGAM (>= 0.9-5),
+    HSMMSingleCell (>= 0.101.5)
+Imports:
+    igraph(>= 0.7.0),
+    plyr,
+    ggplot2(>= 0.9.3.1),
+    BiocGenerics,
+    cluster,
+    combinat,
+    fastICA,
+    grid,
+    irlba,
+    matrixStats,
+    methods,
+    parallel,
+    reshape2,
+    stats,
+    utils,
+    limma,
+    dplyr
 VignetteBuilder: knitr
-Suggests: knitr, Hmisc
+Suggests:
+    knitr,
+    Hmisc,
+    testthat
 Roxygen: list(wrap = FALSE)
 LazyData: true
 biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
-        Infrastructure, DataImport, DataRepresentation, Visualization,
-        Clustering, MultipleComparison, QualityControl
+    Infrastructure, DataImport, DataRepresentation, Visualization,
+    Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
