@@ -6,10 +6,10 @@
 TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data}
 \usage{
 plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
-  method = "fitting", stretch = FALSE, min_expr = NULL,
-  cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
-  color_by = "State",
-  fullModelFormulaStr = "expression ~ s(Pseudotime, df=3) * State",
+  lineage_labels = NULL, method = "fitting", stretch = FALSE,
+  min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1,
+  panel_order = NULL, color_by = "State",
+  trend_formula = "~ sm.ns(Pseudotime, df=3) * State",
   label_by_short_name = TRUE)
 }
 \arguments{
@@ -30,7 +30,7 @@ TO DO: add the confidence interval, add p-val, fix error when we cannot generate
 }
 \examples{
 \dontrun{
-full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
 expression_curve_matrix <- responseMatrix(full_model_fits)
 clusters <- clusterGenes(expression_curve_matrix, k=4)
 plot_clusters(HSMM_filtered[ordering_genes,], clusters)

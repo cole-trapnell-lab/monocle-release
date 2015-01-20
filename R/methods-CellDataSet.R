@@ -25,6 +25,7 @@ setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric")
 
 
 #' @rdname CellDataSet-methods
+#' @param A function applied to the geometric-mean-scaled expression values to derive the size factor.
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateSizeFactors", 
           signature(object="CellDataSet"),
@@ -35,10 +36,11 @@ function( object, locfunc=median, ... )
 })
 
 #' @rdname CellDataSet-methods
+#' @param relative_expr Whether to transform expression into relative values
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
-function(object, modelFormulaStr="expression~1", relative_expr=TRUE, cores=1, dispModelName="blind", ... )
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, dispModelName="blind", ... )
 {
   stopifnot( is( object, "CellDataSet" ) )
   if( any( is.na( sizeFactors(object) ) ) )
@@ -125,7 +127,6 @@ reducedDimW <- function( cds ) {
 #' @param value a numeric matrix
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 #' @docType methods
-#' @rdname CellDataSet-methods
 #' @examples
 #' \dontrun{
 #' cds <- reducedDimK(K)
@@ -142,7 +143,6 @@ reducedDimW <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 #' @docType methods
-#' @rdname CellDataSet-methods
 #' @export
 #' @examples
 #' \dontrun{
@@ -158,8 +158,6 @@ reducedDimK <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
-#' @docType methods
-#' @rdname CellDataSet-methods
 #' @examples
 #' \dontrun{
 #' #' cds <- reducedDimA(A)
@@ -177,8 +175,6 @@ reducedDimK <- function( cds ) {
 #' @return A matrix that when multiplied by a reduced-dimension set of coordinates for the CellDataSet, 
 #' recovers a matrix in the full (whitened) space
 #' @export
-#' @docType methods
-#' @rdname CellDataSet-methods
 #' @examples
 #' \dontrun{
 #' A <- reducedDimA(HSMM)
@@ -193,8 +189,6 @@ reducedDimA <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
-#' @docType methods
-#' @rdname CellDataSet-methods
 #' @export
 #' @examples
 #' \dontrun{
@@ -212,7 +206,6 @@ reducedDimA <- function( cds ) {
 #'
 #' @param cds expression data matrix for an experiment
 #' @return An igraph object representing the CellDataSet's minimum spanning tree.
-#' @rdname CellDataSet-methods
 #' @export
 #' @examples
 #' \dontrun{
@@ -227,8 +220,6 @@ minSpanningTree <- function( cds ) {
 #'
 #' @param cds A CellDataSet object.
 #' @param value an igraph object describing the minimum spanning tree.
-#' @docType methods
-#' @rdname CellDataSet-methods
 #' @return An updated CellDataSet object
 #' @export
 #' @examples
@@ -247,7 +238,6 @@ minSpanningTree <- function( cds ) {
 #' @param cds expression data matrix for an experiment
 #' @return A square, symmetric matrix containing the distances between each cell in the reduced-dimensionality space.
 #' @docType methods
-#' @rdname CellDataSet-methods
 #' @export
 #' @examples
 #' \dontrun{
@@ -262,8 +252,6 @@ cellPairwiseDistances <- function( cds ) {
 #'
 #' @param cds A CellDataSet object.
 #' @param value a square, symmetric matrix containing pairwise distances between cells.
-#' @docType methods
-#' @rdname CellDataSet-methods
 #' @return An updated CellDataSet object
 #' @export
 #' @examples

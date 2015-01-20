@@ -7,6 +7,9 @@
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr)
 }
+\arguments{
+\item{relative_expr}{Whether to transform expression into relative values}
+}
 \description{
 Helper function for parallel differential expression testing
 }

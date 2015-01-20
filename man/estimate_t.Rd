@@ -2,26 +2,27 @@
 % Please edit documentation in R/normalization.R
 \name{estimate_t}
 \alias{estimate_t}
-\title{Find the most abundant FPKM estimator of single cell FPKM matrix}
+\title{Find the most abundant relative expression value for each cell}
 \usage{
-estimate_t(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...)
+estimate_t(relative_expr_matrix, return_all = F, relative_expr_thresh = 0.1,
+  ...)
 }
 \arguments{
-\item{fpkm_matrix}{a matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included}
+\item{relative_expr_matrix}{a matrix of relative expression values for values with each row and column representing genes/isoforms and cells, respectively. Row and column names should be included}
 
 \item{return_all}{parameter for the intended return results. If setting TRUE, matrix of dmode as well as max mu and min mu of two gaussian distribution mixture will be returned}
 
-\item{fpkm_thresh}{the threshold for FPKM value used in detecting the most abundant FPKM value}
+\item{relative_expr_thresh}{Relative expression values below this threshold are considered zero.}
 }
 \value{
-an vector of most abundant fpkm value corresponding to the transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian density function and the max or min
+an vector of most abundant relative_expr value corresponding to the transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian density function and the max or min
 mode from the mixture gaussian model
 }
 \description{
-Find the most abundant FPKM estimator of single cell FPKM matrix
+Find the most abundant relative expression value for each cell
 }
 \details{
-This function estimates the most abundant FPKM (t^*) using gaussian kernel density function. It can also optionally output the t^* based on a two gaussian mixture model
+This function estimates the most abundant relative expression value (t^*) using a gaussian kernel density function. It can also optionally output the t^* based on a two gaussian mixture model
 based on the smsn.mixture from mixsmsn package
 }
 \examples{

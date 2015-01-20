@@ -1,17 +1,19 @@
 #' Helper function for parallel VGAM fitting
 #' 
-#' @importFrom VGAM vgam
+#' @param relative_expr Whether to transform expression into relative values
 fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr){
+  modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
+  
   if (expressionFamily@vfamily == "negbinomial"){
     if (relative_expr)
     {
       x <- x / Size_Factor
     }
-    expression <- round(x)
+    f_expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-    expression <- x
+    f_expression <- x
   }else{
-    expression <- log10(x)
+    f_expression <- log10(x)
   }
   
   tryCatch({
@@ -38,7 +40,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
 #' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 #' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 fitModel <- function(cds,
-                     modelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
+                     modelFormulaStr="~sm.ns(Pseudotime, df=3)",
                      relative_expr=TRUE,
                      cores=1){
   if (cores > 1){
@@ -61,7 +63,6 @@ fitModel <- function(cds,
 #' Generates a matrix of response values for a set of fitted models
 #' @param models a list of models, e.g. as returned by fitModels()
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
-#' @importFrom VGAM predict
 #' @export
 responseMatrix <- function(models){
   res_list <- lapply(models, function(x) { 
@@ -130,6 +131,7 @@ parametricDispersionFit <- function( means, disps )
 }
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
+#' @export
 vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TRUE ) {
   fitInfo <- cds@dispFitInfo[[dispModelName]]
   if (is.null(fitInfo)){
@@ -157,15 +159,18 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
 #' Helper function for parallel dispersion modeling
 #' 
 #' @importFrom dplyr distinct
-#' @importFrom VGAM predict vgam
 disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
+  disp <- NULL
+  modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
+  f_expression <- x
+
   if (expressionFamily@vfamily == "negbinomial"){
     x <- x / Size_Factor
-    expression <- round(x)
+    f_expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-    expression <- x
+    f_expression <- x
   }else{
-    expression <- log10(x)
+    f_expression <- log10(x)
   }
   
   disp_vals <- tryCatch({
@@ -178,7 +183,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
     disp_vals$mu <- exp(disp_vals$mu)
     disp_vals$disp <- 1.0/exp(disp_vals$disp)
     df_res <- data.frame(mu=disp_vals$mu, disp=disp_vals$disp)
-  }, 
+  },
   #warning = function(w) { print (w) },
   error = function(e) { print (e); NULL }
   )
@@ -187,8 +192,9 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
 
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, cores)
 {
+  
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "VGAM", "dplyr"), cores=cores, 
+    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
@@ -208,5 +214,103 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   
   res <- list(disp_table = disp_table, disp_func = ans)
   return(res)
+}
+
+buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = FALSE)
+{
+  if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
+    stop('Please first order the cells in pseudotime using orderCells()')
+  
+  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+  
+  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
+  ancestor_cells <- c()
+  
+  while (1) {
+    ancestor_cells <- c(ancestor_cells, curr_cell)
+    if (is.na(pData(cds[,curr_cell])$Parent))
+      break
+    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+  }
+  
+  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
+  
+  State <- pData(cds)$State 
+  Pseudotime <- pData(cds)$Pseudotime 
+  
+  
+  progenitor_ind <- which(State %in% lineage_states == FALSE)
+  
+  progenitor_states <- unique(State[progenitor_ind])
+  
+  pData <- pData(cds)
+  exprs_data <- exprs(cds)
+  
+  weight_vec <- rep(1, nrow(pData(cds)))
+  weight_vec[progenitor_ind] <- 0.5
+  
+  range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
+  row.names(range_df) <- as.character(range_df$State)
+  colnames(range_df) <- c("State","min", "max")
+  
+  #longest_branch <- groups[which(range_df[, 2] == max(range_df[, 2]))] 
+  longest_lineage_branch <- tail(plyr::arrange(range_df[as.character(lineage_states),], max)$State, n=1)
+  
+  #first stretch pseudotime and then duplicate 
+  if(stretch) { #should we stretch each lineage's pseudotime to have the same length (assume the same maturation real time)
+    short_branches <- setdiff(row.names(range_df), as.character(c(progenitor_states, longest_lineage_branch)))
+    
+    #stretch (condense) the pseudotime from 0 to 100 
+    #longest_branch_multiplier <- 100 / (range_df[as.character(longest_lineage_branch), 'max'] - range_df[as.character(progenitor_state), 'min']) 
+    longest_branch_range <- range_df[as.character(longest_lineage_branch), 'max'] - min(range_df[, 'min'])
+    longest_branch_multiplier <- 100 / longest_branch_range
+    
+    T_0 <- (max(range_df[as.character(progenitor_states), 'max']) - min(range_df[as.character(progenitor_states), 'min']))  * longest_branch_multiplier
+
+    short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - max(range_df[as.character(progenitor_states), 'max']))
+    
+    heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
+    names(heterochrony_constant) <- c(longest_lineage_branch, short_branches)
+
+    pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
+      (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
+
+    
+    for(i in 1:length(short_branches)) { #stretch short branches
+      pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
+        (pData[pData$State == short_branches[i], 'Pseudotime'] - max(range_df[as.character(progenitor_states), 'max'])) * 
+        short_branches_multipliers[i] + T_0
+    }
+  }
+  pData$original_cell_id <- pData$Cell
+  pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
+  for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+    exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    weight_vec <- c(weight_vec, rep(0.5, length( progenitor_ind)))
+    
+    colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    pData <- rbind(pData, pData[progenitor_ind, ])
+    
+    pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+    row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+  }
+  pData$Lineage <- as.factor(pData$State)
+  pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
+                            levels =levels(cds$State))
+  pData$weight <- weight_vec
+  Size_Factor <- pData$Size_Factor
+  
+  fData <- fData(cds)
+  
+  cds_subset <- newCellDataSet(as.matrix(exprs_data),
+                               phenoData = new("AnnotatedDataFrame", data = pData),
+                               featureData = new("AnnotatedDataFrame", data = fData),
+                               expressionFamily=cds@expressionFamily,
+                               lowerDetectionLimit=cds@lowerDetectionLimit)
+  pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
+  pData(cds_subset)$Size_Factor <- Size_Factor
+  return (cds_subset)
 }
 

@@ -6,6 +6,9 @@
 \usage{
 fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr)
 }
+\arguments{
+\item{relative_expr}{Whether to transform expression into relative values}
+}
 \description{
 Helper function for parallel VGAM fitting
 }

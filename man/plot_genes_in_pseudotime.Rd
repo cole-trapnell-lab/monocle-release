@@ -6,8 +6,8 @@
 \usage{
 plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
   nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State",
-  trend_formula = "adjusted_expression ~ sm.ns(Pseudotime, df=3)",
-  label_by_short_name = TRUE, relative_expr = TRUE)
+  trend_formula = "~ sm.ns(Pseudotime, df=3)", label_by_short_name = TRUE,
+  relative_expr = TRUE)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}
@@ -27,6 +27,8 @@ plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
 \item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
 
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
+
+\item{relative_expr}{Whether to transform expression into relative values}
 }
 \value{
 a ggplot2 plot object

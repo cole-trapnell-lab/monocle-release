@@ -1,3 +1,4 @@
+library(HSMMSingleCell)
 library(monocle)
 context("estimateDispersion")
 

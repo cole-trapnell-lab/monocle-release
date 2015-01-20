@@ -29,6 +29,8 @@ plot_genes_jitter(cds_subset, grouping = "State", min_expr = 0.1,
 \item{plot_trend}{whether to plot a trendline tracking the average expression across the horizontal axis.}
 
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
+
+\item{relative_expr}{Whether to transform expression into relative values}
 }
 \value{
 a ggplot2 plot object

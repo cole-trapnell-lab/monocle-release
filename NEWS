@@ -1,6 +1,11 @@
-CHANGES in monocle 1.1.0:
+CHANGES in monocle 1.2.0:
 
 * VARIANCE STABILIZATION
+
+* Model formula arguments no longer allow an explicit response variable name. 
+  They are added by functions that use them.
+
+* differentialGeneTest() automatically merges fData into results
 
 * clusterGenes no longer scales and log-transforms the input matrix.
 

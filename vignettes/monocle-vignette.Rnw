@@ -16,8 +16,8 @@
 %\usepackage{color}
 
 \title{\textsf{\textbf{\thetitle}}}
-\author{Cole Trapnell\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
-\texttt{cole@broadinstitute.org} \and
+\author{Cole Trapnell\\[1em]University of Washington,\\ Seattle, Washington, USA\\
+\texttt{coletrap@uw.edu} \and
 Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
 \texttt{davide@broadinstitute.org}}
 
@@ -38,7 +38,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 
 \tableofcontents
 
-<<init_monocle, include=FALSE, cache=FALSE, eval=TRUE>>=
+<<init_monocle, include=FALSE, cache=TRUE, eval=TRUE>>=
 library(HSMMSingleCell)
 library(monocle)
 data(HSMM_expr_matrix)
@@ -144,7 +144,7 @@ marker_genes <- row.names(subset(fData(HSMM),
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
 <<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM[marker_genes,], 
-                                      fullModelFormulaStr="expression~Media")
+                                      fullModelFormulaStr="~Media")
 
 # Select genes that are significant at an FDR < 10%
 sig_genes <- subset(diff_test_res, qval < 0.1)
@@ -174,7 +174,7 @@ Ideally, we'd like to use as little prior knowledge of the biology of the system
 
 <<ordering_not_run, eval=FALSE>>=
 #not run
-diff_test_res <- differentialGeneTest(HSMM[expressed_genes,], fullModelFormulaStr="expression~Media")
+diff_test_res <- differentialGeneTest(HSMM[expressed_genes,], fullModelFormulaStr="~Media")
 ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 @ %def
 
@@ -237,7 +237,7 @@ To test the effects of \Robject{State} on gene expression, we simply call \Rfunc
 To set up the test based on \Robject{State}, we simply call \Rfunction{differentialGeneTest} with a string specifying \Robject{fullModelFormulaStr}.  We don't have to specify the reduced model in this case, because the default of \Robject{expression~1} is what we want here.
 
 <<all_in_one_test, eval = TRUE>>=
-diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="expression~State")
+diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="~State")
 diff_test_res <- merge(fData(HSMM), diff_test_res, by="row.names")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 @ %def
@@ -252,8 +252,8 @@ Note that we could also simply compute summary statistics such as mean or median
 
 The \Rfunction{differentialGeneTest} function is actually quite simple ``under the hood''.  The call above is equivalent to:
 <<piecewise_test, eval=FALSE>>=
-full_model_fits <- fitModel(cds_subset,  modelFormulaStr="expression~State")
-reduced_model_fits <- fitModel(cds_subset, modelFormulaStr="expression~1")
+full_model_fits <- fitModel(cds_subset,  modelFormulaStr="~State")
+reduced_model_fits <- fitModel(cds_subset, modelFormulaStr="~1")
 diff_test_res <- compareModels(full_model_fits, reduced_model_fits)
 diff_test_res
 @ %def
@@ -271,7 +271,7 @@ cds_subset <- HSMM[to_be_tested, pData(HSMM)$State != 3]
 
 Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between \Robject{State}.  Monocle assigns each cell a ``pseudotime'' value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the \Rpackage{VGAM} package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
 <<piecewise_test_pt, eval=TRUE>>=
-diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="expression~sm.ns(Pseudotime)")
+diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="~sm.ns(Pseudotime)")
 @ %def
 
 The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
@@ -300,8 +300,8 @@ to_be_tested <- row.names(subset(fData(HSMM),
 cds_subset <- HSMM[to_be_tested, pData(HSMM)$Media == "DM" & pData(HSMM)$State != 1]
 
 diff_test_res <- differentialGeneTest(cds_subset,  
-                                      fullModelFormulaStr="expression~State * Hours", 
-                                      reducedModelFormulaStr="expression~Hours")
+                                      fullModelFormulaStr="~State * Hours", 
+                                      reducedModelFormulaStr="~Hours")
 diff_test_res <- merge(fData(cds_subset), diff_test_res, by="row.names")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 plot_genes_jitter(cds_subset, grouping="Hours", color_by="State", plot_trend=TRUE) + facet_wrap( ~ feature_label, scales="free_y")
@@ -315,7 +315,7 @@ We start by using the model fitting function that's used during differential exp
 
 <<fit_full_model_for_cluster, eval=TRUE>>=
 sampled_gene_cds <- HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),]
-full_model_fits <- fitModel(sampled_gene_cds,  modelFormulaStr="expression~sm.ns(Pseudotime, df=3)")
+full_model_fits <- fitModel(sampled_gene_cds,  modelFormulaStr="~sm.ns(Pseudotime, df=3)")
 @ %def
 
 The \Robject{full\_model\_fits} list contains a model for each gene that we've chosen.  We can generate a matrix of values where each row holds the predicted exression values for a gene over each cell, which correspond to the columns. Monocle provides the \Rfunction{responseMatrix} function to make this easy.

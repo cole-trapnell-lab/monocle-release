@@ -152,6 +152,8 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 
 make_canonical <-function(pq_tree)
 {
+  nei <- NULL
+  
   canonical_pq <- pq_tree
   
   V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out") == 2]$color="black"
@@ -182,6 +184,8 @@ make_canonical <-function(pq_tree)
 
 extract_ordering <- function(pq_tree, curr_node)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
     return (V(pq_tree)[curr_node]$name)
@@ -217,6 +221,8 @@ extract_ordering <- function(pq_tree, curr_node)
 
 extract_fixed_ordering <- function(pq_tree, curr_node)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
     return (V(pq_tree)[curr_node]$name)
@@ -386,6 +392,8 @@ order_q_node <- function(q_level_list, dist_matrix)
 
 extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
     #print ("ordering leaf node")
@@ -418,6 +426,8 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 
 count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
     #V(pq_tree)[curr_node]$num_desc = 0
@@ -445,6 +455,8 @@ count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 
 measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type != "Q")
   {
     #V(pq_tree)[curr_node]$num_desc = 0
@@ -475,6 +487,8 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 # Assign leaf nodes reachable in pq_tree from curr_node to assigned_state
 assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
 {
+  nei <- NULL
+  
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
     #V(pq_tree)[curr_node]$num_desc = 0
@@ -494,6 +508,10 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
 #' @importFrom plyr arrange
 extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
+  nei <- NULL
+  type <- NULL
+  pseudo_time <- NULL
+  
   pq_tree <- orig_pq_tree
   
   # children_counts <- rep(0, length(as.vector(V(pq_tree))))
@@ -563,6 +581,8 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
   {
+    nei <- NULL
+    
     curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
     #print (curr_branch_pseudotimes)
     curr_branch_root_cell <- NA
@@ -654,6 +674,8 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
   {
+    nei <- NULL
+    
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
     
@@ -675,6 +697,8 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   assign_pseudotime_helper <- function(ordering_tree_res, dist_matrix, last_pseudotime, curr_cell)
   {
+    nei <- NULL
+    
     cell_tree <- ordering_tree_res$subtree
     curr_cell_pseudotime <- last_pseudotime
     V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime

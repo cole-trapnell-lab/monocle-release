@@ -7,7 +7,6 @@
 #' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
 #' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
-#' @importFrom VGAM tobit
 #' @export
 #' @examples
 #' \dontrun{
@@ -107,6 +106,8 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                                   expression_lower_thresh=0.1,
                                   expression_upper_thresh=Inf){
   
+  log_expression <- NULL
+  
   FM <- exprs(cds)
   if (cds@expressionFamily@vfamily == "negbinomial")
   {
@@ -168,12 +169,19 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 }
 
 
+# TODO: we need to rename this function and its arguments.  What it actually
+# does is very confusing.
+####
+#' Filter genes outside of a given range of expression
+#'
+#' @export
 selectGenesInExpressionRange <- function(cds, 
                                          min_expression_threshold = -Inf, 
                                          max_expression_threshold = Inf, 
                                          detectionLimit=-Inf, 
                                          stat_fun=median, 
-                                         relative_expr=TRUE){
+                                         relative_expr=TRUE)
+{
   gene_nz_median = apply(exprs(cds), 1, function(x) { x <- x[x > detectionLimit]; stat_fun(x)})
   gene_nz_median<-esApply(cds,1,
                           function(x) { 
@@ -240,9 +248,12 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
+    
   loggeomeans <- rowMeans( log(CM) )
+  #print (loggeomeans)
+
   apply( CM, 2, function(cnts)
-    exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
+    exp( locfunc( ( log(cnts) - loggeomeans )[ is.na(loggeomeans) == FALSE && is.finite(loggeomeans) ] ) ) )
 }
 
 ################
@@ -258,12 +269,13 @@ get_classic_muscle_markers <- function(){
 }
 
 #' Build a CellDataSet from the HSMMSingleCell package
+#' 
 #' @export
 load_HSMM <- function(){
   
-  data(HSMM_expr_matrix)
-  data(HSMM_gene_annotation)
-  data(HSMM_sample_sheet)
+  data(HSMM_expr_matrix, envir = environment())
+  data(HSMM_gene_annotation, envir = environment())
+  data(HSMM_sample_sheet, envir = environment())
   pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
   fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
   HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)

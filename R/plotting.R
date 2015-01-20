@@ -46,6 +46,9 @@ plot_spanning_tree <- function(cds,
                                markers=NULL, 
                                show_cell_names=FALSE, 
                                cell_name_size=1){
+  gene_short_name <- NULL
+  sample_name <- NULL
+  
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
@@ -140,6 +143,7 @@ plot_spanning_tree <- function(cds,
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell  
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param relative_expr Whether to transform expression into relative values
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -239,6 +243,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
 #' @param plot_as_fraction whether to show the percent instead of the number of cells expressing each gene 
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param relative_expr Whether to transform expression into relative values
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom plyr ddply
@@ -260,6 +265,7 @@ plot_genes_positive_cells <- function(cds_subset,
                                       label_by_short_name=TRUE,
                                       relative_expr=TRUE){
   
+  percent <- NULL
   
   if (cds_subset@expressionFamily@vfamily == "negbinomial"){
     integer_expression <- TRUE
@@ -337,11 +343,11 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell 
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime 
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param relative_expr Whether to transform expression into relative values
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom plyr ddply .
 #' @importFrom reshape2 melt
-#' @importFrom VGAM vgam predict
 #' @export
 #' @examples
 #' \dontrun{
@@ -357,7 +363,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     ncol=1, 
                                     panel_order=NULL, 
                                     color_by="State",
-                                    trend_formula="adjusted_expression ~ sm.ns(Pseudotime, df=3)",
+                                    trend_formula="~ sm.ns(Pseudotime, df=3)",
                                     label_by_short_name=TRUE,
                                     relative_expr=TRUE){
   
@@ -399,6 +405,8 @@ plot_genes_in_pseudotime <-function(cds_subset,
   }else{
     cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
   }
+  
+  trend_formula <- paste("adjusted_expression", trend_formula, sep="")
   
   #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
   
@@ -491,7 +499,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @export
 #' @examples
 #' \dontrun{
-#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
 #' expression_curve_matrix <- responseMatrix(full_model_fits)
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
@@ -512,49 +520,90 @@ plot_clusters<-function(cds,
   }else{
     m$cluster <- factor(clustering$clustering)
   }
-  m.melt <- reshape2::melt(m, id.vars = c("ids", "cluster"))
-
+  
+  cluster_sizes <- as.data.frame(table(m$cluster))    
+  
+  cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
+  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ")
+  
+  facet_wrap_labeller <- function(gg.plot,labels=NULL) {
+    #works with R 3.0.1 and ggplot2 0.9.3.1
+    require(gridExtra)
+    
+    g <- ggplotGrob(gg.plot)
+    gg <- g$grobs      
+    strips <- grep("strip_t", names(gg))
+    
+    for(ii in seq_along(labels))  {
+      modgrob <- getGrob(gg[[strips[ii]]], "strip.text", 
+                         grep=TRUE, global=TRUE)
+      gg[[strips[ii]]]$children[[modgrob$name]] <- editGrob(modgrob,label=labels[ii])
+    }
+    
+    g$grobs <- gg
+    class(g) = c("arrange", "ggplot",class(g)) 
+    g
+  }
+  
+  
+  m.melt <- melt(m, id.vars = c("ids", "cluster"))
+  
   m.melt <- merge(m.melt, pData(cds), by.x="variable", by.y="row.names")
+  
   
   if (is.null(row_samples) == FALSE){
     m.melt <- m.melt[sample(nrow(m.melt), row_samples),]
   }
   
-  c <- ggplot(m.melt)
-  c <- c + stat_density2d(aes(x = Pseudotime, y = value), geom="polygon", fill="white", color="black", size=I(0.1)) + facet_wrap("cluster", ncol=ncol, nrow=nrow)
+  c <- ggplot(m.melt) + facet_wrap("cluster", ncol=ncol, nrow=nrow, scales="free_y")
+  #c <- c + stat_density2d(aes(x = Pseudotime, y = value), geom="polygon", fill="white", color="black", size=I(0.1)) + facet_wrap("cluster", ncol=ncol, nrow=nrow)
+  c <- c + geom_hline(yintercept=0, color="steelblue")
   
-  if (drawSummary) {
-    c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1), 
-                          fun.data = sumFun, color = "red", fill = "black", 
-                          alpha = 0.2, size = 0.5, geom = "smooth")
+  if (draw_individual_genes){
+    c <- c + geom_line(aes(x=Pseudotime, y=value, group=ids), alpha=I(0.1), size=I(0.5))
   }
   
+  if (drawSummary) {
+    c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1),
+                          fun.data = sumFun, color = "red",
+                          alpha = 0.2, size = 0.5, geom = "smooth")
+    c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1), 
+                          fun.data = "median_hilow", fill = "black", 
+                          alpha = 0.2, size = 0.5, geom = "ribbon", conf.int=conf_int)
+  }
   
+  #cluster_medians <- subset(m.melt, ids %in% clustering$medoids)
+  
+  #c <- c + geom_line()
+  #c <- c + geom_line(aes(x=Pseudotime, y=value), data=cluster_medians, color=I("red"))
   c <- c + scale_color_hue(l = 50, h.start = 200) + theme(axis.text.x = element_text(angle = 0, 
                                                                                      hjust = 0)) + xlab("Pseudo-time") + ylab("Expression")
   c <- c + theme(strip.background = element_rect(colour = 'white', fill = 'white')) + 
-    theme(panel.border = element_blank(), axis.line = element_line(size=0.2)) +
-    theme(axis.ticks = element_line(size = 0.2)) +
+    theme(panel.border = element_blank()) +
     theme(legend.position="none") +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank())
   
-#   if (draw_cluster_size){
-#     cluster_sizes <- as.data.frame(table(m$cluster))
-#     colnames(cluster_sizes) <- c("cluster", "Freq")
-#     cluster_sizes <- cbind (cluster_sizes, Pseudotime = cluster_label_text_x, value = cluster_label_text_y)
-#     c <- c + geom_text(aes(x=Pseudotime, y=value, label=Freq), data=cluster_sizes, size=cluster_label_text_size)
-#   }
+  c <- c + geom_hline(yintercept=0, color="steelblue")
+  #   if (draw_cluster_size){
+  #     cluster_sizes <- as.data.frame(table(m$cluster))
+  #     colnames(cluster_sizes) <- c("cluster", "Freq")
+  #     cluster_sizes <- cbind (cluster_sizes, Pseudotime = cluster_label_text_x, value = cluster_label_text_y)
+  #     c <- c + geom_text(aes(x=Pseudotime, y=value, label=Freq), data=cluster_sizes, size=cluster_label_text_size)
+  #   }
   
   if (is.null(callout_ids) == FALSE)
   {
     callout_melt <- subset(m.melt, ids %in% callout_ids)
     c <- c + geom_line(aes(x=Pseudotime, y=value), data=callout_melt, color=I("steelblue"))
   }
-  c <- c + monocle_theme_opts()
+  #c <- c + monocle_theme_opts()
+  #c <- facet_wrap_labeller(c, facet_labels)
   c
 }
 
+#' Plots a pseudotime-ordered, row-centered heatmap
+#' @export 
 plot_genes_heatmap <- function(cds, 
                                rescaling='row', 
                                clustering='row', 
@@ -570,7 +619,6 @@ plot_genes_heatmap <- function(cds,
                                scaleMin=-2, 
                                relative_expr=TRUE, 
                                ...){
-  
   
   ## the function can be be viewed as a two step process
   ## 1. using the rehape package and other funcs the data is clustered, scaled, and reshaped
@@ -592,7 +640,7 @@ plot_genes_heatmap <- function(cds,
       {
         stop("Error: you must call estimateSizeFactors() first")
       }
-      FM <- t(t(FM) / sizeFactors(cds_subset))
+      FM <- t(t(FM) / sizeFactors(cds))
     }
     FM <- round(FM)
   }
@@ -767,117 +815,18 @@ plot_genes_heatmap <- function(cds,
 #' @export 
 #' @examples
 #' \dontrun{
-#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~VGAM::bs(Pseudotime)")
+#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
 #' expression_curve_matrix <- responseMatrix(full_model_fits)
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
 #' 
 #FIXME: This function is hopelessly buggy and broken.  Needs a re-write and THOROUGH TESTING
-plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), method = 'fitting', stretch = FALSE, 
+plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = FALSE, 
                                min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
-                               fullModelFormulaStr = "expression ~ s(Pseudotime, df=3) * State", label_by_short_name = TRUE) 
+                               trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE) 
 {
-  if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
-    stop('Please first order the cells in pseudotime using orderCells()')
-  
-  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
-
-  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
-  ancestor_cells <- c()
-  
-  while (1) {
-    ancestor_cells <- c(ancestor_cells, curr_cell)
-    if (is.na(pData(cds[,curr_cell])$Parent))
-      break
-    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
-  }
-  
-  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
-  
-  State <- pData(cds)$State 
-  Pseudotime <- pData(cds)$Pseudotime 
-  
-
-  progenitor_ind <- which(State %in% lineage_states == FALSE)
-  
-  progenitor_states <- unique(State[progenitor_ind])
-  
-  pData <- pData(cds)
-  exprs_data <- exprs(cds)
-  
-  weight_vec <- rep(1, nrow(pData(cds)))
-  weight_vec[progenitor_ind] <- 0.5
-  
-  range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
-  row.names(range_df) <- as.character(range_df$State)
-  colnames(range_df) <- c("State","min", "max")
-  
-  print (range_df)
-  #longest_branch <- groups[which(range_df[, 2] == max(range_df[, 2]))] 
-  longest_lineage_branch <- tail(plyr::arrange(range_df[as.character(lineage_states),], max)$State, n=1)
-
-  #first stretch pseudotime and then duplicate 
-  if(stretch) { #should we stretch each lineage's pseudotime to have the same length (assume the same maturation real time)
-    short_branches <- setdiff(row.names(range_df), as.character(c(progenitor_states, longest_lineage_branch)))
-    
-    #stretch (condense) the pseudotime from 0 to 100 
-    #longest_branch_multiplier <- 100 / (range_df[as.character(longest_lineage_branch), 'max'] - range_df[as.character(progenitor_state), 'min']) 
-    longest_branch_range <- range_df[as.character(longest_lineage_branch), 'max'] - min(range_df[, 'min'])
-    longest_branch_multiplier <- 100 / longest_branch_range
-    
-    T_0 <- (max(range_df[as.character(progenitor_states), 'max']) - min(range_df[as.character(progenitor_states), 'min']))  * longest_branch_multiplier
-    print (T_0)
-    short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - max(range_df[as.character(progenitor_states), 'max']))
-    
-    heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
-    names(heterochrony_constant) <- c(longest_lineage_branch, short_branches)
-    message('stretch ratio are: ')
-    print(heterochrony_constant)
-    
-    pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
-      (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
-    print ("&&&&")
-    print (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'])
-    for(i in 1:length(short_branches)) { #stretch short branches
-      print ("***")
-      print (i)
-      print ("!!!")
-      print (pData[pData$State  == short_branches[i], 'Pseudotime'])
-      pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
-        (pData[pData$State == short_branches[i], 'Pseudotime'] - max(range_df[as.character(progenitor_states), 'max'])) * 
-        short_branches_multipliers[i] + T_0
-      print(pData[pData$State  == short_branches[i], 'Pseudotime'])
-    }
-  }
-  
-  pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
-  for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
-    exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
-    weight_vec <- c(weight_vec, rep(0.5, length( progenitor_ind)))
-    
-    colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
-      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
-    pData <- rbind(pData, pData[progenitor_ind, ])
-    
-    pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
-    row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
-      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
-  }
-  pData$State <- as.factor(pData$State)
-  
-  pData$weight <- weight_vec
-  Size_Factor <- pData$Size_Factor
-  
-  fData <- fData(cds)
-  
-  cds_subset <- newCellDataSet(as.matrix(exprs_data),
-                               phenoData = new("AnnotatedDataFrame", data = pData),
-                               featureData = new("AnnotatedDataFrame", data = fData),
-                               expressionFamily=negbinomial(),
-                               lowerDetectionLimit=1)
-  pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
-  pData(cds_subset)$Size_Factor <- Size_Factor
+  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, method, stretch)
   
   if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff", 
                                                  "negbinomial", "poissonff", "quasipoissonff")) {
@@ -924,13 +873,9 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
   }
   cds_exprs$feature_label <- factor(cds_exprs$feature_label)
   
-  #weight_vec <- rep(1, nrow(pData(cds_subset)))
-  #names(weight_vec) <- row.names(pData(cds_subset))
-
-  #weight_vec[row.names(subset(pData(cds), State = progenitor_state))] <- 0.5
-  #weight_vec[nrow(pData(cds_subset)):length(pData)] <- 0.5
-  print (weight_vec)
-  #fit by VGAM: 
+  trend_formula <- paste("adjusted_expression", trend_formula, sep="")
+  
+  print (head(cds_exprs))
   merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label), function(x) {
     fit_res <- tryCatch({
       #expression <- x$adjusted_expression
@@ -938,10 +883,10 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
       #df <- data.frame(expression = round(x))
       #df <- cbind(df, pData)
       
-      vg <- suppressWarnings(vglm(formula = as.formula(fullModelFormulaStr), 
+      vg <- suppressWarnings(vglm(formula = as.formula(trend_formula), 
                                   family = cds_subset@expressionFamily, data = x, 
                                   maxit = 300, checkwz = FALSE,
-                                  weights=pData$weight))
+                                  weights=x$weight))
       if (integer_expression) {
         res <- predict(vg, type = "response")
         res[res < min_expr] <- min_expr
@@ -960,7 +905,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
     
     data.frame(Pseudotime=x$Pseudotime, 
                expectation=fit_res,
-               State=x$State)
+               Lineage=x$Lineage)
   })
   
   if(method == 'loess')
@@ -988,7 +933,12 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
   #mlt_df <- data.frame(expectation = as.vector(res$expectation), Pseudotime = pData$Pseudotime, State = pData$State, 
   #                     feature_label = rep(as.character(fData$gene_short_name), each = nrow(res))) 
   #mlt_df$State <- as.factor(mlt_df$State)
-  
+
+#   
+#   cds_exprs$Lineage <- cds_exprs$Lineage
+#   cds_exprs$State <- factor(pData(cds)[as.character(cds_exprs$original_cell_id),]$State, 
+#                             levels =levels(cds$State))
+#   print (levels(cds_exprs$State))
   
   q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
   if (is.null(color_by) == FALSE) {
@@ -1003,7 +953,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
   if(method == 'loess')
     q  <- q + stat_smooth(aes(fill = State, color = State), method = 'loess')
   else if(method == 'fitting') {
-    q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = State), data = merged_df_with_vgam)
+    q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
   }
   
   if(stretch)
@@ -1011,5 +961,124 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), metho
   else 
     q <- q + ylab("Expression") + xlab("Pseudotime")
   q <- q + monocle_theme_opts()
+  q
+}
+
+#small_set <- load_HSMM_markers()
+
+
+#' Plot the branch genes in pseduotime with separate lineage curves 
+#' TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data
+#' @param cds CellDataSet for the experiment
+#' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
+#' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
+#' @param relative_expr Whether to transform expression into relative values
+#' @param min_expr The minimum level of expression to show in the plot
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom plyr ddply
+#' @importFrom reshape2 melt
+#' @export 
+#' 
+#' 
+plot_coexpression_matrix <- function(cds, 
+                                     rowgenes, 
+                                     colgenes, 
+                                     relative_expr=TRUE, 
+                                     min_expr=NULL, 
+                                     cell_size=0.85, 
+                                     label_by_short_name=TRUE,
+                                     show_density=TRUE){
+  
+  gene_short_name <- NULL
+  adjusted_expression.x <- NULL
+  adjusted_expression.y <- NULL
+  ..density.. <- NULL
+  f_id <- NULL
+  
+  row_gene_ids <- row.names(subset(fData(cds), gene_short_name %in% rowgenes))
+  row_gene_ids <- union(row_gene_ids, intersect(rowgenes, row.names(fData(cds))))
+  
+  col_gene_ids <- row.names(subset(fData(cds), gene_short_name %in% colgenes))
+  col_gene_ids <- union(col_gene_ids, intersect(colgenes, row.names(fData(cds))))
+  
+  cds_subset <- cds[union(row_gene_ids, col_gene_ids),]
+  
+  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+    integer_expression <- TRUE
+  }else{
+    integer_expression <- FALSE
+    relative_expr <- TRUE
+  }
+  
+  if (integer_expression)
+  {
+    cds_exprs <- exprs(cds_subset)
+    if (relative_expr){
+      if (is.null(sizeFactors(cds_subset)))
+      {
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+      }
+      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+    }
+    cds_exprs <- reshape2::melt(round(cds_exprs))
+  }else{
+    cds_exprs <- reshape2::melt(exprs(cds_subset))
+  }
+  if (is.null(min_expr)){
+    min_expr <- cds_subset@lowerDetectionLimit
+  }
+  
+  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
+  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
+  
+  cds_pData <- pData(cds_subset)
+  cds_fData <- fData(cds_subset)
+  
+  cds_exprs <- merge(cds_exprs, cds_fData, by.x="f_id", by.y="row.names")
+  
+  cds_exprs$adjusted_expression <- cds_exprs$expression
+
+  #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
+  
+  if (label_by_short_name == TRUE){
+    if (is.null(cds_exprs$gene_short_name) == FALSE){
+      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)]  <- cds_exprs$f_id
+    }else{
+      cds_exprs$feature_label <- cds_exprs$f_id
+    }
+  }else{
+    cds_exprs$feature_label <- cds_exprs$f_id
+  }
+  
+  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
+  
+  row_cds_exprs <- subset(cds_exprs, f_id %in% row_gene_ids)
+  col_cds_exprs <- subset(cds_exprs, f_id %in% col_gene_ids)
+  
+  joined_exprs <- merge(row_cds_exprs, col_cds_exprs, by="Cell")
+  cds_exprs <- joined_exprs
+  
+  cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
+  
+
+  cds_exprs <- subset(cds_exprs, adjusted_expression.x > min_expr | adjusted_expression.y > min_expr)
+  
+  q <- ggplot(aes(adjusted_expression.x, adjusted_expression.y), data=cds_exprs, size=I(1))
+  
+  if (show_density){
+    q <- q + stat_density2d(geom="raster", aes(fill = ..density..), contour = FALSE) + 
+      scale_fill_gradient(low="white", high="red") 
+  }
+
+  q <- q + scale_x_log10() + scale_y_log10() + 
+    geom_point(color=I("black"), size=I(cell_size * 1.50)) +
+    geom_point(color=I("white"), size=I(cell_size)) +
+    facet_grid(feature_label.x ~ feature_label.y, scales="free") 
+    #scale_color_brewer(palette="Set1") +
+  
+  #q <- q + monocle_theme_opts()
+  
   q
 }
