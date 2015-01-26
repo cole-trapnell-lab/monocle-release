@@ -1,8 +1,16 @@
 #' Helper function for parallel VGAM fitting
 #' 
 #' @param relative_expr Whether to transform expression into relative values
-fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr){
+fit_model_helper <- function(x, 
+                             modelFormulaStr, 
+                             expressionFamily, 
+                             relative_expr, 
+                             disp_func=NULL, 
+                             pseudocount=0){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
+  
+  orig_x <- x
+  x <- x + pseudocount
   
   if (expressionFamily@vfamily == "negbinomial"){
     if (relative_expr)
@@ -10,6 +18,14 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
       x <- x / Size_Factor
     }
     f_expression <- round(x)
+    if (is.null(disp_func) == FALSE){
+      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
+      if (is.null(disp_guess) == FALSE ) {
+        # FIXME: In theory, we could lose some user-provided parameters here
+        # e.g. if users supply zero=NULL or something.    
+        expressionFamily <- negbinomial(isize=1/disp_guess)
+      }
+    }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     f_expression <- x
   }else{
@@ -17,7 +33,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
   }
   
   tryCatch({
-    FM_fit <-  suppressWarnings(VGAM::vgam(as.formula(modelFormulaStr), family=expressionFamily))
+    FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
@@ -42,18 +58,23 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily, relative_expr
 fitModel <- function(cds,
                      modelFormulaStr="~sm.ns(Pseudotime, df=3)",
                      relative_expr=TRUE,
+                     pseudocount=0,
                      cores=1){
   if (cores > 1){
     f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
                  expressionFamily=cds@expressionFamily,
-                 relative_expr=relative_expr)
+                 relative_expr=relative_expr,
+                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                 pseudocount=pseudocount)
     f
   }else{
     f<-esApply(cds,1,fit_model_helper, 
                modelFormulaStr=modelFormulaStr, 
                expressionFamily=cds@expressionFamily,
-               relative_expr=relative_expr)
+               relative_expr=relative_expr,
+               disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+               pseudocount=pseudocount)
     f
   }
 }
@@ -314,3 +335,20 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
   return (cds_subset)
 }
 
+calulate_NB_dispersion_hint <- function(disp_func, f_expression)
+{
+  expr_median <- median(f_expression[f_expression > 0])
+  if (is.null(expr_median) == FALSE) {
+    disp_guess_fit <- disp_func(expr_median)
+    
+    # For NB: Var(Y)=mu*(1+mu/k)
+    f_expression_var <- var(f_expression)
+    f_expression_mean <- mean(f_expression)
+    
+    disp_guess_meth_moments <- f_expression_var - f_expression_mean
+    disp_guess_meth_moments <- f_expression_var / (f_expression_mean^2)
+    
+    return (max(disp_guess_fit, disp_guess_meth_moments))
+  }
+  return (NULL)
+}

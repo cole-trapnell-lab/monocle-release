@@ -511,7 +511,8 @@ plot_clusters<-function(cds,
                         ncol=NULL, 
                         nrow=NULL, 
                         row_samples=NULL, 
-                        callout_ids=NULL){
+                        callout_ids=NULL,
+                        conf_int=0.68){
   m <- as.data.frame(clustering$exprs)
   m$ids <- rownames(clustering$exprs)
   if (is.null(clustering$labels) == FALSE)
@@ -558,10 +559,6 @@ plot_clusters<-function(cds,
   c <- ggplot(m.melt) + facet_wrap("cluster", ncol=ncol, nrow=nrow, scales="free_y")
   #c <- c + stat_density2d(aes(x = Pseudotime, y = value), geom="polygon", fill="white", color="black", size=I(0.1)) + facet_wrap("cluster", ncol=ncol, nrow=nrow)
   c <- c + geom_hline(yintercept=0, color="steelblue")
-  
-  if (draw_individual_genes){
-    c <- c + geom_line(aes(x=Pseudotime, y=value, group=ids), alpha=I(0.1), size=I(0.5))
-  }
   
   if (drawSummary) {
     c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1),
@@ -822,7 +819,7 @@ plot_genes_heatmap <- function(cds,
 #' }
 #' 
 #FIXME: This function is hopelessly buggy and broken.  Needs a re-write and THOROUGH TESTING
-plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = FALSE, 
+plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = TRUE, 
                                min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
                                trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE) 
 {
@@ -883,10 +880,27 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
       #df <- data.frame(expression = round(x))
       #df <- cbind(df, pData)
       
+      # If we're using the negbinomial, set up a new expressionSet object 
+      # so we can specify a hint for the size parameter, which will reduce the 
+      # chance of a fitting failure
+      expressionFamily <- cds@expressionFamily
+      if (expressionFamily@vfamily == "negbinomial"){
+        disp_guess <- calulate_NB_dispersion_hint(cds@dispFitInfo[["blind"]]$disp_func, x$adjusted_expression)
+        print (disp_guess)
+        if (is.null(disp_guess) == FALSE ) {
+          # FIXME: In theory, we could lose some user-provided parameters here
+          # e.g. if users supply zero=NULL or something.    
+          expressionFamily <- negbinomial(isize=1/disp_guess)
+          #expressionFamily <- quasipoissonff()
+        }
+      }
+      
       vg <- suppressWarnings(vglm(formula = as.formula(trend_formula), 
-                                  family = cds_subset@expressionFamily, data = x, 
+                                  family = expressionFamily, data = x, 
                                   maxit = 300, checkwz = FALSE,
-                                  weights=x$weight))
+                                  na.action=na.omit,
+                                  weights=x$weight,
+                                  trace=T))
       if (integer_expression) {
         res <- predict(vg, type = "response")
         res[res < min_expr] <- min_expr

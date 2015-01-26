@@ -59,6 +59,7 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, dispModelNa
                                            relative_expr, 
                                            cores)
   object@dispFitInfo[[dispModelName]] <- dfi
+  
   validObject( object )
   object
 })

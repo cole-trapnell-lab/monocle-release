@@ -243,17 +243,46 @@ detectGenes <- function(cds, min_expr=NULL){
   cds
 }
 
-estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=TRUE)
+
+
+estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="weighted-median")
 {
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
+  CM <- CM + pseudocount
+  
+  if (method == "weighted-median"){
+    medians <- apply(CM, 1, function(cell_expr) { 
+      log(median(cell_expr))
+    })
     
-  loggeomeans <- rowMeans( log(CM) )
-  #print (loggeomeans)
-
-  apply( CM, 2, function(cnts)
-    exp( locfunc( ( log(cnts) - loggeomeans )[ is.na(loggeomeans) == FALSE && is.finite(loggeomeans) ] ) ) )
+    weights <- apply(CM, 1, function(cell_expr) {
+      num_pos <- sum(cell_expr > 0)
+      num_pos / length(cell_expr)
+    })
+    
+    sfs <- apply( CM, 2, function(cnts) {
+      norm_cnts <-  weights * (log(cnts) -  medians)
+      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
+      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
+      #print (head(norm_cnts))
+      exp( mean(norm_cnts) )
+    })
+  }else if (method == "median-geometric-mean"){
+    medians <- apply(CM, 1, function(cell_expr) { 
+      cell_expr_nz <- log(cell_expr_nz)
+      cell_expr_nz <- mean(cell_expr_nz)
+    })
+    sfs <- apply( CM, 2, function(cnts) {
+      norm_cnts <- log(cnts) -  medians
+      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
+      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
+      #print (head(norm_cnts))
+      exp( locfunc( norm_cnts ))
+    })
+  }
+  sfs  
 }
 
 ################

@@ -6,9 +6,14 @@ diff_test_helper <- function(x,
                              reducedModelFormulaStr, 
                              expressionFamily, 
                              relative_expr,
-                             weights){
+                             weights,
+                             disp_func=NULL,
+                             pseudocount=0){
   reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
+  
+  x_orig <- x
+  x <- x + pseudocount
   
   if (expressionFamily@vfamily == "negbinomial"){
     if (relative_expr == TRUE)
@@ -16,6 +21,14 @@ diff_test_helper <- function(x,
       x <- x / Size_Factor
     }
     f_expression <- round(x)
+    if (is.null(disp_func) == FALSE){
+      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
+      if (is.null(disp_guess) == FALSE ) {
+        # FIXME: In theory, we could lose some user-provided parameters here
+        # e.g. if users supply zero=NULL or something.    
+        expressionFamily <- negbinomial(isize=1/disp_guess)
+      }
+    }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     f_expression <- x
   }else{
@@ -23,8 +36,8 @@ diff_test_helper <- function(x,
   }
   
   test_res <- tryCatch({
-    full_model_fit <- VGAM::vgam(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights)
-    reduced_model_fit <- suppressWarnings(VGAM::vgam(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))
+    full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights)
+    reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
@@ -72,7 +85,8 @@ differentialGeneTest <- function(cds,
                                  reducedModelFormulaStr="~1", 
                                  cores=1, 
                                  relative_expr=TRUE,
-                                 weights=NULL){
+                                 weights=NULL,
+                                 pseudocount=0){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
@@ -87,7 +101,9 @@ differentialGeneTest <- function(cds,
                              reducedModelFormulaStr=reducedModelFormulaStr,
                              expressionFamily=cds@expressionFamily,
                              relative_expr=relative_expr,
-                             weights=weights)
+                             weights=weights,
+                             disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                             pseudocount=pseudocount)
     diff_test_res
   }else{
     diff_test_res<-esApply(cds,1,diff_test_helper, 
@@ -95,7 +111,9 @@ differentialGeneTest <- function(cds,
                            reducedModelFormulaStr=reducedModelFormulaStr, 
                            expressionFamily=cds@expressionFamily, 
                            relative_expr=relative_expr,
-                           weights=weights)
+                           weights=weights,
+                           disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                           pseudocount=pseudocount)
     diff_test_res
   }
   
@@ -121,7 +139,9 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        lineage_states = c(2, 3), 
                        relative_expr = TRUE,
                        stretch = TRUE,
+                       pseudocount=0,
                        cores = 1) {
+  
   cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, method, stretch)
   
   branchTest_res <- differentialGeneTest(cds_subset, 
@@ -129,7 +149,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         weights = pData(cds_subset)$weight)
+                                         weights = pData(cds_subset)$weight,
+                                         pseudocount = pseudocount)
   
   return(branchTest_res)
 }
