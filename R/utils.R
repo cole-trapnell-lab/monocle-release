@@ -285,7 +285,7 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
   }else if(method == 'mode'){
     row_mode <- apply(CM, 1, dmode)
     apply(t(t(CM) - row_mode), 2, row_mode)
-  }else if(method = 'geometric-mean-total') {
+  }else if(method == 'geometric-mean-total') {
     cell_total <- apply(CM, 2, sum)
     geometric-mean-total <- cell_total / mean(log(cell_total))
   } 
@@ -374,6 +374,3 @@ load_HSMM_markers <- function(){
   marker_names <- get_classic_muscle_markers()
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
-
-
-,
