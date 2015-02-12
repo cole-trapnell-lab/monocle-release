@@ -887,7 +887,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
       if (expressionFamily@vfamily == "negbinomial"){
         disp_guess <- calulate_NB_dispersion_hint(cds@dispFitInfo[["blind"]]$disp_func, x$adjusted_expression)
         print (disp_guess)
-        if (is.null(disp_guess) == FALSE ) {
+        if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
           # FIXME: In theory, we could lose some user-provided parameters here
           # e.g. if users supply zero=NULL or something.    
           expressionFamily <- negbinomial(isize=1/disp_guess)

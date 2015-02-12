@@ -20,7 +20,7 @@ fit_model_helper <- function(x,
     f_expression <- round(x)
     if (is.null(disp_func) == FALSE){
       disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
-      if (is.null(disp_guess) == FALSE ) {
+      if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE   ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something.    
         expressionFamily <- negbinomial(isize=1/disp_guess)
