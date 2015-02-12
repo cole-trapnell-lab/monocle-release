@@ -822,7 +822,7 @@ plot_genes_heatmap <- function(cds,
 plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = TRUE, 
                                min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
                                trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE, weighted = TRUE, 
-                               add_ABC = FALSE, normalize = TRUE, ...) 
+                               add_ABC = FALSE, normalize = TRUE, gene_pairs = NULL, ...) 
 {
   if(add_ABC) {
 
@@ -832,8 +832,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
     fData(cds)[, 'ABCs'] <- ABCs_df$ABCs
   }
 
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  
+  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, method, stretch, weighted, gene_pairs, ...)
 
   if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff", 
                                                  "negbinomial", "poissonff", "quasipoissonff")) {
@@ -980,6 +979,8 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
 #                             levels =levels(cds$State))
 #   print (levels(cds_exprs$State))
   merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
+  cds_exprs$State <- as.factor(cds_exprs$State)
+  merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
 
   q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
   if (is.null(color_by) == FALSE) {
@@ -999,6 +1000,8 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
   else if(method == 'fitting') {
     q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
   }
+  if(duplicate)
+    q <- q + facet_wrap(~Gene)
   
   if(stretch)
     q <- q + ylab("Expression") + xlab("Maturation levels")
@@ -1243,9 +1246,9 @@ plot_heatmap <- function(abs_branch_gene,
     ori_branch_cds[which(ori_branch_cds <= -fc_limit)] <- -fc_limit
     ori_branch_cds[which(ori_branch_cds >= fc_limit)] <- fc_limit
 
-  make_heatmap(ori_logfc_df, emsemble_ids = abs_branch_gene, file = 'ori_logfc_heatmap_adj_inter.pdf') #heatmap for log fc
-  make_heatmap(str_logfc_df, emsemble_ids = abs_branch_gene, file = 'stretched_logfc_heatmap_adj_inter.pdf') #heatmap for log fc
-  make_heatmap(ori_branch_cds, emsemble_ids = abs_branch_gene, file = 'log2fc_ori_branch_adj_inter.pdf') #heatmap for original expression
+  make_heatmap(ori_logfc_df, emsemble_ids = abs_branch_gene, file = 'ori_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
+  make_heatmap(str_logfc_df, emsemble_ids = abs_branch_gene, file = 'stretched_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
+  make_heatmap(ori_branch_cds, emsemble_ids = abs_branch_gene, file = 'log2fc_ori_branch_adj_inter.pdf', ...) #heatmap for original expression
 
 
   #show some positive control for the other branch: 
@@ -1253,6 +1256,6 @@ plot_heatmap <- function(abs_branch_gene,
   sample_ids <- c(pos_alterative_branch, sample(1:nrow(ori_logfc_df), 12))
   test <- ori_logfc_df[sample_ids, ]
 
-  make_heatmap(test, emsemble_ids = abs_branch_gene[sample_ids], method = "ward.D2")
+  make_heatmap(test, emsemble_ids = abs_branch_gene[sample_ids], method = "ward.D2", ...)
 }
 

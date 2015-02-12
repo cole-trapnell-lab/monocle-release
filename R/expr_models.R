@@ -6,7 +6,7 @@ fit_model_helper <- function(x,
                              expressionFamily, 
                              relative_expr, 
                              disp_func=NULL, 
-                             pseudocount=0){
+                             pseudocount=0, ...){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
   
   orig_x <- x
@@ -19,11 +19,17 @@ fit_model_helper <- function(x,
     }
     f_expression <- round(x)
     if (is.null(disp_func) == FALSE){
-      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
+      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
       if (is.null(disp_guess) == FALSE ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something.    
-        expressionFamily <- negbinomial(isize=1/disp_guess)
+        #check the isize: 
+        size_guess <- 1/disp_guess
+
+        if(is.na(size_guess) | size_guess <= 0)
+          expressionFamily <- negbinomial(isize=NULL, ...)
+        else #guess intial size 
+          expressionFamily <- negbinomial(isize=size_guess, ...)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -244,7 +250,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 }
 
 #to do: check whether or not the lineages are on the same paths
-buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels = NULL, stretch = FALSE, weighted = FALSE, ...)
+buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels = NULL, method = 'fitting',  stretch = FALSE, weighted = FALSE, gene_pairs = NULL, ...)
 {
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
@@ -356,7 +362,43 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
                                lowerDetectionLimit=cds@lowerDetectionLimit)
   pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
   pData(cds_subset)$Size_Factor <- Size_Factor
-  return (cds_subset)
+  
+  if(!is.null(gene_pairs)){ #construct bifurcationGenePairsTest
+    bifurcation_list <- lapply(gene_pairs, function(x, cds){
+      cds_subset <- cds[x, ]
+      gene_pair_df <- exprs(cds_subset)
+      #test size_factor; rbind(gene_pair_df, pData(cds_subset))
+      gene_pair_df <- rbind(gene_pair_df, State = pData(cds_subset)$State, Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
+
+      collapse_gene_pair_df <- cbind(gene_pair_df[c(1, 3, 4, 5), ], gene_pair_df[c(2, 3, 4, 5), ])
+      row.names(collapse_gene_pair_df)[1] <- 'expression'
+      colnames(collapse_gene_pair_df) <- c(colnames(cds_subset), paste('duplicated', colnames(cds_subset), sep = '_'))
+
+      pData <- as.data.frame(t(collapse_gene_pair_df[c(2, 3, 4), ]))
+      pData$Gene <- c(rep(gene_pair[1], ncol(cds_subset)), rep(gene_pair[2], ncol(cds_subset)))
+      pData$Pseudotime[1:ncol(cds_subset)] <- pData$Pseudotime[1:ncol(cds_subset)] + 0.1
+
+      fData <- as.data.frame(cbind(fData(cds)[gene_pair[1], ], fData(cds)[gene_pair[2], ]))
+      colnames(fData) <- c(colnames(fData(cds_subset)), paste('duplicated', colnames(fData(cds_subset)), sep = '_'))
+    
+      return(list(collapse_gene_pair_df = collapse_gene_pair_df[1, ], pData = pData, fData = fData))
+    }, cds_subset)
+
+    collapse_gene_pair_df <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[1]]))
+    colnames(collapse_gene_pair_df) <- names(bifurcation_list[[1]]$collapse_gene_pair_df)
+    pData <- bifurcation_list[[1]]$pData
+    fData <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[3]]))
+    row.names(collapse_gene_pair_df) <- row.names(fData)
+
+    cds_subset <- newCellDataSet(collapse_gene_pair_df,
+               phenoData = new("AnnotatedDataFrame", data = as.data.frame((pData))),
+               featureData = new("AnnotatedDataFrame", data = fData),
+               expressionFamily=negbinomial(),
+               lowerDetectionLimit=1)
+  }
+
+ return (cds_subset)
+
 }
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)

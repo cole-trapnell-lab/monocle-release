@@ -280,16 +280,19 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
       exp( locfunc( norm_cnts ))
     })
   }else if(method == "median"){
-    row_median <- apply(CM, 1, row_median)
-    apply(t(t(CM) - row_median), 2, row_median)
+    row_median <- apply(CM, 1, median)
+    sfs <- apply(t(t(CM) - row_median), 2, median)
   }else if(method == 'mode'){
-    row_mode <- apply(CM, 1, dmode)
-    apply(t(t(CM) - row_mode), 2, row_mode)
+    sfs <- estimate_t(CM)
   }else if(method == 'geometric-mean-total') {
     cell_total <- apply(CM, 2, sum)
-    geometric-mean-total <- cell_total / mean(log(cell_total))
+    sfs <- log(cell_total) / mean(log(cell_total))
+  }else if(method == 'mean-geometric-mean-total') {
+    cell_total <- apply(CM, 2, sum)
+    sfs <- cell_total / exp(mean(log(cell_total)))
   } 
 
+  sfs[is.na(sfs)] <- 1 
   sfs  
 }
 
@@ -352,6 +355,30 @@ c(0.01430512,
 3750,
 7500), c('m', 'c')))
 }
+
+#' Make a list for pairs of potential bifurcating genes 
+#'
+#' @wxport
+make_gene_pairs <- function(gene_names){
+  k <- 1
+  gene_pairs <- list()
+
+  if(is.vector(gene_names)){
+    for(i in 1:(length(gene_names) - 1)){
+      for(j in (i + 1):length(gene_names)){
+        gene_pairs[[k]] <- c(gene_names[i], gene_names[j]) 
+        k <- k + 1
+      }
+    }
+  }
+  else if(is.matrix(gene_names)){
+    for(i in 1:nrow(gene_names)){
+      gene_pairs[k] <- c(gene_names[i, 1], gene_names[i, 2])
+    }
+  }
+  
+  return(gene_pairs)
+} 
 
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 

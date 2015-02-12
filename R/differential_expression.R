@@ -144,10 +144,19 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        pseudocount=0,
                        cores = 1, 
                        weighted = TRUE, 
-                       lineage_labels = NULL, ...) {
-  
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  cds_subset <- estimateSizeFactors(cds_subset) 
+                       lineage_labels = NULL, 
+                       gene_names = NULL, ...) {
+  if(!is.null(gene_names)){ #perform bifurcation test on pairs of genes
+    if(length(gene_names) > 200)
+      warning('Testing bifurcating gene pairs may takes a long time...')
+
+    gene_pairs <- make_gene_pairs(gene_names)
+    cds_subset <- buildLineageBranchCellDataSet2(cds_subset, lineage_states, lineage_labels, stretch, weighted, gene_pairs = gene_pairs, ...)
+  }
+  else{
+    cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
+    cds_subset <- estimateSizeFactors(cds_subset) 
+  }
 
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
@@ -262,30 +271,33 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
         avg_delta_x <- ((predictBranchOri - x)[1:(num - 1)] + (predictBranchOri - x)[2:(num)]) / 2
         step <- (100 / (num - 1))
 
-        if(ABC_method == 'integral')
-          round(sum( avg_delta_x * step), 3)
+        if(ABC_method == 'integral'){
+          res <- round(sum( avg_delta_x * step), 3)
+        }
         else if(ABC_method == 'global_normalization'){
           max <- max(max(predictBranchOri), max(x))
-          round(sum( avg_delta_x / max * step), 3)
+          res <- round(sum( avg_delta_x / max * step), 3)
         }
         else if(ABC_method == 'local_normalization'){
           pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri), 1, max)
-          round(sum( (((predictBranchOri - x) / pair_wise_max)[1:(num - 1)] + ((predictBranchOri - x) / pair_wise_max)[2:(num)]) / 2 * step), 3)
+          res <- round(sum( (((predictBranchOri - x) / pair_wise_max)[1:(num - 1)] + ((predictBranchOri - x) / pair_wise_max)[2:(num)]) / 2 * step), 3)
         }
         else if(ABC_method == 'four_values'){ #check this 
           ori_ABCs <- round(sum( (x[1:(num - 1)] + x[2:(num)]) / 2 * step), 3)
           other_ABCs <- round(sum( (predictBranchOri[1:(num - 1)] + predictBranchOri[2:(num)]) / 2 * step), 3)
           ori_ABCs_H <- round(sum( avg_delta_x[avg_delta_x > 0] * step), 3)
           other_ABCs_H <- round(sum( avg_delta_x[avg_delta_x < 0] * step), 3)
-          c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs, ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
+          res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs, ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
         }
-        else if(ABC_method == 'difference') #copy from the plot_heatmap function 
+        else if(ABC_method == 'difference') {#copy from the plot_heatmap function 
           str_logfc_df <- log2((predictBranchOri + 1) / (x + 1))
 
           str_logfc_df[which(str_logfc_df <= -fc_limit)] <- -fc_limit
           str_logfc_df[which(str_logfc_df >= fc_limit)] <- fc_limit
 
-          str_logfc_df[c(seq(1, num, length.out = points_num - 1), num)] #only return 100 points for clustering 
+          res <- str_logfc_df[c(seq(1, num, length.out = points_num - 1), num)] #only return 100 points for clustering 
+        }
+        return(res)
       })
     ABCs
     # list(res = res, ABC = unlist(ABCs)) predictBranchOri - x
@@ -305,8 +317,8 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
 
 
   if(ABC_method %in% c('integral', 'global_normalization', 'local_normalization')) {
-    ABCs_res <- unlist(lapply(res_ABC, function(x) x[1]))
-    names(ABCs_res) <- names(res_ABC)
+    ABCs_res <- do.call(rbind.data.frame, lapply(res_ABC, function(x) x[[1]]))
+    row.names(ABCs_res) <- names(res_ABC)
     
     if(branchTest) {
       branchTest_res[, 'ABCs'] <- ABCs_res[row.names(branchTest_res)]
