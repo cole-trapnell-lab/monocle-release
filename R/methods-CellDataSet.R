@@ -1,291 +1,80 @@
-#use the deconvoluated linear regression parameters to normalize the log_fpkm
-norm_kb <- function(kb, exprs_cds) {
-    k <- kb[1]
-    b <- kb[2]
-    tmp <- k * log10(exprs_cds) + b
-    norm_exprs <- 10^tmp
-    
-    norm_exprs
-}
-
-dmode <- function(x, breaks="Sturges") {
-    den <- density(x, kernel=c("gaussian"))
-    ( den$x[den$y==max(den$y)] )
-}
-
-#' Find the most abundant FPKM estimator of single cell FPKM matrix
-#' @param fpkm_matrix a matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
-#' @param return_all parameter for the intended return results. If setting TRUE, matrix of dmode as well as max mu and min mu of two gaussian distribution mixture will be returned
-#' @param fpkm_thresh the threshold for FPKM value used in detecting the most abundant FPKM value
-#' @return an vector of most abundant fpkm value corresponding to the transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian density function and the max or min
-#' mode from the mixture gaussian model
-#' @detail This function estimates the most abundant FPKM (t^*) using gaussian kernel density function. It can also optionally output the t^* based on a two gaussian mixture model
-#' based on the smsn.mixture from mixsmsn package
-#' @export
-#' @example
-#' \dontrun{
-#' HSMM_fpkm_matrix <- exprs(HSMM)
-#' t_estimate = estimate_t(HSMM_fpkm_matrix)
-#'}
-estimate_t <- function(fpkm_matrix, return_all = F, fpkm_thresh = 0.1, ...) {
-    #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
-    
-    smsn_mode_test <- function(fpkm, g = 2, fpkm_thresh = 0.1) {
-        log_fpkms <- log10(fpkm[fpkm > fpkm_thresh]) #only look the transcripts above a certain threshold
-        sm_2 <- smsn.mix(log_fpkms, nu = 3, g = 2, get.init = TRUE, criteria = TRUE, iter.max=1000,calc.im = FALSE, family="Normal")
-        #   print (sm_2)
-        
-        sm_1 <- smsn.mix(log_fpkms, nu = 3, g = 1, get.init = TRUE, criteria = TRUE, iter.max=1000, calc.im = FALSE, family="Normal")
-        #   print (sm_1)
-        
-        if (sm_1$aic >= sm_2$aic){
-            trick_location_max <- 10^max(sm_2$mu)
-            trick_location_min <- 10^min(sm_2$mu) #use the min / max
-        }else{
-            trick_location_max <- 10^max(sm_1$mu)
-            trick_location_min <- 10^min(sm_1$mu)
-        }
-        
-        #best_cov <- 10^sm_analysis$mu[best_location]
-        best_cov_dmode <- 10^(dmode(log_fpkms))
-        
-        best_cov_max <- trick_location_max
-        best_cov_min <- trick_location_min
-        sd_fpkm <- 0
-        #   print (c(best_cov_max, best_cov_min, best_cov_dmode))
-        data.frame(best_cov_dmode = best_cov_dmode,
-        best_cov_max = best_cov_max,
-        best_cov_min = best_cov_min
-        )
-    }
-    
-    #apply each column
-    if(return_all){
-        do.call(rbind, apply(fpkm_matrix, 2, function(fpkm) smsn_mode_test(fpkm, ...)))
-    }
-    else{
-        apply(fpkm_matrix, 2, function(fpkm) 10^dmode(log10(fpkm[fpkm > fpkm_thresh]))) #best coverage estimate}
-    }
-}
-
-#linear transform by t* and m, c
-opt_norm_t <- function(t, fpkm, m, c, return_norm = FALSE) {
-    a_matrix <- matrix(c(log10(t), 1, m,
-    -1), ncol = 2, nrow = 2, byrow = T)
-    colnames(a_matrix) <- c("k", "b")
-    b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
-    kb <- t(solve(a_matrix, b_matrix))
-    
-    k <- kb[1]
-    b <- kb[2]
-    tmp <- k * log10(fpkm) + b
-    abs_cnt <- 10^tmp
-    
-    if(return_norm) return(abs_cnt)
-    10^dmode(log10(abs_cnt[abs_cnt > 0]))
-}
-
-#linear transform by kb
-opt_norm_kb <- function(fpkm, kb) {
-    
-    k <- kb[1]
-    b <- kb[2]
-    tmp <- k * log10(fpkm) + b
-    abs_cnt <- 10^tmp
-    
-    10^dmode(log10(abs_cnt[abs_cnt > 0]))
-}
-
-#rmse between the dmode from t estimate based linear transformation and the spike-dmode
-t_rmse_abs_cnt <- function (par, t_estimate, fpkm_mat, split_fpkm, alpha = 1, cores = 1, ...) {
-  cell_num <- ncol(fpkm_mat)
-  #t_estimate <- par[1:cell_num] #t*: the estimates for the best coverage
-  names(t_estimate) <- colnames(fpkm_mat)
-  split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
-  print(paste("t_estimate is: ", paste(as.character(t_estimate), sep = '', collapse = ' '), sep = '', collapse = ''))
-  
-  #mc_guess <- par[(cell_num + 1):(cell_num + 2)] #m, c parameters: b = m k + c
-  mc_guess <- par
-  print(paste("mc_guess is", mc_guess[1], mc_guess[2], sep = ' '))
-  
-  m_val <- mc_guess[1]
-  c_val <- mc_guess[2]
-  cell_dmode <- tryCatch({
-    if(cores > 1){
-      cell_dmode <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, mc.cores = cores)
-      adj_est_std_cds <- mcmapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, return_norm = T, mc.cores = cores)
-    }
-    else {
-      cell_dmode <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val)
-      adj_est_std_cds <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, return_norm = T)
-    }
-    cell_dmode},
-    error = function(e) {print(e); t_estimate} #return what is better?
-  )
-  print(paste("cell_dmode is: ", paste(as.character(cell_dmode), sep = '', collapse = ' '), sep = '', collapse = ''))
-  
-  rmse <- sqrt(mean((cell_dmode - alpha)^2)) #rmse between the estimated cell_dmode and the 1 copy of transcripts
-  print(paste('rmse is:', rmse, sep = ' '))
-  
-  sum_total_cells_rna <- colSums(adj_est_std_cds)
-  #sum_total_cells_rna[is.infinite(sum_total_cells_rna)] <- 7861584 * 2
-  print(paste('sum of all total RNA is', sum_total_cells_rna))
-  sqrt(mean(((cell_dmode - alpha) / sum_total_cells_rna)^2)) #new 
-}
-
-#' Transform FPKM matrix to absolute transcript matrix based on the decomposed linear regression parameters from most abundant isoform fpkm value.
-#'
-#' @param fpkm_matrix an matrix of fpkm for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
-#' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene FPKM can also give good approximation but estimators
-#' based on isoform FPKM will give better results in general
-#' @param global_scaling parameter for globaling scaling. Not perform global scaling by default (global_scaling = 1)
-#' @param return_all parameter for the intended return results. If setting TRUE, matrix of k^*, b^* and vector of global_scaling as well the transformed absolute cds will be returned
-#' in a list format
-#' @param total_fragment: vector of total fragment sequenced for each cell, the element should matched with fpkm_matrix columns
-#' @param alpha_v: vector of most abundant transcripts number estimates in each cell, which are dependent on the total_fragment
-#' @return an matrix of absolute count for isoforms or genes after the transformation. For more details on other output, please refer to detail
-#' @detail This function takes a FPKM matrix and a vector of estimated most abundant FPKM value from the isoform FPKM matrix and transform it into absolute transcript number.
-#' It is based on the fact that most isoforms of gene in a single cell only express one copy so that the most abundant isoform FPKM (t^*) will corresponding to 1 copy transcript. The
-#' function takes the the vector t^* and then decomposes it into two parameters vectors k^* and b^* (corresponding to each cell) which correspond to the slope and intercept when
-#' we perform the robust linear regression for the spikein data. This decomposition is based on an observed relationship between k and b in terms of b = -3.652201 k + 2.263576. The
-#' function will then apply a linear transformation to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The function can also apply a global
-#' adjustment if setting global_scaling = TRUE. The k*, b* parameters vectors and the global scaling factor can be output in a list format (together with norm_cds) if setting return_all
-#' == TRUE
-#' @export
-#' @example
-#' \dontrun{
-#' HSMM_fpkm_matrix <- exprs(HSMM)
-#' HSMM_abs_matrix <- fpkm2abs(HSMM_fpkm_matrix, t_estimate = estimate_t(fpkm_matrix))
-#'}
-#use the deconvoluated linear regression parameters to normalize the log_fpkm
-
-#accept an log fpkm matrix and transform it into the absolute transcript matrix
-#row and column names of the matrix are genes and cells respectively
-fpkm2abs <- function(fpkm_matrix, t_estimate = estimate_t(fpkm_matrix), total_fragment = 1.5e6, alpha_v = 1, m = -3.652201, c = 2.263576, global_scaling = FALSE, return_all = FALSE, num_cores = 1) {
-    #alpha_v <- exp(log10(1.5 * 10e6  / sample_sheet$Mapped.Fragments)) #we can estimate alpha_v by certain function
-    print('optimizing t_estimates and m and c...') #silence the optimization output
-
-    split_fpkms <- split(as.matrix(fpkm_matrix), col(fpkm_matrix, as.factor = T)) #ensure the split dataset is matrix
-
-    optim_para <- optim(par = c(m, c), 
-                    t_rmse_abs_cnt, gr = NULL, t_estimate = t_estimate, alpha = alpha_v, cores = num_cores, fpkm_mat = fpkm_matrix, split_fpkm = split_fpkms,
-                    method = c("L-BFGS-B"),
-                    lower = c(rep(as.vector(t_estimate) - 0, 0), -10, 0.1), #search half low or up of the t_estimate
-                    upper = c(rep(as.vector(t_estimate) + 0, 0), -0.1, 10), #m, c is between (-0.1 to -10 and 0.1 to 10)
-                    control = list(factr = 1e12, pgtol = 1e-3, trace = 1, ndeps = c(1e-3, 1e-3) ), #as.vector(t_estimate) / 1000,
-                    hessian = FALSE)
-    print('optimization is done!')
-    
-    #t_estimate <- optim_para$par[1:length(t_estimate)]
-    #regression line between b^* = m * k^* + c
-    #m <- optim_para$par[length(t_estimate) + 1]
-    #c <- optim_para$par[length(t_estimate) + 2]
-    m <- optim_para$par[1]
-    c <- optim_para$par[2]
-    
-    #estimate the t^* by smsn two gaussian model, choose minial peak  1
-    names(t_estimate) <- colnames(fpkm_matrix)
-    
-    total_rna_df <- data.frame(Cell = colnames(fpkm_matrix), t_estimate = t_estimate)
-    
-    #solve k and b for t by matrix formulation (B = Ax)
-    k_b_solution <- ddply(total_rna_df, .(Cell), function(x){
-        a_matrix <- matrix(c(log10(x[, "t_estimate"]), 1, m, -1), ncol = 2, nrow = 2, byrow = T)
-        
-        colnames(a_matrix) <- c("k", "b")
-        b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
-        k_b_solution <- t(solve(a_matrix, b_matrix))
-    })
-    
-    print(k_b_solution[1:5, ])
-    #predict the absolute isoform based on the adjustment
-    
-    rownames(k_b_solution) <- k_b_solution$Cell
-    k_b_solution <- t(k_b_solution[, c(2, 3)]) #ddply give Cell, k, b columns, take the last two
-    split_kb <- split(k_b_solution, col(k_b_solution, as.factor =  T))
-    
-    adj_split_fpkm <- mcmapply(norm_kb, split_kb, split_fpkms, mc.cores = num_cores)
-    
-    #confirm our adjustment
-    #genes only have one isoform
-    #qplot(x = adj_est_iso_cds[1,], y = exprs(isoform_trick_exprs)[1, ])
-    
-    total_rna_df$estimate_k <- k_b_solution[1, ]
-    total_rna_df$estimate_b <- k_b_solution[2, ]
-    
-    #global_scaling seems unneccessary, remove this part in future
-    #global normalization
-    if(global_scaling == TRUE) {
-        median_intercept <- median(total_rna_df$estimate_b)
-        scaling_factor <- 10^(median_intercept - total_rna_df$estimate_b) #ensure the cells with intercept close to median_intercept don't scale
-        split_scaling_factor <- split(scaling_factor, factor(1:length(scaling_factor)))
-        split_gene_cds <- split(adj_split_fpkm, col(adj_split_fpkm, as.factor = T))
-        norm_cds <- mcmapply(function(x, y) x *y, split_gene_cds, split_scaling_factor, mc.cores = num_cores)
-    }
-    else {
-        scaling_factor = 1
-        norm_cds <- adj_split_fpkm
-    }
-    
-    row.names(norm_cds) <- row.names(fpkm_matrix)
-    colnames(norm_cds) <- colnames(fpkm_matrix)
-    
-    if(return_all == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
-        return (list(norm_cds = norm_cds, k_b_solution = k_b_solution, scaling_factor = scaling_factor, optim_para = optim_para))
-    }
-    norm_cds
-}
-
-#' Creates a new CellDateSet object.
-#'
-#' @param cellData expression data matrix for an experiment
-#' @param phenoData data frame containing attributes of individual cells
-#' @param featureData data frame containing attributes of features (e.g. genes)
-#' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
-#' @param expressionFamily the VGAM family function to be used for expression response variables
-#' @return a new CellDataSet object
-#' @export
-#' @examples
-#' \dontrun{
-#' sample_sheet_small <- read.delim("../data/sample_sheet_small.txt", row.names=1)
-#' sample_sheet_small$Time <- as.factor(sample_sheet_small$Time)
-#' gene_annotations_small <- read.delim("../data/gene_annotations_small.txt", row.names=1)
-#' fpkm_matrix_small <- read.delim("../data/fpkm_matrix_small.txt")
-#' pd <- new("AnnotatedDataFrame", data = sample_sheet_small)
-#' fd <- new("AnnotatedDataFrame", data = gene_annotations_small)
-#' HSMM <- new("CellDataSet", exprs = as.matrix(fpkm_matrix_small), phenoData = pd, featureData = fd)
-#' }
-newCellDataSet <- function( cellData, 
-                            phenoData = NULL, 
-                            featureData = NULL, 
-                            lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
-{
-  cellData <- as.matrix( cellData )
-  
-  if( is.null( phenoData ) )
-    phenoData <- annotatedDataFrameFrom( cellData, byrow=FALSE )
-  if( is.null( featureData ) ) 
-    featureData <- annotatedDataFrameFrom( cellData, byrow=TRUE )
-  
-  cds <- new( "CellDataSet",
-              assayData = assayDataNew( "environment", exprs=cellData ),
-              phenoData=phenoData, 
-              featureData=featureData, 
-              lowerDetectionLimit=lowerDetectionLimit,
-              expressionFamily=expressionFamily )
-  
-  validObject( cds )
-  cds
-}
-
-#######
-
+#' Methods for the CellDataSet class
+#' @name CellDataSet-methods
+#' @docType methods
+#' @rdname CellDataSet-methods
 setValidity( "CellDataSet", function( object ) {
 #   if( any( counts(object) < 0 ) )
 #     return( "the count data contains negative values" )
   TRUE
 } )
+
+#' @rdname CellDataSet-methods
+#' @aliases CellDataSet,ANY,ANY-method
+setMethod("sizeFactors", signature(object="CellDataSet"), function(object) {
+  sf <- pData(object)$Size_Factor
+  names( sf ) <- colnames( exprs(object) )
+  sf})   
+
+#' @rdname CellDataSet-methods
+#' @aliases CellDataSet,ANY,ANY-method
+setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric"), setSizeFactors <- function(object, value) {
+  pData(object)$Size_Factor <- value
+  validObject( object )
+  object
+})   
+
+
+#' @rdname CellDataSet-methods
+#' @param A function applied to the geometric-mean-scaled expression values to derive the size factor.
+#' @aliases CellDataSet,ANY,ANY-method
+setMethod("estimateSizeFactors", 
+          signature(object="CellDataSet"),
+function( object, locfunc=median, ... ) 
+{
+  sizeFactors(object) <- estimateSizeFactorsForMatrix(exprs(object), locfunc=locfunc, ...)
+  object
+})
+
+#' @rdname CellDataSet-methods
+#' @param relative_expr Whether to transform expression into relative values
+#' @aliases CellDataSet,ANY,ANY-method
+setMethod("estimateDispersions", 
+          signature(object="CellDataSet"), 
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, dispModelName="blind", ... )
+{
+  stopifnot( is( object, "CellDataSet" ) )
+  if( any( is.na( sizeFactors(object) ) ) )
+    stop( "NAs found in size factors. Have you called 'estimateSizeFactors'?" )
+  
+  if( length(list(...)) != 0 )
+    warning( "in estimateDispersions: Ignoring extra argument(s)." )
+  
+  # Remove results from previous fits
+  object@dispFitInfo = new.env( hash=TRUE )
+  
+  nzGenes <- rowSums(round(exprs(object))) > object@lowerDetectionLimit
+  
+  dfi <- estimateDispersionsForCellDataSet(object[nzGenes,], 
+                                           modelFormulaStr, 
+                                           relative_expr, 
+                                           cores)
+  object@dispFitInfo[[dispModelName]] <- dfi
+  
+  validObject( object )
+  object
+})
+
+###################
+
+checkSizeFactors <- function(cds)
+{
+  if (cds@expressionFamily@vfamily == "negbinomial")
+  {
+    if (is.null(sizeFactors(cds))){
+      stop("Error: you must call estimateSizeFactors() before calling this function.")
+    }  
+  }
+}
 
 #' Retrieves the coordinates of each cell in the reduced-dimensionality space generated by calls to 
 #' reduceDimension.
@@ -295,8 +84,9 @@ setValidity( "CellDataSet", function( object ) {
 #' reduced space.
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' S <- reducedDimS(HSMM)
+#' }
 reducedDimS <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS
@@ -307,7 +97,10 @@ reducedDimS <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A matrix of coordinates specifying each cell's position in the reduced-dimensionality space.
 #' @return An update CellDataSet object
-#' @export
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimS(S)
+#' }
 `reducedDimS<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS <- value
@@ -321,11 +114,44 @@ reducedDimS <- function( cds ) {
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' W <- reducedDimW(HSMM)
+#' }
 reducedDimW <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW
+}   
+
+#' Sets the the whitening matrix during independent component analysis.
+#'
+#' @param cds A CellDataSet object.
+#' @param value a numeric matrix
+#' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
+#' @docType methods
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimK(K)
+#' }
+`reducedDimK<-` <- function( cds, value ) {
+  stopifnot( is( cds, "CellDataSet" ) )
+  cds@reducedDimK <- value
+  validObject( cds )
+  cds
+}   
+
+#' Retrieves the the whitening matrix during independent component analysis.
+#'
+#' @param cds A CellDataSet object.
+#' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
+#' @docType methods
+#' @export
+#' @examples
+#' \dontrun{
+#' K <- reducedDimW(HSMM)
+#' }
+reducedDimK <- function( cds ) {
+  stopifnot( is( cds, "CellDataSet" ) )
+  cds@reducedDimK
 }   
 
 #' Sets the whitened expression values for each cell prior to independent component analysis. Not intended to be called directly.
@@ -333,7 +159,10 @@ reducedDimW <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
-#' @export
+#' @examples
+#' \dontrun{
+#' #' cds <- reducedDimA(A)
+#' }
 `reducedDimW<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW <- value
@@ -348,8 +177,9 @@ reducedDimW <- function( cds ) {
 #' recovers a matrix in the full (whitened) space
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' A <- reducedDimA(HSMM)
+#' }
 reducedDimA <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA
@@ -361,6 +191,10 @@ reducedDimA <- function( cds ) {
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimA(A)
+#' }
 `reducedDimA<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA <- value
@@ -368,14 +202,16 @@ reducedDimA <- function( cds ) {
   cds
 }   
 
+
 #' Retrieves the minimum spanning tree generated by Monocle during cell ordering.
 #'
 #' @param cds expression data matrix for an experiment
 #' @return An igraph object representing the CellDataSet's minimum spanning tree.
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' T <- minSpanningTree(HSMM)
+#' }
 minSpanningTree <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree
@@ -387,6 +223,10 @@ minSpanningTree <- function( cds ) {
 #' @param value an igraph object describing the minimum spanning tree.
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- minSpanningTree(T)
+#' }
 `minSpanningTree<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree <- value
@@ -398,10 +238,12 @@ minSpanningTree <- function( cds ) {
 #'
 #' @param cds expression data matrix for an experiment
 #' @return A square, symmetric matrix containing the distances between each cell in the reduced-dimensionality space.
+#' @docType methods
 #' @export
 #' @examples
-#' data(HSMM)
+#' \dontrun{
 #' D <- cellPairwiseDistances(HSMM)
+#' }
 cellPairwiseDistances <- function( cds ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances
@@ -413,6 +255,10 @@ cellPairwiseDistances <- function( cds ) {
 #' @param value a square, symmetric matrix containing pairwise distances between cells.
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- cellPairwiseDistances(D)
+#' }
 `cellPairwiseDistances<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances <- value
@@ -1777,5 +1623,4 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                                      negentropy_residual <= upper_negentropy_thresh))
   ordering_genes
 }
-
 
