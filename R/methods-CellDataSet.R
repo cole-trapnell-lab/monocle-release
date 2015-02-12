@@ -1341,14 +1341,14 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
 reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL,  ...){
   FM <- exprs(cds)
   
-  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
+  if (cds@expressionFamily@vfamily %in% c("zibinomialff", "binomialff", "zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
   {
     size_factors <- estimateSizeFactorsForMatrix(round(FM))
     #print (size_factors)
     FM <- t(t(FM) / size_factors)
     #FM <- log2(FM)
   }
-  
+
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     FM <- FM[fData(cds)$use_for_ordering,]
   
@@ -1458,7 +1458,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
 }
 
 fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
-  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
+  if (expressionFamily@vfamily %in% c("zibinomialff", "binomialff", "zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff")){
     expression <- x
@@ -1476,7 +1476,7 @@ fit_model_helper <- function(x, modelFormulaStr, expressionFamily){
 }
 
 diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily){
-  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
+  if (expressionFamily@vfamily %in% c("zibinomialff", "binomialff", "zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
     expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff")){
     expression <- x
@@ -1484,6 +1484,22 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
     expression <- log10(x)
   }
   
+  if (expressionFamily@vfamily %in% c("zibinomialff", "binomialff")) {
+    test_res <- tryCatch({
+    full_model_fit <- suppressWarnings(vglm(as.formula(fullModelFormulaStr), family=expressionFamily))
+    reduced_model_fit <- suppressWarnings(vglm(as.formula(reducedModelFormulaStr), family=expressionFamily))
+    compareModels(list(full_model_fit), list(reduced_model_fit))
+  }, 
+  #warning = function(w) { FM_fit },
+  error = function(e) { 
+    print (e); 
+    NULL
+    #data.frame(status = "FAIL", pval=1.0) 
+  }
+  )
+  }
+
+  else {
   test_res <- tryCatch({
     full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
     reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
@@ -1495,7 +1511,7 @@ diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, exp
     NULL
     #data.frame(status = "FAIL", pval=1.0) 
   }
-  )
+  )}
   test_res
 }
 
@@ -1557,7 +1573,7 @@ fitModel <- function(cds,
 responseMatrix <- function(models){
   res_list <- lapply(models, function(x) { 
     if (is.null(x)) { NA } else { 
-      if (x@family@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
+      if (x@family@vfamily %in% c("zibinomialff", "binomialff", "zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
         predict(x, type="response") 
       }else if (x@family@vfamily %in% c("gaussianff")){
         predict(x, type="response")
@@ -1621,6 +1637,7 @@ compareModels <- function(full_models, reduced_models){
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
                                  reducedModelFormulaStr="expression~1", cores=1, fc_list = NULL){
+  h <- 0
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
@@ -1702,7 +1719,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                                   expression_upper_thresh=Inf){
   
   FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
+  if (cds@expressionFamily@vfamily %in% c("zibinomialff", "binomialff", "zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
