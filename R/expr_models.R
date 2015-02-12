@@ -6,7 +6,7 @@ fit_model_helper <- function(x,
                              expressionFamily, 
                              relative_expr, 
                              disp_func=NULL, 
-                             pseudocount=0){
+                             pseudocount=0, ...){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
   
   orig_x <- x
@@ -19,11 +19,12 @@ fit_model_helper <- function(x,
     }
     f_expression <- round(x)
     if (is.null(disp_func) == FALSE){
-      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
+      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE   ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something.    
-        expressionFamily <- negbinomial(isize=1/disp_guess)
+        size_guess <- 1/disp_guess
+        expressionFamily <- negbinomial(isize=size_guess, ...)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -83,41 +84,47 @@ fitModel <- function(cds,
 #' 
 #' Generates a matrix of response values for a set of fitted models
 #' @param models a list of models, e.g. as returned by fitModels()
+#' @param newdata a dataframe used to generate new data for interpolation of time points
+#' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @export
-responseMatrix <- function(models){
-  res_list <- lapply(models, function(x) { 
-    if (is.null(x)) { NA } else { 
-      if (x@family@vfamily  == "negbinomial"){
-        VGAM::predict(x, type="response") 
-      }else if (x@family@vfamily %in% c("gaussianff", "uninormal")){
-        VGAM::predict(x, type="response")
-      }else{
-        10^predict(x, type="response") 
+responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
+    res_list <- mclapply(models, function(x) {
+      if (is.null(x)) { NA } else {
+          if (x@family@vfamily %in% c("zanegbinomialff", "negbinomial",
+              "poissonff", "quasipoissonff")) {
+              predict(x, newdata = newdata, type = "response")
+          } else if (x@family@vfamily %in% c("gaussianff")) {
+              predict(x, newdata = newdata, type = "response")
+          }
+          else {
+              10^predict(x, newdata = newdata, type = "response")
+          }
       }
-    } 
-  } )
-  res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE], length)
-  
-  stopifnot(length(unique(res_list_lengths)) == 1)
-  num_na_fits <- length(res_list[is.na(res_list)])
-  if (num_na_fits > 0){
-    na_matrix<- matrix(rep(rep(NA, res_list_lengths[[1]]), num_na_fits),nrow=num_na_fits) 
-    row.names(na_matrix) <- names(res_list[is.na(res_list)])
-    
-    non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) == FALSE], unlist)))
-    row.names(non_na_matrix) <- names(res_list[is.na(res_list) == FALSE])
-    res_matrix <- rbind(non_na_matrix, na_matrix)
-    res_matrix <- res_matrix[names(res_list),]
-  }else{
-    res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
-    row.names(res_matrix) <- names(res_list[is.na(res_list) == FALSE])
-  }
-  
-  res_matrix
+    }, mc.cores = cores)
+
+    res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE],
+        length)
+    stopifnot(length(unique(res_list_lengths)) == 1)
+    num_na_fits <- length(res_list[is.na(res_list)])
+    if (num_na_fits > 0) {
+        na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
+            num_na_fits), nrow = num_na_fits)
+        row.names(na_matrix) <- names(res_list[is.na(res_list)])
+        non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) ==
+            FALSE], unlist)))
+        row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
+            FALSE])
+        res_matrix <- rbind(non_na_matrix, na_matrix)
+        res_matrix <- res_matrix[names(res_list), ]
+    }
+    else {
+        res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
+        row.names(res_matrix) <- names(res_list[is.na(res_list) ==
+            FALSE])
+    }
+    res_matrix
 }
-
-
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 parametricDispersionFit <- function( means, disps )
 {
@@ -237,28 +244,40 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   return(res)
 }
 
-buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = FALSE)
+#to do: check whether or not the lineages are on the same paths
+buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels = NULL, method = 'fitting',  stretch = FALSE, weighted = FALSE, gene_pairs = NULL, ...)
 {
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
   
-  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
-  
-  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
-  ancestor_cells <- c()
-  
-  while (1) {
-    ancestor_cells <- c(ancestor_cells, curr_cell)
-    if (is.na(pData(cds[,curr_cell])$Parent))
-      break
-    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+  if (!is.null(lineage_labels)) {
+    if(length(lineage_labels) != length(lineage_states))
+      stop("length of lineage_labels doesn't match with that of lineage_states")
+      lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
-  
-  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
-  
+
+  extra_arg <- list(...)
+  if(is.null(extra_arg['progenitor_state']) == FALSE) { #just use progenitor_state to duplicate the celldataset
+    cds <- cds[, pData(cds)$State %in% c(progenitor_state, lineage_states)]
+  }
+  else {
+    lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+
+    curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
+    ancestor_cells <- c()
+    
+    while (1) {
+      ancestor_cells <- c(ancestor_cells, curr_cell)
+      if (is.na(pData(cds[,curr_cell])$Parent))
+        break
+      curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+    }
+    
+    cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
+  }
+
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
-  
   
   progenitor_ind <- which(State %in% lineage_states == FALSE)
   
@@ -268,7 +287,8 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
   exprs_data <- exprs(cds)
   
   weight_vec <- rep(1, nrow(pData(cds)))
-  weight_vec[progenitor_ind] <- 0.5
+  if(weighted)
+    weight_vec[progenitor_ind] <- 1 / length(lineage_states) #progenitor cells' weight should be equally divided 
   
   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
   row.names(range_df) <- as.character(range_df$State)
@@ -303,7 +323,7 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
         short_branches_multipliers[i] + T_0
     }
   }
-  pData$original_cell_id <- pData$Cell
+  pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
   for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
     exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
@@ -317,7 +337,11 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
     row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
       paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
   }
-  pData$Lineage <- as.factor(pData$State)
+  if (!is.null(lineage_labels))
+      pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
+  else
+      pData$Lineage <- as.factor(pData$State)
+  
   pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
                             levels =levels(cds$State))
   pData$weight <- weight_vec
@@ -325,6 +349,7 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
   
   fData <- fData(cds)
   
+  colnames(exprs_data) <- row.names(pData) #check this 
   cds_subset <- newCellDataSet(as.matrix(exprs_data),
                                phenoData = new("AnnotatedDataFrame", data = pData),
                                featureData = new("AnnotatedDataFrame", data = fData),
@@ -332,7 +357,43 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
                                lowerDetectionLimit=cds@lowerDetectionLimit)
   pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
   pData(cds_subset)$Size_Factor <- Size_Factor
-  return (cds_subset)
+  
+  if(!is.null(gene_pairs)){ #construct bifurcationGenePairsTest
+    bifurcation_list <- lapply(gene_pairs, function(x, cds){
+      cds_subset <- cds[x, ]
+      gene_pair_df <- exprs(cds_subset)
+      #test size_factor; rbind(gene_pair_df, pData(cds_subset))
+      gene_pair_df <- rbind(gene_pair_df, State = pData(cds_subset)$State, Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
+
+      collapse_gene_pair_df <- cbind(gene_pair_df[c(1, 3, 4, 5), ], gene_pair_df[c(2, 3, 4, 5), ])
+      row.names(collapse_gene_pair_df)[1] <- 'expression'
+      colnames(collapse_gene_pair_df) <- c(colnames(cds_subset), paste('duplicated', colnames(cds_subset), sep = '_'))
+
+      pData <- as.data.frame(t(collapse_gene_pair_df[c(2, 3, 4), ]))
+      pData$Gene <- c(rep(gene_pair[1], ncol(cds_subset)), rep(gene_pair[2], ncol(cds_subset)))
+      pData$Pseudotime[1:ncol(cds_subset)] <- pData$Pseudotime[1:ncol(cds_subset)] + 0.1
+
+      fData <- as.data.frame(cbind(fData(cds)[gene_pair[1], ], fData(cds)[gene_pair[2], ]))
+      colnames(fData) <- c(colnames(fData(cds_subset)), paste('duplicated', colnames(fData(cds_subset)), sep = '_'))
+    
+      return(list(collapse_gene_pair_df = collapse_gene_pair_df[1, ], pData = pData, fData = fData))
+    }, cds_subset)
+
+    collapse_gene_pair_df <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[1]]))
+    colnames(collapse_gene_pair_df) <- names(bifurcation_list[[1]]$collapse_gene_pair_df)
+    pData <- bifurcation_list[[1]]$pData
+    fData <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[3]]))
+    row.names(collapse_gene_pair_df) <- row.names(fData)
+
+    cds_subset <- newCellDataSet(collapse_gene_pair_df,
+               phenoData = new("AnnotatedDataFrame", data = as.data.frame((pData))),
+               featureData = new("AnnotatedDataFrame", data = fData),
+               expressionFamily=negbinomial(),
+               lowerDetectionLimit=1)
+  }
+
+ return (cds_subset)
+
 }
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)
@@ -345,8 +406,8 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
     f_expression_var <- var(f_expression)
     f_expression_mean <- mean(f_expression)
     
-    disp_guess_meth_moments <- f_expression_var - f_expression_mean
-    disp_guess_meth_moments <- f_expression_var / (f_expression_mean^2)
+    disp_guess_meth_moments <- f_expression_var - f_expression_mean 
+    disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
     
     return (max(disp_guess_fit, disp_guess_meth_moments))
   }

@@ -245,7 +245,7 @@ detectGenes <- function(cds, min_expr=NULL){
 
 
 
-estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="weighted-median")
+estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="median-geometric-mean")
 {
   CM <- counts
   if (round_exprs)
@@ -253,8 +253,8 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=
   CM <- CM + pseudocount
   
   if (method == "weighted-median"){
-    medians <- apply(CM, 1, function(cell_expr) { 
-      log(median(cell_expr))
+    log_medians <- apply(CM, 1, function(cell_expr) { 
+      log(locfunc(cell_expr))
     })
     
     weights <- apply(CM, 1, function(cell_expr) {
@@ -263,25 +263,36 @@ estimateSizeFactorsForMatrix <- function( counts, locfunc = median, round_exprs=
     })
     
     sfs <- apply( CM, 2, function(cnts) {
-      norm_cnts <-  weights * (log(cnts) -  medians)
+      norm_cnts <-  weights * (log(cnts) -  log_medians)
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
       #print (head(norm_cnts))
       exp( mean(norm_cnts) )
     })
   }else if (method == "median-geometric-mean"){
-    medians <- apply(CM, 1, function(cell_expr) { 
-      cell_expr_nz <- log(cell_expr_nz)
-      cell_expr_nz <- mean(cell_expr_nz)
-    })
+    log_geo_means <- rowMeans(log(CM))
+
     sfs <- apply( CM, 2, function(cnts) {
-      norm_cnts <- log(cnts) -  medians
+      norm_cnts <- log(cnts) -  log_geo_means
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
       #print (head(norm_cnts))
       exp( locfunc( norm_cnts ))
     })
-  }
+  }else if(method == "median"){
+    row_median <- apply(CM, 1, median)
+    sfs <- apply(t(t(CM) - row_median), 2, median)
+  }else if(method == 'mode'){
+    sfs <- estimate_t(CM)
+  }else if(method == 'geometric-mean-total') {
+    cell_total <- apply(CM, 2, sum)
+    sfs <- log(cell_total) / mean(log(cell_total))
+  }else if(method == 'mean-geometric-mean-total') {
+    cell_total <- apply(CM, 2, sum)
+    sfs <- cell_total / exp(mean(log(cell_total)))
+  } 
+
+  sfs[is.na(sfs)] <- 1 
   sfs  
 }
 
@@ -296,6 +307,78 @@ get_classic_muscle_markers <- function(){
     "MYOG", "TPM1", "TPM2", "MYH2", "MYH3", "NCAM1", "TNNT1", "TNNT2", "TNNC1",
     "CDK1", "CDK2", "CCNB1", "CCNB2", "CCND1", "CCNA1", "ID1")
 }
+
+#' Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit. 
+#' The slopes/intercepts for different concentration can be obtained through the row names 
+#' @export
+get_mc_list <- function(){
+matrix(
+c(-3.652201, 2.263576,
+-3.652201, 2.263576,
+-3.652201, 2.263576,
+-3.652347, 2.26371,
+-3.653535, 2.264639,
+-3.652076, 2.263407,
+-3.648284, 2.260313,
+-3.650168, 2.262497,
+-3.65139,  2.264297,
+-3.64543,  2.263617,
+-3.663548, 2.287196,
+-3.686309, 2.321314,
+-3.735227, 2.380282,
+-3.870832, 2.523883,
+-4.024396, 2.677024,
+-4.070794, 2.744178,
+-4.277778, 2.932929,
+-4.496089, 3.132498,
+-4.584481, 3.201793,
+-4.765763, 3.353782),
+ncol = 2, byrow = TRUE, dimnames = list(
+c(0.01430512,
+0.02861023,
+0.05722046,
+0.11444092,
+0.22888184,
+0.45776367,
+0.91552734,
+1.83105469,
+3.66210938,
+7.32421875,
+14.6484375,
+29.296875,
+58.59375,
+117.1875,
+234.375,
+468.75,
+937.5,
+1875,
+3750,
+7500), c('m', 'c')))
+}
+
+#' Make a list for pairs of potential bifurcating genes 
+#'
+#' @wxport
+make_gene_pairs <- function(gene_names){
+  k <- 1
+  gene_pairs <- list()
+
+  if(is.vector(gene_names)){
+    for(i in 1:(length(gene_names) - 1)){
+      for(j in (i + 1):length(gene_names)){
+        gene_pairs[[k]] <- c(gene_names[i], gene_names[j]) 
+        k <- k + 1
+      }
+    }
+  }
+  else if(is.matrix(gene_names)){
+    for(i in 1:nrow(gene_names)){
+      gene_pairs[k] <- c(gene_names[i, 1], gene_names[i, 2])
+    }
+  }
+  
+  return(gene_pairs)
+} 
 
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 
@@ -318,5 +401,3 @@ load_HSMM_markers <- function(){
   marker_names <- get_classic_muscle_markers()
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
-
-
