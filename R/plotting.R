@@ -155,7 +155,7 @@ plot_spanning_tree <- function(cds,
 #' plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 #' }
 plot_genes_jitter <- function(cds_subset, grouping = "State", 
-                              min_expr=0.1, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
+                              min_expr=NULL, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
                               color_by=NULL,
                               plot_trend=FALSE,
                               label_by_short_name=TRUE,
@@ -183,7 +183,9 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     cds_exprs <- exprs(cds_subset)
     cds_exprs <- reshape2::melt(cds_exprs)
   }
-  
+  if (is.null(min_expr)){
+    min_expr <- cds_subset@lowerDetectionLimit
+  }
   
   colnames(cds_exprs) <- c("f_id", "Cell", "expression")
   cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
@@ -228,6 +230,12 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   
   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
+  # Need this to gaurd against plotting failures caused by non-expressed genes
+  if (min_expr < 1)
+  {
+    q <- q + expand_limits(y=c(min_expr, 1))
+  }
+
   q <- q + ylab("Expression") + xlab(grouping)
   q <- q + monocle_theme_opts()
   q
@@ -470,6 +478,14 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
+  
+  # Need this to guard against plotting failures caused by non-expressed genes
+  if (min_expr < 1)
+  {
+    q <- q + expand_limits(y=c(min_expr, 1))
+  }
+  
+  
   if (relative_expr){
     q <- q + ylab("Relative Expression")
   }else{
@@ -608,6 +624,7 @@ plot_genes_heatmap <- function(cds,
                                labRow=TRUE, 
                                logMode=TRUE, 
                                pseudocount=0.1, 
+                               use_vst=TRUE,
                                border=FALSE, 
                                heatscale=c(low='steelblue',mid='white',high='tomato'), 
                                heatMidpoint=0,
@@ -653,8 +670,9 @@ plot_genes_heatmap <- function(cds,
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
-  if(logMode) 
-  {
+  if (use_vst && is.null(cds@dispFitInfo[["blind"]]$disp_func) == FALSE){
+    m = vstExprs(cds, expr_matrix=m)
+  }else if(logMode){
     m = log10(m+pseudocount)
   }
   
@@ -680,12 +698,14 @@ plot_genes_heatmap <- function(cds,
     m=rescaling(m)
   } else {
     if(rescaling=='column'){
+      m=m[!apply(m,2,sd)==0,]
       m=scale(m, center=TRUE)
       m[is.nan(m)] = 0
       m[m>scaleMax] = scaleMax
       m[m<scaleMin] = scaleMin
     }
     if(rescaling=='row'){ 
+      m=m[!apply(m,1,sd)==0,]
       m=t(scale(t(m),center=TRUE))
       m[is.nan(m)] = 0
       m[m>scaleMax] = scaleMax
@@ -695,7 +715,7 @@ plot_genes_heatmap <- function(cds,
   
   # If we aren't going to re-ordering the columns, order them by Pseudotime
   if (clustering %in% c("row", "none"))
-    m = m[,as.character(plyr::arrange(pData(cds), Pseudotime)$Cell)]
+    m = m[,row.names(pData(cds)[order(-pData(cds)$Pseudotime),])]
   
   if(clustering=='row')
     m=m[hclust(method(m))$order, ]
@@ -723,9 +743,9 @@ plot_genes_heatmap <- function(cds,
   ## add the heat tiles with or without a white border for clarity
   
   if(border==TRUE)
-    g2=g+geom_rect(aes(xmin=colInd-1,xmax=colInd,ymin=rowInd-1,ymax=rowInd, fill=value),colour='grey')
+    g2=g+geom_raster(aes(x=colInd,y=rowInd, fill=value),colour='grey')
   if(border==FALSE)
-    g2=g+geom_rect(aes(xmin=colInd-1,xmax=colInd,ymin=rowInd-1,ymax=rowInd, fill=value))
+    g2=g+geom_raster(aes(x=colInd,y=rowInd,ymax=rowInd, fill=value))
   
   ## add axis labels either supplied or from the colnames rownames of the matrix
   
@@ -794,6 +814,7 @@ plot_genes_heatmap <- function(cds,
   
   #g2<-g2+scale_x_discrete("",breaks=tracking_ids,labels=gene_short_names)
   
+  g2 <- g2 + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
   
   ## finally add the fill colour ramp of your choice (default is blue to red)-- and return
   return (g2)
@@ -998,6 +1019,13 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
   if(duplicate)
     q <- q + facet_wrap(~Gene)
   
+  
+  # Need this to guard against plotting failures caused by non-expressed genes
+  if (min_expr < 1)
+  {
+    q <- q + expand_limits(y=c(min_expr, 1))
+  }
+  
   if(stretch)
     q <- q + ylab("Expression") + xlab("Maturation levels")
   else 
@@ -1018,7 +1046,6 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
 #' @param min_expr The minimum level of expression to show in the plot
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom plyr ddply
 #' @importFrom reshape2 melt
 #' @export 
 #' 
@@ -1120,6 +1147,11 @@ plot_coexpression_matrix <- function(cds,
     facet_grid(feature_label.x ~ feature_label.y, scales="free") 
     #scale_color_brewer(palette="Set1") +
   
+  if (min_expr < 1)
+  {
+    q <- q + expand_limits(y=c(min_expr, 1), x=c(min_expr, 1))
+  }
+  
   #q <- q + monocle_theme_opts()
   
   q
@@ -1133,7 +1165,6 @@ plot_coexpression_matrix <- function(cds,
 #' @param min_expr The minimum level of expression to show in the plot
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom plyr ddply
 #' @importFrom reshape2 melt
 #' @export 
 #' 
@@ -1175,7 +1206,6 @@ make_heatmap <- function(dat.all = logfc_df, emsemble_ids = quake_id, file = 'he
 #' @param min_expr The minimum level of expression to show in the plot
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom plyr ddply
 #' @importFrom reshape2 melt
 #' @export 
 #' 

@@ -243,9 +243,7 @@ detectGenes <- function(cds, min_expr=NULL){
   cds
 }
 
-
-
-estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="median-geometric-mean")
+estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
 {
   CM <- counts
   if (round_exprs)
