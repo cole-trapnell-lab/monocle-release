@@ -839,7 +839,6 @@ plot_genes_heatmap <- function(cds,
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
 #' 
-#FIXME: This function is hopelessly buggy and broken.  Needs a re-write and THOROUGH TESTING
 plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = TRUE, 
                                min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
                                trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE, weighted = TRUE, 
@@ -1016,10 +1015,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
   else if(method == 'fitting') {
     q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
   }
-  if(duplicate)
-    q <- q + facet_wrap(~Gene)
-  
-  
+
   # Need this to guard against plotting failures caused by non-expressed genes
   if (min_expr < 1)
   {
