@@ -45,7 +45,9 @@ plot_spanning_tree <- function(cds,
                                backbone_color="black", 
                                markers=NULL, 
                                show_cell_names=FALSE, 
-                               cell_name_size=1){
+                               cell_size=1.5,
+                               cell_link_size=0.75,
+                               cell_name_size=2){
   gene_short_name <- NULL
   sample_name <- NULL
   
@@ -108,11 +110,18 @@ plot_spanning_tree <- function(cds,
     g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid", na.rm=TRUE)
   }
   
-  g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
+  }else{
+    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
+  }
+  
+  
+  
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam, na.rm=TRUE) + 
-    geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam, na.rm=TRUE)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
+      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
@@ -1011,7 +1020,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
     q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow, 
                                         ncol = ncol, scales = "free_y")
   if(method == 'loess')
-    q  <- q + stat_smooth(aes(fill = Lineage, color = Lineage), method = 'loess')
+    q  <- q + stat_smooth(aes(fill = Lineage, color = Lineage), method = 'loess', se=F)
   else if(method == 'fitting') {
     q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
   }
