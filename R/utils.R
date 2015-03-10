@@ -354,30 +354,6 @@ c(0.01430512,
 7500), c('m', 'c')))
 }
 
-#' Make a list for pairs of potential bifurcating genes 
-#'
-#' @wxport
-make_gene_pairs <- function(gene_names){
-  k <- 1
-  gene_pairs <- list()
-
-  if(is.vector(gene_names)){
-    for(i in 1:(length(gene_names) - 1)){
-      for(j in (i + 1):length(gene_names)){
-        gene_pairs[[k]] <- c(gene_names[i], gene_names[j]) 
-        k <- k + 1
-      }
-    }
-  }
-  else if(is.matrix(gene_names)){
-    for(i in 1:nrow(gene_names)){
-      gene_pairs[k] <- c(gene_names[i, 1], gene_names[i, 2])
-    }
-  }
-  
-  return(gene_pairs)
-} 
-
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 
 #' @export

@@ -938,11 +938,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
       }
       
       vg <- suppressWarnings(vglm(formula = as.formula(trend_formula), 
-                                  family = expressionFamily, data = x, 
-                                  maxit = 30, checkwz = FALSE,
-                                  # na.action=na.omit,
-                                  # weights=x$weight,
-                                  trace=T))
+                                  family = expressionFamily, data = x))
       if (integer_expression) {
         res <- predict(vg, type = "response")
         res[res < min_expr] <- min_expr

@@ -34,7 +34,7 @@ fit_model_helper <- function(x,
   }
   
   tryCatch({
-    FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
+    FM_fit <-  suppressWarnings(vglm(as.formula(modelFormulaStr), family=expressionFamily))
     FM_fit
   }, 
   #warning = function(w) { FM_fit },
@@ -244,9 +244,13 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   return(res)
 }
 
-#to do: check whether or not the lineages are on the same paths
+#' Build a CellDataSet with appropriate duplication along two lineages
+#' 
+#' @export
 buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels = NULL, method = 'fitting',  stretch = FALSE, weighted = FALSE, gene_pairs = NULL, ...)
 {
+  # TODO: check that lineages are on the same paths
+  
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
   
