@@ -29,7 +29,7 @@ diff_test_helper <- function(x,
         expressionFamily <- negbinomial(isize=1/disp_guess)
       }
     }
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
     f_expression <- x
   }else{
     f_expression <- log10(x)
@@ -144,10 +144,19 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        pseudocount=0,
                        cores = 1, 
                        weighted = TRUE, 
-                       lineage_labels = NULL, ...) {
+                       lineage_labels = NULL, 
+                       gene_names = NULL, ...) {
+  if(!is.null(gene_names)){ #perform bifurcation test on pairs of genes
+    if(length(gene_names) > 200)
+      warning('Testing bifurcating gene pairs may takes a long time...')
 
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  cds_subset <- estimateSizeFactors(cds_subset) 
+    gene_pairs <- make_gene_pairs(gene_names)
+    cds_subset <- buildLineageBranchCellDataSet2(cds_subset, lineage_states, lineage_labels, stretch, weighted, gene_pairs = gene_pairs, ...)
+  }
+  else{
+    cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
+    cds_subset <- estimateSizeFactors(cds_subset) 
+  }
 
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
