@@ -217,29 +217,33 @@ detectGenes <- function(cds, min_expr=NULL){
   {
     min_expr <- cds@lowerDetectionLimit
   }
-  FM_genes <- do.call(rbind, apply(FM, 1, 
-                                   function(x) {
-                                     return(data.frame(
-                                       num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                     )
-                                     )
-                                   })
-  )
-  
-  FM_cells <- do.call(rbind, apply(FM, 2, 
-                                   function(x) {
-                                     return(data.frame(
-                                       num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                     )
-                                     )
-                                   })
-  )
-  
-  
-  fData(cds)$num_cells_expressed <-  FM_genes[row.names(fData(cds)),]
-  
-  pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
-  
+#   FM_genes <- do.call(rbind, apply(FM, 1, 
+#                                    function(x) {
+#                                      return(data.frame(
+#                                        num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
+#                                      )
+#                                      )
+#                                    })
+#   )
+#   
+#   FM_cells <- do.call(rbind, apply(FM, 2, 
+#                                    function(x) {
+#                                      return(data.frame(
+#                                        num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
+#                                      )
+#                                      )
+#                                    })
+#   )
+#   
+#   
+#   
+#   fData(cds)$num_cells_expressed <-  FM_genes[row.names(fData(cds)),]
+#   
+#   pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
+#   
+  fData(cds)$num_cells_expressed <- rowSums(FM > min_expr)
+  pData(cds)$num_genes_expressed <- colSums(FM > min_expr)
+
   cds
 }
 
@@ -353,30 +357,6 @@ c(0.01430512,
 3750,
 7500), c('m', 'c')))
 }
-
-#' Make a list for pairs of potential bifurcating genes 
-#'
-#' @wxport
-make_gene_pairs <- function(gene_names){
-  k <- 1
-  gene_pairs <- list()
-
-  if(is.vector(gene_names)){
-    for(i in 1:(length(gene_names) - 1)){
-      for(j in (i + 1):length(gene_names)){
-        gene_pairs[[k]] <- c(gene_names[i], gene_names[j]) 
-        k <- k + 1
-      }
-    }
-  }
-  else if(is.matrix(gene_names)){
-    for(i in 1:nrow(gene_names)){
-      gene_pairs[k] <- c(gene_names[i, 1], gene_names[i, 2])
-    }
-  }
-  
-  return(gene_pairs)
-} 
 
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 

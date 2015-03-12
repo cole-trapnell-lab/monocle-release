@@ -919,33 +919,46 @@ reduceDimension <- function(cds,
     #FM <- log2(FM)
   }
   
-  if (is.null(fData(cds)$use_for_ordering) == FALSE)
+  if (is.null(fData(cds)$use_for_ordering) == FALSE && nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0)
     FM <- FM[fData(cds)$use_for_ordering,]
   
-  FM <- FM + pseudo_expr
-  FM <- FM[matrixStats::rowSds(FM) > 0,]
-  
-  if (use_vst){
-    VST_FM <- vstExprs(cds, round_vals=FALSE)
-    if (is.null(VST_FM) == FALSE){
-      FM <- VST_FM
-      FM <- FM[fData(cds)$use_for_ordering,]
-    }else{
-      stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
-    }
-    #
-  }else{
-    FM <- log2(FM)
+  if (cds@expressionFamily@vfamily == "binomialff"){
+    ncounts <- FM
+    ncounts[ncounts != 0] <- 1
+    FM <- t(t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
   }
   
+  if (cds@expressionFamily@vfamily != "binomialff"){
+    FM <- FM + pseudo_expr
+  }
+  
+  FM <- FM[matrixStats::rowSds(FM) > 0,]
+  
+  if (cds@expressionFamily@vfamily != "binomialff"){
+    if (use_vst){
+      VST_FM <- vstExprs(cds, round_vals=FALSE)
+      if (is.null(VST_FM) == FALSE){
+        FM <- VST_FM
+        FM <- FM[fData(cds)$use_for_ordering,]
+      }else{
+        stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
+      }
+      #
+    }else{
+      FM <- log2(FM)
+    }
+  }
+
   # TODO: get rid of this if possible.
   if (is.null(batch) == FALSE || is.null(batch2) == FALSE|| is.null(covariates) == FALSE)
   {
     message("Removing batch effects")
     #FM <- log2(FM)
     FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
-    if (use_vst == FALSE) {
-      FM <- 2^FM
+    if (cds@expressionFamily@vfamily != "binomialff"){
+      if (use_vst == FALSE) {
+        FM <- 2^FM
+      }
     }
   }
   

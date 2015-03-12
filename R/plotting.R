@@ -45,7 +45,9 @@ plot_spanning_tree <- function(cds,
                                backbone_color="black", 
                                markers=NULL, 
                                show_cell_names=FALSE, 
-                               cell_name_size=1){
+                               cell_size=1.5,
+                               cell_link_size=0.75,
+                               cell_name_size=2){
   gene_short_name <- NULL
   sample_name <- NULL
   
@@ -108,11 +110,18 @@ plot_spanning_tree <- function(cds,
     g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid", na.rm=TRUE)
   }
   
-  g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
+  }else{
+    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
+  }
+  
+  
+  
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=0.75, data=diam, na.rm=TRUE) + 
-    geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(1.5), data=diam, na.rm=TRUE)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
+      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
@@ -839,7 +848,6 @@ plot_genes_heatmap <- function(cds,
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
 #' 
-#FIXME: This function is hopelessly buggy and broken.  Needs a re-write and THOROUGH TESTING
 plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = TRUE, 
                                min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
                                trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE, weighted = TRUE, 
@@ -930,11 +938,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
       }
       
       vg <- suppressWarnings(vglm(formula = as.formula(trend_formula), 
-                                  family = expressionFamily, data = x, 
-                                  maxit = 30, checkwz = FALSE,
-                                  # na.action=na.omit,
-                                  # weights=x$weight,
-                                  trace=T))
+                                  family = expressionFamily, data = x))
       if (integer_expression) {
         res <- predict(vg, type = "response")
         res[res < min_expr] <- min_expr
@@ -1012,14 +1016,11 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
     q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow, 
                                         ncol = ncol, scales = "free_y")
   if(method == 'loess')
-    q  <- q + stat_smooth(aes(fill = Lineage, color = Lineage), method = 'loess')
+    q  <- q + stat_smooth(aes(fill = Lineage, color = Lineage), method = 'loess', se=F)
   else if(method == 'fitting') {
     q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
   }
-  if(duplicate)
-    q <- q + facet_wrap(~Gene)
-  
-  
+
   # Need this to guard against plotting failures caused by non-expressed genes
   if (min_expr < 1)
   {
