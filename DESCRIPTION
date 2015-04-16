@@ -1,7 +1,7 @@
 Package: monocle
 Type: Package
 Title: Analysis tools for single-cell expression experiments.
-Version: 1.1.5
+Version: 1.2.0
 Date: 2013-11-19
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
