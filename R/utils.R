@@ -352,7 +352,7 @@ mat <- matrix(
         1875,
         3750,
         7500), c('m', 'c')))
-  mat[, 1] <- mat[, 1] + log10(volume / 10 * dilution / 40000)
+  mat[, 1] <- mat[, 1] + log10(volume / 10 * 40000 / dilution)
   return(mat)
 }
 
