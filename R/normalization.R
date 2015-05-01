@@ -261,7 +261,7 @@ relative2abs <- function(relative_expr_matrix,
   else {
     if(verbose)
       message('Estimating the slope and intercept for the linear regression between relative expression value and copy number based on the lowest detection limits...')
-    mc_list <- get_mc_list()
+    mc_list <- get_mc_list(volume, dilution)
     
     m <- mc_list[mc_id, 1]
     c <- mc_list[mc_id, 2]
