@@ -309,8 +309,8 @@ get_classic_muscle_markers <- function(){
 #' Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit. 
 #' The slopes/intercepts for different concentration can be obtained through the row names 
 #' @export
-get_mc_list <- function(){
-matrix(
+get_mc_list <- function(volume, dilution){
+mat <- matrix(
 c(-3.652201, 2.263576,
 -3.652201, 2.263576,
 -3.652201, 2.263576,
@@ -352,6 +352,7 @@ c(0.01430512,
 1875,
 3750,
 7500), c('m', 'c')))
+mat[, 1] + log10(volume / 10 * dilution / 40000)
 }
 
 #' Make a list for pairs of potential bifurcating genes 
