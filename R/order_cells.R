@@ -905,9 +905,16 @@ reduceDimension <- function(cds,
                             batch=NULL, 
                             batch2=NULL, 
                             covariates=NULL, 
-                            use_vst=F, ...){
+                            use_vst=NULL,
+                            verbose=FALSE,
+                            ...){
   
   FM <- exprs(cds)
+  
+  if (is.null(use_vst) && cds@expressionFamily@vfamily == "negbinomial"){
+    use_vst = TRUE
+    pseudo_expr = 0
+  }
   
   # If we aren't using VST, then normalize the expression values by size factor
   if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial")
@@ -925,7 +932,7 @@ reduceDimension <- function(cds,
   FM <- FM + pseudo_expr
   FM <- FM[matrixStats::rowSds(FM) > 0,]
   
-  if (use_vst){
+  if (use_vst == TRUE){
     VST_FM <- vstExprs(cds, round_vals=FALSE)
     if (is.null(VST_FM) == FALSE){
       FM <- VST_FM
@@ -941,7 +948,8 @@ reduceDimension <- function(cds,
   # TODO: get rid of this if possible.
   if (is.null(batch) == FALSE || is.null(batch2) == FALSE|| is.null(covariates) == FALSE)
   {
-    message("Removing batch effects")
+    if (verbose)
+      message("Removing batch effects")
     #FM <- log2(FM)
     FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
     if (use_vst == FALSE) {
@@ -950,21 +958,16 @@ reduceDimension <- function(cds,
   }
   
   #FM <- log2(FM)
+  if (verbose)
+    message("Reducing to independent components")
   
-  message("Reducing to independent components")
-  
-  #FM <- t(scale(t(FM)))
-  #FM <- FM[rowSds(FM) > 0,]
   init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
   
   x_pca <- t(t(FM) %*% init_ICA$K)
   W <- t(init_ICA$W)
   
   weights <- W
-  
-  # print(dim (init_ICA$K))
-  # print(dim (solve(weights)))
-  
+
   A <- t(solve(weights) %*% t(init_ICA$K))
   
   colnames(A) <- colnames(weights)

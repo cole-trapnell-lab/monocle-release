@@ -72,7 +72,10 @@ checkSizeFactors <- function(cds)
   {
     if (is.null(sizeFactors(cds))){
       stop("Error: you must call estimateSizeFactors() before calling this function.")
-    }  
+    }
+    if (sum(is.na(sizeFactors(cds))) > 0){
+      stop("Error: one or more cells has a size factor of NA.")
+    }
   }
 }
 

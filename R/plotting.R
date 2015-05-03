@@ -512,6 +512,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom stringr str_join
 #' @export
 #' @examples
 #' \dontrun{
@@ -574,15 +575,11 @@ plot_clusters<-function(cds,
   
   c <- ggplot(m.melt) + facet_wrap("cluster", ncol=ncol, nrow=nrow, scales="free_y")
   #c <- c + stat_density2d(aes(x = Pseudotime, y = value), geom="polygon", fill="white", color="black", size=I(0.1)) + facet_wrap("cluster", ncol=ncol, nrow=nrow)
-  c <- c + geom_hline(yintercept=0, color="steelblue")
-  
+    
   if (drawSummary) {
     c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1),
                           fun.data = sumFun, color = "red",
                           alpha = 0.2, size = 0.5, geom = "smooth")
-    c <- c + stat_summary(aes(x = Pseudotime, y = value, group = 1), 
-                          fun.data = "median_hilow", fill = "black", 
-                          alpha = 0.2, size = 0.5, geom = "ribbon", conf.int=conf_int)
   }
   
   #cluster_medians <- subset(m.melt, ids %in% clustering$medoids)
@@ -597,7 +594,6 @@ plot_clusters<-function(cds,
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank())
   
-  c <- c + geom_hline(yintercept=0, color="steelblue")
   #   if (draw_cluster_size){
   #     cluster_sizes <- as.data.frame(table(m$cluster))
   #     colnames(cluster_sizes) <- c("cluster", "Freq")
@@ -610,7 +606,7 @@ plot_clusters<-function(cds,
     callout_melt <- subset(m.melt, ids %in% callout_ids)
     c <- c + geom_line(aes(x=Pseudotime, y=value), data=callout_melt, color=I("steelblue"))
   }
-  #c <- c + monocle_theme_opts()
+  c <- c + monocle_theme_opts()
   #c <- facet_wrap_labeller(c, facet_labels)
   c
 }
@@ -821,7 +817,6 @@ plot_genes_heatmap <- function(cds,
 }
 
 #' Plot the branch genes in pseduotime with separate lineage curves 
-#' TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data
 #' @param cds CellDataSet for the experiment
 #' @param ncol number of columns used to layout the faceted cluster panels
 #' @param nrow number of columns used to layout the faceted cluster panels
@@ -839,11 +834,23 @@ plot_genes_heatmap <- function(cds,
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
 #' 
-#FIXME: This function is hopelessly buggy and broken.  Needs a re-write and THOROUGH TESTING
-plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), lineage_labels=NULL, method = 'fitting', stretch = TRUE, 
-                               min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State", 
-                               trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", label_by_short_name = TRUE, weighted = TRUE, 
-                               add_ABC = FALSE, normalize = TRUE, gene_pairs = NULL, ...) 
+plot_genes_branched_pseudotime <- function (cds, 
+                                            lineage_states = c(2, 3), 
+                                            lineage_labels=NULL, 
+                                            method = 'fitting', 
+                                            stretch = TRUE, 
+                                            min_expr = NULL, 
+                                            cell_size = 0.75, 
+                                            nrow = NULL, 
+                                            ncol = 1, 
+                                            panel_order = NULL, 
+                                            color_by = "State", 
+                                            trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
+                                            label_by_short_name = TRUE, 
+                                            weighted = TRUE, 
+                                            add_ABC = FALSE, 
+                                            normalize = TRUE, 
+                                            gene_pairs = NULL, ...) 
 {
   if(add_ABC) {
 
@@ -985,15 +992,6 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
                                        levels = panel_order)
   }
   
-  #mlt_df <- data.frame(expectation = as.vector(res$expectation), Pseudotime = pData$Pseudotime, State = pData$State, 
-  #                     feature_label = rep(as.character(fData$gene_short_name), each = nrow(res))) 
-  #mlt_df$State <- as.factor(mlt_df$State)
-
-#   
-#   cds_exprs$Lineage <- cds_exprs$Lineage
-#   cds_exprs$State <- factor(pData(cds)[as.character(cds_exprs$original_cell_id),]$State, 
-#                             levels =levels(cds$State))
-#   print (levels(cds_exprs$State))
   merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
   cds_exprs$State <- as.factor(cds_exprs$State)
   merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
@@ -1034,11 +1032,7 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
   q + expand_limits(y=min_expr) #set the lower bound
 }
 
-#small_set <- load_HSMM_markers()
-
-
 #' Plot the branch genes in pseduotime with separate lineage curves 
-#' TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data
 #' @param cds CellDataSet for the experiment
 #' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
 #' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
@@ -1048,8 +1042,6 @@ plot_genes_branched_pseudotime <- function (cds, lineage_states = c(2, 3), linea
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @export 
-#' 
-#' 
 plot_coexpression_matrix <- function(cds, 
                                      rowgenes, 
                                      colgenes, 
@@ -1131,7 +1123,6 @@ plot_coexpression_matrix <- function(cds,
   
   cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
   
-
   cds_exprs <- subset(cds_exprs, adjusted_expression.x > min_expr | adjusted_expression.y > min_expr)
   
   q <- ggplot(aes(adjusted_expression.x, adjusted_expression.y), data=cds_exprs, size=I(1))
@@ -1274,7 +1265,6 @@ plot_heatmap <- function(abs_branch_gene,
   make_heatmap(ori_logfc_df, emsemble_ids = abs_branch_gene, file = 'ori_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
   make_heatmap(str_logfc_df, emsemble_ids = abs_branch_gene, file = 'stretched_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
   make_heatmap(ori_branch_cds, emsemble_ids = abs_branch_gene, file = 'log2fc_ori_branch_adj_inter.pdf', ...) #heatmap for original expression
-
 
   #show some positive control for the other branch: 
   pos_alterative_branch <- which(rowSums(ori_logfc_df[, 90:100], na.rm = T) < -5)

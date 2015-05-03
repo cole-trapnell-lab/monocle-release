@@ -15,13 +15,30 @@ dmode <- function(x, breaks="Sturges") {
   ( den$x[den$y==max(den$y)] )
 }
 
-#' Find the most abundant relative expression value for each cell
-#' @param relative_expr_matrix a matrix of relative expression values for values with each row and column representing genes/isoforms and cells, respectively. Row and column names should be included
-#' @param return_all parameter for the intended return results. If setting TRUE, matrix of dmode as well as max mu and min mu of two gaussian distribution mixture will be returned
-#' @param relative_expr_thresh Relative expression values below this threshold are considered zero.
-#' @return an vector of most abundant relative_expr value corresponding to the transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian density function and the max or min
+#' Find the most commonly occuring relative expression value in each cell
+#' 
+#' Converting relative expression values to mRNA copies per cell requires
+#' knowing the most commonly occuring relative expression value in each cell
+#' This value typically corresponds to an RPC value of 1. This function 
+#' finds the most commonly occuring (log-transformed) relative expression value
+#' for each column in the provided expression matrix. 
+#' 
+#' @param relative_expr_matrix a matrix of relative expression values for 
+#' values with each row and column representing genes/isoforms and cells, 
+#' respectively. Row and column names should be included. 
+#' Expression values should not be log-transformed.
+#' @param return_all parameter for the intended return results. If setting TRUE, 
+#' matrix of dmode as well as max mu and min mu of two gaussian distribution 
+#' mixture will be returned
+#' @param relative_expr_thresh Relative expression values below this threshold 
+#' are considered zero.
+#' @return an vector of most abundant relative_expr value corresponding to the 
+#' RPC 1. If setting return_all = TRUE, the mode based on gaussian 
+#' density function and the max or min
 #' mode from the mixture gaussian model
-#' @details This function estimates the most abundant relative expression value (t^*) using a gaussian kernel density function. It can also optionally output the t^* based on a two gaussian mixture model
+#' @details This function estimates the most abundant relative expression value 
+#' (t^*) using a gaussian kernel density function. It can also optionally 
+#' output the t^* based on a two gaussian mixture model
 #' based on the smsn.mixture from mixsmsn package
 #' @export
 #' @examples
@@ -147,6 +164,69 @@ t_rmse_abs_cnt <- function (par, t_estimate, relative_expr_mat, split_relative_e
   sqrt(mean(((cell_dmode - alpha) / sum_total_cells_rna)^2)) #new 
 }
 
+
+#' Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit. 
+#' The slopes/intercepts for different concentration can be obtained through the row names 
+get_mc_list <- function(){
+  matrix(
+    c(-3.652201, 2.263576,
+      -3.652201, 2.263576,
+      -3.652201, 2.263576,
+      -3.652347, 2.26371,
+      -3.653535, 2.264639,
+      -3.652076, 2.263407,
+      -3.648284, 2.260313,
+      -3.650168, 2.262497,
+      -3.65139,  2.264297,
+      -3.64543,  2.263617,
+      -3.663548, 2.287196,
+      -3.686309, 2.321314,
+      -3.735227, 2.380282,
+      -3.870832, 2.523883,
+      -4.024396, 2.677024,
+      -4.070794, 2.744178,
+      -4.277778, 2.932929,
+      -4.496089, 3.132498,
+      -4.584481, 3.201793,
+      -4.765763, 3.353782),
+    ncol = 2, byrow = TRUE, dimnames = list(
+      c(0.01430512,
+        0.02861023,
+        0.05722046,
+        0.11444092,
+        0.22888184,
+        0.45776367,
+        0.91552734,
+        1.83105469,
+        3.66210938,
+        7.32421875,
+        14.6484375,
+        29.296875,
+        58.59375,
+        117.1875,
+        234.375,
+        468.75,
+        937.5,
+        1875,
+        3750,
+        7500), c('m', 'c')))
+}
+
+#' @export
+calculateERCCSpikeAbundances <- function(ERCC_spikes=NULL, volume=10, dilution=40000){
+  # If ERCC_spikes is null, assume we're using Spike mix 1 in a 10 nanoliter 
+  # reaction volume with a 1:40000 dilution. 
+  if (is.null(ERCC_spikes)){
+    
+  }else{
+    
+  }
+  spike_df <- data.frame(row.names=row.names(ERCC_spikes), 
+                         ERCC_ID=ERCC_spikes$ERCC_ID)
+  spike_df$numMolecules <- ERCC_spikes$conc_attomoles_ul_Mix1*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23))
+  spike_df
+}
+
 #' Transform relative expression values into absolute transcript counts
 #' 
 #' Transform a relative expression matrix to absolute transcript matrix based on the decomposed linear regression parameters from most abundant isoform relative expression value.
@@ -160,10 +240,10 @@ t_rmse_abs_cnt <- function (par, t_estimate, relative_expr_mat, split_relative_e
 #' @param relative_expr_matrix an matrix of relative expression values for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
 #' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 #' based on isoform FPKM will give better results in general
-#' @param detecthion_threshold the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.   
+#' @param detection_threshold the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.   
 #' @param ERCC_controls the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively. 
 #' @param ERCC_annotation the ERCC_annotation matrix from illumina USE GUIDE which will be ued for calculating the ERCC transcript copy number for performing the transformation. 
-#' @param volume the approximate volume of the lysis chamber (nl). Default is 10
+#' @param volume the approximate volume of the lysis chamber (nanoliters). Default is 10
 #' @param dilution the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000The number of spike-in transcripts per single-cell lysis reaction was calculated from
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
@@ -178,15 +258,17 @@ t_rmse_abs_cnt <- function (par, t_estimate, relative_expr_mat, split_relative_e
 #'}
 relative2abs <- function(relative_expr_matrix, 
                          t_estimate = estimate_t(relative_expr_matrix), 
-                         detecthion_threshold = 0.01430512, #c(1.430512e-02, 2.861023e-02, 5.722046e-02, 1.144409e-01, 2.288818e-01, 4.577637e-01, 9.155273e-01, 1.831055e+00, 3.662109e+00, 7.324219e+00, 1.464844e+01, 2.929688e+01, 5.859375e+01, 1.171875e+02, 2.343750e+02, 4.687500e+02, 9.375000e+02, 1.875000e+03, 3.750000e+03, 7.500000e+03) 
-                         ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10, dilution = 40000, 
+                         detection_threshold = 0.01430512, #c(1.430512e-02, 2.861023e-02, 5.722046e-02, 1.144409e-01, 2.288818e-01, 4.577637e-01, 9.155273e-01, 1.831055e+00, 3.662109e+00, 7.324219e+00, 1.464844e+01, 2.929688e+01, 5.859375e+01, 1.171875e+02, 2.343750e+02, 4.687500e+02, 9.375000e+02, 1.875000e+03, 3.750000e+03, 7.500000e+03) 
+                         ERCC_controls = NULL, ERCC_annotation = NULL, 
+                         volume = 10, dilution = 40000, 
+                         spike_info = NULL,
                          return_all = FALSE, 
                          cores = 1, 
-                         verbose = TRUE){
-  if(detecthion_threshold < 0.01430512 | detecthion_threshold > 7500)
+                         verbose = FALSE){
+  if(detection_threshold < 0.01430512 | detection_threshold > 7500)
     stop('concentration detection limit should be between 0.01430512 and 7500')
   else 
-   mc_id <- round(detecthion_threshold / 0.01430512)
+   mc_id <- round(detection_threshold / 0.01430512)
 
   Cell <- NULL
 
@@ -245,7 +327,7 @@ relative2abs <- function(relative_expr_matrix,
         rep(NA, length(cell_exprs))
         })
     }, 
-    split(relative_expr_matrix, rep(1:ncol(relative_expr_matrix), each = nrow(standard_cds))), 
+    split(as.matrix(relative_expr_matrix), rep(1:ncol(relative_expr_matrix), each = nrow(relative_expr_matrix))), 
     molModels)
 
     k_b_solution <- data.frame(b = unlist(lapply(molModels, FUN=function(x) { intercept=x$coefficients[1] })), k = unlist(lapply(molModels, FUN=function(x) { slope=x$coefficients[2] })))
@@ -254,9 +336,9 @@ relative2abs <- function(relative_expr_matrix,
     c <- kb_model$coefficients[1]
   
    if(return_all == T) { #also return the trick cds for genes and isoform if return_trick_cds is true otherwise only return total_rna_df
-      return (list(norm_cds = norm_cds, m = m, c = c, k_b_solution = k_b_solution))
+      return (list(norm_cds = norm_fpkms, m = m, c = c, k_b_solution = k_b_solution))
     }
-    norm_cds
+    norm_fpkms
   }
   else {
     if(verbose)

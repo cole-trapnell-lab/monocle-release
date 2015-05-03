@@ -1,10 +1,13 @@
 
 #' Clusters genes by pseudotime trend.
 #'
-#' @param expr_matrix a matrix of expression values to cluster together
-#' @param k how many clusters to create
-#' @param method the distance function to use during clustering
-#' @param ... extra parameters to pass to pam() during clustering
+#' This function takes a matrix of expression values
+#'
+#' @param expr_matrix A matrix of expression values to cluster together. Rows 
+#' are genes, columns are cells.
+#' @param k How many clusters to create
+#' @param method The distance function to use during clustering
+#' @param ... Extra parameters to pass to pam() during clustering
 #' @return a pam cluster object
 #' @importFrom cluster pam
 #' @export

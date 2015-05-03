@@ -6,7 +6,9 @@ fit_model_helper <- function(x,
                              expressionFamily, 
                              relative_expr, 
                              disp_func=NULL, 
-                             pseudocount=0, ...){
+                             pseudocount=0,
+                             verbose=FALSE,
+                             ...){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
   
   orig_x <- x
@@ -20,7 +22,7 @@ fit_model_helper <- function(x,
     f_expression <- round(x)
     if (is.null(disp_func) == FALSE){
       disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
-      if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE   ) {
+      if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something.    
         size_guess <- 1/disp_guess
@@ -34,8 +36,12 @@ fit_model_helper <- function(x,
   }
   
   tryCatch({
-    FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
-    FM_fit
+    if (verbose){
+      FM_fit <-  VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily)
+    }else{
+      FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
+    }
+     FM_fit
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { print (e); NULL }
@@ -140,8 +146,6 @@ parametricDispersionFit <- function( means, disps )
     if( !all( coefs > 0 ) ){
       #print(data.frame(means,disps))
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
-      
-      
     }
     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
@@ -201,20 +205,34 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
     f_expression <- log10(x)
   }
   
-  disp_vals <- tryCatch({
-    fitted_model <-  suppressWarnings(VGAM::vgam(as.formula(modelFormulaStr), family=expressionFamily))
-    disp_vals <- as.data.frame(VGAM::predict(fitted_model))
-    colnames(disp_vals) <- c("mu", "disp")
-    disp_vals$disp <- signif(disp_vals$disp)
-    disp_vals <- dplyr::distinct(disp_vals, disp)
+  if (modelFormulaStr == "f_expression~ 1"){
+    # For NB: Var(Y)=mu*(1+mu/k)
+    f_expression_var <- var(f_expression)
+    f_expression_mean <- mean(f_expression)
     
-    disp_vals$mu <- exp(disp_vals$mu)
-    disp_vals$disp <- 1.0/exp(disp_vals$disp)
-    df_res <- data.frame(mu=disp_vals$mu, disp=disp_vals$disp)
-  },
-  #warning = function(w) { print (w) },
-  error = function(e) { print (e); NULL }
-  )
+    disp_guess_meth_moments <- f_expression_var - f_expression_mean 
+    disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
+    if (f_expression_mean == 0){
+      disp_vals <- NULL
+    } else {
+      disp_vals <- data.frame(mu=f_expression_mean, disp=disp_guess_meth_moments)
+    }
+  }else{
+    disp_vals <- tryCatch({
+      fitted_model <-  suppressWarnings(VGAM::vgam(as.formula(modelFormulaStr), family=expressionFamily))
+      disp_vals <- as.data.frame(VGAM::predict(fitted_model))
+      colnames(disp_vals) <- c("mu", "disp")
+      disp_vals$disp <- signif(disp_vals$disp)
+      disp_vals <- dplyr::distinct(disp_vals, disp)
+        
+      disp_vals$mu <- exp(disp_vals$mu)
+      disp_vals$disp <- 1.0/exp(disp_vals$disp)
+      df_res <- data.frame(mu=disp_vals$mu, disp=disp_vals$disp)
+    },
+    #warning = function(w) { print (w) },
+    error = function(e) { print (e); NULL }
+    )
+  }
   disp_vals
 }
 

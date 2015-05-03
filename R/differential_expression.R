@@ -8,7 +8,8 @@ diff_test_helper <- function(x,
                              relative_expr,
                              weights,
                              disp_func=NULL,
-                             pseudocount=0){
+                             pseudocount=0,
+                             verbose=FALSE){
   reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
   
@@ -36,8 +37,13 @@ diff_test_helper <- function(x,
   }
   
   test_res <- tryCatch({
-    full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights)
-    reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))
+    if (verbose){
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights)                         
+    }else{
+      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights))
+      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))                    
+    }
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
@@ -78,6 +84,7 @@ compareModels <- function(full_models, reduced_models){
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param relative_expr Whether to transform expression into relative values
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 differentialGeneTest <- function(cds, 
@@ -86,7 +93,8 @@ differentialGeneTest <- function(cds,
                                  cores=1, 
                                  relative_expr=TRUE,
                                  weights=NULL,
-                                 pseudocount=0){
+                                 pseudocount=0,
+                                 verbose=FALSE){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
@@ -103,7 +111,8 @@ differentialGeneTest <- function(cds,
                              relative_expr=relative_expr,
                              weights=weights,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                             pseudocount=pseudocount)
+                             pseudocount=pseudocount,
+                             verbose=verbose)
     diff_test_res
   }else{
     diff_test_res<-esApply(cds,1,diff_test_helper, 
@@ -113,7 +122,8 @@ differentialGeneTest <- function(cds,
                            relative_expr=relative_expr,
                            weights=weights,
                            disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                           pseudocount=pseudocount)
+                           pseudocount=pseudocount,
+                           verbose=verbose)
     diff_test_res
   }
   
