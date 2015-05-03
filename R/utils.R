@@ -308,6 +308,57 @@ get_classic_muscle_markers <- function(){
     "CDK1", "CDK2", "CCNB1", "CCNB2", "CCND1", "CCNA1", "ID1")
 }
 
+
+#' Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit. 
+#' The slopes/intercepts for different concentration can be obtained through the row names 
+#' @export
+get_mc_list <- function(volume, dilution){
+mat <- matrix(
+        c(-3.652201, 2.263576,
+        -3.652201, 2.263576,
+        -3.652201, 2.263576,
+        -3.652347, 2.26371,
+        -3.653535, 2.264639,
+        -3.652076, 2.263407,
+        -3.648284, 2.260313,
+        -3.650168, 2.262497,
+        -3.65139,  2.264297,
+        -3.64543,  2.263617,
+        -3.663548, 2.287196,
+        -3.686309, 2.321314,
+        -3.735227, 2.380282,
+        -3.870832, 2.523883,
+        -4.024396, 2.677024,
+        -4.070794, 2.744178,
+        -4.277778, 2.932929,
+        -4.496089, 3.132498,
+        -4.584481, 3.201793,
+        -4.765763, 3.353782),
+        ncol = 2, byrow = TRUE, dimnames = list(
+        c(0.01430512,
+        0.02861023,
+        0.05722046,
+        0.11444092,
+        0.22888184,
+        0.45776367,
+        0.91552734,
+        1.83105469,
+        3.66210938,
+        7.32421875,
+        14.6484375,
+        29.296875,
+        58.59375,
+        117.1875,
+        234.375,
+        468.75,
+        937.5,
+        1875,
+        3750,
+        7500), c('m', 'c')))
+  mat[, 1] <- mat[, 1] + log10(volume / 10 * 40000 / dilution)
+  return(mat)
+}
+
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 
 #' @export
