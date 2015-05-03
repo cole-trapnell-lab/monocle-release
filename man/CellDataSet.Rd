@@ -6,10 +6,12 @@
 \alias{CellDataSet-class}
 \title{The CellDataSet class}
 \description{
-The main class used by Monocle to hold single cell expression data. CellDataSet extends the basic Bioconductor ExpressionSet class.
+The main class used by Monocle to hold single cell expression data.
+CellDataSet extends the basic Bioconductor ExpressionSet class.
 }
 \details{
-This class is initialized from a matrix of expression values Methods that operate on CellDataSet objects constitute the basic Monocle workflow.
+This class is initialized from a matrix of expression values Methods that
+operate on CellDataSet objects constitute the basic Monocle workflow.
 }
 \section{Slots}{
 
@@ -22,7 +24,7 @@ This class is initialized from a matrix of expression values Methods that operat
    \item{\code{cellPairwiseDistances}:}{Matrix of class \code{"numeric"}, containing the pairwise distances between cells in the reduced dimension space.}
    \item{\code{expressionFamily}:}{Object of class \code{"vglmff"}, specifying the VGAM family function used for expression responses.}
    \item{\code{lowerDetectionLimit}:}{A \code{"numeric"} value specifying the minimum expression level considered to be true expression.}
-   \item{\code{dispFitInfo}:}{An \code{environment} containing lists, one for each set of estimated dispersion values, similar to DESeq. See \code{\link{estimateDispersions}}}
+   \item{\code{dispFitInfo}:}{An \code{environment} containing lists, one for each set of estimated dispersion values. See \code{\link{estimateDispersions}}}
  }
 }
 

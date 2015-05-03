@@ -8,19 +8,20 @@ clusterGenes(expr_matrix, k, method = function(x) {     as.dist((1 -
   cor(t(x)))/2) }, ...)
 }
 \arguments{
-\item{expr_matrix}{a matrix of expression values to cluster together}
+\item{expr_matrix}{A matrix of expression values to cluster together. Rows
+are genes, columns are cells.}
 
-\item{k}{how many clusters to create}
+\item{k}{How many clusters to create}
 
-\item{method}{the distance function to use during clustering}
+\item{method}{The distance function to use during clustering}
 
-\item{...}{extra parameters to pass to pam() during clustering}
+\item{...}{Extra parameters to pass to pam() during clustering}
 }
 \value{
 a pam cluster object
 }
 \description{
-Clusters genes by pseudotime trend.
+This function takes a matrix of expression values
 }
 \examples{
 \dontrun{

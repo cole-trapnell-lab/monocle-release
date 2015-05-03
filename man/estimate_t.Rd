@@ -22,7 +22,7 @@ are considered zero.}
 }
 \value{
 an vector of most abundant relative_expr value corresponding to the
-transcrpt copy 1. If setting return_all = TRUE, the mode based on gaussian
+RPC 1. If setting return_all = TRUE, the mode based on gaussian
 density function and the max or min
 mode from the mixture gaussian model
 }

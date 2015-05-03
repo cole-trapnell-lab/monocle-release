@@ -167,8 +167,9 @@ t_rmse_abs_cnt <- function (par, t_estimate, relative_expr_mat, split_relative_e
 
 #' Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit. 
 #' The slopes/intercepts for different concentration can be obtained through the row names 
-get_mc_list <- function(){
-  matrix(
+#' @export
+get_mc_list <- function(volume, dilution){
+  mat <- matrix(
     c(-3.652201, 2.263576,
       -3.652201, 2.263576,
       -3.652201, 2.263576,
@@ -210,21 +211,8 @@ get_mc_list <- function(){
         1875,
         3750,
         7500), c('m', 'c')))
-}
-
-#' @export
-calculateERCCSpikeAbundances <- function(ERCC_spikes=NULL, volume=10, dilution=40000){
-  # If ERCC_spikes is null, assume we're using Spike mix 1 in a 10 nanoliter 
-  # reaction volume with a 1:40000 dilution. 
-  if (is.null(ERCC_spikes)){
-    
-  }else{
-    
-  }
-  spike_df <- data.frame(row.names=row.names(ERCC_spikes), 
-                         ERCC_ID=ERCC_spikes$ERCC_ID)
-  spike_df$numMolecules <- ERCC_spikes$conc_attomoles_ul_Mix1*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23))
-  spike_df
+  mat[, 1] <- mat[, 1] + log10(volume / 10 * 40000 / dilution)
+  return(mat)
 }
 
 #' Transform relative expression values into absolute transcript counts

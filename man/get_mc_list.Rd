@@ -5,7 +5,7 @@
 \title{Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit.
 The slopes/intercepts for different concentration can be obtained through the row names}
 \usage{
-get_mc_list()
+get_mc_list(volume, dilution)
 }
 \description{
 Return the slopes and intercepts matrix for the relationship between regression parameters Ks, Bs in all cells at different concentration detection limit.
