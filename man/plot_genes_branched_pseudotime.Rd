@@ -10,7 +10,7 @@ plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
   panel_order = NULL, color_by = "State",
   trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage",
   label_by_short_name = TRUE, weighted = TRUE, add_ABC = FALSE,
-  normalize = TRUE, gene_pairs = NULL, ...)
+  normalize = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

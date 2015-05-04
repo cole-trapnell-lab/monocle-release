@@ -262,38 +262,43 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   return(res)
 }
 
-#to do: check whether or not the lineages are on the same paths
-buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage_labels = NULL, method = 'fitting',  stretch = FALSE, weighted = FALSE, gene_pairs = NULL, ...)
+#' Build a CellDataSet with appropriate duplication along two lineages
+#' 
+#' @export
+buildLineageBranchCellDataSet <- function(cds, 
+                                          lineage_states = c(2, 3), 
+                                          lineage_labels = NULL, 
+                                          method = 'fitting',  
+                                          stretch = FALSE, 
+                                          weighted = FALSE, 
+                                          ...)
 {
+  # TODO: check that lineages are on the same paths
+  
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
   
   if (!is.null(lineage_labels)) {
     if(length(lineage_labels) != length(lineage_states))
       stop("length of lineage_labels doesn't match with that of lineage_states")
-      lineage_map <- setNames(lineage_labels, as.character(lineage_states))
+    lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
-
-  extra_arg <- list(...)
-  if(is.null(extra_arg['progenitor_state']) == FALSE) { #just use progenitor_state to duplicate the celldataset
-    cds <- cds[, pData(cds)$State %in% c(progenitor_state, lineage_states)]
+  
+  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+  
+  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
+  ancestor_cells <- c()
+  
+  while (1) {
+    ancestor_cells <- c(ancestor_cells, curr_cell)
+    if (is.na(pData(cds[,curr_cell])$Parent))
+      break
+    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
   }
-  else {
-    lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
-
-    curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
-    ancestor_cells <- c()
-    
-    while (1) {
-      ancestor_cells <- c(ancestor_cells, curr_cell)
-      if (is.na(pData(cds[,curr_cell])$Parent))
-        break
-      curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
-    }
-    
-    cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
-  }
-
+  
+  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
+  
+  
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
   
@@ -325,15 +330,15 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
     longest_branch_multiplier <- 100 / longest_branch_range
     
     T_0 <- (max(range_df[as.character(progenitor_states), 'max']) - min(range_df[as.character(progenitor_states), 'min']))  * longest_branch_multiplier
-
+    
     short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - max(range_df[as.character(progenitor_states), 'max']))
     
     heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
     names(heterochrony_constant) <- c(longest_lineage_branch, short_branches)
-
+    
     pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
       (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
-
+    
     
     for(i in 1:length(short_branches)) { #stretch short branches
       pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
@@ -356,12 +361,12 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
       paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
   }
   if (!is.null(lineage_labels))
-      pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
+    pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
   else
-      pData$Lineage <- as.factor(pData$State)
+    pData$Lineage <- as.factor(pData$State)
   
   pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
-                            levels =levels(cds$State))
+                        levels =levels(cds$State))
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   
@@ -376,42 +381,7 @@ buildLineageBranchCellDataSet <- function(cds, lineage_states = c(2, 3), lineage
   pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
   pData(cds_subset)$Size_Factor <- Size_Factor
   
-  if(!is.null(gene_pairs)){ #construct bifurcationGenePairsTest
-    bifurcation_list <- lapply(gene_pairs, function(x, cds){
-      cds_subset <- cds[x, ]
-      gene_pair_df <- exprs(cds_subset)
-      #test size_factor; rbind(gene_pair_df, pData(cds_subset))
-      gene_pair_df <- rbind(gene_pair_df, State = pData(cds_subset)$State, Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
-
-      collapse_gene_pair_df <- cbind(gene_pair_df[c(1, 3, 4, 5), ], gene_pair_df[c(2, 3, 4, 5), ])
-      row.names(collapse_gene_pair_df)[1] <- 'expression'
-      colnames(collapse_gene_pair_df) <- c(colnames(cds_subset), paste('duplicated', colnames(cds_subset), sep = '_'))
-
-      pData <- as.data.frame(t(collapse_gene_pair_df[c(2, 3, 4), ]))
-      pData$Gene <- c(rep(gene_pair[1], ncol(cds_subset)), rep(gene_pair[2], ncol(cds_subset)))
-      pData$Pseudotime[1:ncol(cds_subset)] <- pData$Pseudotime[1:ncol(cds_subset)] + 0.1
-
-      fData <- as.data.frame(cbind(fData(cds)[gene_pair[1], ], fData(cds)[gene_pair[2], ]))
-      colnames(fData) <- c(colnames(fData(cds_subset)), paste('duplicated', colnames(fData(cds_subset)), sep = '_'))
-    
-      return(list(collapse_gene_pair_df = collapse_gene_pair_df[1, ], pData = pData, fData = fData))
-    }, cds_subset)
-
-    collapse_gene_pair_df <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[1]]))
-    colnames(collapse_gene_pair_df) <- names(bifurcation_list[[1]]$collapse_gene_pair_df)
-    pData <- bifurcation_list[[1]]$pData
-    fData <- do.call(rbind.data.frame, lapply(bifurcation_list, function(x) x[[3]]))
-    row.names(collapse_gene_pair_df) <- row.names(fData)
-
-    cds_subset <- newCellDataSet(collapse_gene_pair_df,
-               phenoData = new("AnnotatedDataFrame", data = as.data.frame((pData))),
-               featureData = new("AnnotatedDataFrame", data = fData),
-               expressionFamily=negbinomial(),
-               lowerDetectionLimit=1)
-  }
-
- return (cds_subset)
-
+  return (cds_subset)
 }
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)

@@ -217,29 +217,33 @@ detectGenes <- function(cds, min_expr=NULL){
   {
     min_expr <- cds@lowerDetectionLimit
   }
-  FM_genes <- do.call(rbind, apply(FM, 1, 
-                                   function(x) {
-                                     return(data.frame(
-                                       num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                     )
-                                     )
-                                   })
-  )
-  
-  FM_cells <- do.call(rbind, apply(FM, 2, 
-                                   function(x) {
-                                     return(data.frame(
-                                       num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                     )
-                                     )
-                                   })
-  )
-  
-  
-  fData(cds)$num_cells_expressed <-  FM_genes[row.names(fData(cds)),]
-  
-  pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
-  
+#   FM_genes <- do.call(rbind, apply(FM, 1, 
+#                                    function(x) {
+#                                      return(data.frame(
+#                                        num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
+#                                      )
+#                                      )
+#                                    })
+#   )
+#   
+#   FM_cells <- do.call(rbind, apply(FM, 2, 
+#                                    function(x) {
+#                                      return(data.frame(
+#                                        num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
+#                                      )
+#                                      )
+#                                    })
+#   )
+#   
+#   
+#   
+#   fData(cds)$num_cells_expressed <-  FM_genes[row.names(fData(cds)),]
+#   
+#   pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
+#   
+  fData(cds)$num_cells_expressed <- rowSums(FM > min_expr)
+  pData(cds)$num_genes_expressed <- colSums(FM > min_expr)
+
   cds
 }
 

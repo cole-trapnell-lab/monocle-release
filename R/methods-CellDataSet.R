@@ -268,3 +268,5 @@ cellPairwiseDistances <- function( cds ) {
   validObject( cds )
   cds
 }   
+
+
