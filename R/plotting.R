@@ -439,7 +439,6 @@ plot_genes_in_pseudotime <-function(cds_subset,
   }
   
   cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr #avoid the NA error generated from scale_y_log10 when expression is 0
 
   merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label), function(x) { 
     fit_res <- tryCatch({
@@ -468,6 +467,8 @@ plot_genes_in_pseudotime <-function(cds_subset,
 
     data.frame(Pseudotime=x$Pseudotime, expectation=expectation)
   })
+  
+  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr #avoid the NA error generated from scale_y_log10 when expression is 0
   
   if (is.null(panel_order) == FALSE)
   {
