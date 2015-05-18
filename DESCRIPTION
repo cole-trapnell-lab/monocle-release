@@ -33,7 +33,8 @@ Imports:
     reshape2,
     limma,
     dplyr,
-    mixsmsn
+    mixsmsn,
+    pheatmap
 VignetteBuilder: knitr
 Suggests:
     knitr,

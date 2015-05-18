@@ -1249,5 +1249,5 @@ plot_ILRs_heatmap <- function (cds,
         border_color = NA, clustering_distance_cols = dist_method, 
         clustering_method = hclust_method, annotation = annotation, 
         annotation_legend = T, ...)
-}}
+}
 

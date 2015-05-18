@@ -1,7 +1,8 @@
 
 #' Clusters genes by pseudotime trend.
 #'
-#' This function takes a matrix of expression values
+#' This function takes a matrix of expression values and performs k-means 
+#' clustering on the genes. 
 #'
 #' @param expr_matrix A matrix of expression values to cluster together. Rows 
 #' are genes, columns are cells.

@@ -28,6 +28,8 @@ library(Biobase)
 library(knitr)
 library(reshape2)
 library(ggplot2)
+
+knitr::opts_chunk$set(autodep=TRUE, cache=FALSE)
 @ %def
 
 \maketitle
@@ -38,7 +40,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 
 \tableofcontents
 
-<<init_monocle, include=FALSE, cache=FALSE, eval=TRUE>>=
+<<init_monocle, include=FALSE, eval=TRUE>>=
 library(HSMMSingleCell)
 library(monocle)
 data(HSMM_expr_matrix)
@@ -88,7 +90,7 @@ HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData 
 
 This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. However, if you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC), a unit of \emph{absolute} expression. RPC values are often easier to analyze than FPKM values, because have better statistical tools to model them. In some cases, it's possible to convert FPKM values to RPC values even if there were no spike-in standards included in the experiment. You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
 
-<<build_cell_data_Set_RPC, cache=FALSE, eval=TRUE>>=
+<<build_cell_data_Set_RPC, eval=TRUE>>=
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
@@ -104,7 +106,7 @@ HSMM <- newCellDataSet(rpc_matrix,
 Note that since we are using RPC values, we have changed the value of \Robject{lowerDetectionLimit} to reflect the new scale of expression. Importantly, we have also set the \Robject{expressionFamily} to \Robject{negativebin}, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests. Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
 
 Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
-<<estimate_size_and_dispersion, cache=TRUE, eval=TRUE >>=
+<<estimate_size_and_dispersion, eval=TRUE >>=
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
 @ %
@@ -231,7 +233,7 @@ So 16 of the 22 genes are significant at a 10\% false discovery rate! This isn't
 
 <<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
 MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo), 
-                                 gene_short_name %in% c("MYOG", "ID1"))),]
+                                 gene_short_name %in% c("MYOG", "CCNB2"))),]
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 @ %def
 
