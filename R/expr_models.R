@@ -263,15 +263,8 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 }
 
 #' Build a CellDataSet with appropriate duplication along two lineages
-#' @param cds CellDataSet for the experiment
-#' @param lineage_states The states for two branching lineages
-#' @param lineage_labels The names for each branching lineage
-#' @param method method to stretch the lineage. Not used by now and maybe deleted in future
-#' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
-#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @return a CellDataSet with the duplicated cells and stretched lineages
+#' 
 #' @export
-#'
 buildLineageBranchCellDataSet <- function(cds, 
                                           lineage_states = c(2, 3), 
                                           lineage_labels = NULL, 
@@ -391,8 +384,6 @@ buildLineageBranchCellDataSet <- function(cds,
   return (cds_subset)
 }
 
-#' function to calculate the hint of the dispersion parameter for the negative binomial distribution 
-#'
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 {
   expr_median <- median(f_expression[f_expression > 0])

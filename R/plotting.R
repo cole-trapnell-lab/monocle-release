@@ -349,7 +349,7 @@ plot_genes_positive_cells <- function(cds_subset,
 }
 
 
-#' Plots expression for one or more genes as a function of pseudotime.
+#' Plots expression for one or more genes as a function of pseudotime
 #'
 #' @param cds_subset CellDataSet for the experiment
 #' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
@@ -439,7 +439,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   }
   
   cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-
+   
   merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label), function(x) { 
     fit_res <- tryCatch({
       #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
@@ -467,8 +467,6 @@ plot_genes_in_pseudotime <-function(cds_subset,
 
     data.frame(Pseudotime=x$Pseudotime, expectation=expectation)
   })
-  
-  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr #avoid the NA error generated from scale_y_log10 when expression is 0
   
   if (is.null(panel_order) == FALSE)
   {
@@ -622,7 +620,7 @@ plot_clusters<-function(cds,
   c
 }
 
-#' Plots a pseudotime-ordered, row-centered heatmap.
+#' Plots a pseudotime-ordered, row-centered heatmap
 #' @export 
 plot_genes_heatmap <- function(cds, 
                                rescaling='row', 
@@ -827,29 +825,11 @@ plot_genes_heatmap <- function(cds,
   return (g2)
 }
 
-#' Plot the branch genes in pseduotime with separate lineage curves.
-#' 
-#' This plotting function is used to make the branching plots for a lineage dependent gene goes through the progenitor state
-#' and bifurcating into two distinct lineages (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
-#' bifurcation plot, we first duplicated the progenitor states and by default stretch each lineage into maturation level 0-100.  
-#' Then we fit two nature spline curves for each lineages using VGAM package.  
-#'
+#' Plot the branch genes in pseduotime with separate lineage curves 
 #' @param cds CellDataSet for the experiment
-#' @param lineage_states The states for two branching lineages
-#' @param lineage_labels The names for each branching lineage
-#' @param method The method to draw the curve for the gene expression branching pattern, either loess ('loess') or VGLM fitting ('fitting') 
-#' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
-#' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
-#' @param cell_size the size (in points) of each cell used in the plot
-#' @param nrow number of columns used to layout the faceted cluster panels
 #' @param ncol number of columns used to layout the faceted cluster panels
-#' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
-#' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell 
-#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
-#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @param add_ABC A logic flag to determine whether or not we should add the ABC score for each gene 
-#' @param relative_expr A logic flag to determine whether or not we should use the relative expression values
+#' @param nrow number of columns used to layout the faceted cluster panels
+#' @param row_samples how many genes to randomly select from the data
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom plyr ddply
@@ -879,7 +859,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                             label_by_short_name = TRUE, 
                                             weighted = TRUE, 
                                             add_ABC = FALSE, 
-                                            relative_expr = TRUE, 
+                                            normalize = TRUE, 
                                             ...) 
 {
   if(add_ABC) {
@@ -902,7 +882,7 @@ plot_genes_branched_pseudotime <- function (cds,
   
   if (integer_expression) {
     CM <- exprs(cds_subset)
-    if(relative_expr)
+    if(normalize)
       CM <- t(t(CM) / sizeFactors(cds_subset)) 
     cds_exprs <- reshape2::melt(round(CM))
   }
@@ -1171,85 +1151,129 @@ plot_coexpression_matrix <- function(cds,
   q
 }
 
-#'  Create a heatmap to demonstrate the lineage divergence hierarchy for branching genes 
-#'
+#' Make heatmap 
 #' @param cds CellDataSet for the experiment
-#' @param ILRs_df Matrix of Instant Log Ratio for the branching genes calculated using the calILRs function 
-#' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function 
-#' @param rownames_type The type of row names for the ILRs matrix (either 'gene_short_name' or 'ensemble_id')
-#' @param ABC_type The type of genes based on ABC score to be selected (either 'positive', 'negative' or 'all')
-#' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". 
-#' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
-#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
-#' @param cluster_num The minimum level of expression to show in the plot
-#' @return a heatmap plot from based on the pheatmap package
-#' @import pheatmap
+#' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
+#' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
+#' @param relative_expr Whether to transform expression into relative values
+#' @param min_expr The minimum level of expression to show in the plot
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
 #' @export 
 #' 
 #' 
-plot_ILRs_heatmap <- function (cds, 
-      ILRs_df, 
-      ABC_df, 
-      branching_pval_df, 
-      rownames_type = c('gene_short_name', 'ensemble_id'), 
-      ABC_type = c('positive', 'negative', 'all'),
-      dist_method = "euclidean", 
-      hclust_method = "ward", 
-      ILRs_limit = 3, 
-      cluster_num = 4, ...) {
+make_heatmap <- function(dat.all = logfc_df, emsemble_ids = quake_id, file = 'heatmap.pdf', ...) { 
+  hclustfunc <- function(x) hclust(x, method="ward")
+  distfunc <- function(x) dist(x,method="euclidean")
 
-    #clean the ILR dataset (avoid failed fittign genes or genes don't have names and cannot be identified)
-    ILRs_df<- ILRs_df[!is.na(ILRs_df[, 1]), ]
-    ILRs_df <- ILRs_df[row.names(ILRs_df) != "-", ]
-
-    #limit ILR to certain range: 
-    ILRs_df[which(ILRs_df <= -ILRs_limit)] <- -ILRs_limit
-    ILRs_df[which(ILRs_df >= ILRs_limit)] <- ILRs_limit
-
-    if(rownames_type == 'rownames_type')
-      branch_gene_ABCs <- subset(ABC_df, gene_short_name %in% row.names(ILRs_df))
-    else if(rownames_type == 'ensemble_id')
-      branch_gene_ABCs <- ABC_df[row.names(ILRs_df), ]
-
-    #select genes for certain lineage based on the ABC score
-    if(ABC_type == 'positive')
-      ILRs_df <- ILRs_df[unique(as.character(subset(branch_gene_ABCs, 
-          ABCs > 0)[, "gene_short_name"])), ]
-    else if(ABC_type == 'negative')
-      ILRs_df <- ILRs_df[unique(as.character(subset(branch_gene_ABCs, 
-        ABCs < 0)[, "gene_short_name"])), ]
-    else if(ABC_type == 'all')
-       ILRs_df <- ILRs_df
-
-    test <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
-        clustering_method = hclust_method, filename = "test.pdf", 
-        ...)
-
-    #create annotations for each gene
-    annotation <- data.frame(class = as.factor(cutree(test$tree_row, 
-        cluster_num)), row.names = names(cutree(test$tree_row, cluster_num)))
-
-    #add also -log10(qval)
-    gene_names <- row.names(ILRs_df[test$tree_row$order, ]) 
-    if(rownames_type == 'gene_short_name'){
-      ensemble_names <- row.names(subset(fData(cds), gene_short_name %in% gene_names))
-      #remove duplication: 
-      ensemble_names <- ensemble_names[!duplicated(fData(cds[ensemble_names, ])$gene_short_name)]
-
-      log_qval <- log10(branching_pval_df[ensemble_names, 'qval'])      
-    }
-    else{
-      log_qval <- log10(branching_pval_df[gene_names, 'qval'])
-    }
-    annotation$log_qval <- -log_qval
-
-    #rotate the plot so that maturation level is on the x-axis
-    pheatmap(t(ILRs_df[test$tree_row$order, ]), cluster_cols = T, 
-        cluster_rows = F, show_rownames = F, show_colnames = F, 
-        border_color = NA, clustering_distance_cols = dist_method, 
-        clustering_method = hclust_method, annotation = annotation, 
-        annotation_legend = T, ...)
+  col1 <- colorRampPalette(brewer.pal(12, "Set3"));
+  col2 <- colorRampPalette(brewer.pal(9, "Set1"));
+  
+  emsemble_ids <- emsemble_ids[!is.na(dat.all[, 1])] #first remove NA's ids
+  dat.all <- dat.all[!is.na(dat.all[, 1]), ]
+  
+  cl.col <- hclustfunc(distfunc(t(dat.all)))
+  
+  gr.col <- cutree(cl.col, h=3)
+  gr.col.nofclust <- length(unique(as.vector(gr.col)));
+  clust.col.height <- col2(gr.col.nofclust);
+  hmcols <- rev(redgreen(2750))
+  
+  #row.names(dat.all) <- fData(absolute_cds[emsemble_ids[!is.na(dat.all[, 1])], ])$gene_short_name
+  pdf('test')
+  test <- pheatmap(dat.all, cluster_cols=FALSE, ...)
+  dev.off()
+  
+  pheatmap(dat.all[test$tree_row$order, ], cluster_cols = FALSE, cluster_rows = TRUE, show_rownames = T, show_colnames = F, border_color = NA, ...)
+  pdf(file, width = 10, height = 15)
+  pheatmap(dat.all[test$tree_row$order, ], cluster_cols = FALSE, cluster_rows = TRUE, show_rownames = T, show_colnames = F, border_color = NA, ...)
+  dev.off()
 }
 
+#' Plot the heatmap with the difference between fitting for branch genes
+#' TO DO: add the confidence interval, add p-val, fix error when we cannot generate fitting for the data
+#' @param cds CellDataSet for the experiment
+#' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
+#' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
+#' @param relative_expr Whether to transform expression into relative values
+#' @param min_expr The minimum level of expression to show in the plot
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export 
+#' 
+#' 
+plot_heatmap <- function(abs_branch_gene, 
+                  cds = absolute_cds, 
+                  branchA = which(State == 2), 
+                  branchB = which(State == 3),
+                  cores = detectCores(), 
+                  trend_formula = "~sm.ns(Pseudotime, df = 3)", 
+                  fc_limit = 3, 
+                  relative_expr = FALSE, 
+                  stretch = TRUE, 
+                  label_by_short_name = TRUE, ...) {
 
+  #generate cds for branches 
+  cds_branchA <- cds[abs_branch_gene, branchA]
+  cds_branchB <- cds[abs_branch_gene, branchB]
+
+  #fit bs spline curve for branches
+  #is this the same as sm.ns(Pseudotime, df = 3) * Lineage
+  branchA_full_model_fits <- fitModel(cds_branchA, modelFormulaStr = trend_formula,
+                                cores = cores, relative_expr = relative_expr)
+  branchB_full_model_fits <- fitModel(cds_branchB, modelFormulaStr = trend_formula,
+                                cores = cores, relative_expr = relative_expr)
+
+  #generate 100 evenly spaced points from the spline line
+  rngA <- range(pData(cds_branchA)$Pseudotime)
+  rngB <- range(pData(cds_branchB)$Pseudotime)
+
+  #stretched data 
+  # if(stretch) {
+    str_new_cds_branchA <- data.frame(Pseudotime = seq(rngA[1], rngA[2], length.out = 100)) 
+    str_new_cds_branchB <- data.frame(Pseudotime = seq(rngB[1], rngB[2], length.out = 100)) 
+    str_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, newdata = str_new_cds_branchA)
+    str_branchB_expression_curve_matrix <- responseMatrix(branchB_full_model_fits, newdata = str_new_cds_branchB)
+  # }
+  #original data
+  # else {
+    ori_new_cds_branchA <- data.frame(Pseudotime = c(seq(rngB[1], rngB[2], length.out = 100), rngA[2])) #ori + last element
+    ori_new_cds_branchB <- data.frame(Pseudotime = seq(rngB[1], rngB[2], length.out = 100)) 
+    ori_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, newdata = ori_new_cds_branchA)
+    ori_branchA_expression_curve_matrix <- ori_branchA_expression_curve_matrix[, 1:100]
+    ori_branchB_expression_curve_matrix <- responseMatrix(branchB_full_model_fits, newdata = ori_new_cds_branchB)
+  # }
+  str_logfc_df <- log2((str_branchA_expression_curve_matrix + 1) / (str_branchB_expression_curve_matrix + 1))
+  ori_logfc_df <- log2((ori_branchA_expression_curve_matrix + 1) / (ori_branchB_expression_curve_matrix + 1))
+  ori_branch_cds <- log2(exprs(absolute_cds[abs_branch_gene, ]) + 1)
+
+  #short names: 
+  if(label_by_short_name) {
+    row.names(str_logfc_df) <- fData(cds[abs_branch_gene, ])$gene_short_name
+    row.names(ori_logfc_df) <- fData(cds[abs_branch_gene, ])$gene_short_name
+    row.names(ori_branch_cds) <- fData(cds[abs_branch_gene, ])$gene_short_name
+  }
+
+    str_logfc_df[which(str_logfc_df <= -fc_limit)] <- -fc_limit
+    str_logfc_df[which(str_logfc_df >= fc_limit)] <- fc_limit
+
+    ori_logfc_df[which(ori_logfc_df <= -fc_limit)] <- -fc_limit
+    ori_logfc_df[which(ori_logfc_df >= fc_limit)] <- fc_limit
+
+    ori_branch_cds[which(ori_branch_cds <= -fc_limit)] <- -fc_limit
+    ori_branch_cds[which(ori_branch_cds >= fc_limit)] <- fc_limit
+
+  make_heatmap(ori_logfc_df, emsemble_ids = abs_branch_gene, file = 'ori_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
+  make_heatmap(str_logfc_df, emsemble_ids = abs_branch_gene, file = 'stretched_logfc_heatmap_adj_inter.pdf', ...) #heatmap for log fc
+  make_heatmap(ori_branch_cds, emsemble_ids = abs_branch_gene, file = 'log2fc_ori_branch_adj_inter.pdf', ...) #heatmap for original expression
+
+  #show some positive control for the other branch: 
+  pos_alterative_branch <- which(rowSums(ori_logfc_df[, 90:100], na.rm = T) < -5)
+  sample_ids <- c(pos_alterative_branch, sample(1:nrow(ori_logfc_df), 12))
+  test <- ori_logfc_df[sample_ids, ]
+
+  make_heatmap(test, emsemble_ids = abs_branch_gene[sample_ids], method = "ward.D2", ...)
+}
 

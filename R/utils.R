@@ -247,17 +247,8 @@ detectGenes <- function(cds, min_expr=NULL){
   cds
 }
 
-#' Function to calculate the size factor for the single-cell RNA-seq data
-#'  
-#' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
-#' @param locfunc The location function used to find the representive value 
-#' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
-#' @param pseudocount Pseudo count added to the expression data counts 
-#' @param method A character to specify the size factor calculation appraoches. It can be either "mean-geometric-mean-total" (default), 
-#' "weighted-median", "median-geometric-mean", "median", "mode", "geometric-mean-total". 
-#' @export
-#' 
-estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total") {
+estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+{
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
@@ -306,6 +297,7 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
   sfs[is.na(sfs)] <- 1 
   sfs  
 }
+
 
 
 ################
