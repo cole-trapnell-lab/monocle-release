@@ -215,27 +215,30 @@ get_mc_list <- function(volume, dilution){
   return(mat)
 }
 
-#' Transform relative expression values into absolute transcript counts
+#' Transform relative expression values into absolute transcript counts.
 #' 
-#' Transform a relative expression matrix to absolute transcript matrix based on the decomposed linear regression parameters from most abundant isoform relative expression value.
+#' Transform a relative expression matrix to absolute transcript matrix based on the inferred linear regression parameters from most abundant isoform relative expression value.
 #' This function takes a relative expression matrix and a vector of estimated most abundant expression value from the isoform-level matrix and transform it into absolute transcript number.
-#' It is based on the fact that most isoforms of gene in a single cell only express one copy so that the most abundant isoform FPKM (t^*) will corresponding to 1 copy transcript. The
-#' function takes the the vector t^* and then decomposes it into two parameters vectors k^* and b^* (corresponding to each cell) which correspond to the slope and intercept when
-#' we perform the robust linear regression for the spikein data. This decomposition is based on an observed relationship between k and b in terms of b = -3.652201 k + 2.263576. The
-#' function will then apply a linear transformation to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The function can also apply a global
-#' adjustment if setting global_scaling = TRUE. The k*, b* parameters vectors and the global scaling factor can be output in a list format (together with norm_cds) if setting return_all
-#' == TRUE
-#' @param relative_expr_matrix an matrix of relative expression values for single cell RNA-seq values with each row and column representing genes/isoforms and cells. Row and column names should be included
+#' It is based on the observation that the recovery efficient of the single-cell RNA-seq is relative low and that most expressed isoforms of gene in a single cell therefore only sequenced one copy so that the 
+#' most abundant isoform log10-FPKM (t^*) will corresponding to 1 copy transcript. It is also based on the fact that the spikein regression parameters k/b for each cell will fall on a line because of the 
+#' intrinsic properties of spikein experiments. We also assume that if we perform the same spikein experiments as Treutlein et al. did, the regression parameters should also fall on a line in the same way. The
+#' function takes the the vector t^* and the detection limit as input, then it uses the t^* and the m/c value corresponding to the detection limit to calculate two parameters vectors k^* and b^* (corresponding to each cell)
+#' which correspond to the slope and intercept for the linear conversion function between log10 FPKM and log10 transcript counts. The function will then apply a linear transformation 
+#' to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The default m/c values used in the algoritm are 3.652201, 2.263576, respectively.
+#' 
+#' @param relative_expr_matrix an matrix of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included
 #' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 #' based on isoform FPKM will give better results in general
 #' @param detection_threshold the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.   
 #' @param ERCC_controls the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively. 
 #' @param ERCC_annotation the ERCC_annotation matrix from illumina USE GUIDE which will be ued for calculating the ERCC transcript copy number for performing the transformation. 
 #' @param volume the approximate volume of the lysis chamber (nanoliters). Default is 10
-#' @param dilution the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000The number of spike-in transcripts per single-cell lysis reaction was calculated from
+#' @param dilution the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000. The number of spike-in transcripts per single-cell lysis reaction was calculated from
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
-#' @param verbose: a logic flag to determine whether or not we should print all the optimization details 
+#' @param cores number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.
+#' @param verbose a logic flag to determine whether or not we should print all the optimization details 
+#' @param mixture_type The type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1. 
 #' @return an matrix of absolute count for isoforms or genes after the transformation. For more details on other output, please refer to detail
 #' @export
 #' @importFrom plyr ddply
@@ -252,11 +255,17 @@ relative2abs <- function(relative_expr_matrix,
                          spike_info = NULL,
                          return_all = FALSE, 
                          cores = 1, 
+                         mixture_type = 1,
                          verbose = FALSE){
   if(detection_threshold < 0.01430512 | detection_threshold > 7500)
     stop('concentration detection limit should be between 0.01430512 and 7500')
   else 
    mc_id <- round(detection_threshold / 0.01430512)
+
+  if(mixture_type == 1)
+    mixture_name = 'conc_attomoles_ul_Mix1'
+  else 
+    mixture_name = 'conc_attomoles_ul_Mix2'
 
   Cell <- NULL
 
@@ -264,7 +273,7 @@ relative2abs <- function(relative_expr_matrix,
     if(is.null(ERCC_controls) | is.null(ERCC_annotation))
       stop('If you want to transform the data to copy number with your spikein data, please provide both of ERCC_controls and ERCC_annotation data frame...')
     
-    valid_ids <- which(ERCC_annotation[, 'conc_attomoles_ul_Mix1'] > detecthion_threshold)
+    valid_ids <- which(ERCC_annotation[, mixture_name] > detecthion_threshold)
 
     if(verbose)
       message('Performing robust linear regression for each cell based on the spikein data...')
@@ -274,8 +283,8 @@ relative2abs <- function(relative_expr_matrix,
       spike_df <- input.ERCC.annotation 
       spike_df <- cbind(spike_df, cell_exprs[row.names(spike_df)])
       colnames(spike_df)[length(colnames(spike_df))] <- "FPKM"
-      spike_df$numMolecules <- spike_df$conc_attomoles_ul_Mix1*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23))
-      spike_df$rounded_numMolecules <- round(spike_df$conc_attomoles_ul_Mix1*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23)))
+      spike_df$numMolecules <- spike_df$mixture_name*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23))
+      spike_df$rounded_numMolecules <- round(spike_df$mixture_name*(volume*10^(-3)*1/dilution*10^(-18)*6.02214129*10^(23)))
       
       if(is.null(valid_ids))
         spike_df <- subset(spike_df, FPKM >= 1e-10)

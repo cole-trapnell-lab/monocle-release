@@ -141,14 +141,26 @@ differentialGeneTest <- function(cds,
 }
 
 
-#' find the branch genes
+#' Peform the branching test
+#'
+#' This function is used to perform the branching test to ask the question about whether or not the genes under tests are significant 
+#' lineage dependent genes. If stretch equal to TRUE, each lineage is firstly stretched into maturation level 0-100 and the progenitor 
+#' cells are duplicated and assigned to each lineage. This test can be used to detect lineage dependent genes. 
+#'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
+#' @param stretch  a logic flag to determine whether or not each lineage should be stretched
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param lineage_labelsthe name for each lineage, for example, AT1 or AT2  
+#' @param gene_names gene names used to make the bifurcation plots for two genes. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
+#'
 branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
                        reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
                        lineage_states = c(2, 3), 
@@ -177,16 +189,30 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 # 1. think about how calculating ABCs for multiple lineages (use a common reference as implemented?)
 # 2. how to store ABCs? 
 # 3. how to use fit_model_helper directly for calculating the model fitting?
-#' calculate the area between TWO fitted lineage trajectories  
+#' Calculate the area between TWO fitted lineage trajectories  
+#' 
+#' This function is used to calculate the ABC score based on the the nature spline curves fitted for each lineage. ABC score is used to 
+#' quantify the magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
+#' The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
+#' potential major regulators for lineage bifurcation. 
+#'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param ABC_method the method used to calculate the ABC scores. It can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+#' We use "integral" by default, which is defined as the area between two spline curves. "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+#' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
 #' @param branchTest a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results. 
-#' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)
+#' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
+#' @param stretch a logic flag to determine whether or not each lineage should be stretched
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
 #' @param min_expr the lower limit for the expressed gene
 #' @param integer_expression the logic flag to determine whether or not the integer numbers are used for calculating the ABCs. Default is False. 
 #' @param num number of points on the fitted lineage trajectories used for calculating the ABCs. Default is 5000. 
+#' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
@@ -339,4 +365,131 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   }
   
   return(ABCs_res)
+}
+
+#' Calculate the Instant Log Ratio between two branching lineages
+#' 
+#' This function is used to calculate the Instant Log Ratio between two branching lineages which can be used to prepare the heatmap demonstrating the lineage gene expression divergence hirearchy. If "stretch" is specifified, each  
+#' lineage will be firstly stretched into maturation level from 0-100. Since the results when we use "stretching" are always better and 
+#' IRLs for non-stretched spline curves are often mismatched, we may only turn down "non-stretch" functionality in future versions. Then, we fit two separate nature spline curves for each 
+#' individual linages. The log-ratios of the value on each spline curve corresponding to each lineages are calculated, which can be  
+#' used as a measure for the magnitude of divergence between two branching lineages. 
+#'
+#' @param cds CellDataSet for the experiment
+#' @param lineage_states The states for two branching lineages
+#' @param cores Number of cores when fitting the spline curves
+#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
+#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
+#' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
+#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param label_by_short_name label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)
+#' @param useVST A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
+#' When VST is used, the difference between two lineages are used instead of the log-ratio.
+#' @param round_exprs A logic flag to determine whether or not the expression value should be rounded into integer
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param output_type A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected
+#' @param file the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export 
+#' 
+calILRs <- function (cds = cds,
+    lineage_states = c(2, 3), 
+    stretch = T, 
+    cores = detectCores(), 
+    trend_formula = "~sm.ns(Pseudotime, df = 3)", 
+    ILRs_limit = 3, 
+    relative_expr = TRUE, 
+    weighted = FALSE, 
+    label_by_short_name = TRUE, 
+    useVST = FALSE, 
+    round_exprs = FALSE, 
+    pseudocount = 0, 
+    output_type = c('all', 'after_bifurcation'), 
+    file = "bifurcation_heatmap", ...) {   
+
+    cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, 
+        NULL, "fitting", stretch, weighted, NULL, ...)
+
+    #generate cds for branches 
+    cds_branchA <- cds_subset[, pData(cds_subset)$Lineage == 
+        lineage_states[1]]
+    cds_branchB <- cds_subset[, pData(cds_subset)$Lineage == 
+        lineage_states[2]]
+
+    #fit nature spline curve for each branch
+    branchA_full_model_fits <- fitModel(cds_branchA, modelFormulaStr = trend_formula, 
+        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
+    branchB_full_model_fits <- fitModel(cds_branchB, modelFormulaStr = trend_formula, 
+        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
+
+    t_rng <- range(pData(cds_branchA)$Pseudotime)
+
+    str_new_cds_branchA <- data.frame(Pseudotime = seq(0, max(pData(cds_branchA)$Pseudotime), 
+        length.out = 100))
+    print(sort(pData(cds_branchA)$Pseudotime))
+    str_new_cds_branchB <- data.frame(Pseudotime = seq(0, max(pData(cds_branchB)$Pseudotime), 
+        length.out = 100))
+    print(sort(pData(cds_branchB)$Pseudotime)) #check whether or not Pseudotime stretched into 0-100
+
+    str_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, 
+        newdata = str_new_cds_branchA)
+    str_branchB_expression_curve_matrix <- responseMatrix(branchB_full_model_fits, 
+        newdata = str_new_cds_branchB)
+
+    #VST for the fitted spline curves
+    if (useVST) {
+        print("###")
+        str_branchA_expression_curve_matrix <- vstExprs(cds, 
+            expr_matrix = str_branchA_expression_curve_matrix, 
+            round_vals = round_exprs)
+        print("***")
+        print("###")
+        str_branchB_expression_curve_matrix <- vstExprs(cds, 
+            expr_matrix = str_branchB_expression_curve_matrix, 
+            round_vals = round_exprs)
+
+        #when VST is used, the difference between two lineages are defined as ILRs: 
+        str_logfc_df <- str_branchA_expression_curve_matrix - 
+            str_branchB_expression_curve_matrix
+    }
+    else {
+        str_logfc_df <- log2((str_branchA_expression_curve_matrix + 1) / 
+          (str_branchB_expression_curve_matrix + 1))
+    }
+
+    #should we label the ILRs matrix with gene short names? 
+    if (label_by_short_name) {
+        row.names(str_logfc_df) <- fData(cds[, ])$gene_short_name
+    }
+
+    #limit the range of ILRs
+    str_logfc_df[which(str_logfc_df <= -ILRs_limit)] <- -ILRs_limit
+    str_logfc_df[which(str_logfc_df >= ILRs_limit)] <- ILRs_limit
+
+    if(output_type == 'after_bifurcation') {
+      t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State == lineage_states[1]), #the pseudotime for the bifurcation point
+        which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
+      t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime == t_bifurcation_ori])$Pseudotime
+
+      if(stretch)
+        bif_index <- as.integer(pData(cds_subset[,  pData(cds)$Pseudotime == t_bifurcation])$Pseudotime)
+      else {
+        bif_index <- as.integer(min(t_bifurcation / (max(pData(cds_branchA)$Pseudotime / 100)), 
+                        t_bifurcation / (max(pData(cds_branchA)$Pseudotime / 100)))) 
+      }
+      #select only ILRs data points after the bifuration point
+      
+      str_logfc_df[, bif_index:100] <- str_logfc_df
+    }
+
+    if(!is.null(file)) #save the data file calculated since it will take a lot time to generate
+      save(str_logfc_df, str_branchA_expression_curve_matrix, str_branchB_expression_curve_matrix, 
+          file = file)
+
+    return(str_logfc_df)
+#     cole_make_heatmap(str_logfc_df, emsemble_ids = fData(cds)$gene_short_name, 
+#         file = paste(file, "stretched_logfc_heatmap_adj_inter.pdf", 
+#             sep = "_"), ...)
 }
