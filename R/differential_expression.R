@@ -263,7 +263,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
         }
         f_expression <- round(x)
         if (is.null(disp_func) == FALSE){
-          disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
+          disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
           if (is.null(disp_guess) == FALSE ) {
             # FIXME: In theory, we could lose some user-provided parameters here
             # e.g. if users supply zero=NULL or something.    
