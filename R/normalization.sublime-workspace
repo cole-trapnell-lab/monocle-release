@@ -1,0 +1,1209 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"diff",
+				"diffusion_maps"
+			],
+			[
+				"bif",
+				"bifurcation_pc"
+			],
+			[
+				"tra",
+				"transcript_num"
+			],
+			[
+				"AT",
+				"AT12_cds_subset_all_gene"
+			],
+			[
+				"absol",
+				"absolute_cds_new"
+			],
+			[
+				"abs",
+				"absolute_cds_new"
+			],
+			[
+				"gene_cor",
+				"gene_cor_df"
+			],
+			[
+				"AT1",
+				"abs_AT12_cds_subset_all_gene"
+			],
+			[
+				"inter",
+				"interesting"
+			],
+			[
+				"example",
+				"example_ids"
+			],
+			[
+				"cell",
+				"cells"
+			],
+			[
+				"musc",
+				"muscle_df"
+			],
+			[
+				"no",
+				"normalization"
+			],
+			[
+				"Tra",
+				"Transcript"
+			],
+			[
+				"mono",
+				"monocle_theme_opts"
+			],
+			[
+				"Tim",
+				"Time"
+			],
+			[
+				"Size",
+				"sizeFactors"
+			],
+			[
+				"stand",
+				"standard_cds_new"
+			],
+			[
+				"ense",
+				"ensemble_id"
+			],
+			[
+				"return",
+				"return_df"
+			],
+			[
+				"pv",
+				"pval"
+			],
+			[
+				"perm",
+				"permutate_pval"
+			],
+			[
+				"expre",
+				"expressionFamily"
+			],
+			[
+				"Sf",
+				"Sftpc"
+			],
+			[
+				"AT12",
+				"std_AT12_cds_subset_all_gene2"
+			],
+			[
+				"pc_A",
+				"pc_AT1"
+			],
+			[
+				"cds_",
+				"cds_subset"
+			],
+			[
+				"cds",
+				"cds_subset"
+			],
+			[
+				"coll",
+				"collapse_gene_pair_df"
+			],
+			[
+				"col",
+				"colours"
+			],
+			[
+				"gene",
+				"gene_short_name"
+			],
+			[
+				"quake",
+				"quake_fpkm_si"
+			],
+			[
+				"F",
+				"FPKM"
+			],
+			[
+				"roun",
+				"rounded_numMolecules"
+			],
+			[
+				"a",
+				"all_markers"
+			],
+			[
+				"Cla",
+				"Calra_novel"
+			],
+			[
+				"Cili",
+				"Ciliated_novel"
+			],
+			[
+				"mon",
+				"monocle_p"
+			],
+			[
+				"abso",
+				"absolute_cds"
+			],
+			[
+				"pse",
+				"pseudo_cnt"
+			],
+			[
+				"facet",
+				"facet_wrap"
+			],
+			[
+				"dr",
+				"dropout_df"
+			],
+			[
+				"read",
+				"readcount"
+			],
+			[
+				"gd_f",
+				"gd_fit_res"
+			],
+			[
+				"valid",
+				"valid_id"
+			],
+			[
+				"valid_ge",
+				"valid_gene_id_cell"
+			],
+			[
+				"tree",
+				"tree_num"
+			],
+			[
+				"tre",
+				"tree_grp"
+			],
+			[
+				"max",
+				"maxmean"
+			],
+			[
+				"qua",
+				"quake_gene_list"
+			],
+			[
+				"quk",
+				"quake_read_cds"
+			],
+			[
+				"grou",
+				"group"
+			],
+			[
+				"E1",
+				"E18"
+			],
+			[
+				"ex",
+				"exprs"
+			],
+			[
+				"mus",
+				"muscle_read_cds"
+			],
+			[
+				"red",
+				"reduced_disp_size"
+			],
+			[
+				"full",
+				"full_disp_size"
+			],
+			[
+				"disp",
+				"dispFunc"
+			],
+			[
+				"dis",
+				"dispFunc"
+			],
+			[
+				"redu",
+				"reduced_d"
+			],
+			[
+				"disp_f",
+				"disp_func_list"
+			],
+			[
+				"for",
+				"formula"
+			],
+			[
+				"estim",
+				"estimateDispersions"
+			],
+			[
+				"init",
+				"initial"
+			],
+			[
+				"sharing",
+				"sharingMode"
+			],
+			[
+				"condit",
+				"condition"
+			],
+			[
+				"conditio",
+				"condition_vec"
+			],
+			[
+				"express",
+				"expression"
+			],
+			[
+				"exp",
+				"exprs"
+			],
+			[
+				"size",
+				"sizeFactor"
+			],
+			[
+				"qu",
+				"quake_gene_list"
+			],
+			[
+				"Time",
+				"Time_ori"
+			],
+			[
+				"mc",
+				"mc-optimization"
+			],
+			[
+				"app",
+				"appendRData"
+			],
+			[
+				"spike",
+				"spikein"
+			],
+			[
+				"T",
+				"Type"
+			],
+			[
+				"std_H",
+				"std_HSMM_myo"
+			],
+			[
+				"new",
+				"newCountDataSet"
+			],
+			[
+				"pre_rec_f",
+				"pre_rec_f1_df"
+			],
+			[
+				"p_",
+				"p_thrsld"
+			],
+			[
+				"bran",
+				"branchTest"
+			],
+			[
+				"read_",
+				"read_AIC"
+			],
+			[
+				"zpro",
+				"zprob_res"
+			],
+			[
+				"quake_",
+				"quake_read_cds"
+			],
+			[
+				"req",
+				"require"
+			],
+			[
+				"the",
+				"theta"
+			],
+			[
+				"bra",
+				"branchTest"
+			],
+			[
+				"branc",
+				"branch"
+			],
+			[
+				"examp",
+				"example_ids"
+			],
+			[
+				"fig4",
+				"fig4_marker"
+			],
+			[
+				"stre",
+				"stretch"
+			],
+			[
+				"plot",
+				"plot_branch_genes"
+			],
+			[
+				"total",
+				"total_rna_df"
+			],
+			[
+				"branch",
+				"branch"
+			],
+			[
+				"absolu",
+				"absolute_cds"
+			],
+			[
+				"dupli",
+				"duplicate"
+			],
+			[
+				"round_pe",
+				"round_permutate_pval_vec"
+			],
+			[
+				"proge",
+				"progenitor_ind"
+			],
+			[
+				"progenit",
+				"progenitor_type"
+			],
+			[
+				"scde_",
+				"scde_contrast"
+			],
+			[
+				"nega",
+				"negbinomial"
+			],
+			[
+				"try",
+				"tryCatch"
+			],
+			[
+				"DES",
+				"DESeq1_cmbn"
+			],
+			[
+				"loading",
+				"loading_genes"
+			],
+			[
+				"expr",
+				"expressionFamily"
+			],
+			[
+				"detect",
+				"detectCores"
+			],
+			[
+				"test_",
+				"test_type"
+			],
+			[
+				"log",
+				"lognormal"
+			],
+			[
+				"fit4",
+				"fit4_obs"
+			],
+			[
+				"fit3",
+				"fit3_obs"
+			],
+			[
+				"fit2",
+				"fit2_obs"
+			],
+			[
+				"zan",
+				"zanegbinomial"
+			],
+			[
+				"zin",
+				"zinegbinomial"
+			],
+			[
+				"Th",
+				"Thomas_test_data"
+			],
+			[
+				"neg",
+				"negbinomial"
+			],
+			[
+				"stat_s",
+				"stat_smooth"
+			],
+			[
+				"color",
+				"color_by"
+			],
+			[
+				"differe",
+				"differentialGeneTest"
+			],
+			[
+				"wei",
+				"weight_vec"
+			],
+			[
+				"geom_",
+				"geom_line"
+			],
+			[
+				"ori_p",
+				"ori_pseudotime_test_s"
+			],
+			[
+				"cmpr",
+				"cmpr_time_cmbn"
+			],
+			[
+				"expression",
+				"expressionFamily"
+			],
+			[
+				"lower",
+				"lowerDetectionLimit"
+			],
+			[
+				"longe",
+				"longest_branch_multiplier"
+			],
+			[
+				"prog",
+				"progenitor_state"
+			],
+			[
+				"line",
+				"lineage_states"
+			],
+			[
+				"group",
+				"groups"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 392.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/xqiu/Dropbox (Personal)/Single-cell RNA-seq/AT12_cds_subset_all_gene.mat",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/branching_mst",
+		"/Users/xqiu/Dropbox (Personal)/Single-cell RNA-seq/Dimension reduction approaches/dimension_reduction/gplvm_test.py",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/need_sample",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/my_function.R",
+		"/Users/xqiu/Dropbox (Personal)/Single-cell RNA-seq/datasets/tmp",
+		"/Users/xqiu/Dropbox (Personal)/Single-cell RNA-seq/datasets/NBT inferring GRN/raw_dct.txt",
+		"/Users/xqiu/Desktop/absolute_transcript/fig3_deg_all.R",
+		"/Users/xqiu/Desktop/Quake/absolute_transcript/musucle_data_ana.R",
+		"/Users/xqiu/Dropbox (Personal)/Single-cell RNA-seq/datasets/NBT inferring GRN/normalized_dct.txt",
+		"/Users/xqiu/Desktop/test2",
+		"/Users/xqiu/Desktop/test1",
+		"/Users/xqiu/Dropbox (Cole Trapnell's Lab)/Shared Data/mouse_tf_list_genome.gsc.riken.jp",
+		"/Users/xqiu/Dropbox (Cole Trapnell's Lab)/shared data/GMT/EM_pathways/Mouse/by_symbol/GO/MOUSE_GO_bp_no_GO_iea_symbol.gmt",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/density_clustering.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/intercept_ana.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/density.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/fig1.R",
+		"/Users/xqiu/Dropbox (Personal)/homework 2014 fall/assignment2.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/check_t_estimate.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/test_markdown.Rmd",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/DESeq2/R/results.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/LR_AIC_rank_scatter.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/fig1.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/fig2.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/monocle_methods_CellDataSet.R",
+		"/Users/xqiu/Dropbox (Personal)/monocle-devo/monocle-dev/monocle-dev/monocle/R/methods-CellDataSet.R",
+		"/Users/xqiu/Dropbox (Personal)/monocle-dev/R/methods-CellDataSet.R",
+		"/Users/xqiu/Dropbox (Personal)/monocle-devo/monocle-dev/R/methods-CellDataSet.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/test_fitting.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/monocle_theme_opts.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/test_ercc_spike.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/multiplot.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/LR_AIC_rank_scatter.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/ks_test_all.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/goodness_dist_fit.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/hurdle_zero_infl.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/fig3.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/easy_chisq.test.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/differential_test.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/box_density_plot.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/bifurcation_plot.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/monocle/R/methods-CellDataSet.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/monocle/R/AllClasses.R",
+		"/Users/xqiu/Dropbox (Personal)/Quake/absolute_transcript/compare_scale.q.gene"
+	],
+	"find":
+	{
+		"height": 25.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"neighbours",
+			"neigh",
+			"test_mc",
+			"intersect",
+			"reduce",
+			"estimateSizeFactors",
+			"df",
+			"df3",
+			"ABCs",
+			"unlist",
+			"abs_gd_fit_res",
+			"abs_dtable_pool_max_nbinomGLMTest",
+			"abs_dtable_pool_max_nbinomTest",
+			"df3",
+			"std_permutate_pval",
+			"compare",
+			"mcesApply",
+			"source",
+			"valid_genes",
+			"identical",
+			"valid_cells",
+			"hasConverged",
+			"reduced",
+			"new_std_diff_test_res",
+			"num_genes_expressed",
+			"Total_mRNA",
+			"valid_cells",
+			"num_genes_expressed",
+			"permuation_pval",
+			"alpha",
+			"valid_genes",
+			"abs_cds_14_18",
+			"new_abs_cds_14_18",
+			"std_HSMM_myo",
+			"std_HSMM",
+			"std_HSMM <- orderCells",
+			"破译",
+			"pair",
+			"glm",
+			"plot_pre_rec_f1",
+			"strip",
+			"theme(strip.text.y",
+			"38919",
+			"std",
+			"abs_gd_fit_df",
+			"gd_fit",
+			"muscle_size_normalized_mc_glm_perm",
+			"muscle_size_normalized_mc_glm_perm_pval <- muscle_size_normalized_mc_glm_perm[, 1]",
+			"muscle_size_normalized_mc_glm_perm",
+			"muscle_std_glm_perm",
+			"size_norm_HSMM_myo_DEseq_pseudotime_res",
+			"std_HSMM_myo_DEseq_pseudotime_res",
+			"gd_fit_res_num",
+			"abs_gd_fit_df",
+			"gd_fit_res_num",
+			"gsaRes_reactome_instant_log_ratio",
+			"relative_abs_AT12_cds_subset_quake_gene",
+			"relative_abs_AT12_cds_subset_quake_gene_df",
+			"add_quake_gene_all_marker_ids",
+			"AT12_cds_subset_all_gene",
+			"mc_mode_size_norm_permutate_ratio_by_geometric_mean",
+			"mode_size_norm_permutate_ratio_by_geometric_mean",
+			"std_permutate_pval",
+			"std_scde_res_list",
+			"abs_scde_res_list",
+			"abs_scde_p",
+			"abs_scde_res_list",
+			"abs_dtable_pool_max_nbinomTest",
+			"std_dtable_pool_max_nbinomTest",
+			"abs_dtable_pool_max_nbinomTest",
+			"std_dtable_pool_max_nbinomTest",
+			"abs_size_norm_monocle_p",
+			"abs_scde_p",
+			"default_deseq_p",
+			"new_mc_size_norm_monocle_p_ratio_by_geometric_mean",
+			"new_size_norm_abs_diff_test_res4",
+			"new_abs_size_norm_monocle_p_ratio_by_geometric_mean",
+			"deseq_p",
+			"new_std_diff_test_res_2",
+			"ercc_controls",
+			"for",
+			"set_all",
+			"venn",
+			"pseudotime",
+			"pseu",
+			"stringr",
+			"new",
+			"read_countdata",
+			"newCellDataSet",
+			"cell",
+			"read",
+			"countdata",
+			"read_countdata",
+			"read",
+			"str_",
+			"overlap_venn(figsc1_deg_list)\n",
+			"element",
+			"stringr",
+			"string",
+			"stringr",
+			"dis",
+			"estima",
+			"gd_fit",
+			"zinb_pvalue",
+			"nb_pvalue",
+			"good",
+			"fit_res",
+			"gd_fit",
+			"venn",
+			"venneuler_venn(element_all, sets_all)",
+			"venneule",
+			"venneuler_venn(element_all, sets_all)",
+			"muscle_df",
+			"element",
+			"set_all",
+			"element",
+			"df3",
+			"new_abs_size_norm_monocle_p",
+			"df3.1",
+			"element_all",
+			"transcript ",
+			"element_all",
+			"euler",
+			"element",
+			"figure",
+			"element",
+			"pdf",
+			"element"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			",",
+			"\", \"",
+			"cell_wise_size = F",
+			"cos_differentialGeneTest",
+			"",
+			"cds",
+			"",
+			"abs_count_d",
+			"read_count_d",
+			"mc_count_d",
+			"log_fc_test",
+			"mc",
+			"test_glm",
+			"pseudo_cnt",
+			"locDe",
+			"sharingMode",
+			""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": false
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "normalization.sublime-project",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"gs",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Cole_gsea"
+			],
+			[
+				"bk",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd.bkup"
+			],
+			[
+				"my",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"mar",
+				"~/Dropbox (Personal)/Quake/marker_genes"
+			],
+			[
+				"my_",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"mark",
+				"~/Dropbox (Personal)/Quake/marker_genes"
+			],
+			[
+				"my_f",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_function.R"
+			],
+			[
+				"sy",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/sys_DEG_testing.R"
+			],
+			[
+				"fun",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_function.R"
+			],
+			[
+				"bi",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/biiology.Rmd"
+			],
+			[
+				"sys",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/sys_DEG_testing.R"
+			],
+			[
+				".b",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd.bkup"
+			],
+			[
+				"c",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Cole_gsea"
+			],
+			[
+				"deg",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function.R"
+			],
+			[
+				"coel",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Cole_gsea"
+			],
+			[
+				"fig",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd"
+			],
+			[
+				"col",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Cole_gsea"
+			],
+			[
+				"tmp",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/tmp"
+			],
+			[
+				"m",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"plo",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"gd",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/goodness_dist_fit.R"
+			],
+			[
+				"cole",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Cole_gsea"
+			],
+			[
+				"pl",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"fu",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_function.R"
+			],
+			[
+				"f",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd"
+			],
+			[
+				"myp",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"figs",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd"
+			],
+			[
+				"fi",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/paper_figs_summary.Rmd"
+			],
+			[
+				"d",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function.R"
+			],
+			[
+				"fp",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/fpkm2abs.R"
+			],
+			[
+				"fpkm",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/fpkm2abs.R"
+			],
+			[
+				"",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"tm",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/tmp"
+			],
+			[
+				"cus",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/custom_DEG_update.R"
+			],
+			[
+				"cu",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/custom_DEG.R"
+			],
+			[
+				"ge",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function.R"
+			],
+			[
+				"gen",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function.R"
+			],
+			[
+				"g",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/goodness_dist_fit.R"
+			],
+			[
+				"heat",
+				"~/Documents/heatmap_score.R"
+			],
+			[
+				"bii",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/biiology.Rmd"
+			],
+			[
+				"de",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/DEG_gen_function.R"
+			],
+			[
+				"su",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Summary_DEG_all.Rmd"
+			],
+			[
+				"musc",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"myf",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_function.R"
+			],
+			[
+				"go",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/goodness_dist_fit.R"
+			],
+			[
+				"mus",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"pri",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/principal_curve.R"
+			],
+			[
+				"pca",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"muc",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"muscle",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"pse",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_testing.Rmd"
+			],
+			[
+				"glm.test",
+				"~/Dropbox (Personal)/DEG packages/glmperm/R/prr.test.R"
+			],
+			[
+				"my_fun",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_function.R"
+			],
+			[
+				"s",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/sys_DEG_testing.R"
+			],
+			[
+				"prin",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/principal_curve.R"
+			],
+			[
+				"pr",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/principal_curve.R"
+			],
+			[
+				"msu",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/musucle_data_ana.R"
+			],
+			[
+				"summ",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Summary_DEG_all.Rmd"
+			],
+			[
+				"perm",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_permutate.R"
+			],
+			[
+				"bio",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/biiology.Rmd"
+			],
+			[
+				"b",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/biiology.Rmd"
+			],
+			[
+				"com",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/compare_scale.q.gene"
+			],
+			[
+				"esa",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R"
+			],
+			[
+				"proj",
+				"~/Dropbox (Personal)/Quake/project_markdown.Rmd"
+			],
+			[
+				"per",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_permutate.R"
+			],
+			[
+				"gl",
+				"~/Dropbox (Personal)/DEG packages/glmperm/R/prr.test.R"
+			],
+			[
+				"my_p",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/my_ploting.R"
+			],
+			[
+				"sum",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/Summary_DEG_all.Rmd"
+			],
+			[
+				"plot",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/biiology.Rmd"
+			],
+			[
+				"cell",
+				"~/Dropbox (Personal)/monocle-dev/R/methods-CellDataSet.R"
+			],
+			[
+				"cos",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/custom_DEG.R"
+			],
+			[
+				"fig2",
+				"~/Dropbox (Personal)/Quake/fig2.R"
+			],
+			[
+				"eas",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R"
+			],
+			[
+				"pes",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_testing.Rmd"
+			],
+			[
+				"test",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/test_markdown.Rmd"
+			],
+			[
+				"p",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_permutate.R"
+			],
+			[
+				"ps",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/pseudotime_testing.Rmd"
+			],
+			[
+				"met",
+				"~/Dropbox (Personal)/monocle-dev/R/methods-CellDataSet.R"
+			],
+			[
+				"proje",
+				"~/Dropbox (Personal)/Quake/project_markdown.Rmd"
+			],
+			[
+				"fig3",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/fig3.R"
+			],
+			[
+				"as",
+				"~/Dropbox (Personal)/homework 2014 fall/assignment2.R"
+			],
+			[
+				"ass",
+				"~/Dropbox (Personal)/homework 2014 fall/assignment2.R"
+			],
+			[
+				"es",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R"
+			],
+			[
+				"ea",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R"
+			],
+			[
+				"e",
+				"~/Dropbox (Personal)/Quake/absolute_transcript/easy_chisq.test.R"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 295.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
