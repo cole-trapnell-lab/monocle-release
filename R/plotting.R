@@ -47,14 +47,14 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2){
+                               cell_name_size=2,
+                               show_all_lineages = F){
   gene_short_name <- NULL
   sample_name <- NULL
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
-  
   #print (lib_info_with_pseudo)
   S_matrix <- reducedDimS(cds)
 
@@ -74,7 +74,6 @@ plot_spanning_tree <- function(cds,
     stop("You must first call orderCells() before using this function")
   }
   
-  
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
 
@@ -87,6 +86,35 @@ plot_spanning_tree <- function(cds,
   diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
   colnames(diam) <- c("sample_name")
   diam <- plyr::arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
+
+  if(show_all_lineages) {
+    pro_state_pseudotime <- diam[as.numeric(diam$State) == min(as.numeric(diam$State)),
+        "Pseudotime"]
+    bifurcation_sample <- diam[which(diam$Pseudotime == max(pro_state_pseudotime)),
+        ]
+    bifurcation_sample$State <- diam$State[which(diam$Pseudotime ==
+        max(pro_state_pseudotime)) + 1]
+    diam <- rbind(diam[1:which(diam$Pseudotime == max(pro_state_pseudotime)),
+        ], bifurcation_sample, diam[(which(diam$Pseudotime ==
+        max(pro_state_pseudotime)) + 1):nrow(diam), ])
+    no_diam_states <- setdiff(lib_info_with_pseudo$State, lib_info_with_pseudo[diam[,
+        1], "State"])
+    for (state in no_diam_states) {
+        state_sample <- ica_space_with_state_df[ica_space_with_state_df$State ==
+            state, "sample_name"]
+        subset_dp_mst <- induced.subgraph(dp_mst, state_sample,
+            impl = "auto")
+        subset_diam <- as.data.frame(as.vector(V(subset_dp_mst)[get.diameter(subset_dp_mst,
+            weights = NA)]$name))
+        colnames(subset_diam) <- c("sample_name")
+        subset_diam <- plyr::arrange(merge(ica_space_with_state_df,
+            subset_diam, by.x = "sample_name", by.y = "sample_name"),
+            Pseudotime)
+        subset_diam$State <- state
+        bifurcation_sample$State <- state
+        diam <- rbind(diam, bifurcation_sample, subset_diam)
+    }
+  }
 
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
@@ -115,13 +143,11 @@ plot_spanning_tree <- function(cds,
   }else{
     g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
   }
-  
-  
+ g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
-      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) 
   }
   
   if (show_cell_names){
