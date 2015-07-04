@@ -378,6 +378,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
 #' used as a measure for the magnitude of divergence between two branching lineages. 
 #'
 #' @param cds CellDataSet for the experiment
+#' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
 #' @param lineage_states The states for two branching lineages
 #' @param cores Number of cores when fitting the spline curves
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
@@ -397,6 +398,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
 #' @export 
 #' 
 calILRs <- function (cds = cds,
+    Lineage = 'Lineage', 
     lineage_states = c(2, 3), 
     stretch = T, 
     cores = detectCores(), 
@@ -409,15 +411,21 @@ calILRs <- function (cds = cds,
     round_exprs = FALSE, 
     pseudocount = 0, 
     output_type = c('all', 'after_bifurcation'), 
-    file = "bifurcation_heatmap", ...) {   
+    file = "bifurcation_heatmap", verbose = FALSE, ...) {   
 
-    cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, 
-        NULL, "fitting", stretch, weighted, NULL, ...)
+    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, 
+        lineage_labels = NULL, method = "fitting", stretch = stretch, weighted = weighted, ...)
 
     #generate cds for branches 
-    cds_branchA <- cds_subset[, pData(cds_subset)$Lineage == 
+    #we may also need to u
+    if(Lineage != 'Lineage')
+      warning('Warning: You didn't choose Lineage to calculate the ILRs)
+    if(length(lineage_states) != 2)
+      stop('calILRs can only work for two Lineages')
+
+    cds_branchA <- cds_subset[, pData(cds_subset)[, Lineage] == 
         lineage_states[1]]
-    cds_branchB <- cds_subset[, pData(cds_subset)$Lineage == 
+    cds_branchB <- cds_subset[, pData(cds_subset)[, Lineage] == 
         lineage_states[2]]
 
     #fit nature spline curve for each branch
@@ -430,10 +438,12 @@ calILRs <- function (cds = cds,
 
     str_new_cds_branchA <- data.frame(Pseudotime = seq(0, max(pData(cds_branchA)$Pseudotime), 
         length.out = 100))
-    print(sort(pData(cds_branchA)$Pseudotime))
+    if(verbose)
+      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
     str_new_cds_branchB <- data.frame(Pseudotime = seq(0, max(pData(cds_branchB)$Pseudotime), 
         length.out = 100))
-    print(sort(pData(cds_branchB)$Pseudotime)) #check whether or not Pseudotime stretched into 0-100
+    if(verbose)
+      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
 
     str_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, 
         newdata = str_new_cds_branchA)
@@ -442,12 +452,9 @@ calILRs <- function (cds = cds,
 
     #VST for the fitted spline curves
     if (useVST) {
-        print("###")
         str_branchA_expression_curve_matrix <- vstExprs(cds, 
             expr_matrix = str_branchA_expression_curve_matrix, 
             round_vals = round_exprs)
-        print("***")
-        print("###")
         str_branchB_expression_curve_matrix <- vstExprs(cds, 
             expr_matrix = str_branchB_expression_curve_matrix, 
             round_vals = round_exprs)
@@ -473,13 +480,13 @@ calILRs <- function (cds = cds,
     if(output_type == 'after_bifurcation') {
       t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State == lineage_states[1]), #the pseudotime for the bifurcation point
         which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
-      t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime == t_bifurcation_ori])$Pseudotime
+      t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime == t_bifurcation_ori])$Pseudotime #corresponding stretched pseudotime
 
       if(stretch)
         bif_index <- as.integer(pData(cds_subset[,  pData(cds)$Pseudotime == t_bifurcation])$Pseudotime)
-      else {
-        bif_index <- as.integer(min(t_bifurcation / (max(pData(cds_branchA)$Pseudotime / 100)), 
-                        t_bifurcation / (max(pData(cds_branchA)$Pseudotime / 100)))) 
+      else { #earliest bifurcation point on the original pseudotime scale (no stretching)
+        bif_index <- as.integer(min(t_bifurcation / (max(pData(cds_branchA)$Pseudotime) / 100), 
+                        t_bifurcation / (max(pData(cds_branchB)$Pseudotime) / 100))) 
       }
       #select only ILRs data points after the bifuration point
       
@@ -491,7 +498,4 @@ calILRs <- function (cds = cds,
           file = file)
 
     return(str_logfc_df)
-#     cole_make_heatmap(str_logfc_df, emsemble_ids = fData(cds)$gene_short_name, 
-#         file = paste(file, "stretched_logfc_heatmap_adj_inter.pdf", 
-#             sep = "_"), ...)
 }
