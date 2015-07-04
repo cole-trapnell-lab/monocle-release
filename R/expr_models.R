@@ -303,7 +303,7 @@ buildLineageBranchCellDataSet <- function(cds,
     curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
   }
   
-  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))]
+  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
   
   
   State <- pData(cds)$State 
@@ -316,10 +316,12 @@ buildLineageBranchCellDataSet <- function(cds,
   pData <- pData(cds)
   exprs_data <- exprs(cds)
   
-  weight_vec <- rep(1, nrow(pData(cds)))
-  if(weighted)
-    weight_vec[progenitor_ind] <- 1 / length(lineage_states) #progenitor cells' weight should be equally divided 
-  
+  weight_vec <- rep(1, nrow(pData(cds))) #weighted by the number of branches
+  if (weighted) {
+      weight_constant <- 1/length(lineage_states)
+      weight_vec[progenitor_ind] <- weight_constant
+  }
+
   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
   row.names(range_df) <- as.character(range_df$State)
   colnames(range_df) <- c("State","min", "max")
@@ -356,9 +358,12 @@ buildLineageBranchCellDataSet <- function(cds,
   pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
   for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
-    exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
-    weight_vec <- c(weight_vec, rep(0.5, length( progenitor_ind)))
-    
+    if (nrow(exprs_data) == 1)
+        exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
+            progenitor_ind])))
+    else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
+
     colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
       paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
     pData <- rbind(pData, pData[progenitor_ind, ])

@@ -1222,7 +1222,7 @@ plot_ILRs_heatmap <- function (cds,
        ILRs_df <- ILRs_df
 
     test <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
-        clustering_method = hclust_method, filename = "test.pdf", 
+        clustering_method = hclust_method, 
         ...)
 
     #create annotations for each gene
