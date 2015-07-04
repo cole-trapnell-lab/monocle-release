@@ -217,10 +217,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' @export
 calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
                        reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-                       method = 'fitting', 
                        ABC_method = 'integral', 
-                       points_num = 1000, 
-                       fc_limit = 3, 
                        branchTest = FALSE, 
                        lineage_states = c(2, 3), 
                        relative_expr = TRUE,
@@ -247,7 +244,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   new_cds <- estimateSizeFactors(new_cds)
 
   #parallelize the calculation of ABCs 
-  res_ABC <- mcesApply(new_cds, 1, function(x, modelFormulaStr, ABC_method, expressionFamily, relative_expr, disp_func, pseudocount, num, lineage_states, lineage_labels, fc_limit, points_num, ...) {
+  res_ABC <- mcesApply(new_cds, 1, function(x, modelFormulaStr, ABC_method, expressionFamily, relative_expr, disp_func, pseudocount, num, lineage_states, lineage_labels, ...) {
     fit_res <- tryCatch({
       
       #how to pass the enviroment to fit_model_helper function?
@@ -293,16 +290,25 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
     else 
       lineage <- lineage_states
 
-    predictBranchOri <- VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), Lineage = as.factor(rep(lineage[1], num))), type = 'response')
+    #generalize the algoirthm to work for non-Lineage variables: 
+    formula_all_variables <- all.vars(as.formula(fullModelFormulaStr))
+    if(formula_all_variables[1] != 'Pseudotime')
+      stop("Pseudotime is not in your model formula!")
+    if(formula_all_variables[2] != 'Lineage'){
+      warning("Warning: Lineage is not in your model formula!")      
+      lineage <- pData(new_cds)[, formula_all_variables[2]]
+    }
+
+    predictBranchOri <- VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables[2] = as.factor(rep(lineage[1], num))), type = 'response')
     predictBranchOthers <- lapply(lineage[2:length(lineage)], function(x) {
-        VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), Lineage = as.factor(rep(x, num))), type = 'response')        
+        VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables[2] = as.factor(rep(x, num))), type = 'response')        
     })
     ABCs <- lapply(predictBranchOthers, function(x){
         avg_delta_x <- ((predictBranchOri - x)[1:(num - 1)] + (predictBranchOri - x)[2:(num)]) / 2
         step <- (100 / (num - 1))
 
         if(ABC_method == 'integral'){
-          res <- round(sum( avg_delta_x * step), 3)
+          res <- round(sum(avg_delta_x * step), 3)
         }
         else if(ABC_method == 'global_normalization'){
           max <- max(max(predictBranchOri), max(x))
@@ -319,14 +325,11 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
           other_ABCs_H <- round(sum( avg_delta_x[avg_delta_x < 0] * step), 3)
           res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs, ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
         }
-        else if(ABC_method == 'difference') {#copy from the plot_heatmap function 
-          str_logfc_df <- log2((predictBranchOri + 1) / (x + 1))
-
-          str_logfc_df[which(str_logfc_df <= -fc_limit)] <- -fc_limit
-          str_logfc_df[which(str_logfc_df >= fc_limit)] <- fc_limit
-
-          res <- str_logfc_df[c(seq(1, num, length.out = points_num - 1), num)] #only return 100 points for clustering 
-        }
+        else if (ABC_method == "ILRs") {
+                  str_logfc_df <- log2((predictBranchOri + 1)/(x + 
+                    1))
+                  res <- sum(str_logfc_df)
+                }
         return(res)
       })
     ABCs
@@ -343,10 +346,9 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   return(fit_res)
 }, required_packages = c("BiocGenerics", "VGAM", "base", "stats"), cores = cores, 
     fullModelFormulaStr, ABC_method, new_cds@expressionFamily, relative_expr, new_cds@dispFitInfo[['blind']]$disp_func, 
-    pseudocount, num, lineage_states, lineage_labels, fc_limit, points_num)
+    pseudocount, num, lineage_states, lineage_labels, ...)
 
-
-  if(ABC_method %in% c('integral', 'global_normalization', 'local_normalization')) {
+  if(ABC_method %in% c('integral', 'global_normalization', 'local_normalization', 'ILRs')) {
     ABCs_res <- do.call(rbind.data.frame, lapply(res_ABC, function(x) x[[1]]))
     row.names(ABCs_res) <- names(res_ABC)
     
@@ -360,7 +362,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
     ABCs_res[, 1] <- NULL 
     colnames(ABCs_res)[1] <- 'ABCs'
   }
-  else if(ABC_method %in% c('four_values', 'difference')) {
+  else if(ABC_method %in% c('four_values')) {
     ABCs_res <- do.call(rbind, lapply(res_ABC,  unlist))
   }
   
