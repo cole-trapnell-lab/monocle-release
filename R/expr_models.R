@@ -249,6 +249,9 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
                         expressionFamily=cds@expressionFamily)
   }
   #print (disp_table)
+  if(!is.list(disp_table))
+    stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
+
   disp_table <- do.call(rbind.data.frame, disp_table)
   
   coefs <- parametricDispersionFit(disp_table$mu, disp_table$disp)
