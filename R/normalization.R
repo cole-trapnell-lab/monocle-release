@@ -87,10 +87,12 @@ dmode <- function(x, breaks="Sturges") {
 #' Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
 optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
-          spike_data = spike_df, alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),
+          alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),
           cores = 1, weight = 0.5, add_kl_divergence  = T,  ...) {
-  if(is.null(spike_data$log_numMolecule))
-    spike_data$log_numMolecules <- log10(spike_data$numMolecules)
+  data('spike_df') #add the spikein dataset
+
+  if(is.null(spike_df$log_numMolecule))
+    spike_df$log_numMolecules <- log10(spike_df$numMolecules)
   
   m_val <- m
   c_val <- c

@@ -299,9 +299,15 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
       lineage <- pData(new_cds)[, formula_all_variables[2]]
     }
 
-    predictBranchOri <- VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables[2] = as.factor(rep(lineage[1], num))), type = 'response')
+    newdata_df_ori <- data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables = as.factor(rep(lineage[1], num)))
+    colnames(newdata_df)[2] <- formula_all_variables[2] #generalize the function to handle arbitrary variables
+    predictBranchOri <- VGAM::predict(FM_fit, newdata = newdata_df, type = 'response')
+
     predictBranchOthers <- lapply(lineage[2:length(lineage)], function(x) {
-        VGAM::predict(FM_fit, newdata = data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables[2] = as.factor(rep(x, num))), type = 'response')        
+        newdata_df_other <- data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables = as.factor(rep(x, num)))
+        colnames(newdata_df)[2] <- formula_all_variables[2]
+
+        VGAM::predict(FM_fit, newdata = newdata_df_other, type = 'response')        
     })
     ABCs <- lapply(predictBranchOthers, function(x){
         avg_delta_x <- ((predictBranchOri - x)[1:(num - 1)] + (predictBranchOri - x)[2:(num)]) / 2
@@ -419,7 +425,7 @@ calILRs <- function (cds = cds,
     #generate cds for branches 
     #we may also need to u
     if(Lineage != 'Lineage')
-      warning('Warning: You didn't choose Lineage to calculate the ILRs)
+      warning("Warning: You didn't choose Lineage to calculate the ILRs")
     if(length(lineage_states) != 2)
       stop('calILRs can only work for two Lineages')
 

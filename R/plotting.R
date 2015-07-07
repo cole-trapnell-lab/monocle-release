@@ -916,8 +916,6 @@ plot_genes_branched_pseudotime <- function (cds,
     }
 
   cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, lineage_labels = lineage_labels, method = method, stretch = stretch, weighted = weighted, ...)
-
-        ...)
     if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
         "negbinomial", "poissonff", "quasipoissonff")) {
         integer_expression <- TRUE
