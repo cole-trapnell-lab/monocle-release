@@ -963,7 +963,7 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
     trend_formula <- paste("adjusted_expression", trend_formula,
         sep = "")
-    cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
+    cds_exprs$Lineage <- factor(cds_exprs$Lineage, levels=levels(pData(cds)$State))
     merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
         function(x) {
             fit_res <- tryCatch({
@@ -1005,13 +1005,12 @@ plot_genes_branched_pseudotime <- function (cds,
                 res <- rep(NA, nrow(x))
                 res
             })
-            # if (is.null(gene_pairs))
-            #     x$Gene <- x$feature_label
+
             df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                Lineage = x$Lineage, Gene = x$Gene)
+                Lineage = x$Lineage)
             if (add_ABC)
                 df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                  Lineage = x$Lineage, ABCs = x$ABCs, Gene = x$Gene)
+                  Lineage = x$Lineage, ABCs = x$ABCs)
             df
         })
     if (method == "loess")
@@ -1030,7 +1029,7 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-        cds_subset$feature_label <- factor(cds_subset$feature_label,
+      cds_exprs$feature_label <- factor(cds_exprs$feature_label,
             levels = panel_order)
     }
     merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
@@ -1047,10 +1046,10 @@ plot_genes_branched_pseudotime <- function (cds,
         nrow = nrow, ncol = ncol, scales = "free_y")
     if (method == "loess")
         q <- q + stat_smooth(aes(fill = Lineage, color = Lineage),
-            method = "loess")
+            method = "loess", se=F)
     else if (method == "fitting") {
         q <- q + geom_line(aes(x = Pseudotime, y = expectation,
-            linetype = Lineage), data = merged_df_with_vgam)
+            color = Lineage), data = merged_df_with_vgam)
     }
     # if (!is.null(gene_pairs))
     #     q <- q + facet_wrap(~Gene)
