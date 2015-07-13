@@ -5,12 +5,11 @@
 \title{Calculate the area between TWO fitted lineage trajectories}
 \usage{
 calABCs(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
-  reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", method = "fitting",
-  ABC_method = "integral", points_num = 1000, fc_limit = 3,
-  branchTest = FALSE, lineage_states = c(2, 3), relative_expr = TRUE,
-  stretch = TRUE, pseudocount = 0, cores = 1, weighted = TRUE,
-  min_expr = 0.5, integer_expression = FALSE, num = 5000,
-  lineage_labels = NULL, ...)
+  reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
+  ABC_method = "integral", branchTest = FALSE, lineage_states = c(2, 3),
+  relative_expr = TRUE, stretch = TRUE, pseudocount = 0, cores = 1,
+  weighted = TRUE, min_expr = 0.5, integer_expression = FALSE,
+  num = 5000, lineage_labels = NULL, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

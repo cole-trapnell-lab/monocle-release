@@ -7,7 +7,7 @@
 plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_link_size = 0.75, cell_name_size = 2)
+  cell_link_size = 0.75, cell_name_size = 2, show_all_lineages = F)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

@@ -4,15 +4,18 @@
 \alias{calILRs}
 \title{Calculate the Instant Log Ratio between two branching lineages}
 \usage{
-calILRs(cds = cds, lineage_states = c(2, 3), stretch = T,
-  cores = detectCores(), trend_formula = "~sm.ns(Pseudotime, df = 3)",
-  ILRs_limit = 3, relative_expr = TRUE, weighted = FALSE,
-  label_by_short_name = TRUE, useVST = FALSE, round_exprs = FALSE,
-  pseudocount = 0, output_type = c("all", "after_bifurcation"),
-  file = "bifurcation_heatmap", ...)
+calILRs(cds = cds, Lineage = "Lineage", lineage_states = c(2, 3),
+  stretch = T, cores = detectCores(),
+  trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
+  relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
+  useVST = FALSE, round_exprs = FALSE, pseudocount = 0,
+  output_type = c("all", "after_bifurcation"), file = "bifurcation_heatmap",
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{Lineage}{The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)}
 
 \item{lineage_states}{The states for two branching lineages}
 
