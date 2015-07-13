@@ -525,6 +525,9 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   branch_node_counts <- V(pq_tree)[type == "Q"]$diam_path_len
   names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
+  if(length(names(branch_node_counts)) < num_branches)
+    stop('Number of branches attempted is larger than the branches constructed from pq_tree algorithm')
+
   branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
   #print (branch_node_counts)
   

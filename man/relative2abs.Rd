@@ -5,11 +5,12 @@
 \title{Transform relative expression values into absolute transcript counts.}
 \usage{
 relative2abs(relative_expr_matrix,
-  t_estimate = estimate_t(relative_expr_matrix),
-  detection_threshold = 0.01430512, ERCC_controls = NULL,
-  ERCC_annotation = NULL, volume = 10, dilution = 40000,
-  spike_info = NULL, return_all = FALSE, cores = 1, mixture_type = 1,
-  verbose = FALSE)
+  t_estimate = estimate_t(relative_expr_matrix), m = -3.652201,
+  c = 2.263576, m_rng = c(-10, -0.1), c_rng = c(c, c),
+  ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10,
+  dilution = 40000, mixture_type = 1, detection_threshold = 800,
+  alpha_v = 1, total_RNAs = 50000, weight = 0.01, verbose = FALSE,
+  return_all = FALSE, cores = 1, optim_num = 1)
 }
 \arguments{
 \item{relative_expr_matrix}{an matrix of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
@@ -17,7 +18,13 @@ relative2abs(relative_expr_matrix,
 \item{t_estimate}{an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 based on isoform FPKM will give better results in general}
 
-\item{detection_threshold}{the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.}
+\item{m}{the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)}
+
+\item{c}{the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).}
+
+\item{m_rng}{the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1}
+
+\item{c_rng}{the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize.}
 
 \item{ERCC_controls}{the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively.}
 
@@ -27,17 +34,27 @@ based on isoform FPKM will give better results in general}
 
 \item{dilution}{the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000. The number of spike-in transcripts per single-cell lysis reaction was calculated from}
 
+\item{mixture_type}{the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1.}
+
+\item{detection_threshold}{the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.}
+
+\item{alpha_v}{the hypothesized mode of transcript counts for each cell. Default is 1.}
+
+\item{total_RNAs}{the guess of total transcript counts in a single cell. Default is 50000.}
+
+\item{weight}{the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)}
+
+\item{verbose}{a logic flag to determine whether or not we should print all the optimization details}
+
 \item{return_all}{parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 in a list format}
 
 \item{cores}{number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.}
 
-\item{mixture_type}{The type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1.}
-
-\item{verbose}{a logic flag to determine whether or not we should print all the optimization details}
+\item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
 }
 \value{
-an matrix of absolute count for isoforms or genes after the transformation. For more details on other output, please refer to detail
+an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE.
 }
 \description{
 Transform a relative expression matrix to absolute transcript matrix based on the inferred linear regression parameters from most abundant isoform relative expression value.

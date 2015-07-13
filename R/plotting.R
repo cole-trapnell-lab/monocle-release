@@ -47,14 +47,14 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2){
+                               cell_name_size=2,
+                               show_all_lineages = F){
   gene_short_name <- NULL
   sample_name <- NULL
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
 
-  
   #print (lib_info_with_pseudo)
   S_matrix <- reducedDimS(cds)
 
@@ -74,7 +74,6 @@ plot_spanning_tree <- function(cds,
     stop("You must first call orderCells() before using this function")
   }
   
-  
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
 
@@ -87,6 +86,35 @@ plot_spanning_tree <- function(cds,
   diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
   colnames(diam) <- c("sample_name")
   diam <- plyr::arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
+
+  if(show_all_lineages) {
+    pro_state_pseudotime <- diam[as.numeric(diam$State) == min(as.numeric(diam$State)),
+        "Pseudotime"]
+    bifurcation_sample <- diam[which(diam$Pseudotime == max(pro_state_pseudotime)),
+        ]
+    bifurcation_sample$State <- diam$State[which(diam$Pseudotime ==
+        max(pro_state_pseudotime)) + 1]
+    diam <- rbind(diam[1:which(diam$Pseudotime == max(pro_state_pseudotime)),
+        ], bifurcation_sample, diam[(which(diam$Pseudotime ==
+        max(pro_state_pseudotime)) + 1):nrow(diam), ])
+    no_diam_states <- setdiff(lib_info_with_pseudo$State, lib_info_with_pseudo[diam[,
+        1], "State"])
+    for (state in no_diam_states) {
+        state_sample <- ica_space_with_state_df[ica_space_with_state_df$State ==
+            state, "sample_name"]
+        subset_dp_mst <- induced.subgraph(dp_mst, state_sample,
+            impl = "auto")
+        subset_diam <- as.data.frame(as.vector(V(subset_dp_mst)[get.diameter(subset_dp_mst,
+            weights = NA)]$name))
+        colnames(subset_diam) <- c("sample_name")
+        subset_diam <- plyr::arrange(merge(ica_space_with_state_df,
+            subset_diam, by.x = "sample_name", by.y = "sample_name"),
+            Pseudotime)
+        subset_diam$State <- state
+        bifurcation_sample$State <- state
+        diam <- rbind(diam, bifurcation_sample, subset_diam)
+    }
+  }
 
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
@@ -115,13 +143,11 @@ plot_spanning_tree <- function(cds,
   }else{
     g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
   }
-  
-  
+ g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
-      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) 
   }
   
   if (show_cell_names){
@@ -864,195 +890,174 @@ plot_genes_heatmap <- function(cds,
 
 plot_genes_branched_pseudotime <- function (cds, 
                                             lineage_states = c(2, 3), 
-                                            lineage_labels=NULL, 
-                                            method = 'fitting', 
+                                            lineage_labels = NULL,
+                                            method = "fitting", 
                                             stretch = TRUE, 
                                             min_expr = NULL, 
-                                            cell_size = 0.75, 
+                                            cell_size = 0.75,
                                             nrow = NULL, 
                                             ncol = 1, 
                                             panel_order = NULL, 
-                                            color_by = "State", 
+                                            color_by = "State",
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
-                                            label_by_short_name = TRUE, 
+                                            label_by_short_name = TRUE,
                                             weighted = TRUE, 
                                             add_ABC = FALSE, 
                                             normalize = TRUE, 
-                                            ...) 
+                                            #gene_pairs = NULL,
+    ...)
 {
-  if(add_ABC) {
+    if (add_ABC) {
+        ABCs_df <- calABCs(cds, fullModelFormulaStr = trend_formula,
+            lineage_states = lineage_states, stretch = stretch,
+            weighted = weighted, min_expr = min_expr, lineage_labels = lineage_labels,
+            ...)
+        fData(cds)[, "ABCs"] <- ABCs_df$ABCs
+    }
 
-    ABCs_df <- calABCs(cds, fullModelFormulaStr = trend_formula, 
-      lineage_states = lineage_states, stretch = stretch, weighted = weighted, min_expr = min_expr,
-      lineage_labels = lineage_labels,  ...)
-    fData(cds)[, 'ABCs'] <- ABCs_df$ABCs
-  }
-
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, method, stretch, weighted, ...)
-
-  if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff", 
-                                                 "negbinomial", "poissonff", "quasipoissonff")) {
-    integer_expression <- TRUE
-  }
-  else {
-    integer_expression <- FALSE
-  }
-  
-  if (integer_expression) {
-    CM <- exprs(cds_subset)
-    if(normalize)
-      CM <- t(t(CM) / sizeFactors(cds_subset)) 
-    cds_exprs <- reshape2::melt(round(CM))
-  }
-  else {
-    cds_exprs <- reshape2::melt(exprs(cds_subset))
-  }
-  if (is.null(min_expr)) {
-    min_expr <- cds_subset@lowerDetectionLimit
-  }
-  
-  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
-  cds_pData <- pData(cds_subset)
-  
-  if(add_ABC)
-    cds_fData <- ABCs_df
-  else
-    cds_fData <- fData(cds_subset)
-  
-  cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
-  cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
-  if (integer_expression) {
-    cds_exprs$adjusted_expression <- round(cds_exprs$expression)
-  } 
-  else {
-    cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
-  }
-  if (label_by_short_name == TRUE) {
-    if (is.null(cds_exprs$gene_short_name) == FALSE) {
-      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
-      cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+  cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, lineage_labels = lineage_labels, method = method, stretch = stretch, weighted = weighted, ...)
+    if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
+        "negbinomial", "poissonff", "quasipoissonff")) {
+        integer_expression <- TRUE
     }
     else {
-      cds_exprs$feature_label <- cds_exprs$f_id
+        integer_expression <- FALSE
     }
-  }
-  else {
-    cds_exprs$feature_label <- cds_exprs$f_id
-  }
-  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-  
-  trend_formula <- paste("adjusted_expression", trend_formula, sep="")
-  
-  print (head(cds_exprs))
-  merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label), function(x) {
-    fit_res <- tryCatch({
-      #expression <- x$adjusted_expression
-      
-      #df <- data.frame(expression = round(x))
-      #df <- cbind(df, pData)
-      
-      # If we're using the negbinomial, set up a new expressionSet object 
-      # so we can specify a hint for the size parameter, which will reduce the 
-      # chance of a fitting failure
-      expressionFamily <- cds@expressionFamily
-      if (expressionFamily@vfamily == "negbinomial"){
-        if(!is.null(cds@dispFitInfo[["blind"]]$disp_func)){
-          disp_guess <- calulate_NB_dispersion_hint(cds@dispFitInfo[["blind"]]$disp_func, x$adjusted_expression)
-          if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE) {
-            expressionFamily <- negbinomial(isize=1/disp_guess)
-          }
+    if (integer_expression) {
+        CM <- exprs(cds_subset)
+        if (normalize)
+            CM <- t(t(CM)/sizeFactors(cds_subset))
+        cds_exprs <- reshape2::melt(round(CM))
+    }
+    else {
+        cds_exprs <- reshape2::melt(exprs(cds_subset))
+    }
+    if (is.null(min_expr)) {
+        min_expr <- cds_subset@lowerDetectionLimit
+    }
+    colnames(cds_exprs) <- c("f_id", "Cell", "expression")
+    cds_pData <- pData(cds_subset)
+    if (add_ABC)
+        cds_fData <- ABCs_df
+    else cds_fData <- fData(cds_subset)
+    cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
+    cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+    if (integer_expression) {
+        cds_exprs$adjusted_expression <- round(cds_exprs$expression)
+    }
+    else {
+        cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+    }
+    if (label_by_short_name == TRUE) {
+        if (is.null(cds_exprs$gene_short_name) == FALSE) {
+            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
         }
-      }
-      
-      vg <- suppressWarnings(vglm(formula = as.formula(trend_formula), 
-                                  family = expressionFamily, data = x))
-      if (integer_expression) {
-        res <- predict(vg, type = "response")
-        res[res < min_expr] <- min_expr
-      }
-      else {
-        res <- 10^(predict(vg, type = "response"))
-        res[res < log10(min_expr)] <- log10(min_expr)
-      }
-      res
-    }, error = function(e) {
-      print("Error!")
-      print(e)
-      res <- rep(NA, nrow(x))
-      res
-    })
-    
-    df <- data.frame(Pseudotime=x$Pseudotime, 
-               expectation=fit_res,
-               Lineage=x$Lineage)
-   if(add_ABC)
-    df <- data.frame(Pseudotime=x$Pseudotime, 
-               expectation=fit_res,
-               Lineage=x$Lineage, 
-               ABCs = x$ABCs)
-
-    df
-  })
-  
-  if(method == 'loess')
-    cds_exprs$expression <-  cds_exprs$expression + cds@lowerDetectionLimit
-  
-  if (label_by_short_name == TRUE) {
-    if (is.null(cds_exprs$gene_short_name) == FALSE) {
-      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
-      cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+        else {
+            cds_exprs$feature_label <- cds_exprs$f_id
+        }
     }
     else {
-      cds_exprs$feature_label <- cds_exprs$f_id
+        cds_exprs$feature_label <- cds_exprs$f_id
     }
-  }
-  else {
-    cds_exprs$feature_label <- cds_exprs$f_id
-  }
-  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-  
-  if (is.null(panel_order) == FALSE) {
-    cds_subset$feature_label <- factor(cds_subset$feature_label, 
-                                       levels = panel_order)
-  }
-  
-  merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
-  cds_exprs$State <- as.factor(cds_exprs$State)
-  merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
+    trend_formula <- paste("adjusted_expression", trend_formula,
+        sep = "")
+    cds_exprs$Lineage <- factor(cds_exprs$Lineage, levels=levels(pData(cds)$State))
+    merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
+        function(x) {
+            fit_res <- tryCatch({
+            #expression <- x$adjusted_expression
+              
+              #df <- data.frame(expression = round(x))
+              #df <- cbind(df, pData)
+              
+              # If we're using the negbinomial, set up a new expressionSet object 
+              # so we can specify a hint for the size parameter, which will reduce the 
+              # chance of a fitting failure
 
-  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr #avoid the NA error generated from scale_y_log10 when expression is 0
-  
-  q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
-  if (is.null(color_by) == FALSE) {
-    q <- q + geom_point(aes_string(color = I(color_by)), size = I(cell_size))
-  }
-  # else {
-  #     q <- q + geom_point(size = I(cell_size))
-  # }
-  if(add_ABC)
-    q <- q + scale_y_log10() + facet_wrap(~feature_label + ABCs, nrow = nrow, 
-                                        ncol = ncol, scales = "free_y")
-  else
-    q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow, 
-                                        ncol = ncol, scales = "free_y")
-  if(method == 'loess')
-    q  <- q + stat_smooth(aes(fill = Lineage, color = Lineage), method = 'loess', se=F)
-  else if(method == 'fitting') {
-    q <- q + geom_line(aes(x=Pseudotime, y=expectation, color = Lineage), data = merged_df_with_vgam)
-  }
+                expressionFamily <- cds@expressionFamily
+                if (expressionFamily@vfamily == "negbinomial") {
+                  if (!is.null(cds@dispFitInfo[["blind"]]$disp_func)) {
+                    disp_guess <- calulate_NB_dispersion_hint(cds@dispFitInfo[["blind"]]$disp_func,
+                      x$adjusted_expression)
+                    if (is.null(disp_guess) == FALSE && disp_guess >
+                      0 && is.na(disp_guess) == FALSE) {
+                      expressionFamily <- negbinomial(isize = 1/disp_guess)
+                    }
+                  }
+                }
+                vg <- suppressWarnings(vglm(formula = as.formula(trend_formula),
+                  family = expressionFamily, data = x, maxit = 30,
+                  checkwz = FALSE, trace = T))
+                if (integer_expression) {
+                  res <- predict(vg, type = "response")
+                  res[res < min_expr] <- min_expr
+                }
+                else {
+                  res <- 10^(predict(vg, type = "response"))
+                  res[res < log10(min_expr)] <- log10(min_expr)
+                }
+                res
+            }, error = function(e) {
+                print("Error!")
+                print(e)
+                res <- rep(NA, nrow(x))
+                res
+            })
 
-  # Need this to guard against plotting failures caused by non-expressed genes
-  if (min_expr < 1)
-  {
-    q <- q + expand_limits(y=c(min_expr, 1))
-  }
-  
-  if(stretch)
-    q <- q + ylab("Expression") + xlab("Maturation levels")
-  else 
-    q <- q + ylab("Expression") + xlab("Pseudotime")
-  q <- q + monocle_theme_opts() 
-  q + expand_limits(y=min_expr) #set the lower bound
+            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+                Lineage = x$Lineage)
+            if (add_ABC)
+                df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+                  Lineage = x$Lineage, ABCs = x$ABCs)
+            df
+        })
+    if (method == "loess")
+        cds_exprs$expression <- cds_exprs$expression + cds@lowerDetectionLimit
+    if (label_by_short_name == TRUE) {
+        if (is.null(cds_exprs$gene_short_name) == FALSE) {
+            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+        }
+        else {
+            cds_exprs$feature_label <- cds_exprs$f_id
+        }
+    }
+    else {
+        cds_exprs$feature_label <- cds_exprs$f_id
+    }
+    cds_exprs$feature_label <- factor(cds_exprs$feature_label)
+    if (is.null(panel_order) == FALSE) {
+      cds_exprs$feature_label <- factor(cds_exprs$feature_label,
+            levels = panel_order)
+    }
+    merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
+    cds_exprs$State <- as.factor(cds_exprs$State)
+    merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
+    if (is.null(color_by) == FALSE) {
+        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
+    }
+    if (add_ABC)
+        q <- q + scale_y_log10() + facet_wrap(~feature_label +
+            ABCs, nrow = nrow, ncol = ncol, scales = "free_y")
+    else q <- q + scale_y_log10() + facet_wrap(~feature_label,
+        nrow = nrow, ncol = ncol, scales = "free_y")
+    if (method == "loess")
+        q <- q + stat_smooth(aes(fill = Lineage, color = Lineage),
+            method = "loess", se=F)
+    else if (method == "fitting") {
+        q <- q + geom_line(aes(x = Pseudotime, y = expectation,
+            color = Lineage), data = merged_df_with_vgam)
+    }
+    # if (!is.null(gene_pairs))
+    #     q <- q + facet_wrap(~Gene)
+    if (stretch)
+        q <- q + ylab("Expression") + xlab("Maturation levels")
+    else q <- q + ylab("Expression") + xlab("Pseudotime")
+    q <- q + monocle_theme_opts()
+    q + expand_limits(y = min_expr)
 }
 
 #' Plot the branch genes in pseduotime with separate lineage curves 
@@ -1222,7 +1227,7 @@ plot_ILRs_heatmap <- function (cds,
        ILRs_df <- ILRs_df
 
     test <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
-        clustering_method = hclust_method, filename = "test.pdf", 
+        clustering_method = hclust_method, 
         ...)
 
     #create annotations for each gene
