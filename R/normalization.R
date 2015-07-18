@@ -464,3 +464,19 @@ relative2abs <- function(relative_expr_matrix, t_estimate = estimate_t(relative_
   }
 }
 
+#' Spike-in transcripts data.
+#'
+#' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
+#'  Nature paper from Stephen Quake group)
+#'
+#' @format A data frame with 92 rows and 9 variables:
+#' \describe{
+#'   \item{ERCC_ID}{ID for ERCC transcripts}
+#'   \item{subgroup}{Subgroup for ERCC transcript}
+#'   \item{conc_attomoles_ul_Mix1}{Contration of Mix 1 (attomoles / ul)}
+#'   \item{conc_attomoles_ul_Mix2}{Contration of Mix 2 (attomoles / ul)}
+#'   \item{exp_fch_ratio}{expected fold change between mix 1 over mix 2}
+#'   \item{numMolecules}{number of molecules calculated from concentration and volume}
+#'   \item{rounded_numMolecules}{number in rounded digit of molecules calculated from concentration and volume}
+#' }
+"spike_df"
