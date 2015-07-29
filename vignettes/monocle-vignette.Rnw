@@ -146,9 +146,9 @@ pData(HSMM)$Total_mRNAs <- colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
-  geom_vline(xintercept=25000)
+  geom_vline(xintercept=40000)
 
-HSMM <- HSMM[,row.names(subset(pData(HSMM), Total_mRNAs >= 10000 & Total_mRNAs <= 25000))]
+HSMM <- HSMM[,row.names(subset(pData(HSMM), Total_mRNAs >= 10000 & Total_mRNAs <= 40000))]
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 @ %def
 
@@ -354,7 +354,7 @@ Monocle's main job is to put cells in order of progress through a biological pro
 <<setup_test_genes_pt, eval=TRUE>>=
 to_be_tested <- row.names(subset(fData(HSMM), 
                              gene_short_name %in% c("MYH3", "MEF2C", "CCNB2", "TNNT1"))) 
-cds_subset <- HSMM[to_be_tested,]
+cds_subset <- HSMM_myo[to_be_tested,]
 @ %def
 
 Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between \Robject{CellType}.  Monocle assigns each cell a ``pseudotime'' value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the \Rpackage{VGAM} package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
