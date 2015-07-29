@@ -567,12 +567,13 @@ detectBifurcationPoint <- function (str_log_df = NULL, div_threshold = 0.5, cds 
       pseudocount, 
       output_type = output_type, 
       file, verbose, ...)
-  
-    bifurcation_time <- apply(str_log_df, 1, function(x) {
-        min(which(abs(x) > div_threshold)) * sign(sum(x)) #ILRs are smooth, use min is fine and sign is used for determine the direction
-    }) #detect the earliest divergence point
-    names(bifurcation_time) <- row.names(str_log_df)
-    bifurcation_time[is.infinite(bifurcation_time)] <- NA
+  }
 
-    return(bifurcation_time)
+  bifurcation_time <- apply(str_log_df, 1, function(x) {
+      min(which(abs(x) > div_threshold)) * sign(sum(x)) #ILRs are smooth, use min is fine and sign is used for determine the direction
+  }) #detect the earliest divergence point
+  names(bifurcation_time) <- row.names(str_log_df)
+  bifurcation_time[is.infinite(bifurcation_time)] <- NA
+
+  return(bifurcation_time)
 }
