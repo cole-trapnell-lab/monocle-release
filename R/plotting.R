@@ -24,6 +24,7 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_name_size the size of cell name labels
+#' @param show_all_lineages draw all the bifurcation trajectories with thick pathes
 #' @return a ggplot2 plot object
 #' @importFrom grid unit
 #' @import ggplot2
@@ -139,9 +140,11 @@ plot_spanning_tree <- function(cds,
   }
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
-  }else{
-    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
+      for(i in unique(diam[, 'State'])) { #plot each lineage separately
+          g <- g + geom_path(aes(x = ICA_dim_1, y = ICA_dim_2),
+          color = I(backbone_color), size = I(cell_link_size),
+          data = subset(diam, State == i), na.rm = TRUE)
+      }
   }
  g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
