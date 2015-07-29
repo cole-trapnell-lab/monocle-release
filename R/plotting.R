@@ -147,7 +147,10 @@ plot_spanning_tree <- function(cds,
   
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) 
+    if(backbone_color %in% colnames(diam))
+        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=diam[, backbone_color], size=I(cell_link_size), data=diam, na.rm=TRUE)
+    else
+        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
