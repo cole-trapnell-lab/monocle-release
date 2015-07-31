@@ -819,7 +819,7 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
     message("Finding SVD")
   if (use_irlba)
   {
-    s <- irlba::irlba(V, min(n,p), min(n,p))  
+    s <- irlba::irlba(V, n.comp, n.comp)  
     svs <- s$d  
   }
   else
@@ -908,7 +908,7 @@ reduceDimension <- function(cds,
                             batch=NULL, 
                             batch2=NULL, 
                             covariates=NULL, 
-                            use_vst=NULL,
+                            use_vst=FALSE,
                             verbose=FALSE,
                             ...){
   

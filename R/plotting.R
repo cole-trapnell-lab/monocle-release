@@ -414,7 +414,8 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     color_by="State",
                                     trend_formula="~ sm.ns(Pseudotime, df=3)",
                                     label_by_short_name=TRUE,
-                                    relative_expr=TRUE){
+                                    relative_expr=TRUE,
+                                    method = "VGAM"){
   
   if (cds_subset@expressionFamily@vfamily == "negbinomial"){
     integer_expression <- TRUE
@@ -483,7 +484,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
         res[res < min_expr] <- min_expr
       }else{
         res <- 10^(predict(vg, type="response"))
-        res[res < log10(min_expr)] <- log10(min_expr)
+        res[res < min_expr] <- min_expr
       }
       res
     }
@@ -500,6 +501,8 @@ plot_genes_in_pseudotime <-function(cds_subset,
     data.frame(Pseudotime=x$Pseudotime, expectation=expectation)
   })
   
+  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
+  
   if (is.null(panel_order) == FALSE)
   {
     cds_subset$feature_label <- factor(cds_subset$feature_label, levels=panel_order)
@@ -513,7 +516,14 @@ plot_genes_in_pseudotime <-function(cds_subset,
     q <- q + geom_point(size=I(cell_size))
   }
     
-  q <- q + geom_line(aes(Pseudotime, expectation), data=merged_df_with_vgam)
+  if (method == "loess") {
+    q <- q + stat_smooth(aes(group=1), color=I("black"), method = "loess", se=F)
+  }
+  else if (method == "VGAM") {
+    q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = merged_df_with_vgam)
+  }
+  
+  #q <- q + geom_line(aes(Pseudotime, expectation), data=merged_df_with_vgam)
   
   #q <- q + geom_ribbon(aes(x=pseudo_time, ymin=conf_lo, ymax=conf_hi), alpha=I(0.15), data=merged_df_with_vgam)
   

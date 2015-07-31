@@ -143,16 +143,27 @@ parametricDispersionFit <- function( means, disps )
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
-    if( !all( coefs > 0 ) ){
-      #print(data.frame(means,disps))
+    if (coefs[1] < 0.01){
+      coefs[1] <- 0.01
+    }
+    if (coefs[2] < 0){
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
     }
+    #     if( !all( coefs > 0 ) ){
+    #       #print(data.frame(means,disps))
+    #       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
+    #     }
     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
     iter <- iter + 1
     if( iter > 10 ) {
       warning( "Dispersion fit did not converge." )
       break }
+  }
+  
+  if( !all( coefs > 0 ) ){
+    #print(data.frame(means,disps))
+    stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
   }
   
   names( coefs ) <- c( "asymptDisp", "extraPois" )
@@ -212,6 +223,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
     
     disp_guess_meth_moments <- f_expression_var - f_expression_mean 
     disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
+    
     if (f_expression_mean == 0){
       disp_vals <- NULL
     } else {
@@ -233,6 +245,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
     error = function(e) { print (e); NULL }
     )
   }
+  disp_vals$disp[disp_vals$disp < 0] <- 0
   disp_vals
 }
 
