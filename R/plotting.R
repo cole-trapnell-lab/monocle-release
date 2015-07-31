@@ -930,9 +930,11 @@ plot_genes_branched_pseudotime <- function (cds,
             ...)
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
-    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+    if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
+        cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
         lineage_labels = lineage_labels, method = method, stretch = stretch,
         weighted = weighted, ...)
+    }
     if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
         "negbinomial", "poissonff", "quasipoissonff")) {
         integer_expression <- TRUE
@@ -980,7 +982,7 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
     trend_formula <- paste("adjusted_expression", trend_formula,
         sep = "")
-    cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
+    cds_exprs$Lineage <- factor(cds_exprs$Lineage, levels=levels(pData(cds)$State))
     merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
         function(x) {
             fit_res <- tryCatch({
@@ -1038,7 +1040,7 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-        cds_subset$feature_label <- factor(cds_subset$feature_label,
+        cds_exprst$feature_label <- factor(cds_exprst$feature_label,
             levels = panel_order)
     }
     merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
