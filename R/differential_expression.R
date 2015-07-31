@@ -375,6 +375,43 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   return(ABCs_res)
 }
 
+#function to fit smooth curves for the gene expression on pseudotime doing on gene-wise  
+#need to consider how to pass the cds data to the environment for fit_models, responseMatrix
+genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", 
+                        relative_expr = F, pseudocount = 0, new_data = str_new_cds_branchA) { 
+    expressionFamily <- cds@expressionFamily
+
+    pd <- pData(cds)
+    attach(pd) #attach all the data from the pData
+    if(cores > 1) {
+        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
+                                       relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+                expression_curve_matrix <- rep(NA, length(x))
+            else
+                expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
+            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            )
+    }
+    else {
+        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
+                                       relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+                expression_curve_matrix <- rep(NA, length(x))
+            else
+                expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
+            }, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            )
+    }
+    detach(pd)
+
+    expression_curve_matrix
+}
+
 #' Calculate the Instant Log Ratio between two branching lineages
 #' 
 #' This function is used to calculate the Instant Log Ratio between two branching lineages which can be used to prepare the heatmap demonstrating the lineage gene expression divergence hirearchy. If "stretch" is specifified, each  
@@ -403,105 +440,77 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-calILRs <- function (cds = cds,
-    Lineage = 'Lineage', 
-    lineage_states = c(2, 3), 
-    stretch = T, 
-    cores = detectCores(), 
-    trend_formula = "~sm.ns(Pseudotime, df = 3)", 
-    ILRs_limit = 3, 
-    relative_expr = TRUE, 
-    weighted = FALSE, 
-    label_by_short_name = TRUE, 
-    useVST = FALSE, 
-    round_exprs = FALSE, 
-    pseudocount = 0, 
-    output_type = c('all', 'after_bifurcation'), 
-    file = "bifurcation_heatmap", verbose = FALSE, ...) {   
-
-    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, 
-        lineage_labels = NULL, method = "fitting", stretch = stretch, weighted = weighted, ...)
-
-    #generate cds for branches 
-    #we may also need to u
-    if(Lineage != 'Lineage')
-      warning("Warning: You didn't choose Lineage to calculate the ILRs")
-    if(length(lineage_states) != 2)
-      stop('calILRs can only work for two Lineages')
-
-    cds_branchA <- cds_subset[, pData(cds_subset)[, Lineage] == 
+calILRs <- function (cds = cds, Lineage = "Lineage", lineage_states = c(2,
+    3), stretch = T, cores = detectCores(), trend_formula = "~sm.ns(Pseudotime, df = 3)",
+    ILRs_limit = 3, relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
+    useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
+        "after_bifurcation"), file = "bifurcation_heatmap", verbose = FALSE,
+    ...){
+    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+        lineage_labels = NULL, method = "fitting", stretch = stretch,
+        weighted = weighted, ...)
+    if (Lineage != "Lineage")
+        warning("Warning: You didn't choose Lineage to calculate the ILRs")
+    if (length(lineage_states) != 2)
+        stop("calILRs can only work for two Lineages")
+    cds_branchA <- cds_subset[, pData(cds_subset)[, Lineage] ==
         lineage_states[1]]
-    cds_branchB <- cds_subset[, pData(cds_subset)[, Lineage] == 
+    cds_branchB <- cds_subset[, pData(cds_subset)[, Lineage] ==
         lineage_states[2]]
 
-    #fit nature spline curve for each branch
-    branchA_full_model_fits <- fitModel(cds_branchA, modelFormulaStr = trend_formula, 
-        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
-    branchB_full_model_fits <- fitModel(cds_branchB, modelFormulaStr = trend_formula, 
-        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
-
     t_rng <- range(pData(cds_branchA)$Pseudotime)
-
-    str_new_cds_branchA <- data.frame(Pseudotime = seq(0, max(pData(cds_branchA)$Pseudotime), 
+    str_new_cds_branchA <- data.frame(Pseudotime = seq(0, max(pData(cds_branchA)$Pseudotime),
         length.out = 100))
-    if(verbose)
-      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
-    str_new_cds_branchB <- data.frame(Pseudotime = seq(0, max(pData(cds_branchB)$Pseudotime), 
+    if (verbose)
+        print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+            sort(pData(cds_branchA)$Pseudotime)))
+    str_new_cds_branchB <- data.frame(Pseudotime = seq(0, max(pData(cds_branchB)$Pseudotime),
         length.out = 100))
-    if(verbose)
-      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
+    if (verbose)
+        print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+            sort(pData(cds_branchB)$Pseudotime)))
 
-    str_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, 
-        newdata = str_new_cds_branchA)
-    str_branchB_expression_curve_matrix <- responseMatrix(branchB_full_model_fits, 
-        newdata = str_new_cds_branchB)
+    str_branchA_expression_curve_matrix <- genSmoothCurves(cds_branchA, cores=cores, trend_formula = trend_formula, 
+                        relative_expr = relative_expr, pseudocount = pseudocount, new_data = str_new_cds_branchA)
+    str_branchB_expression_curve_matrix <- genSmoothCurves(cds_branchB, cores=cores, trend_formula = trend_formula, 
+                        relative_expr = relative_expr, pseudocount = pseudocount, new_data = str_new_cds_branchB)
 
-    #VST for the fitted spline curves
     if (useVST) {
-        str_branchA_expression_curve_matrix <- vstExprs(cds, 
-            expr_matrix = str_branchA_expression_curve_matrix, 
+        str_branchA_expression_curve_matrix <- vstExprs(cds,
+            expr_matrix = str_branchA_expression_curve_matrix,
             round_vals = round_exprs)
-        str_branchB_expression_curve_matrix <- vstExprs(cds, 
-            expr_matrix = str_branchB_expression_curve_matrix, 
+        str_branchB_expression_curve_matrix <- vstExprs(cds,
+            expr_matrix = str_branchB_expression_curve_matrix,
             round_vals = round_exprs)
-
-        #when VST is used, the difference between two lineages are defined as ILRs: 
-        str_logfc_df <- str_branchA_expression_curve_matrix - 
+        str_logfc_df <- str_branchA_expression_curve_matrix -
             str_branchB_expression_curve_matrix
     }
     else {
-        str_logfc_df <- log2((str_branchA_expression_curve_matrix + 1) / 
-          (str_branchB_expression_curve_matrix + 1))
+        str_logfc_df <- log2((str_branchA_expression_curve_matrix +
+            1)/(str_branchB_expression_curve_matrix + 1))
     }
-
-    #should we label the ILRs matrix with gene short names? 
     if (label_by_short_name) {
+        str_logfc_df <- t(str_logfc_df)
         row.names(str_logfc_df) <- fData(cds[, ])$gene_short_name
     }
-
-    #limit the range of ILRs
     str_logfc_df[which(str_logfc_df <= -ILRs_limit)] <- -ILRs_limit
     str_logfc_df[which(str_logfc_df >= ILRs_limit)] <- ILRs_limit
-
-    if(output_type == 'after_bifurcation') {
-      t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State == lineage_states[1]), #the pseudotime for the bifurcation point
-        which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
-      t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime == t_bifurcation_ori])$Pseudotime #corresponding stretched pseudotime
-
-      if(stretch)
-        bif_index <- as.integer(pData(cds_subset[,  pData(cds)$Pseudotime == t_bifurcation])$Pseudotime)
-      else { #earliest bifurcation point on the original pseudotime scale (no stretching)
-        bif_index <- as.integer(min(t_bifurcation / (max(pData(cds_branchA)$Pseudotime) / 100), 
-                        t_bifurcation / (max(pData(cds_branchB)$Pseudotime) / 100))) 
-      }
-      #select only ILRs data points after the bifuration point
-      
-      str_logfc_df[, bif_index:100] <- str_logfc_df
+    if (output_type == "after_bifurcation") {
+        t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State ==
+            lineage_states[1]), which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
+        t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime ==
+            t_bifurcation_ori])$Pseudotime
+        if (stretch)
+            bif_index <- as.integer(pData(cds_subset[, pData(cds)$Pseudotime ==
+                t_bifurcation])$Pseudotime)
+        else {
+            bif_index <- as.integer(min(t_bifurcation/(max(pData(cds_branchA)$Pseudotime)/100),
+                t_bifurcation/(max(pData(cds_branchB)$Pseudotime)/100)))
+        }
+        str_logfc_df[, bif_index:100] <- str_logfc_df
     }
-
-    if(!is.null(file)) #save the data file calculated since it will take a lot time to generate
-      save(str_logfc_df, str_branchA_expression_curve_matrix, str_branchB_expression_curve_matrix, 
-          file = file)
-
+    if (!is.null(file))
+        save(str_logfc_df, str_branchA_expression_curve_matrix,
+            str_branchB_expression_curve_matrix, file = file)
     return(str_logfc_df)
 }
