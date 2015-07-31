@@ -171,8 +171,15 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        weighted = TRUE, 
                        lineage_labels = NULL, ...) {
 
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  cds_subset <- estimateSizeFactors(cds_subset) 
+  if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) {
+     cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+     lineage_labels = lineage_labels, method = method, stretch = stretch,
+     weighted = weighted, ...)
+  }
+  else
+    cds_subset <- cds
+
+  cds_subset <- estimateSizeFactors(cds_subset)
 
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
@@ -240,10 +247,17 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   if(length(lineage_states) != 2)
     stop('Sorry, this function only supports the calculation of ABCs between TWO lineage trajectories')
 
-  new_cds <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
+  if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) {
+    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+    lineage_labels = lineage_labels, method = method, stretch = stretch,
+    weighted = weighted, ...)
+  }
+  else
+    cds_subset <- cds
+ 
   new_cds <- estimateSizeFactors(new_cds)
 
-  #parallelize the calculation of ABCs 
+  #parallelize the calculation of ABCs
   res_ABC <- mcesApply(new_cds, 1, function(x, modelFormulaStr, ABC_method, expressionFamily, relative_expr, disp_func, pseudocount, num, lineage_states, lineage_labels, ...) {
     fit_res <- tryCatch({
       
@@ -446,9 +460,15 @@ calILRs <- function (cds = cds, Lineage = "Lineage", lineage_states = c(2,
     useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
         "after_bifurcation"), file = "bifurcation_heatmap", verbose = FALSE,
     ...){
-    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
-        lineage_labels = NULL, method = "fitting", stretch = stretch,
-        weighted = weighted, ...)
+    
+    if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) {
+            cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+            lineage_labels = lineage_labels, method = method, stretch = stretch,
+            weighted = weighted, ...)
+        }
+        else
+        cds_subset <- cds
+        
     if (Lineage != "Lineage")
         warning("Warning: You didn't choose Lineage to calculate the ILRs")
     if (length(lineage_states) != 2)
