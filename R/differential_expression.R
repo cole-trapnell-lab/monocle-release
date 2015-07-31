@@ -171,7 +171,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        weighted = TRUE, 
                        lineage_labels = NULL, ...) {
 
-  if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) {
+  if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
      cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
      lineage_labels = lineage_labels, method = method, stretch = stretch,
      weighted = weighted, ...)
@@ -247,7 +247,7 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   if(length(lineage_states) != 2)
     stop('Sorry, this function only supports the calculation of ABCs between TWO lineage trajectories')
 
-  if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) {
+  if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
     lineage_labels = lineage_labels, method = method, stretch = stretch,
     weighted = weighted, ...)
