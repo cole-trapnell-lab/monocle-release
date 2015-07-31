@@ -930,8 +930,9 @@ plot_genes_branched_pseudotime <- function (cds,
             ...)
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
-
-  cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, lineage_labels = lineage_labels, method = method, stretch = stretch, weighted = weighted, ...)
+    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+        lineage_labels = lineage_labels, method = method, stretch = stretch,
+        weighted = weighted, ...)
     if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
         "negbinomial", "poissonff", "quasipoissonff")) {
         integer_expression <- TRUE
@@ -979,19 +980,10 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
     trend_formula <- paste("adjusted_expression", trend_formula,
         sep = "")
-    cds_exprs$Lineage <- factor(cds_exprs$Lineage, levels=levels(pData(cds)$State))
+    cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
     merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
         function(x) {
             fit_res <- tryCatch({
-            #expression <- x$adjusted_expression
-              
-              #df <- data.frame(expression = round(x))
-              #df <- cbind(df, pData)
-              
-              # If we're using the negbinomial, set up a new expressionSet object 
-              # so we can specify a hint for the size parameter, which will reduce the 
-              # chance of a fitting failure
-
                 expressionFamily <- cds@expressionFamily
                 if (expressionFamily@vfamily == "negbinomial") {
                   if (!is.null(cds@dispFitInfo[["blind"]]$disp_func)) {
@@ -1021,12 +1013,13 @@ plot_genes_branched_pseudotime <- function (cds,
                 res <- rep(NA, nrow(x))
                 res
             })
+    #        df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+    #            Lineage = x$Lineage, knocout = x$knocout)
+    #        if (add_ABC)
+    #            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+    #              Lineage = x$Lineage, knocout = x$knocout, ABCs = x$ABCs)
+             df <- cbind(x, expectation = fit_res)
 
-            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                Lineage = x$Lineage)
-            if (add_ABC)
-                df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                  Lineage = x$Lineage, ABCs = x$ABCs)
             df
         })
     if (method == "loess")
@@ -1045,12 +1038,13 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-      cds_exprs$feature_label <- factor(cds_exprs$feature_label,
+        cds_subset$feature_label <- factor(cds_subset$feature_label,
             levels = panel_order)
     }
     merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
-    cds_exprs$State <- as.factor(cds_exprs$State)
-    merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    #cds_exprs$State <- as.factor(cds_exprs$State)
+    #merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    #merged_df_with_vgam <- cbind(merged_df_with_vgam, cds_exprs)
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
     if (is.null(color_by) == FALSE) {
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
@@ -1062,20 +1056,17 @@ plot_genes_branched_pseudotime <- function (cds,
         nrow = nrow, ncol = ncol, scales = "free_y")
     if (method == "loess")
         q <- q + stat_smooth(aes(fill = Lineage, color = Lineage),
-            method = "loess", se=F)
+            method = "loess")
     else if (method == "fitting") {
-        q <- q + geom_line(aes(x = Pseudotime, y = expectation,
-            color = Lineage), data = merged_df_with_vgam)
+        q <- q + geom_line(aes_string(x = "Pseudotime", y = "expectation",
+            color = color_by), data = merged_df_with_vgam)
     }
-    # if (!is.null(gene_pairs))
-    #     q <- q + facet_wrap(~Gene)
     if (stretch)
         q <- q + ylab("Expression") + xlab("Maturation levels")
     else q <- q + ylab("Expression") + xlab("Pseudotime")
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
-
 #' Plot the branch genes in pseduotime with separate lineage curves 
 #' @param cds CellDataSet for the experiment
 #' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
