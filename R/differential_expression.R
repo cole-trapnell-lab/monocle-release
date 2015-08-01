@@ -389,43 +389,6 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
   return(ABCs_res)
 }
 
-#function to fit smooth curves for the gene expression on pseudotime doing on gene-wise  
-#need to consider how to pass the cds data to the environment for fit_models, responseMatrix
-genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", 
-                        relative_expr = F, pseudocount = 0, new_data = str_new_cds_branchA) { 
-    expressionFamily <- cds@expressionFamily
-
-    pd <- pData(cds)
-    attach(pd) #attach all the data from the pData
-    if(cores > 1) {
-        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
-                                       relative_expr = relative_expr, pseudocount = pseudocount)
-            if(is.null(model_fits))
-                expression_curve_matrix <- rep(NA, length(x))
-            else
-                expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
-            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-            )
-    }
-    else {
-        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
-                                       relative_expr = relative_expr, pseudocount = pseudocount)
-            if(is.null(model_fits))
-                expression_curve_matrix <- rep(NA, length(x))
-            else
-                expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
-            }, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-            )
-    }
-    detach(pd)
-
-    expression_curve_matrix
-}
-
 #' Calculate the Instant Log Ratio between two branching lineages
 #' 
 #' This function is used to calculate the Instant Log Ratio between two branching lineages which can be used to prepare the heatmap demonstrating the lineage gene expression divergence hirearchy. If "stretch" is specifified, each  
