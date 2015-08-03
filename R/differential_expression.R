@@ -512,8 +512,9 @@ calILRs <- function (cds = cds,
 #' For processes we can not distinguish between lineages (or phenotype groups, like knockout VS un-knockout), this function will 
 #' only detect bifurcation points after the inferenced bifurcatioin from the PQ-tree. The 
 #'
-#' @param str_log_df the ILRs dataframe calculated from calILRs function. If this data.frame is provided, all the following parameters are ignored. Note that we need to only use the ILRs after the bifurcation point if we duplicated the progenitor cell state. 
+#' @param str_log_df the ILRs dataframe calculated from calILRs function. If this data.frame is provided, all the following parameters are ignored. Note that we need to only use the ILRs after the bifurcation point if we duplicated the progenitor cell state.
 #' @param div_threshold the ILR value used to determine the earliest divergence time point
+#' @param detect_all a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point
 #' @param cds CellDataSet for the experiment
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
 #' @param lineage_states The states for two branching lineages
@@ -529,51 +530,57 @@ calILRs <- function (cds = cds,
 #' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param output_type A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Lineage is set to "Lineage", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells
 #' @param file the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored
-#' @return a ggplot2 plot object
-#' @import ggplot2
+#' @return a vector containing the time for the bifurcation point with gene names for each value
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-detectBifurcationPoint <- function (str_log_df = NULL, div_threshold = 0.5, cds = cds,
-    Lineage = 'Lineage', 
-    lineage_states = c(2, 3), 
-    stretch = T, 
-    cores = detectCores(), 
-    trend_formula = "~sm.ns(Pseudotime, df = 3)", 
-    ILRs_limit = 3, 
-    relative_expr = TRUE, 
-    weighted = FALSE, 
-    label_by_short_name = TRUE, 
-    useVST = FALSE, 
-    round_exprs = FALSE, 
-    pseudocount = 0, 
-    output_type = c('all', 'after_bifurcation'), 
-    file = "bifurcation_heatmap", verbose = FALSE, ...) {
-  if(is.null(str_log_df)) {
-    if(Lineage == 'Lineage') output_type = 'after_bifurcation'
-
-    str_log_df <- calILRs(cds = cds,
-      Lineage,
-      lineage_states, 
-      stretch, 
-      cores, 
-      trend_formula, 
-      ILRs_limit, 
-      relative_expr, 
-      weighted, 
-      label_by_short_name, 
-      useVST, 
-      round_exprs, 
-      pseudocount, 
-      output_type = output_type, 
-      file, verbose, ...)
-  }
-
-  bifurcation_time <- apply(str_log_df, 1, function(x) {
-      min(which(abs(x) > div_threshold)) * sign(sum(x)) #ILRs are smooth, use min is fine and sign is used for determine the direction
-  }) #detect the earliest divergence point
-  names(bifurcation_time) <- row.names(str_log_df)
-  bifurcation_time[is.infinite(bifurcation_time)] <- NA
-
-  return(bifurcation_time)
+detectBifurcationPoint <- function(str_log_df = NULL, div_threshold = 0.5, detect_all = T,
+cds = cds,
+Lineage = 'Lineage',
+lineage_states = c(2, 3),
+stretch = T,
+cores = detectCores(),
+trend_formula = "~sm.ns(Pseudotime, df = 3)",
+ILRs_limit = 3,
+relative_expr = TRUE,
+weighted = FALSE,
+label_by_short_name = TRUE,
+useVST = FALSE,
+round_exprs = FALSE,
+pseudocount = 0,
+output_type = c('all', 'after_bifurcation'),
+file = "bifurcation_heatmap", verbose = FALSE, ...) {
+    if(is.null(str_log_df)) {
+        if(Lineage == 'Lineage') output_type = 'after_bifurcation'
+        
+        str_log_df <- calILRs(cds = cds,
+        Lineage,
+        lineage_states,
+        stretch,
+        cores,
+        trend_formula,
+        ILRs_limit,
+        relative_expr,
+        weighted,
+        label_by_short_name,
+        useVST,
+        round_exprs,
+        pseudocount,
+        output_type = output_type,
+        file, verbose, ...)
+    }
+    
+    bifurcation_time <- apply(str_log_df, 1, function(x) {
+        # deriv <- diff(x) the ILRs are smooth, so use min is fine
+        index <- NA
+        if(any(which(abs(x) > div_threshold)))
+        index <- min(which(abs(x) > div_threshold)) * sign(sum(x))
+        else if(detect_all & all(!is.na(x))) index <-  min(which(abs(x) == max(abs(x))))
+        index
+    }
+    ) #detect the earliest divergence point
+    print(bifurcation_time)
+    names(bifurcation_time) <- row.names(str_log_df)
+    
+    return(bifurcation_time)
 }
