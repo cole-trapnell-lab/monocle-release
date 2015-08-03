@@ -293,7 +293,7 @@ buildLineageBranchCellDataSet <- function(cds,
                                           lineage_labels = NULL, 
                                           method = 'fitting',  
                                           stretch = FALSE, 
-                                          weighted = FALSE, 
+                                          weighted = TRUE, 
                                           ...)
 {
   # TODO: check that lineages are on the same paths
@@ -336,6 +336,8 @@ buildLineageBranchCellDataSet <- function(cds,
   if (weighted) {
       weight_constant <- 1/length(lineage_states)
       weight_vec[progenitor_ind] <- weight_constant
+  } else {
+      weight_constant <- 1
   }
 
   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
