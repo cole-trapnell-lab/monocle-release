@@ -215,164 +215,116 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
-calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
-                       reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-                       ABC_method = 'integral', 
-                       branchTest = FALSE, 
-                       lineage_states = c(2, 3), 
-                       relative_expr = TRUE,
-                       stretch = TRUE,
-                       pseudocount=0,
-                       cores = 1, 
-                       weighted = TRUE, 
-                       min_expr = 0.5, 
-                       integer_expression = FALSE, 
-                       num = 5000, lineage_labels = NULL, ...) {
-  if(branchTest)
-    branchTest_res <- branchTest(cds, fullModelFormulaStr = fullModelFormulaStr,
-                       reducedModelFormulaStr = reducedModelFormulaStr, 
-                       lineage_states = lineage_states, 
-                       relative_expr = relative_expr,
-                       stretch = stretch,
-                       pseudocount = pseudocount,
-                       cores = cores, 
-                       weighted = weighted, lineage_labels = lineage_labels, ...)
-  if(length(lineage_states) != 2)
-    stop('Sorry, this function only supports the calculation of ABCs between TWO lineage trajectories')
-
-  new_cds <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  new_cds <- estimateSizeFactors(new_cds)
-
-  #parallelize the calculation of ABCs 
-  res_ABC <- mcesApply(new_cds, 1, function(x, modelFormulaStr, ABC_method, expressionFamily, relative_expr, disp_func, pseudocount, num, lineage_states, lineage_labels, ...) {
-    fit_res <- tryCatch({
-      
-      #how to pass the enviroment to fit_model_helper function?
-      modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
-      
-      orig_x <- x
-      x <- x + pseudocount
-      
-      if (expressionFamily@vfamily == "negbinomial"){
-        if (relative_expr)
-        {
-          x <- x / Size_Factor
-        }
-        f_expression <- round(x)
-        if (is.null(disp_func) == FALSE){
-          disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
-          if (is.null(disp_guess) == FALSE ) {
-            # FIXME: In theory, we could lose some user-provided parameters here
-            # e.g. if users supply zero=NULL or something.    
-            expressionFamily <- negbinomial(isize=1/disp_guess)
-          }
-        }
-      }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-        f_expression <- x
-      }else{
-        f_expression <- log10(x)
-      }
-      
-      ##add loess curve fitting here 
-      FM_fit <- tryCatch({
-        FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily, maxit = 30, checkwz = FALSE))
-      }, 
-      #warning = function(w) { FM_fit },
-      error = function(e) { print (e); NULL }
-      )
-  
-    #calculate the area between curve: 
-    #return the matrix for the difference 
-    modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
-
-    if(!is.null(lineage_labels))
-      lineage <- lineage_labels
-    else 
-      lineage <- lineage_states
-
-    #generalize the algoirthm to work for non-Lineage variables: 
-    formula_all_variables <- all.vars(as.formula(fullModelFormulaStr))
-    if(formula_all_variables[1] != 'Pseudotime')
-      stop("Pseudotime is not in your model formula!")
-    if(formula_all_variables[2] != 'Lineage'){
-      warning("Warning: Lineage is not in your model formula!")      
-      lineage <- pData(new_cds)[, formula_all_variables[2]]
+calABCs <- function(cds, trajectory_type = "Lineage", trajectory_states = c(2, 3),
+branchTest = FALSE, relative_expr = TRUE, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+stretch = TRUE, pseudocount = 0, cores = 1, weighted = TRUE, verbose = F,
+min_expr = 0.5, integer_expression = FALSE, num = 5000, lineage_labels = NULL,
+ABC_method = c('integral'), #'global_normalization', 'local_normalization', 'four_values', 'ILRs'),
+...){
+    if (length(trajectory_states) != 2)
+    stop("Sorry, this function only supports the calculation of ABCs between TWO lineage trajectories")
+    
+    if(trajectory_type == "Lineage") {
+        cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
+        lineage_labels = lineage_labels, method = method, stretch = stretch,
+        weighted = weighted, ...)
+        overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
     }
-
-    newdata_df_ori <- data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables = as.factor(rep(lineage[1], num)))
-    colnames(newdata_df)[2] <- formula_all_variables[2] #generalize the function to handle arbitrary variables
-    predictBranchOri <- VGAM::predict(FM_fit, newdata = newdata_df, type = 'response')
-
-    predictBranchOthers <- lapply(lineage[2:length(lineage)], function(x) {
-        newdata_df_other <- data.frame(Pseudotime = seq(0, 100, length.out = num), formula_all_variables = as.factor(rep(x, num)))
-        colnames(newdata_df)[2] <- formula_all_variables[2]
-
-        VGAM::predict(FM_fit, newdata = newdata_df_other, type = 'response')        
-    })
-    ABCs <- lapply(predictBranchOthers, function(x){
-        avg_delta_x <- ((predictBranchOri - x)[1:(num - 1)] + (predictBranchOri - x)[2:(num)]) / 2
-        step <- (100 / (num - 1))
-
-        if(ABC_method == 'integral'){
-          res <- round(sum(avg_delta_x * step), 3)
+    else{
+        pd <- pData(cds)
+        range_df <- ddply(pd, .(get(trajectory_type)), function(x) {
+            range(x$Pseudotime)
+        })
+        
+        overlap_rng <- c(max(range_df[, 2]), min(range_df[, 3])) #calculate the overlapping pseudotime range
+        # cds <- cds[, row.names(subset(pd, Pseudotime > overlap_rng[1] & Pseudotime < overlap_rng[2]))]
+        cds_subset <- cds
+    }
+    if (trajectory_type != "Lineage")
+    warning("Warning: You didn't choose Lineage to calculate the ILRs")
+    if (length(trajectory_states) != 2)
+    stop("calILRs can only work for two Lineages")
+    if(!all(trajectory_states %in% pData(cds_subset)[, trajectory_type]))
+    stop("state(s) in trajectory_states are not included in trajectory_type")
+    
+    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+    
+    cds_branchA <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+    trajectory_states[1]]
+    cds_branchB <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+    trajectory_states[2]]
+    
+    #use the genSmoothCurves to generate smooth curves for calculating the ABC scores:
+    formula_all_variables <- all.vars(as.formula(trend_formula))
+    
+    t_rng <- range(pData(cds_branchA)$Pseudotime)
+    str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
+    length.out = num), Lineage = as.factor(trajectory_states[1]))
+    colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Lineage
+    if (verbose)
+    print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+    sort(pData(cds_branchA)$Pseudotime)))
+    str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
+    length.out = num), Lineage = as.factor(trajectory_states[2]))
+    colnames(str_new_cds_branchB)[2] <- formula_all_variables[2]
+    
+    if (verbose)
+    print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+    sort(pData(cds_branchB)$Pseudotime)))
+    
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
+    relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
+    
+    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[1:num, ]
+    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[(num + 1):(2 * num), ]
+    
+    ABCs_res <- str_branchA_expression_curve_matrix - str_branchB_expression_curve_matrix
+    
+    ABCs_res <- apply(ABCs_res, 2, function(x, num, ABC_method) {
+        avg_delta_x <- (x[1:(num - 1)] + x[2:(num)])/2
+        step <- (100/(num - 1))
+        
+        if (ABC_method == "integral") {
+            res <- round(sum(avg_delta_x * step), 3)
         }
-        else if(ABC_method == 'global_normalization'){
-          max <- max(max(predictBranchOri), max(x))
-          res <- round(sum( avg_delta_x / max * step), 3)
+        else if (ABC_method == "global_normalization") {
+            max <- max(max(predictBranchOri), max(x))
+            res <- round(sum(avg_delta_x/max * step), 3)
         }
-        else if(ABC_method == 'local_normalization'){
-          pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri), 1, max)
-          res <- round(sum( (((predictBranchOri - x) / pair_wise_max)[1:(num - 1)] + ((predictBranchOri - x) / pair_wise_max)[2:(num)]) / 2 * step), 3)
+        else if (ABC_method == "local_normalization") {
+            pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri),
+            1, max)
+            res <- round(sum((((predictBranchOri - x)/pair_wise_max)[1:(num -
+            1)] + ((predictBranchOri - x)/pair_wise_max)[2:(num)])/2 *
+            step), 3)
         }
-        else if(ABC_method == 'four_values'){ #check this 
-          ori_ABCs <- round(sum( (x[1:(num - 1)] + x[2:(num)]) / 2 * step), 3)
-          other_ABCs <- round(sum( (predictBranchOri[1:(num - 1)] + predictBranchOri[2:(num)]) / 2 * step), 3)
-          ori_ABCs_H <- round(sum( avg_delta_x[avg_delta_x > 0] * step), 3)
-          other_ABCs_H <- round(sum( avg_delta_x[avg_delta_x < 0] * step), 3)
-          res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs, ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
+        else if (ABC_method == "four_values") {
+            ori_ABCs <- round(sum((x[1:(num - 1)] + x[2:(num)])/2 *
+            step), 3)
+            other_ABCs <- round(sum((predictBranchOri[1:(num -
+            1)] + predictBranchOri[2:(num)])/2 * step),
+            3)
+            ori_ABCs_H <- round(sum(avg_delta_x[avg_delta_x >
+            0] * step), 3)
+            other_ABCs_H <- round(sum(avg_delta_x[avg_delta_x <
+            0] * step), 3)
+            res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs,
+            ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
         }
         else if (ABC_method == "ILRs") {
-                  str_logfc_df <- log2((predictBranchOri + 1)/(x + 
-                    1))
-                  res <- sum(str_logfc_df)
-                }
-        return(res)
-      })
-    ABCs
-    # list(res = res, ABC = unlist(ABCs)) predictBranchOri - x
-  }, error = function(e) {
-    print("Error!")
-    print(e)
-    res <- rep(NA, length(x))
-    ABCs <- rep(NA, length(lineage_states) - 1)
-    # list(res = res, ABC = ABCs)
-    ABCs
-  })
-
-  return(fit_res)
-}, required_packages = c("BiocGenerics", "VGAM", "base", "stats"), cores = cores, 
-    fullModelFormulaStr, ABC_method, new_cds@expressionFamily, relative_expr, new_cds@dispFitInfo[['blind']]$disp_func, 
-    pseudocount, num, lineage_states, lineage_labels, ...)
-
-  if(ABC_method %in% c('integral', 'global_normalization', 'local_normalization', 'ILRs')) {
-    ABCs_res <- do.call(rbind.data.frame, lapply(res_ABC, function(x) x[[1]]))
-    row.names(ABCs_res) <- names(res_ABC)
+            str_logfc_df <- log2((predictBranchOri + 1)/(x +
+            1))
+            res <- sum(str_logfc_df)
+        }
+        return(res)}, num = num, ABC_method = ABC_method
+    )
     
-    if(branchTest) {
-      branchTest_res[, 'ABCs'] <- ABCs_res[row.names(branchTest_res)]
-      return(branchTest_res)
-    }
-
-    ABCs_res <- merge(ABCs_res, fData(cds), by="row.names")
-    row.names(ABCs_res) <- ABCs_res[, 1] #remove the first column and set the row names to the first column
-    ABCs_res[, 1] <- NULL 
-    colnames(ABCs_res)[1] <- 'ABCs'
-  }
-  else if(ABC_method %in% c('four_values')) {
-    ABCs_res <- do.call(rbind, lapply(res_ABC,  unlist))
-  }
-  
-  return(ABCs_res)
+    ABCs_res <- merge(ABCs_res, fData(cds), by = "row.names")
+    row.names(ABCs_res) <- ABCs_res[, 1]
+    ABCs_res[, 1] <- NULL
+    colnames(ABCs_res)[1] <- "ABCs"
+    
+    return(ABCs_res)
 }
 
 #' Calculate the Instant Log Ratio between two branching lineages
@@ -403,105 +355,103 @@ calABCs <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Linea
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-calILRs <- function (cds = cds,
-    Lineage = 'Lineage', 
-    lineage_states = c(2, 3), 
-    stretch = T, 
-    cores = detectCores(), 
-    trend_formula = "~sm.ns(Pseudotime, df = 3)", 
-    ILRs_limit = 3, 
-    relative_expr = TRUE, 
-    weighted = FALSE, 
-    label_by_short_name = TRUE, 
-    useVST = FALSE, 
-    round_exprs = FALSE, 
-    pseudocount = 0, 
-    output_type = c('all', 'after_bifurcation'), 
-    file = "bifurcation_heatmap", verbose = FALSE, ...) {   
-
-    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, 
-        lineage_labels = NULL, method = "fitting", stretch = stretch, weighted = weighted, ...)
-
-    #generate cds for branches 
-    #we may also need to u
-    if(Lineage != 'Lineage')
-      warning("Warning: You didn't choose Lineage to calculate the ILRs")
-    if(length(lineage_states) != 2)
-      stop('calILRs can only work for two Lineages')
-
-    cds_branchA <- cds_subset[, pData(cds_subset)[, Lineage] == 
-        lineage_states[1]]
-    cds_branchB <- cds_subset[, pData(cds_subset)[, Lineage] == 
-        lineage_states[2]]
-
-    #fit nature spline curve for each branch
-    branchA_full_model_fits <- fitModel(cds_branchA, modelFormulaStr = trend_formula, 
-        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
-    branchB_full_model_fits <- fitModel(cds_branchB, modelFormulaStr = trend_formula, 
-        cores = cores, relative_expr = relative_expr, pseudocount = pseudocount)
-
+calILRs <- function (cds = cds, trajectory_type = "Lineage", trajectory_states = c(2,
+3), lineage_labels = NULL, stretch = T, cores = detectCores(), trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+ILRs_limit = 3, relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
+useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
+"after_bifurcation"), file = "bifurcation_heatmap", verbose = FALSE,
+...){
+    
+    if(trajectory_type == "Lineage") {
+        cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
+        lineage_labels = lineage_labels, method = method, stretch = stretch,
+        weighted = weighted, ...)
+        overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
+    }
+    else{
+        pd <- pData(cds)
+        range_df <- ddply(pd, .(get(trajectory_type)), function(x) {
+            range(x$Pseudotime)
+        })
+        
+        overlap_rng <- c(max(range_df[, 2]), min(range_df[, 3])) #calculate the overlapping pseudotime range
+        # cds <- cds[, row.names(subset(pd, Pseudotime > overlap_rng[1] & Pseudotime < overlap_rng[2]))]
+        cds_subset <- cds
+    }
+    if (trajectory_type != "Lineage")
+    warning("Warning: You didn't choose Lineage to calculate the ILRs")
+    if (length(trajectory_states) != 2)
+    stop("calILRs can only work for two Lineages")
+    if(!all(trajectory_states %in% pData(cds_subset)[, trajectory_type]))
+    stop("state(s) in trajectory_states are not included in trajectory_type")
+    
+    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+    
+    cds_branchA <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+    trajectory_states[1]]
+    cds_branchB <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+    trajectory_states[2]]
+    
+    formula_all_variables <- all.vars(as.formula(trend_formula))
+    
     t_rng <- range(pData(cds_branchA)$Pseudotime)
-
-    str_new_cds_branchA <- data.frame(Pseudotime = seq(0, max(pData(cds_branchA)$Pseudotime), 
-        length.out = 100))
-    if(verbose)
-      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
-    str_new_cds_branchB <- data.frame(Pseudotime = seq(0, max(pData(cds_branchB)$Pseudotime), 
-        length.out = 100))
-    if(verbose)
-      print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ", sort(pData(cds_branchA)$Pseudotime)))
-
-    str_branchA_expression_curve_matrix <- responseMatrix(branchA_full_model_fits, 
-        newdata = str_new_cds_branchA)
-    str_branchB_expression_curve_matrix <- responseMatrix(branchB_full_model_fits, 
-        newdata = str_new_cds_branchB)
-
-    #VST for the fitted spline curves
+    str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
+    length.out = 100), Lineage = as.factor(trajectory_states[1]))
+    if (verbose)
+    print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+    sort(pData(cds_branchA)$Pseudotime)))
+    colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Lineage
+    
+    str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
+    length.out = 100), Lineage = as.factor(trajectory_states[2]))
+    if (verbose)
+    print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
+    sort(pData(cds_branchB)$Pseudotime)))
+    colnames(str_new_cds_branchB)[2] <- formula_all_variables[2] #interaction term can be terms rather than Lineage
+    
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
+    relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
+    
+    save(str_branchAB_expression_curve_matrix, file = 'str_branchAB_expression_curve_matrix')
+    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[1:100, ]
+    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[101:200, ]
+    
     if (useVST) {
-        str_branchA_expression_curve_matrix <- vstExprs(cds, 
-            expr_matrix = str_branchA_expression_curve_matrix, 
-            round_vals = round_exprs)
-        str_branchB_expression_curve_matrix <- vstExprs(cds, 
-            expr_matrix = str_branchB_expression_curve_matrix, 
-            round_vals = round_exprs)
-
-        #when VST is used, the difference between two lineages are defined as ILRs: 
-        str_logfc_df <- str_branchA_expression_curve_matrix - 
-            str_branchB_expression_curve_matrix
+        str_branchA_expression_curve_matrix <- vstExprs(cds,
+        expr_matrix = str_branchA_expression_curve_matrix,
+        round_vals = round_exprs)
+        str_branchB_expression_curve_matrix <- vstExprs(cds,
+        expr_matrix = str_branchB_expression_curve_matrix,
+        round_vals = round_exprs)
+        str_logfc_df <- str_branchA_expression_curve_matrix -
+        str_branchB_expression_curve_matrix
     }
     else {
-        str_logfc_df <- log2((str_branchA_expression_curve_matrix + 1) / 
-          (str_branchB_expression_curve_matrix + 1))
+        str_logfc_df <- log2((str_branchA_expression_curve_matrix +
+        1)/(str_branchB_expression_curve_matrix + 1))
     }
-
-    #should we label the ILRs matrix with gene short names? 
     if (label_by_short_name) {
+        str_logfc_df <- t(str_logfc_df)
         row.names(str_logfc_df) <- fData(cds[, ])$gene_short_name
     }
-
-    #limit the range of ILRs
-    str_logfc_df[which(str_logfc_df <= -ILRs_limit)] <- -ILRs_limit
-    str_logfc_df[which(str_logfc_df >= ILRs_limit)] <- ILRs_limit
-
-    if(output_type == 'after_bifurcation') {
-      t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State == lineage_states[1]), #the pseudotime for the bifurcation point
-        which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
-      t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime == t_bifurcation_ori])$Pseudotime #corresponding stretched pseudotime
-
-      if(stretch)
-        bif_index <- as.integer(pData(cds_subset[,  pData(cds)$Pseudotime == t_bifurcation])$Pseudotime)
-      else { #earliest bifurcation point on the original pseudotime scale (no stretching)
-        bif_index <- as.integer(min(t_bifurcation / (max(pData(cds_branchA)$Pseudotime) / 100), 
-                        t_bifurcation / (max(pData(cds_branchB)$Pseudotime) / 100))) 
-      }
-      #select only ILRs data points after the bifuration point
-      
-      str_logfc_df[, bif_index:100] <- str_logfc_df
+    str_logfc_df[which(str_logfc_df <= -ILRs_limit, arr.ind = T)] <- -ILRs_limit
+    str_logfc_df[which(str_logfc_df >= ILRs_limit, arr.ind = T)] <- ILRs_limit
+    if (output_type == "after_bifurcation") {
+        t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State ==
+        lineage_states[1]), which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
+        t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime ==
+        t_bifurcation_ori])$Pseudotime
+        if (stretch)
+        bif_index <- as.integer(pData(cds_subset[, pData(cds)$Pseudotime ==
+        t_bifurcation])$Pseudotime)
+        else {
+            bif_index <- as.integer(min(t_bifurcation/(max(pData(cds_branchA)$Pseudotime)/100),
+            t_bifurcation/(max(pData(cds_branchB)$Pseudotime)/100)))
+        }
+        str_logfc_df[, bif_index:100] <- str_logfc_df
     }
-
-    if(!is.null(file)) #save the data file calculated since it will take a lot time to generate
-      save(str_logfc_df, str_branchA_expression_curve_matrix, str_branchB_expression_curve_matrix, 
-          file = file)
-
+    if (!is.null(file))
+    save(str_logfc_df, str_branchA_expression_curve_matrix,
+    str_branchB_expression_curve_matrix, file = file)
     return(str_logfc_df)
 }

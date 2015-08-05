@@ -431,3 +431,40 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
   }
   return (NULL)
 }
+
+genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
+    relative_expr = T, pseudocount = 0, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB)) {
+    
+    expressionFamily <- cds@expressionFamily
+    
+    if(cores > 1) {
+        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
+            relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+            expression_curve_matrix <- matrix(rep(NA, length(x)), nrow = 1)
+            else
+            expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
+        }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores,
+        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+        )
+    }
+    else {
+        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
+            relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+            expression_curve_matrix <- matrix(rep(NA, nrow(new_data)), nrow = 1)
+            else
+            expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
+        },
+        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+        )
+    }
+    
+    expression_curve_matrix
+}
