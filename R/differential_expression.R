@@ -534,7 +534,7 @@ calILRs <- function (cds = cds,
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-detectBifurcationPoint <- function(str_log_df = NULL, str_norm_div_df = NULL, ILRs_threshold = 0.5, div_threshold = 0.2, detect_all = T,
+detectBifurcationPoint <- function(str_log_df = NULL, ILRs_threshold = 0.5, detect_all = T,
 cds = cds,
 Lineage = 'Lineage',
 lineage_states = c(2, 3),
@@ -569,46 +569,43 @@ file = "bifurcation_heatmap", verbose = FALSE, ...) {
         output_type = output_type,
         file, verbose, ...)
     }
+    # rMax <- function(df) {apply(df, 1, function(x) if(all(is.na(x))) NA else max(abs(x), na.rm = T))}
     
-    if(!is.null(str_log_df) & is.null(str_norm_div_df)) {
+    else {
         bifurcation_time <- apply(str_log_df, 1, function(x) {
             # deriv <- diff(x) the ILRs are smooth, so use min is fine
-            index <- NA
-            if(any(which(abs(x) > div_threshold)))
-            index <- min(which(abs(x) > ILRs_threshold)) * sign(sum(x))
-            else if(detect_all & all(!is.na(x))) index <-  min(which(abs(x) == max(abs(x))))
-            index
-        }
-        ) #detect the earliest divergence point
-    }
-    else if(is.null(str_log_df) & !is.null(str_norm_div_df)) {
-        bifurcation_time <- apply(str_norm_div_df, 1, function(x) {
-            # deriv <- diff(x) the ILRs are smooth, so use min is fine
-            index <- NA
-            if(any(which(abs(x) > div_threshold)))
-            index <- min(which(abs(x) > ILRs_threshold)) * sign(sum(x))
-            else if(detect_all & all(!is.na(x))) index <-  min(which(abs(x) == max(abs(x))))
-            index
-        }
-        ) #detect the earliest divergence point
-    }
-    else { #use both of div threshold / ILRs threshold
-        str_log_df_list <- split(str_log_df, row.names(str_log_df))
-        str_norm_div_df_list <- split(str_norm_div_df, row.names(str_norm_div_df))
-        
-        save(logic_tmp, str_norm_div_df_list,  str_log_df_list, file = 'logic_tmp')
-        bifurcation_time <- mapply(function(x, y, ILRs_thresh = ILRs_threshold, div_thresh = div_threshold) {
-            # deriv <- diff(x) the ILRs are smooth, so use min is fine
-            index <- NA
+            index <- Inf
             
-            logic_tmp <- (abs(x) > ILRs_thresh) & (abs(y) > div_thresh)
-            if(all(is.logical(logic_tmp)) & any(logic_tmp, na.rm = T))
-            index <- min(which(abs(x) > ILRs_thresh & abs(y) > div_thresh)) * sign(sum(x))
-            else if(detect_all & all(!is.na(x))) index <-  min(which(abs(x) == max(abs(x))))
+            #new algorithm to bifurcation time point:
+            if(all(is.na(x))) {
+                return(NA)
+            }
+            
+            max_ind <- which(abs(x) == max(abs(x)))
+            
+            # return(max(max_ind))
+            if(length(max_ind) > 1) {
+                max_ind <- min(max_ind)
+                warning('multiple maximal time points detected ', max_ind)
+            }
+            
+            #detect the cross point
+            inflection_point_tmp <- which(x[1:(length(x) - 1)] * x[2:length(x)] <= 0)
+            inflection_point <- max(inflection_point_tmp[inflection_point_tmp < max_ind])
+            
+            rev_x <- rev(x[(inflection_point):max_ind])
+            if(any(which(abs(rev_x) >= ILRs_threshold))){
+                index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
+                index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
+            }
+            else if(detect_all & all(!is.na(rev_x))) {
+                index <-  min(which(abs(rev_x) == max(abs(rev_x)))) * sign(sum(rev_x))
+            }
+            
             index
-        }, str_log_df_list, str_norm_div_df_list
-        ) #detect the earliest divergence point
+        })
     }
+    
     # print(bifurcation_time)
     # str_norm_div_df
     
@@ -616,3 +613,4 @@ file = "bifurcation_heatmap", verbose = FALSE, ...) {
     
     return(bifurcation_time)
 }
+
