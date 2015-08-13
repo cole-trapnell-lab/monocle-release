@@ -534,7 +534,7 @@ calILRs <- function (cds = cds,
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-detectBifurcationPoint <- function(str_log_df = NULL, ILRs_threshold = 0.5, detect_all = T,
+detectBifurcationPoint <- function(str_log_df = NULL, ILRs_threshold = 0.1, detect_all = T,
 cds = cds,
 Lineage = 'Lineage',
 lineage_states = c(2, 3),
@@ -589,8 +589,12 @@ file = "bifurcation_heatmap", verbose = FALSE, ...) {
                 warning('multiple maximal time points detected ', max_ind)
             }
             
+            save(x, file = 'x')
             #detect the cross point
             inflection_point_tmp <- which(x[1:(length(x) - 1)] * x[2:length(x)] <= 0)
+            
+            if(all(max_ind <= inflection_point_tmp)) return(NA) #remove all zero values and genes monotonically goes down
+            
             inflection_point <- max(inflection_point_tmp[inflection_point_tmp < max_ind])
             
             rev_x <- rev(x[(inflection_point):max_ind])
