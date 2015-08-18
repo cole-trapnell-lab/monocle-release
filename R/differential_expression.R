@@ -172,7 +172,6 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        lineage_labels = NULL, ...) {
 
   cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
-  cds_subset <- estimateSizeFactors(cds_subset) 
 
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
