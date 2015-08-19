@@ -411,6 +411,8 @@ buildLineageBranchCellDataSet <- function(cds,
   pData(cds_subset)$State <- as.factor(pData(cds_subset)$State)
   pData(cds_subset)$Size_Factor <- Size_Factor
   
+  cds_subset@dispFitInfo <- cds@dispFitInfo
+
   return (cds_subset)
 }
 
