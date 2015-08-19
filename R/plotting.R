@@ -1336,7 +1336,7 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     show_colnames=F,
     #scale="row",
     clustering_distance_rows=row_dist,
-    clustering_method = 'ward',
+    clustering_method = hclust_method,
     cutree_rows=num_clusters,
     #breaks=bks,
     color=hmcols#,
@@ -1344,8 +1344,8 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     )
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
     annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
-    annotation_row[annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd, "-log 10(qval)"] <- qval_lowest_thrsd
-    annotation_row[annotation_row[, "-log 10(qval)"] > qval_highest_thrsd, "-log 10(qval)"] <- qval_highest_thrsd
+    annotation_row[which(annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd), "-log 10(qval)"] <- qval_lowest_thrsd
+    annotation_row[which(annotation_row[, "-log 10(qval)"] > qval_highest_thrsd), "-log 10(qval)"] <- qval_highest_thrsd
     
     annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
     annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
