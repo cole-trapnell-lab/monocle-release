@@ -1266,3 +1266,128 @@ plot_ILRs_heatmap <- function (cds,
         annotation_legend = T, ...)
 }
 
+#'  Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
+#'
+#' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
+#' @param num_clusters Number of clusters for the heatmap of branch genes
+#' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function
+#' @param branchTest_df Matrix of branchTest result (normally only on the branching genes)
+#' @param lineage_labels The label for the lineages (first (second) lineage corresponding to state 2 (3))
+#' @param vstExprs Logic flag to determine whether or not vst will be performed for the fitted gene expression values
+#' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)
+#' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
+#' @param heatmap_height Height of the saved heatmap
+#' @param heatmap_width Width of the saved heatmap
+#' @param ABC_lowest_thrsd The minimum log10(abs(ABCs)) used to annotate the heatmap
+#' @param ABC_highest_thrsd The maximum log10(abs(ABCs)) used to annotate the heatmap
+#' @param qval_lowest_thrsd The minimum log10(qval) used to annotate the heatmap
+#' @param qval_highest_thrsd The maximum log10(qval) used to annotate the heatmap
+#' @param file_name Name of the file to save the heatmap
+#' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object), annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column)
+#' @import pheatmap
+#' @export
+#'
+#'
+plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
+    ABC_df, branchTest_df,
+    lineage_labels = c("AT1", "AT2"),
+    vstExprs = T, dist_method = NULL, hclust_method = "ward", heatmap_height = 3, heatmap_width = 4,
+    ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
+    qval_lowest_thrsd = 1, qval_highest_thrsd = 5,
+    file_name = "genes_branched_heatmap.pdf", cores = 1) {
+    
+    new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = T)
+    new_cds@dispFitInfo <- cds_subset@dispFitInfo
+    
+    col_gap_ind <- 101
+    newdata <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
+    
+    LineageA_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],
+    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
+    
+    if(vstExprs) {
+        LineageA_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+    }
+    
+    LineageB_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],
+    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
+    
+    if(vstExprs) {
+        LineageB_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+    }
+    
+    heatmap_matrix <- cbind(LineageA_smoothed_exprs[, 100:1], LineageB_smoothed_exprs)
+    
+    heatmap_matrix <- t(scale(t(heatmap_matrix)))
+    heatmap_matrix[heatmap_matrix > 3] <- 3
+    heatmap_matrix[heatmap_matrix < -3] <- -3
+    
+    row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
+    row_dist[is.na(row_dist)] <- 1
+    
+    bk <- seq(-3.1,3.1, by=0.1)
+    
+    hmcols <-  blue2green2red(length(bk) - 1)
+    
+    ph <- pheatmap(heatmap_matrix,
+    cluster_cols=FALSE,
+    cluster_rows=TRUE,
+    show_rownames=F,
+    show_colnames=F,
+    #scale="row",
+    clustering_distance_rows=row_dist,
+    clustering_method = 'ward',
+    cutree_rows=num_clusters,
+    #breaks=bks,
+    color=hmcols#,
+    # filename="expression_pseudotime_pheatmap.pdf",
+    )
+    annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
+    annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
+    annotation_row[annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd, "-log 10(qval)"] <- qval_lowest_thrsd
+    annotation_row[annotation_row[, "-log 10(qval)"] > qval_highest_thrsd, "-log 10(qval)"] <- qval_highest_thrsd
+    
+    annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
+    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
+    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
+    
+    pData(AT12_cds_subset_all_gene)$cell_type <- "Progenitor"
+    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 2] <- lineage_labels[1]
+    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 3] <- lineage_labels[2]
+    
+    colnames(heatmap_matrix) <- c(1:200)
+    annotation_col <- data.frame(row.names = c(1:200), "Cell Type" = c(rep("AT1", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
+    rep("Progenitor",  2 * floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
+    rep("AT2", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime'])))
+    ))
+    colnames(annotation_col) <- "Cell Type"
+    annotation_colors=list("Cell Type"=c(Progenitor="#E41A1C",
+    AT1="#377EB8",
+    AT2="#4DAF4A"))
+    names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
+    # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
+    pdf(file_name, height = heatmap_height, width = heatmap_width)
+    pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+    cluster_cols=FALSE,
+    cluster_rows=TRUE,
+    show_rownames=F,
+    show_colnames=F,
+    #scale="row",
+    clustering_distance_rows=row_dist, #row_dist
+    clustering_method = hclust_method, #ward.D2
+    cutree_rows=num_clusters,
+    cutree_cols = 2,
+    annotation_row=annotation_row,
+    annotation_col=annotation_col,
+    annotation_colors=annotation_colors,
+    gaps_col = col_gap_ind,
+    treeheight_row = 1.5,
+    #breaks=bks,
+    fontsize = 6,
+    color=hmcols
+    # filename="expression_pseudotime_pheatmap.pdf",
+    )
+    dev.off()
+    
+    return(list(heatmap_matrix = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+}
