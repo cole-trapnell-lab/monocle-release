@@ -393,7 +393,6 @@ buildLineageBranchCellDataSet <- function(cds,
   } else {
       weight_constant <- 1
   }
-  else weight_constant <- 1
 
   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
   row.names(range_df) <- as.character(range_df$State)
