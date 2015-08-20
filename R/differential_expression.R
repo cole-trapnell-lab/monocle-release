@@ -460,3 +460,116 @@ useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
     str_branchB_expression_curve_matrix, file = file)
     return(str_logfc_df)
 }
+
+#' Detect the maturation time point where the gene expression starts to diverge 
+#' 
+#' This function is used to determine the bifurcation point for the gene expression between two distinct biological processes.
+#' For processes we can not distinguish between lineages (or phenotype groups, like knockout VS un-knockout), this function will 
+#' only detect bifurcation points after the inferenced bifurcatioin from the PQ-tree. The 
+#'
+#' @param str_log_df the ILRs dataframe calculated from calILRs function. If this data.frame is provided, all the following parameters are ignored. Note that we need to only use the ILRs after the bifurcation point if we duplicated the progenitor cell state.
+#' @param div_threshold the ILR value used to determine the earliest divergence time point
+#' @param detect_all a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point
+#' @param cds CellDataSet for the experiment
+#' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
+#' @param lineage_states The states for two branching lineages
+#' @param cores Number of cores when fitting the spline curves
+#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
+#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
+#' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
+#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param label_by_short_name label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)
+#' @param useVST A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
+#' When VST is used, the difference between two lineages are used instead of the log-ratio.
+#' @param round_exprs A logic flag to determine whether or not the expression value should be rounded into integer
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param output_type A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Lineage is set to "Lineage", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells
+#' @param file the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored
+#' @return a vector containing the time for the bifurcation point with gene names for each value
+#' @importFrom reshape2 melt
+#' @export 
+#' 
+detectBifurcationPoint <- function(str_log_df = NULL, ILRs_threshold = 0.1, detect_all = T,
+cds = cds,
+Lineage = 'Lineage',
+lineage_states = c(2, 3),
+stretch = T,
+cores = detectCores(),
+trend_formula = "~sm.ns(Pseudotime, df = 3)",
+ILRs_limit = 3,
+relative_expr = TRUE,
+weighted = FALSE,
+label_by_short_name = TRUE,
+useVST = FALSE,
+round_exprs = FALSE,
+pseudocount = 0,
+output_type = c('all', 'after_bifurcation'),
+file = "bifurcation_heatmap", verbose = FALSE, ...) {
+    if(is.null(str_log_df)) {
+        if(Lineage == 'Lineage') output_type = 'after_bifurcation'
+        
+        str_log_df <- calILRs(cds = cds,
+        Lineage,
+        lineage_states,
+        stretch,
+        cores,
+        trend_formula,
+        ILRs_limit,
+        relative_expr,
+        weighted,
+        label_by_short_name,
+        useVST,
+        round_exprs,
+        pseudocount,
+        output_type = output_type,
+        file, verbose, ...)
+    }
+    # rMax <- function(df) {apply(df, 1, function(x) if(all(is.na(x))) NA else max(abs(x), na.rm = T))}
+    
+    else {
+        bifurcation_time <- apply(str_log_df, 1, function(x) {
+            # deriv <- diff(x) the ILRs are smooth, so use min is fine
+            index <- Inf
+            
+            #new algorithm to bifurcation time point:
+            if(all(is.na(x))) {
+                return(NA)
+            }
+            
+            max_ind <- which(abs(x) == max(abs(x)))
+            
+            # return(max(max_ind))
+            if(length(max_ind) > 1) {
+                max_ind <- min(max_ind)
+                warning('multiple maximal time points detected ', max_ind)
+            }
+            
+            save(x, file = 'x')
+            #detect the cross point
+            inflection_point_tmp <- which(x[1:(length(x) - 1)] * x[2:length(x)] <= 0)
+            
+            if(all(max_ind <= inflection_point_tmp)) return(NA) #remove all zero values and genes monotonically goes down
+            
+            inflection_point <- max(inflection_point_tmp[inflection_point_tmp < max_ind])
+            
+            rev_x <- rev(x[(inflection_point):max_ind])
+            if(any(which(abs(rev_x) >= ILRs_threshold))){
+                index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
+                index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
+            }
+            else if(detect_all & all(!is.na(rev_x))) {
+                index <-  min(which(abs(rev_x) == max(abs(rev_x)))) * sign(sum(rev_x))
+            }
+            
+            index
+        })
+    }
+    
+    # print(bifurcation_time)
+    # str_norm_div_df
+    
+    names(bifurcation_time) <- row.names(str_log_df)
+    
+    return(bifurcation_time)
+}
+
