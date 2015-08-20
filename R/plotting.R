@@ -24,6 +24,7 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_name_size the size of cell name labels
+#' @param show_all_lineages draw all the bifurcation trajectories with thick pathes
 #' @return a ggplot2 plot object
 #' @importFrom grid unit
 #' @import ggplot2
@@ -139,15 +140,20 @@ plot_spanning_tree <- function(cds,
   }
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
-  }else{
-    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
+      for(i in unique(diam[, 'State'])) { #plot each lineage separately
+          g <- g + geom_path(aes(x = ICA_dim_1, y = ICA_dim_2),
+          color = I(backbone_color), size = I(cell_link_size),
+          data = subset(diam, State == i), na.rm = TRUE)
+      }
   }
  g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
   if (show_backbone){
     #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) 
+    if(backbone_color %in% colnames(diam))
+        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=diam[, backbone_color], size=I(cell_link_size), data=diam, na.rm=TRUE)
+    else
+        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
@@ -924,8 +930,11 @@ plot_genes_branched_pseudotime <- function (cds,
             ...)
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
-
-  cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states, lineage_labels = lineage_labels, method = method, stretch = stretch, weighted = weighted, ...)
+    if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
+        cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+        lineage_labels = lineage_labels, method = method, stretch = stretch,
+        weighted = weighted, ...)
+    }
     if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
         "negbinomial", "poissonff", "quasipoissonff")) {
         integer_expression <- TRUE
@@ -977,15 +986,6 @@ plot_genes_branched_pseudotime <- function (cds,
     merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
         function(x) {
             fit_res <- tryCatch({
-            #expression <- x$adjusted_expression
-              
-              #df <- data.frame(expression = round(x))
-              #df <- cbind(df, pData)
-              
-              # If we're using the negbinomial, set up a new expressionSet object 
-              # so we can specify a hint for the size parameter, which will reduce the 
-              # chance of a fitting failure
-
                 expressionFamily <- cds@expressionFamily
                 if (expressionFamily@vfamily == "negbinomial") {
                   if (!is.null(cds@dispFitInfo[["blind"]]$disp_func)) {
@@ -1015,12 +1015,13 @@ plot_genes_branched_pseudotime <- function (cds,
                 res <- rep(NA, nrow(x))
                 res
             })
+    #        df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+    #            Lineage = x$Lineage, knocout = x$knocout)
+    #        if (add_ABC)
+    #            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
+    #              Lineage = x$Lineage, knocout = x$knocout, ABCs = x$ABCs)
+             df <- cbind(x, expectation = fit_res)
 
-            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                Lineage = x$Lineage)
-            if (add_ABC)
-                df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-                  Lineage = x$Lineage, ABCs = x$ABCs)
             df
         })
     if (method == "loess")
@@ -1039,12 +1040,13 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-      cds_exprs$feature_label <- factor(cds_exprs$feature_label,
+        cds_exprst$feature_label <- factor(cds_exprst$feature_label,
             levels = panel_order)
     }
     merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
-    cds_exprs$State <- as.factor(cds_exprs$State)
-    merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    #cds_exprs$State <- as.factor(cds_exprs$State)
+    #merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
+    #merged_df_with_vgam <- cbind(merged_df_with_vgam, cds_exprs)
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
     if (is.null(color_by) == FALSE) {
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
@@ -1056,20 +1058,17 @@ plot_genes_branched_pseudotime <- function (cds,
         nrow = nrow, ncol = ncol, scales = "free_y")
     if (method == "loess")
         q <- q + stat_smooth(aes(fill = Lineage, color = Lineage),
-            method = "loess", se=F)
+            method = "loess")
     else if (method == "fitting") {
-        q <- q + geom_line(aes(x = Pseudotime, y = expectation,
-            color = Lineage), data = merged_df_with_vgam)
+        q <- q + geom_line(aes_string(x = "Pseudotime", y = "expectation",
+            color = color_by), data = merged_df_with_vgam)
     }
-    # if (!is.null(gene_pairs))
-    #     q <- q + facet_wrap(~Gene)
     if (stretch)
         q <- q + ylab("Expression") + xlab("Maturation levels")
     else q <- q + ylab("Expression") + xlab("Pseudotime")
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
-
 #' Plot the branch genes in pseduotime with separate lineage curves 
 #' @param cds CellDataSet for the experiment
 #' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.

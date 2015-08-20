@@ -171,7 +171,13 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        weighted = TRUE, 
                        lineage_labels = NULL, ...) {
 
-  cds_subset <- buildLineageBranchCellDataSet(cds, lineage_states, lineage_labels, stretch, weighted, ...)
+  if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
+     cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
+     lineage_labels = lineage_labels, method = method, stretch = stretch,
+     weighted = weighted, ...)
+  }
+  else
+    cds_subset <- cds
 
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 

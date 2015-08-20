@@ -131,6 +131,60 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
     }
     res_matrix
 }
+
+#' Fit smooth spline curves and return the response matrix
+#'
+#' This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return
+#' the corresponding response matrix. This function is build on other functions (fit_models and responseMatrix) and used in calILRs and calABCs functions
+#'
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param new_data a data.frame object including columns (for example, Pseudotime) with names specified in the model formula. The values in the data.frame should be consist with the corresponding values from cds object.
+#' @param trend_formula a formula string specifying the model formula used in fitting the spline curve for each gene/feature.
+#' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
+#' @param pseudocount pseudo count added before fitting the spline curves
+#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @return a data frame containing the data for the fitted spline curves.
+#' @export
+#'
+
+genSmoothCurves <- function(cds, new_data, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
+        relative_expr = F, pseudocount = 0) {
+    expressionFamily <- cds@expressionFamily
+    
+    if(cores > 1) {
+        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
+            relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+            expression_curve_matrix <- rep(NA, length(x))
+            else
+            expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
+        }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores,
+        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+        )
+    }
+    else {
+        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
+            relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+            expression_curve_matrix <- rep(NA, length(x))
+            else
+            expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
+        },
+        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+        )
+    }
+    
+    expression_curve_matrix
+}
+
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 parametricDispersionFit <- function( means, disps )
 {
@@ -339,6 +393,7 @@ buildLineageBranchCellDataSet <- function(cds,
   } else {
       weight_constant <- 1
   }
+  else weight_constant <- 1
 
   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
   row.names(range_df) <- as.character(range_df$State)
