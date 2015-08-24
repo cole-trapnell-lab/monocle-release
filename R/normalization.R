@@ -269,7 +269,8 @@ estimate_t <- function(relative_expr_matrix, return_all = F, relative_expr_thres
 #' which correspond to the slope and intercept for the linear conversion function between log10 FPKM and log10 transcript counts. The function will then apply a linear transformation 
 #' to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The default m/c values used in the algoritm are 3.652201, 2.263576, respectively.
 #' 
-#' @param relative_expr_matrix an matrix of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included
+#' @param relative_cds the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included
+#' @param modelFormulaStr modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.
 #' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 #' based on isoform FPKM will give better results in general
 #' @param m the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)
@@ -299,12 +300,14 @@ estimate_t <- function(relative_expr_matrix, return_all = F, relative_expr_thres
 #' HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix, t_estimate = estimate_t(HSMM_relative_expr_matrix))
 #'}
 
-relative2abs <- function(relative_expr_matrix, t_estimate = estimate_t(relative_expr_matrix),
+relative2abs <- function(relative_cds, modelFormulaStr = "~1",, t_estimate = estimate_t(relative_expr_matrix),
                                 m = -3.652201, c = 2.263576, m_rng = c(-10, -0.1), c_rng = c(c, c), 
-                                ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10, dilution = 40000, mixture_type = 1, 
+                                ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10, dilution = 40000, mixture_type = 1,
                                 detection_threshold = 800, alpha_v = 1, total_RNAs = 50000, weight = 0.01, 
                                 verbose = FALSE, return_all = FALSE, cores = 1, optim_num = 1) {
-  if (detection_threshold < 0.01430512 | detection_threshold > 
+  relative_expr_matrix <- exprs(relative_cds)
+
+  if (detection_threshold < 0.01430512 | detection_threshold >
         7500) 
     stop("concentration detection limit should be between 0.01430512 and 7500")
 
@@ -376,86 +379,97 @@ relative2abs <- function(relative_expr_matrix, t_estimate = estimate_t(relative_
     norm_fpkms
   }
   else {
-    split_relative_exprs <- split(as.matrix(relative_expr_matrix), 
-                                  col(relative_expr_matrix, as.factor = T))
-    names(t_estimate) <- colnames(relative_expr_matrix)
-    
-    if(verbose)
-      message('optimizating mc values...')
-    #the t_estimate may also need to optimized: 
-    for(optim_iter in 1:optim_num) {
-      if(verbose)
-        message(paste('optimization cycle', optim_iter, '...'))
+      formula_all_variables <- all.vars(as.formula(modelFormulaStr))
       
-      if(c_rng[1] != c_rng[2]){
-        if(verbose)
-          message('optimization m and c values (NOTE that c range should not be huge)')
+      names(t_estimate) <- colnames(relative_expr_matrix)
+      
+      pd <- pData(relative_cds)
+      pd$Cell = row.names(pd) #use pData instead of the merged data.frame
+      norm_cds_list <- plyr::dlply(pd, c(formula_all_variables), function(x){
+          relative_expr_matrix_subsets <- relative_expr_matrix[, x$Cell]
           
-        optim_para <- optim(par = c(m = m, c = c), 
-                            optim_mc_func_fix_c, gr = NULL, c = c, t_estimate = t_estimate, verbose = verbose, 
-                            alpha = alpha_v, total_RNAs = total_RNAs, cores = cores, weight = weight, pseudocnt = 0.01,
-                            relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
-                            method = c("L-BFGS-B"),
-                            lower = c(rep(as.vector(t_estimate) - 0, 0), m_rng[1], c_rng[1]), #search half low or up of the t_estimate
-                            upper = c(rep(as.vector(t_estimate) + 0, 0), m_rng[2], c_rng[2]), #m, c is between (-0.1 to -10 and 0.1 to 10)
-                            control = list(factr = 1e12, pgtol = 1e-3, trace = 1, ndeps = c(1e-3, 1e-3) ), #as.vector(t_estimate) / 1000,
-                            hessian = FALSE)
-      }
-      else{
-        if(verbose)
-          message('optimization m and fix c as discussed in the method')
+          split_relative_exprs <- split(as.matrix(relative_expr_matrix_subsets), col(relative_expr_matrix_subsets, as.factor = T))
           
-        optim_para <- optim(par = c(m = m),
-                      optim_mc_func_fix_c, gr = NULL, c = c, t_estimate = t_estimate,
-                      alpha = alpha_v, total_RNAs = total_RNAs, cores = cores, weight = weight, pseudocnt = 0.01,
-                      relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
-                      method = c("Brent"),
-                      lower = c(rep(as.vector(t_estimate) - 0, 0), m_rng[1]), #search half low or up of the t_estimate
-                      upper = c(rep(as.vector(t_estimate) + 0, 0), m_rng[2]), #m, c is between (-0.1 to -10 and 0.1 to 10)
-                      control = list(factr = 1e12, pgtol = 1e-3, trace = 1, ndeps = c(1e-3) ), #as.vector(t_estimate) / 1000,
-                      hessian = FALSE)
+          t_estimate_subset <- t_estimate[colnames(relative_expr_matrix_subsets)]
+          if (verbose)
+          message("optimizating mc values...")
+          for (optim_iter in 1:optim_num) {
+              if (verbose)
+              message(paste("optimization cycle", optim_iter,
+              "..."))
+              if (c_rng[1] != c_rng[2]) {
+                  if (verbose)
+                  message("optimization m and c values (NOTE that c range should not be huge)")
+                  optim_para <- optim(par = c(m = m, c = c), optim_mc_func_fix_c,
+                  gr = NULL, c = c, t_estimate = t_estimate_subset,
+                  verbose = verbose, alpha = alpha_v, total_RNAs = total_RNAs,
+                  cores = cores, weight = weight, pseudocnt = 0.01,
+                  relative_expr_matrix = relative_expr_matrix_subsets,
+                  split_relative_expr_matrix = split_relative_exprs,
+                  method = c("L-BFGS-B"), lower = c(rep(as.vector(t_estimate_subset) -
+                  0, 0), m_rng[1], c_rng[1]), upper = c(rep(as.vector(t_estimate_subset) +
+                  0, 0), m_rng[2], c_rng[2]), control = list(factr = 1e+12,
+                  pgtol = 0.001, trace = 1, ndeps = c(0.001,
+                  0.001)), hessian = FALSE)
+              }
+              else {
+                  if (verbose)
+                  message("optimization m and fix c as discussed in the method")
+                  optim_para <- optim(par = c(m = m), optim_mc_func_fix_c,
+                  gr = NULL, c = c, t_estimate = t_estimate_subset,
+                  alpha = alpha_v, total_RNAs = total_RNAs, cores = cores,
+                  weight = weight, pseudocnt = 0.01, relative_expr_matrix = relative_expr_matrix_subsets,
+                  split_relative_expr_matrix = split_relative_exprs,
+                  method = c("Brent"), lower = c(rep(as.vector(t_estimate_subset) -
+                  0, 0), m_rng[1]), upper = c(rep(as.vector(t_estimate_subset) +
+                  0, 0), m_rng[2]), control = list(factr = 1e+12,
+                  pgtol = 0.001, trace = 1, ndeps = c(0.001)),
+                  hessian = FALSE)
+              }
+              if (verbose)
+              message("optimization is done!")
+              m <- optim_para$par[1]
+              if (c_rng[1] != c_rng[2])
+              c <- optim_para$par[2]
+              total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix_subsets),
+              t_estimate = t_estimate_subset)
+              if (verbose)
+              message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
+              k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
+              function(x) {
+                  a_matrix <- matrix(c(log10(x[, "t_estimate"]),
+                  1, m, -1), ncol = 2, nrow = 2, byrow = T)
+                  colnames(a_matrix) <- c("k", "b")
+                  b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
+                  k_b_solution <- t(solve(a_matrix, b_matrix))
+              })
+              rownames(k_b_solution) <- k_b_solution$Cell
+              k_b_solution <- t(k_b_solution[, c(2, 3)])
+              split_kb <- split(k_b_solution, col(k_b_solution,
+              as.factor = T))
+              if (verbose)
+              message("Apply the estimated linear regression model to recovery the absolute copy number for all transcripts each cell...")
+              adj_split_relative_expr <- mcmapply(norm_kb, split_kb,
+              split_relative_exprs, mc.cores = cores)
+              total_rna_df$estimate_k <- k_b_solution[1, ]
+              total_rna_df$estimate_b <- k_b_solution[2, ]
+              norm_cds <- adj_split_relative_expr
+              row.names(norm_cds) <- row.names(relative_expr_matrix_subsets)
+              colnames(norm_cds) <- colnames(relative_expr_matrix_subsets)
+              t_estimate_subset <- 10^(-(m + c/total_rna_df$estimate_k))
+              alpha_v <- estimate_t(norm_cds)
+              total_RNAs <- apply(norm_cds, 2, sum)
+          }
+          return(list(norm_cds = norm_cds, m = m, c = c, k_b_solution = k_b_solution)) #
       }
-
-      if(verbose)
-        message('optimization is done!')
+      )
       
-      m <- optim_para$par[1]
-      if(c_rng[1] != c_rng[2]) 
-        c <- optim_para$par[2]
+      norm_cds <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$norm_cds))
+      m_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$m))
+      c_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$c))
+      k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
       
-      total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix), 
-                                 t_estimate = t_estimate)
-      if (verbose) 
-        message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
-      
-      k_b_solution <- plyr::ddply(total_rna_df, .(Cell), function(x) {
-        a_matrix <- matrix(c(log10(x[, "t_estimate"]), 1, 
-                             m, -1), ncol = 2, nrow = 2, byrow = T)
-        colnames(a_matrix) <- c("k", "b")
-        b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
-        k_b_solution <- t(solve(a_matrix, b_matrix))
-      })
-      
-      rownames(k_b_solution) <- k_b_solution$Cell
-      k_b_solution <- t(k_b_solution[, c(2, 3)])
-      split_kb <- split(k_b_solution, col(k_b_solution, as.factor = T))
-      if (verbose) 
-        message("Apply the estimated linear regression model to recovery the absolute copy number for all transcripts each cell...")
-      adj_split_relative_expr <- mcmapply(norm_kb, split_kb, 
-                                          split_relative_exprs, mc.cores = cores)
-      total_rna_df$estimate_k <- k_b_solution[1, ]
-      total_rna_df$estimate_b <- k_b_solution[2, ]
-      norm_cds <- adj_split_relative_expr
-      row.names(norm_cds) <- row.names(relative_expr_matrix)
-      colnames(norm_cds) <- colnames(relative_expr_matrix)
-      
-      #update t_estimate, alpha_v, total_RNAs
-      t_estimate <- 10^(-(m + c / total_rna_df$estimate_k))
-      alpha_v <- estimate_t(norm_cds)
-      total_RNAs <- apply(norm_cds, 2, sum)
-    }
-    
-    if (verbose) 
+      if (verbose)
       message("Return results...")
     if (return_all == T) {
       return(list(norm_cds = norm_cds, m = m, c = c, k_b_solution = k_b_solution))
