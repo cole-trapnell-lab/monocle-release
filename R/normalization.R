@@ -465,6 +465,9 @@ relative2abs <- function(relative_cds, modelFormulaStr = "~1",, t_estimate = est
       )
       
       norm_cds <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$norm_cds))
+      colnames(norm_cds) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$norm_cds)))) #set colnames
+      norm_cds <- norm_cds[, colnames(relative_cds)] #switch back to the original order
+
       m_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$m))
       c_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$c))
       k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
