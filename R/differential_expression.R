@@ -190,6 +190,45 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
   return(branchTest_res)
 }
 
+#add genSmoothCurves function: 
+genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", 
+                        relative_expr = T, pseudocount = 0, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB)) { 
+    
+    expressionFamily <- cds@expressionFamily
+
+    if(cores > 1) {
+        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
+                                       relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+                expression_curve <- matrix(rep(NA, length(x)), nrow = 1)
+            else
+                expression_curve <- responseMatrix(list(model_fits), newdata = new_data)
+
+            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            )
+    }
+    else {
+        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+            environment(fit_model_helper) <- environment()
+            environment(responseMatrix) <- environment()
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
+                                       relative_expr = relative_expr, pseudocount = pseudocount)
+            if(is.null(model_fits))
+                expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
+            else
+                expression_curve <- responseMatrix(list(model_fits), new_data)
+
+            }, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            )
+    }
+
+    t(expression_curve_matrix)
+}
 #to do: 
 # 1. think about how calculating ABCs for multiple lineages (use a common reference as implemented?)
 # 2. how to store ABCs? 
@@ -364,7 +403,7 @@ calILRs <- function (cds = cds, trajectory_type = "Lineage", trajectory_states =
 3), lineage_labels = NULL, stretch = T, cores = detectCores(), trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 ILRs_limit = 3, relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
 useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
-"after_bifurcation"), file = "bifurcation_heatmap", verbose = FALSE,
+"after_bifurcation"), file = "bifurcation_heatmap", return_all = F, verbose = FALSE,
 ...){
     
     if(trajectory_type == "Lineage") {
@@ -417,7 +456,6 @@ useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
     str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
     relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
     
-    save(str_branchAB_expression_curve_matrix, file = 'str_branchAB_expression_curve_matrix')
     str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[1:100, ]
     str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[101:200, ]
     
@@ -456,9 +494,13 @@ useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
         str_logfc_df[, bif_index:100] <- str_logfc_df
     }
     if (!is.null(file))
-    save(str_logfc_df, str_branchA_expression_curve_matrix,
-    str_branchB_expression_curve_matrix, file = file)
-    return(str_logfc_df)
+      save(str_logfc_df, str_branchA_expression_curve_matrix, str_branchB_expression_curve_matrix, file = file)
+
+    if(return_all)
+      return(list(str_logfc_df = str_logfc_df, str_branchA_expression_curve_matrix = str_branchA_expression_curve_matrix
+                str_branchB_expression_curve_matrix = str_branchB_expression_curve_matrix))
+    else
+      return(str_logfc_df)
 }
 
 #' Detect the maturation time point where the gene expression starts to diverge 
@@ -544,7 +586,6 @@ file = "bifurcation_heatmap", verbose = FALSE, ...) {
                 warning('multiple maximal time points detected ', max_ind)
             }
             
-            save(x, file = 'x')
             #detect the cross point
             inflection_point_tmp <- which(x[1:(length(x) - 1)] * x[2:length(x)] <= 0)
             

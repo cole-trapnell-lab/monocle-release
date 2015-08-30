@@ -88,7 +88,7 @@ dmode <- function(x, breaks="Sturges") {
 optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),
-          cores = 1, weight = 0.5, add_kl_divergence  = T,  ...) {
+          cores = 1, weight = 0.5, add_kl_divergence  = T, verbose = F,  ...) {
   data('spike_df') #add the spikein dataset
 
   if(is.null(spike_df$log_numMolecule))
@@ -172,10 +172,11 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
   else
     res <- log10(dmode_rmse_weight_total + 1)
   
-  message('current m, c values are ', c(m = m, c = c))
-  message('dmode_rmse_weight_total is ', mean(((cell_dmode - alpha)/alpha)^2) - 0)
-  message('gm_dist_divergence is ', gm_dist_divergence)
-  
+  if(verbose){
+    message('current m, c values are ', paste(m, c, sep = ', '))
+    message('dmode_rmse_weight_total is ', mean(((cell_dmode - alpha)/alpha)^2) - 0)
+    message('gm_dist_divergence is ', gm_dist_divergence)
+  }
   #   return(list(m = m_val, c = c_val, dmode_rmse_weight_total = dmode_rmse_weight_total, gm_dist_divergence = gm_dist_divergence, dist_divergence_round = dist_divergence_round,
   #               cell_dmode = cell_dmode, t_k_b_solution = t_k_b_solution, sum_total_cells_rna = sum_total_cells_rna, optim_res = res))
   #
@@ -470,7 +471,10 @@ relative2abs <- function(relative_cds, modelFormulaStr = "~1",, t_estimate = est
 
       m_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$m))
       c_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$c))
+      
       k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
+      colnames(k_b_solution) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$k_b_solution)))) #colnames
+      k_b_solution <- norm_cds[, colnames(relative_cds)]
       
       if (verbose)
       message("Return results...")

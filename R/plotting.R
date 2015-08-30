@@ -1281,8 +1281,9 @@ plot_ILRs_heatmap <- function (cds,
 #' @param ABC_highest_thrsd The maximum log10(abs(ABCs)) used to annotate the heatmap
 #' @param qval_lowest_thrsd The minimum log10(qval) used to annotate the heatmap
 #' @param qval_highest_thrsd The maximum log10(qval) used to annotate the heatmap
-#' @param file_name Name of the file to save the heatmap
-#' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object), annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column)
+#' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
+#' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
+#' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
 #' @export
 #'
@@ -1364,14 +1365,12 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     AT1="#377EB8",
     AT2="#4DAF4A"))
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
-    # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
-    pdf(file_name, height = heatmap_height, width = heatmap_width)
+
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
     cluster_cols=FALSE,
     cluster_rows=TRUE,
     show_rownames=F,
     show_colnames=F,
-    #scale="row",
     clustering_distance_rows=row_dist, #row_dist
     clustering_method = hclust_method, #ward.D2
     cutree_rows=num_clusters,
@@ -1384,9 +1383,7 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     #breaks=bks,
     fontsize = 6,
     color=hmcols
-    # filename="expression_pseudotime_pheatmap.pdf",
     )
-    dev.off()
     
     return(list(heatmap_matrix = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
