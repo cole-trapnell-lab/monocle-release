@@ -1281,6 +1281,9 @@ plot_ILRs_heatmap <- function (cds,
 #' @param ABC_highest_thrsd The maximum log10(abs(ABCs)) used to annotate the heatmap
 #' @param qval_lowest_thrsd The minimum log10(qval) used to annotate the heatmap
 #' @param qval_highest_thrsd The maximum log10(qval) used to annotate the heatmap
+#' @param hmcols The color scheme for drawing the heatmap
+#' @param cores Number of cores to run this function
+#' @param Cell_type_color The color for the progenitors and two lineages
 #' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
@@ -1294,7 +1297,7 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     vstExprs = T, dist_method = NULL, hclust_method = "ward", heatmap_height = 3, heatmap_width = 4,
     ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
     qval_lowest_thrsd = 1, qval_highest_thrsd = 5,
-    file_name = "genes_branched_heatmap.pdf", cores = 1) {
+    hmcols = NULL, Cell_type_color = c('#979797', '#F05662', '#7990C8'), cores = 1) {
     
     new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = T)
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
@@ -1325,9 +1328,10 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
     
-    bk <- seq(-3.1,3.1, by=0.1)
-    
-    hmcols <-  blue2green2red(length(bk) - 1)
+    if(is.null(hmcols)) {
+        bk <- seq(-3.1,3.1, by=0.1)
+        hmcols <- blue2green2red(length(bk) - 1)
+    }
     
     ph <- pheatmap(heatmap_matrix,
     cluster_cols=FALSE,
@@ -1361,9 +1365,9 @@ plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
     rep("AT2", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime'])))
     ))
     colnames(annotation_col) <- "Cell Type"
-    annotation_colors=list("Cell Type"=c(Progenitor="#E41A1C",
-    AT1="#377EB8",
-    AT2="#4DAF4A"))
+    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], 
+                                        A=Cell_type_color[2], 
+                                        B=Cell_type_color[3]))
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
 
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
