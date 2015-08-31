@@ -1338,102 +1338,130 @@ plot_ILRs_heatmap <- function (cds,
 #'
 #'
 plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
-    ABC_df, branchTest_df,
-    lineage_labels = c("AT1", "AT2"),
-    vstExprs = T, dist_method = NULL, hclust_method = "ward", heatmap_height = 3, heatmap_width = 4,
+    ABC_df, branchTest_df, lineage_labels = c("AT1", "AT2"), stretch = T, scaling = T,
+    norm_method = c("vstExprs", "log"), use_fitting_curves = T, 
+    dist_method = NULL, hclust_method = "ward", heatmap_height = 3, heatmap_width = 4,
     ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
     qval_lowest_thrsd = 1, qval_highest_thrsd = 5,
-    hmcols = NULL, Cell_type_color = c('#979797', '#F05662', '#7990C8'), cores = 1) {
+    hmcols = NULL, Cell_type_color = c('#979797', '#F05662', '#7990C8'), pseudo_cnt = 1, cores = 1) {
     
     new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = T)
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
     
-    col_gap_ind <- 101
-    newdata <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
-    
-    LineageA_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],
-    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
-    
-    if(vstExprs) {
-        LineageA_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+    if(use_fitting_curves) {
+        col_gap_ind <- 101
+        newdataA <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
+        newdataB <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
+
+        LineageA_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],  
+                                              modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataA)
+        LineageB_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],  
+                                              modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataB)
+        LineageP_num <- 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))
+        LineageA_num <- floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))
+        LineageB_num <- LineageA_num
     }
-    
-    LineageB_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],
-    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
-    
-    if(vstExprs) {
-        LineageB_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+    else {
+        LineageA_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == 2])[, sort(pData(new_cds[, pData(new_cds)$Lineage == 2])$Pseudotime, index.return = T)$ix]
+        LineageB_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == 3])[, sort(pData(new_cds[, pData(new_cds)$Lineage == 3])$Pseudotime, index.return = T)$ix]
+
+        col_gap_ind <- sum(pData(new_cds)$Lineage == 2) + 1
+
+        newdataA <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == 2])$Pseudotime))
+        newdataB <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == 3])$Pseudotime))
+
+        LineageP_num <- sum(pData(new_cds)$State == 1) / 2
+        LineageA_num <- sum(pData(new_cds)$State == 2)
+        LineageB_num <- sum(pData(new_cds)$State == 3)
     }
+
+    if(norm_method == 'vstExprs') {
+        LineageA_exprs <- vstExprs(new_cds, expr_matrix=LineageA_exprs)
+        LineageB_exprs <- vstExprs(new_cds, expr_matrix=LineageB_exprs)
+    }     
+    else if(norm_method == 'log') {
+        LineageA_exprs <- log2(LineageA_exprs + pseudo_cnt)
+        LineageB_exprs <- log2(LineageB_exprs + pseudo_cnt)
+    }
+
+    heatmap_matrix <- cbind(LineageA_exprs[, (col_gap_ind - 1):1], LineageB_exprs)
     
-    heatmap_matrix <- cbind(LineageA_smoothed_exprs[, 100:1], LineageB_smoothed_exprs)
-    
-    heatmap_matrix <- t(scale(t(heatmap_matrix)))
-    heatmap_matrix[heatmap_matrix > 3] <- 3
-    heatmap_matrix[heatmap_matrix < -3] <- -3
-    
+    if(scaling) {
+        heatmap_matrix <- t(scale(t(heatmap_matrix)))
+        heatmap_matrix[heatmap_matrix > 3] <- 3
+        heatmap_matrix[heatmap_matrix < -3] <- -3     
+    }
+
     row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
-    
+
     if(is.null(hmcols)) {
         bk <- seq(-3.1,3.1, by=0.1)
         hmcols <- blue2green2red(length(bk) - 1)
     }
-    
-    ph <- pheatmap(heatmap_matrix,
-    cluster_cols=FALSE,
-    cluster_rows=TRUE,
-    show_rownames=F,
-    show_colnames=F,
-    #scale="row",
-    clustering_distance_rows=row_dist,
-    clustering_method = hclust_method,
-    cutree_rows=num_clusters,
-    #breaks=bks,
-    color=hmcols#,
-    # filename="expression_pseudotime_pheatmap.pdf",
-    )
+
+    # print(hmcols)
+    ph <- pheatmap(heatmap_matrix, 
+             cluster_cols=FALSE, 
+             cluster_rows=TRUE, 
+             show_rownames=F, 
+             show_colnames=F, 
+             #scale="row",
+             clustering_distance_rows=row_dist,
+             clustering_method = hclust_method,
+             cutree_rows=num_clusters,
+             #breaks=bks,
+             color=hmcols#,
+             # filename="expression_pseudotime_pheatmap.pdf",
+             )
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
     annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
     annotation_row[which(annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd), "-log 10(qval)"] <- qval_lowest_thrsd
     annotation_row[which(annotation_row[, "-log 10(qval)"] > qval_highest_thrsd), "-log 10(qval)"] <- qval_highest_thrsd
     
-    annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
-    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
-    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
-    
-    pData(AT12_cds_subset_all_gene)$cell_type <- "Progenitor"
-    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 2] <- lineage_labels[1]
-    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 3] <- lineage_labels[2]
-    
-    colnames(heatmap_matrix) <- c(1:200)
-    annotation_col <- data.frame(row.names = c(1:200), "Cell Type" = c(rep("AT1", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
-    rep("Progenitor",  2 * floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
-    rep("AT2", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime'])))
-    ))
-    colnames(annotation_col) <- "Cell Type"
-    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], 
-                                        A=Cell_type_color[2], 
-                                        B=Cell_type_color[3]))
-    names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
+    # annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
+    # annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
+    # annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
 
+    # pData(AT12_cds_subset_all_gene)$cell_type <- "Progenitor"
+    # pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 2] <- lineage_labels[1]
+    # pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 3] <- lineage_labels[2]
+    # AT1_num <- (pData(AT12_cds_subset_all_gene)$State == 2)
+
+    colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
+    annotation_col <- data.frame(row.names = c(1:ncol(heatmap_matrix)), "Cell Type" = c(rep("AT1", LineageA_num),
+                                                rep("Progenitor",  2 * LineageP_num),
+                                                rep("AT2", LineageB_num)))
+
+    colnames(annotation_col) <- "Cell Type"  
+    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], 
+                                        AT1=Cell_type_color[2], 
+                                        AT2=Cell_type_color[3]))
+    names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
+    # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
+  # save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
+    # pdf(file_name, height = heatmap_height, width = heatmap_width)
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
-    cluster_cols=FALSE,
-    cluster_rows=TRUE,
-    show_rownames=F,
-    show_colnames=F,
-    clustering_distance_rows=row_dist, #row_dist
-    clustering_method = hclust_method, #ward.D2
-    cutree_rows=num_clusters,
-    cutree_cols = 2,
-    annotation_row=annotation_row,
-    annotation_col=annotation_col,
-    annotation_colors=annotation_colors,
-    gaps_col = col_gap_ind,
-    treeheight_row = 1.5,
-    #breaks=bks,
-    fontsize = 6,
-    color=hmcols
-    )
-    
-    return(list(heatmap_matrix = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+             cluster_cols=FALSE, 
+             cluster_rows=TRUE, 
+             show_rownames=F, 
+             show_colnames=F, 
+             #scale="row",
+             clustering_distance_rows=row_dist, #row_dist
+             clustering_method = hclust_method, #ward.D2
+             cutree_rows=num_clusters,
+             cutree_cols = 2,
+             annotation_row=annotation_row,
+             annotation_col=annotation_col,
+             annotation_colors=annotation_colors,
+             gaps_col = col_gap_ind,
+             treeheight_row = 1.5, 
+             #breaks=bks,
+             fontsize = 6,
+             color=hmcols
+             # filename="expression_pseudotime_pheatmap.pdf",
+             )
+    # dev.off()
+
+    return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
