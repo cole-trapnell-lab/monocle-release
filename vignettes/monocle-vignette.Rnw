@@ -94,8 +94,15 @@ This will create a CellDataSet object with expression values measured in FPKM, a
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
-rpc_matrix <- relative2abs(as.matrix(HSMM_expr_matrix))
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(HSMM_expr_matrix, 
+                       phenoData = pd, 
+                       featureData = fd)
 
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM)
+
+# Now, make a new CellDataSet using the RNA counts
 HSMM <- newCellDataSet(rpc_matrix, 
                        phenoData = pd, 
                        featureData = fd,
