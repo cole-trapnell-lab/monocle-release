@@ -16,6 +16,8 @@ diff_test_helper <- function(x,
   x_orig <- x
   x <- x + pseudocount
   
+  disp_guess <- 0
+  
   if (expressionFamily@vfamily == "negbinomial"){
     if (relative_expr == TRUE)
     {
@@ -26,8 +28,8 @@ diff_test_helper <- function(x,
       disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
         # FIXME: In theory, we could lose some user-provided parameters here
-        # e.g. if users supply zero=NULL or something.    
-        expressionFamily <- negbinomial(isize=1/disp_guess)
+        # e.g. if users supply zero=NULL or something. 
+        expressionFamily <- negbinomial(isize=1/disp_guess, ishrinkage=0)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -41,18 +43,55 @@ diff_test_helper <- function(x,
   
   test_res <- tryCatch({
     if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights)                         
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights, half.stepsizing=FALSE, checkwz=FALSE)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights, half.stepsizing=FALSE, checkwz=FALSE)                         
     }else{
       full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights))
       reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))                    
     }
+    #print(full_model_fit)
+    #print(coef(reduced_model_fit))
     compareModels(list(full_model_fit), list(reduced_model_fit))
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { 
-    print (e); 
-    NULL
+    #print (e);
+    # If we threw an exception, re-try with a simpler model.  Which one depends on
+    # what the user has specified for expression family
+    #print(disp_guess)
+    backup_expression_family <- NULL
+    if (expressionFamily@vfamily == "negbinomial"){
+        backup_expression_family <- poissonff(dispersion=disp_guess)
+    }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+      backup_expression_family <- NULL
+    }else if (expressionFamily@vfamily %in% c("binomialff")){
+      backup_expression_family <- NULL
+    }else{
+      backup_expression_family <- NULL
+    }
+    if (is.null(backup_expression_family) == FALSE){
+      test_res <- tryCatch({
+      if (verbose){
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE)                         
+      }else{
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE))                    
+      }
+      #print(full_model_fit)
+      #print(coef(reduced_model_fit))
+      compareModels(list(full_model_fit), list(reduced_model_fit))
+      }, 
+      #warning = function(w) { FM_fit },
+      error = function(e) { 
+        #print (e);
+        data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
+      })
+      #print(test_res)
+      test_res
+    } else {
+      data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
+    }
     #data.frame(status = "FAIL", pval=1.0) 
   }
   )
@@ -72,8 +111,8 @@ compareModels <- function(full_models, reduced_models){
     if (is.null(x) == FALSE && is.null(y) == FALSE) {
       lrt <- VGAM::lrtest(x,y) 
       pval=lrt@Body["Pr(>Chisq)"][2,]
-      data.frame(status = "OK", pval=pval)
-    } else { data.frame(status = "FAIL", pval=1.0) } 
+      data.frame(status = "OK", family=x@family@vfamily, pval=pval)
+    } else { data.frame(status = "FAIL", family=NA, pval=1.0) } 
   } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
   
   test_res <- do.call(rbind.data.frame, test_res)
@@ -497,8 +536,9 @@ useVST = FALSE, round_exprs = FALSE, pseudocount = 0, output_type = c("all",
       save(str_logfc_df, str_branchA_expression_curve_matrix, str_branchB_expression_curve_matrix, file = file)
 
     if(return_all)
-      return(list(str_logfc_df = str_logfc_df, str_branchA_expression_curve_matrix = str_branchA_expression_curve_matrix
-                str_branchB_expression_curve_matrix = str_branchB_expression_curve_matrix))
+      return(list(str_logfc_df = str_logfc_df, 
+                  str_branchA_expression_curve_matrix = str_branchA_expression_curve_matrix,
+                  str_branchB_expression_curve_matrix = str_branchB_expression_curve_matrix))
     else
       return(str_logfc_df)
 }
