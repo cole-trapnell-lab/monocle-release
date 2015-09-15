@@ -43,8 +43,8 @@ diff_test_helper <- function(x,
   
   test_res <- tryCatch({
     if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights, half.stepsizing=FALSE, checkwz=FALSE)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights, half.stepsizing=FALSE, checkwz=FALSE)                         
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights, checkwz=TRUE)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights, checkwz=TRUE)                         
     }else{
       full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights))
       reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))                    
@@ -72,11 +72,11 @@ diff_test_helper <- function(x,
     if (is.null(backup_expression_family) == FALSE){
       test_res <- tryCatch({
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE)                         
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE)                         
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=FALSE))                    
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE))                    
       }
       #print(full_model_fit)
       #print(coef(reduced_model_fit))
