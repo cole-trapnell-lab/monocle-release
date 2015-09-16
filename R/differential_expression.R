@@ -29,7 +29,7 @@ diff_test_helper <- function(x,
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something. 
-        expressionFamily <- negbinomial(isize=1/disp_guess, ishrinkage=0)
+        expressionFamily <- negbinomial(isize=1/disp_guess)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
