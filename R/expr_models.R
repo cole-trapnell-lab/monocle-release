@@ -488,6 +488,28 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
   return (NULL)
 }
 
+# note that quasipoisson expects a slightly different format for the 
+# dispersion parameter, hence the differences in return value between
+# this function and calulate_NB_dispersion_hint
+calulate_QP_dispersion_hint <- function(disp_func, f_expression)
+{
+  expr_median <- median(f_expression[f_expression > 0])
+  if (is.null(expr_median) == FALSE) {
+    disp_guess_fit <- disp_func(expr_median)
+    
+    # For NB: Var(Y)=mu*(1+mu/k)
+    f_expression_var <- var(f_expression)
+    f_expression_mean <- mean(f_expression)
+    
+    disp_guess_meth_moments <- f_expression_var - f_expression_mean 
+    disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
+    
+    return (1 + f_expression_mean * max(disp_guess_fit, disp_guess_meth_moments))
+  }
+  return (NULL)
+}
+
+
 genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
     relative_expr = T, pseudocount = 0, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB)) {
     
