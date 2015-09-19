@@ -43,9 +43,43 @@ fit_model_helper <- function(x,
     }
      FM_fit
   }, 
-  #warning = function(w) { FM_fit },
-  error = function(e) { print (e); NULL }
-  )
+        #print (e);
+        # If we threw an exception, re-try with a simpler model.  Which one depends on
+        # what the user has specified for expression family
+        #print(disp_guess)
+        backup_expression_family <- NULL
+        if (expressionFamily@vfamily == "negbinomial"){
+            disp_guess <- calulate_QP_dispersion_hint(disp_func, round(orig_x))
+            backup_expression_family <- poissonff(dispersion=disp_guess)
+        }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+          backup_expression_family <- NULL
+        }else if (expressionFamily@vfamily %in% c("binomialff")){
+          backup_expression_family <- NULL
+        }else{
+          backup_expression_family <- NULL
+        }
+        if (is.null(backup_expression_family) == FALSE){
+
+          test_res <- tryCatch({
+          if (verbose){
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights)
+          }else{
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights))
+          }
+            FM_fit
+          }, 
+          #warning = function(w) { FM_fit },
+          error = function(e) { 
+            print (e);
+            NULL
+          })
+          #print(test_res)
+          test_res
+        } else {
+          print(e); 
+          NULL
+        }
+  })
 }
 
 
