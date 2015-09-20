@@ -61,7 +61,8 @@ diff_test_helper <- function(x,
     #print(disp_guess)
     backup_expression_family <- NULL
     if (expressionFamily@vfamily == "negbinomial"){
-        disp_guess <- calulate_QP_dispersion_hint(disp_func, round(x_orig))
+	f_expression <- x
+        disp_guess <- calulate_QP_dispersion_hint(disp_func, x_orig)
         backup_expression_family <- poissonff(dispersion=disp_guess)
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
       backup_expression_family <- NULL

@@ -11,7 +11,7 @@ fit_model_helper <- function(x,
                              ...){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
   
-  orig_x <- x
+  x_orig <- x
   x <- x + pseudocount
   
   if (expressionFamily@vfamily == "negbinomial"){
@@ -21,7 +21,7 @@ fit_model_helper <- function(x,
     }
     f_expression <- round(x)
     if (is.null(disp_func) == FALSE){
-      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
+      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something.    
@@ -49,7 +49,8 @@ fit_model_helper <- function(x,
         #print(disp_guess)
         backup_expression_family <- NULL
         if (expressionFamily@vfamily == "negbinomial"){
-            disp_guess <- calulate_QP_dispersion_hint(disp_func, round(orig_x))
+	    f_expression <- x
+            disp_guess <- calulate_QP_dispersion_hint(disp_func, x_orig)
             backup_expression_family <- poissonff(dispersion=disp_guess)
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
