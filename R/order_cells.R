@@ -1,3 +1,77 @@
+#' Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @return an updated CellDataSet object which an
+#' @export
+scale_pseudotime <- function(cds) {
+    pd <- pData(cds)
+    pd$Cell_name <- row.names(pd)
+    range_df <- plyr::ddply(pd, .(State), function(x) {
+        min_max <- range(x$Pseudotime)
+        min_cell <- subset(x, Pseudotime %in% min_max[1])
+        max_cell <- subset(x, Pseudotime %in% min_max[2])
+        min_cell$fate_type <- 'Start'
+        max_cell$fate_type <- 'End'
+        rbind(min_cell, max_cell)
+    }) #pseudotime range for each state
+    
+    #1. construct a tree of the selected cells
+    adj_list <- data.frame(Source = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Parent'], Target = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Cell_name'])
+    #convert to cell fate adjancency list:
+    adj_list$Source <- pd[as.character(adj_list$Source), 'State']
+    adj_list$Target <- pd[as.character(adj_list$Target), 'State']
+    
+    uniq_cell_list <- unique(c(as.character(adj_list$Source), as.character(adj_list$Target)))
+    adj_mat <- matrix(rep(0, length(uniq_cell_list)^2), nrow = length(uniq_cell_list), ncol = length(uniq_cell_list), dimnames = list(uniq_cell_list, uniq_cell_list))
+    adj_mat[as.matrix(adj_list)] <- 1
+    net <- graph.adjacency(as.matrix(adj_mat), mode = 'directed', weighted = NULL, diag = FALSE)
+    
+    # plot(net, layout = layout.fruchterman.reingold,
+    #        vertex.size = 25,
+    #        vertex.color="red",
+    #        vertex.frame.color= "white",
+    #        vertex.label.color = "white",
+    #        vertex.label.cex = .5,
+    #        vertex.label.family = "sans",
+    #        edge.width=2,
+    #        edge.color="black")
+    
+    #dfs_net <- graph.dfs(net, root = 1, order.out = T) #DFS search for the cell fate tree
+    #net_order_out <- as.vector(dfs_net$order.out)
+    net_leaves <- which(degree(net, v = V(net), mode = "out")==0, useNames = T)
+    
+    pd$scale_pseudotime <- NA
+    
+    #2. scale the psedutime:
+    for(i in net_leaves) {
+        path_vertex <- as.vector(get.all.shortest.paths(net, from = 1, to = i, mode="out")$res[[1]])
+        pd_subset <- subset(pd, State %in% path_vertex & is.na(scale_pseudotime))
+        
+        #scale the pseudotime between the parent cell of the first cell to the last cell on the remaing branch
+        # print(path_vertex)
+        min_cell_name <- row.names(subset(pd_subset, Pseudotime == min(Pseudotime)))
+        print(min_cell_name)
+        if(!is.na(pd[min_cell_name, 'Parent'])) {
+            parent_min_cell <- as.character(pd[min_cell_name, 'Parent'])
+            subset_min_pseudo <- pd[parent_min_cell, 'Pseudotime']
+            scale_pseudotime_ini <- pd[parent_min_cell, 'scale_pseudotime']
+            scaling_factor <- (100 - pd[parent_min_cell, 'scale_pseudotime']) / c(max(pd_subset$Pseudotime) - subset_min_pseudo)
+        }
+        else {
+            subset_min_pseudo <- min(pd[, 'Pseudotime'])
+            scale_pseudotime_ini <- 0
+            scaling_factor <- 100 / c(max(pd_subset$Pseudotime) - min(pd_subset$Pseudotime))
+        }
+        
+        scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
+        message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
+        pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
+    }	
+    
+    pData(cds) <- pd
+    
+    return(cds)
+}
 
 # Methods for PQ-tree based ordering
 
@@ -857,9 +931,10 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
 #' @param root_cell the name of a cell to use as the root of the ordering tree.
+#' @param scale_pseudotime a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
+orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, scale_pseudotime = F){
   
   adjusted_S <- t(cds@reducedDimS)
   
@@ -884,6 +959,11 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
   pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
   pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+  if(scale_pseudotime) {
+      cds <- scale_pseudotime(cds)
+  }
+  
   cds
 }
 
