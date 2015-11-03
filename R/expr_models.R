@@ -1,6 +1,6 @@
 #' Helper function for parallel VGAM fitting
 #' 
-#' @param relative_expr Whether to transform expression into relative values
+#param relative_expr Whether to transform expression into relative values
 fit_model_helper <- function(x, 
                              modelFormulaStr, 
                              expressionFamily, 
@@ -9,48 +9,51 @@ fit_model_helper <- function(x,
                              pseudocount=0,
                              verbose=FALSE,
                              ...){
-  modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
-  
-  x_orig <- x
-  x <- x + pseudocount
-  
-  if (expressionFamily@vfamily == "negbinomial"){
-    if (relative_expr)
-    {
-      x <- x / Size_Factor
+    modelFormulaStr <- paste("f_expression", modelFormulaStr,
+        sep = "")
+    orig_x <- x
+    x <- x + pseudocount
+    if (expressionFamily@vfamily == "negbinomial") {
+        if (relative_expr) {
+            x <- x/Size_Factor
+        }
+        f_expression <- round(x)
+        if (is.null(disp_func) == FALSE) {
+            disp_guess <- calulate_NB_dispersion_hint(disp_func,
+                round(orig_x))
+            if (is.null(disp_guess) == FALSE && disp_guess >
+                0 && is.na(disp_guess) == FALSE) {
+                size_guess <- 1/disp_guess
+                expressionFamily <- negbinomial(isize = size_guess,
+                  ...)
+            }
+        }
     }
-    f_expression <- round(x)
-    if (is.null(disp_func) == FALSE){
-      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig))
-      if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE) {
-        # FIXME: In theory, we could lose some user-provided parameters here
-        # e.g. if users supply zero=NULL or something.    
-        size_guess <- 1/disp_guess
-        expressionFamily <- negbinomial(isize=size_guess, ...)
-      }
+    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")) {
+        f_expression <- x
     }
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-    f_expression <- x
-  }else{
-    f_expression <- log10(x)
-  }
-  
-  tryCatch({
-    if (verbose){
-      FM_fit <-  VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily)
-    }else{
-      FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
+    else {
+        f_expression <- log10(x)
     }
-     FM_fit
-  }, 
+    tryCatch({
+        if (verbose) {
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
+                family = expressionFamily)
+        }
+        else {
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
+                family = expressionFamily))
+        }
+        FM_fit
+    }, error = function(e) {
         #print (e);
         # If we threw an exception, re-try with a simpler model.  Which one depends on
         # what the user has specified for expression family
         #print(disp_guess)
         backup_expression_family <- NULL
         if (expressionFamily@vfamily == "negbinomial"){
-	    f_expression <- x
-            disp_guess <- calulate_QP_dispersion_hint(disp_func, x_orig)
+            f_expression <- x
+            disp_guess <- calulate_QP_dispersion_hint(disp_func, orig_x)
             backup_expression_family <- poissonff(dispersion=disp_guess)
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
@@ -82,7 +85,6 @@ fit_model_helper <- function(x,
         }
   })
 }
-
 
 #' Fits a model for each gene in a CellDataSet object.
 #' @param cds the CellDataSet upon which to perform this operation
