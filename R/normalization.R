@@ -489,7 +489,7 @@ relative2abs <- function(relative_cds,
       
       k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
       colnames(k_b_solution) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$k_b_solution)))) #colnames
-      k_b_solution <- norm_cds[, colnames(relative_cds)]
+      norm_cds <- norm_cds[, colnames(relative_cds)]
       
       if (verbose)
         message("Return results...")
