@@ -5,9 +5,8 @@
 \title{Fit smooth spline curves and return the response matrix}
 \usage{
 genSmoothCurves(cds, cores = 1,
-  trend_formula = "~sm.ns(Pseudotime, df = 3)", relative_expr = T,
-  pseudocount = 0, new_data = rbind(str_new_cds_branchA,
-  str_new_cds_branchB))
+  trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL,
+  relative_expr = T, pseudocount = 0, new_data)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

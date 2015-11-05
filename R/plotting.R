@@ -1208,9 +1208,9 @@ plot_coexpression_matrix <- function(cds,
 #' @param cluster_num The minimum level of expression to show in the plot
 #' @return a heatmap plot from based on the pheatmap package
 #' @import pheatmap
-#' @export 
-#' 
-#' 
+#' @export
+#'
+#'
 plot_ILRs_heatmap <- function (cds, 
       ILRs_df, 
       ABC_df, 
@@ -1307,7 +1307,6 @@ plot_ILRs_heatmap <- function (cds,
 #' @export
 #'
 #'
-
 plot_genes_branched_heatmap <- function(cds_subset, 
   num_clusters = 6,
   ABC_df, 
@@ -1332,7 +1331,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
   add_annotation_row = NULL,
   add_annotation_col = NULL,
   show_rownames = F, 
-  cores = 1) {
+  cores = 1,
+  file = 'branched_heatmap.pdf') {
     
     new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = stretch)
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
@@ -1348,7 +1348,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
             length.out = 100), Lineage = as.factor(unique(as.character(pData(new_cds)$Lineage))[2]))
 
         LineageAB_exprs <- genSmoothCurves(new_cds[, ], cores=cores, trend_formula = trend_formula,  
-                    relative_expr = T, pseudocount = pseudocount, new_data = rbind(newdataA, newdataB), weights = pData(new_cds)$weight)
+                    relative_expr = T, pseudocount = 0, new_data = rbind(newdataA, newdataB), weights = pData(new_cds)$weight)
 
         LineageA_exprs <- LineageAB_exprs[, 1:100]
         LineageB_exprs <- LineageAB_exprs[, 101:200]
@@ -1466,9 +1466,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     print(annotation_row)
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
-  save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
+    #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
     dev.off()
-    pdf(file_name, height = heatmap_height, width = heatmap_width)
+    pdf(file, height = heatmap_height, width = heatmap_width)
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
              cluster_cols=FALSE, 

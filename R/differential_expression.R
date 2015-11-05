@@ -368,15 +368,15 @@ calABCs <- function(cds, trajectory_type = "Lineage",
       print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
         sort(pData(cds_branchB)$Pseudotime)))
     
-    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  weights = pData(cds_subset)$weight,
                     relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
     
-    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[1:num, ]
-    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[(num + 1):(2 * num), ]
+    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, 1:num]
+    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, (num + 1):(2 * num)]
     
     ABCs_res <- str_branchA_expression_curve_matrix - str_branchB_expression_curve_matrix
     
-    ABCs_res <- apply(ABCs_res, 2, function(x, num, ABC_method) {
+    ABCs_res <- apply(ABCs_res, 1, function(x, num, ABC_method) {
         avg_delta_x <- (x[1:(num - 1)] + x[2:(num)])/2
         step <- (100/(num - 1))
         

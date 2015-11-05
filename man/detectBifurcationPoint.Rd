@@ -10,11 +10,13 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
   relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
   useVST = FALSE, round_exprs = FALSE, pseudocount = 0,
-  output_type = c("all", "after_bifurcation"), file = "bifurcation_heatmap",
-  verbose = FALSE, ...)
+  output_type = c("all", "after_bifurcation"), return_cross_point = T,
+  file = "bifurcation_heatmap", verbose = FALSE, ...)
 }
 \arguments{
 \item{str_log_df}{the ILRs dataframe calculated from calILRs function. If this data.frame is provided, all the following parameters are ignored. Note that we need to only use the ILRs after the bifurcation point if we duplicated the progenitor cell state.}
+
+\item{ILRs_threshold}{the ILR value used to determine the earliest divergence time point}
 
 \item{detect_all}{a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point}
 
@@ -45,9 +47,9 @@ When VST is used, the difference between two lineages are used instead of the lo
 
 \item{output_type}{A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Lineage is set to "Lineage", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells}
 
-\item{file}{the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored}
+\item{return_cross_point}{A logic flag to determine whether or not only return the cross point}
 
-\item{div_threshold}{the ILR value used to determine the earliest divergence time point}
+\item{file}{the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored}
 }
 \value{
 a vector containing the time for the bifurcation point with gene names for each value
