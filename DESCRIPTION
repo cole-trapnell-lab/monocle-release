@@ -34,7 +34,8 @@ Imports:
     limma,
     dplyr,
     mixsmsn,
-    pheatmap
+    pheatmap,
+    colorRamps
 VignetteBuilder: knitr
 Suggests:
     knitr,

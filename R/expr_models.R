@@ -209,7 +209,7 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
             )
-        expression_curve_matrix <- matrix(expression_curves, nrow = nrow(cds), byrow = T, dimnames = list(row.names(cds), c()))
+        expression_curve_matrix <- matrix(expression_curves, ncol = ncol(cds), byrow = T, dimnames = list(row.names(cds), c()))
     }
     else {
         expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){

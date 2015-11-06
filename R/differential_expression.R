@@ -232,16 +232,16 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 }
 
 #add genSmoothCurves function: 
-genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
+genSmoothCurves <- function(cds, cores = 1, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
                         relative_expr = T, pseudocount = 0, new_data) { 
     
     expressionFamily <- cds@expressionFamily
 
     if(cores > 1) {
-        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+        expression_curve_matrix <- mcesApply(cds, 1, function(x, fullModelFormulaStr, expressionFamily, relative_expr, pseudocount, new_data){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights, 
+            model_fits <- fit_model_helper(x, modelFormulaStr = fullModelFormulaStr, expressionFamily = expressionFamily, weights = weights, 
                                        relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
                 expression_curve <- matrix(rep(NA, length(x)), nrow = 1)
@@ -249,14 +249,14 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
                 expression_curve <- responseMatrix(list(model_fits), newdata = new_data)
 
             }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            fullModelFormulaStr = fullModelFormulaStr, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
     }
     else {
-        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+        expression_curve_matrix <- esApply(cds, 1, function(x, fullModelFormulaStr, expressionFamily, relative_expr, pseudocount, new_data = new_data){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights, 
+            model_fits <- fit_model_helper(x, modelFormulaStr = fullModelFormulaStr, expressionFamily = expressionFamily, weights = weights, 
                                        relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
                 expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
@@ -264,7 +264,7 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
                 expression_curve <- responseMatrix(list(model_fits), new_data)
 
             }, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            fullModelFormulaStr = fullModelFormulaStr, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
     }
 
@@ -304,7 +304,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
   trajectory_states = c(2, 3),
   branchTest = FALSE, 
   relative_expr = TRUE, 
-  trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+  fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   stretch = TRUE, 
   pseudocount = 0, 
   cores = 1, 
@@ -351,7 +351,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
       trajectory_states[2]]
     
     #use the genSmoothCurves to generate smooth curves for calculating the ABC scores:
-    formula_all_variables <- all.vars(as.formula(trend_formula))
+    formula_all_variables <- all.vars(as.formula(fullModelFormulaStr))
     
     t_rng <- range(pData(cds_branchA)$Pseudotime)
     str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
@@ -368,7 +368,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
       print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
         sort(pData(cds_branchB)$Pseudotime)))
     
-    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  weights = pData(cds_subset)$weight,
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, fullModelFormulaStr = fullModelFormulaStr,  weights = pData(cds_subset)$weight,
                     relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
     
     str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, 1:num]
@@ -435,7 +435,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
 #' @param lineage_states The states for two branching lineages
 #' @param cores Number of cores when fitting the spline curves
-#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
+#' @param fullModelFormulaStr the model formula to be used for fitting the expression trend over pseudotime
 #' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
@@ -457,7 +457,7 @@ calILRs <- function (cds = cds,
   lineage_labels = NULL, 
   stretch = T, 
   cores = detectCores(), 
-  trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+  fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   ILRs_limit = 3, 
   relative_expr = TRUE, 
   weighted = FALSE, 
@@ -501,7 +501,7 @@ calILRs <- function (cds = cds,
     cds_branchB <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
       trajectory_states[2]]
     
-    formula_all_variables <- all.vars(as.formula(trend_formula))
+    formula_all_variables <- all.vars(as.formula(fullModelFormulaStr))
     
     t_rng <- range(pData(cds_branchA)$Pseudotime)
     str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
@@ -519,11 +519,12 @@ calILRs <- function (cds = cds,
     
     colnames(str_new_cds_branchB)[2] <- formula_all_variables[2] #interaction term can be terms rather than Lineage
     
-    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, fullModelFormulaStr = fullModelFormulaStr,
                       relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
     
-    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[1:100, ]
-    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[101:200, ]
+    str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, 1:nrow(str_new_cds_branchA)]
+    str_branchB_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, 
+                                                  (nrow(str_new_cds_branchA) + 1):(nrow(str_new_cds_branchA) + nrow(str_new_cds_branchB))]
     
     if (useVST) {
         str_branchA_expression_curve_matrix <- vstExprs(cds,
@@ -593,7 +594,7 @@ calILRs <- function (cds = cds,
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
 #' @param lineage_states The states for two branching lineages
 #' @param cores Number of cores when fitting the spline curves
-#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
+#' @param fullModelFormulaStr the model formula to be used for fitting the expression trend over pseudotime
 #' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
@@ -617,7 +618,7 @@ detectBifurcationPoint <- function(str_log_df = NULL,
   lineage_states = c(2, 3),
   stretch = T,
   cores = detectCores(),
-  trend_formula = "~sm.ns(Pseudotime, df = 3)",
+  fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   ILRs_limit = 3,
   relative_expr = TRUE,
   weighted = FALSE,
@@ -636,7 +637,7 @@ detectBifurcationPoint <- function(str_log_df = NULL,
           lineage_states,
           stretch,
           cores,
-          trend_formula,
+          fullModelFormulaStr,
           ILRs_limit,
           relative_expr,
           weighted,
