@@ -880,7 +880,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                             panel_order = NULL, 
                                             cell_color_by = "State",
                                             trajectory_color_by = "State", 
-                                            fullModelFormulaStr = "~ sm.ns(Pseudotime, df=3) * Lineage", 
+                                            trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
                                             weighted = TRUE, 
@@ -962,7 +962,7 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$Lineage <- as.factor(cds_exprs$Lineage) 
 
     new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
-    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = fullModelFormulaStr,
+    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula,
                         relative_expr = T, pseudocount = 0, new_data = new_data)
     colnames(full_model_expectation) <- colnames(cds_subset)
     
