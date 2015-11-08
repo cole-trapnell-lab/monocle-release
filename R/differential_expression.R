@@ -480,7 +480,7 @@ calILRs <- function (cds = cds,
     
     colnames(str_new_cds_branchB)[2] <- formula_all_variables[2] #interaction term can be terms rather than Lineage
     
-    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,
+    str_branchAB_expression_curve_matrix <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula, weights = pData(cds_subset)$weight,
                       relative_expr = relative_expr, pseudocount = pseudocount, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
     
     str_branchA_expression_curve_matrix <- str_branchAB_expression_curve_matrix[, 1:nrow(str_new_cds_branchA)]

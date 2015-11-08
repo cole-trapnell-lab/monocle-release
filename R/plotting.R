@@ -963,14 +963,15 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$Lineage <- as.factor(cds_exprs$Lineage) 
 
     new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
-    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula,
-                        relative_expr = T, pseudocount = 0, new_data = new_data)
+ 
+    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, weights = 
+                        relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
     colnames(full_model_expectation) <- colnames(cds_subset)
     
     cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
     if(!is.null(reducedModelFormulaStr)){
         reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
-                            relative_expr = T, pseudocount = 0, new_data = new_data)
+                            relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
         colnames(reduced_model_expectation) <- colnames(cds_subset)
         cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
     }
