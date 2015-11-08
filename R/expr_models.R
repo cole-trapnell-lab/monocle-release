@@ -53,8 +53,7 @@ fit_model_helper <- function(x,
         #print(disp_guess)
         backup_expression_family <- NULL
         if (expressionFamily@vfamily == "negbinomial"){
-            f_expression <- x
-            disp_guess <- calulate_QP_dispersion_hint(disp_func, orig_x)
+            disp_guess <- calulate_QP_dispersion_hint(disp_func, round(orig_x))
             backup_expression_family <- poissonff(dispersion=disp_guess)
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
@@ -419,8 +418,7 @@ buildLineageBranchCellDataSet <- function(cds,
   }
   
   cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
-  
-  
+    
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
   
@@ -465,13 +463,13 @@ buildLineageBranchCellDataSet <- function(cds,
     pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
       (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
     
-    
     for(i in 1:length(short_branches)) { #stretch short branches
       pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
         (pData[pData$State == short_branches[i], 'Pseudotime'] - max(range_df[as.character(progenitor_states), 'max'])) * 
         short_branches_multipliers[i] + T_0
     }
   }
+
   pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
   for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches

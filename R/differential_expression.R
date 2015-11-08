@@ -61,8 +61,7 @@ diff_test_helper <- function(x,
     #print(disp_guess)
     backup_expression_family <- NULL
     if (expressionFamily@vfamily == "negbinomial"){
-	f_expression <- x
-        disp_guess <- calulate_QP_dispersion_hint(disp_func, x_orig)
+        disp_guess <- calulate_QP_dispersion_hint(disp_func, round(f_expression / Size_Factor))
         backup_expression_family <- poissonff(dispersion=disp_guess)
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
       backup_expression_family <- NULL
@@ -214,7 +213,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
      cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
-     lineage_labels = lineage_labels, method = method, stretch = stretch,
+     lineage_labels = lineage_labels, method = 'fitting', stretch = stretch,
      weighted = weighted, ...)
   }
   else

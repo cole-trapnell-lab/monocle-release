@@ -878,6 +878,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                             nrow = NULL, 
                                             ncol = 1, 
                                             panel_order = NULL, 
+                                            color_by = "State",
                                             cell_color_by = "State",
                                             trajectory_color_by = "State", 
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
@@ -899,11 +900,11 @@ plot_genes_branched_pseudotime <- function (cds,
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
     if (add_pval) {
-        pval_df <- branchTest(cds, fullModelFormulaStr = fullModelFormulaStr,
+        pval_df <- branchTest(cds, fullModelFormulaStr = trend_formula,
             reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)")
         fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
     }
-    if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
+    if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
         cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
         lineage_labels = lineage_labels, method = method, stretch = stretch,
         weighted = weighted, ...)
@@ -993,7 +994,7 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-        cds_exprst$feature_label <- factor(cds_exprst$feature_label,
+        cds_exprs$feature_label <- factor(cds_exprs$feature_label,
             levels = panel_order)
     }
     cds_exprs$expression[is.na(cds_exprs$expression)] <- min_expr
