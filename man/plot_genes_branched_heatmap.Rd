@@ -5,11 +5,15 @@
 \title{Create a heatmap to demonstrate the bifurcation of gene expression along two lineages}
 \usage{
 plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df,
-  branchTest_df, lineage_labels = c("AT1", "AT2"), vstExprs = T,
+  branchTest_df, lineage_labels = c("AT1", "AT2"), stretch = T,
+  scaling = T, norm_method = c("vstExprs", "log"), use_fitting_curves = T,
   dist_method = NULL, hclust_method = "ward", heatmap_height = 3,
   heatmap_width = 4, ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
   qval_lowest_thrsd = 1, qval_highest_thrsd = 5, hmcols = NULL,
-  Cell_type_color = c("#979797", "#F05662", "#7990C8"), cores = 1)
+  Cell_type_color = c("#979797", "#F05662", "#7990C8"),
+  trend_formula = "~sm.ns(Pseudotime, df=3) * Lineage", pseudo_cnt = 0,
+  add_annotation_row = NULL, add_annotation_col = NULL, show_rownames = F,
+  cores = 1)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
@@ -21,8 +25,6 @@ plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df,
 \item{branchTest_df}{Matrix of branchTest result (normally only on the branching genes)}
 
 \item{lineage_labels}{The label for the lineages (first (second) lineage corresponding to state 2 (3))}
-
-\item{vstExprs}{Logic flag to determine whether or not vst will be performed for the fitted gene expression values}
 
 \item{dist_method}{The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)}
 
@@ -45,6 +47,8 @@ plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df,
 \item{Cell_type_color}{The color for the progenitors and two lineages}
 
 \item{cores}{Number of cores to run this function}
+
+\item{vstExprs}{Logic flag to determine whether or not vst will be performed for the fitted gene expression values}
 }
 \value{
 A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),

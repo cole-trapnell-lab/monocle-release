@@ -5,10 +5,8 @@
 \title{Helper function for parallel VGAM fitting}
 \usage{
 fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr,
-  disp_func = NULL, pseudocount = 0, verbose = FALSE, ...)
-}
-\arguments{
-\item{relative_expr}{Whether to transform expression into relative values}
+  disp_func = NULL, pseudocount = 0, verbose = FALSE, weights = NULL,
+  ...)
 }
 \description{
 Helper function for parallel VGAM fitting

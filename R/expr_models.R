@@ -1,6 +1,6 @@
 #' Helper function for parallel VGAM fitting
 #' 
-#' @param relative_expr Whether to transform expression into relative values
+#param relative_expr Whether to transform expression into relative values
 fit_model_helper <- function(x, 
                              modelFormulaStr, 
                              expressionFamily, 
@@ -8,46 +8,83 @@ fit_model_helper <- function(x,
                              disp_func=NULL, 
                              pseudocount=0,
                              verbose=FALSE,
+                             weights = NULL,
                              ...){
-  modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
-  
-  orig_x <- x
-  x <- x + pseudocount
-  
-  if (expressionFamily@vfamily == "negbinomial"){
-    if (relative_expr)
-    {
-      x <- x / Size_Factor
+    modelFormulaStr <- paste("f_expression", modelFormulaStr,
+        sep = "")
+    orig_x <- x
+    x <- x + pseudocount
+    if (expressionFamily@vfamily == "negbinomial") {
+        if (relative_expr) {
+            x <- x/Size_Factor
+        }
+        f_expression <- round(x)
+        if (is.null(disp_func) == FALSE) {
+            disp_guess <- calulate_NB_dispersion_hint(disp_func,
+                round(orig_x))
+            if (is.null(disp_guess) == FALSE && disp_guess >
+                0 && is.na(disp_guess) == FALSE) {
+                size_guess <- 1/disp_guess
+                expressionFamily <- negbinomial(isize = size_guess,
+                  ...)
+            }
+        }
     }
-    f_expression <- round(x)
-    if (is.null(disp_func) == FALSE){
-      disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x))
-      if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE) {
-        # FIXME: In theory, we could lose some user-provided parameters here
-        # e.g. if users supply zero=NULL or something.    
-        size_guess <- 1/disp_guess
-        expressionFamily <- negbinomial(isize=size_guess, ...)
-      }
+    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")) {
+        f_expression <- x
     }
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-    f_expression <- x
-  }else{
-    f_expression <- log10(x)
-  }
-  
-  tryCatch({
-    if (verbose){
-      FM_fit <-  VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily)
-    }else{
-      FM_fit <-  suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=expressionFamily))
+    else {
+        f_expression <- log10(x)
     }
-     FM_fit
-  }, 
-  #warning = function(w) { FM_fit },
-  error = function(e) { print (e); NULL }
-  )
-}
+    tryCatch({
+        if (verbose) {
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
+                family = expressionFamily)
+        }
+        else {
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
+                family = expressionFamily))
+        }
+        FM_fit
+    }, error = function(e) {
+        #print (e);
+        # If we threw an exception, re-try with a simpler model.  Which one depends on
+        # what the user has specified for expression family
+        #print(disp_guess)
+        backup_expression_family <- NULL
+        if (expressionFamily@vfamily == "negbinomial"){
+            disp_guess <- calulate_QP_dispersion_hint(disp_func, round(orig_x))
+            backup_expression_family <- poissonff(dispersion=disp_guess)
+        }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+          backup_expression_family <- NULL
+        }else if (expressionFamily@vfamily %in% c("binomialff")){
+          backup_expression_family <- NULL
+        }else{
+          backup_expression_family <- NULL
+        }
+        if (is.null(backup_expression_family) == FALSE){
 
+          test_res <- tryCatch({
+          if (verbose){
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights)
+          }else{
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights))
+          }
+            FM_fit
+          }, 
+          #warning = function(w) { FM_fit },
+          error = function(e) { 
+            print (e);
+            NULL
+          })
+          #print(test_res)
+          test_res
+        } else {
+          print(e); 
+          NULL
+        }
+  })
+}
 
 #' Fits a model for each gene in a CellDataSet object.
 #' @param cds the CellDataSet upon which to perform this operation
@@ -147,42 +184,49 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
 #' @export
 #'
 
-genSmoothCurves <- function(cds, new_data, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-        relative_expr = F, pseudocount = 0) {
-    expressionFamily <- cds@expressionFamily
+genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
+                        relative_expr = T, pseudocount = 0, new_data) { 
     
+    expressionFamily <- cds@expressionFamily
+
     if(cores > 1) {
-        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+        expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
+                                                              calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
-            
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-            relative_expr = relative_expr, pseudocount = pseudocount)
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
+                                       relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
-            expression_curve_matrix <- rep(NA, length(x))
+                expression_curve <- matrix(rep(NA, length(x)), nrow = 1)
             else
-            expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
-        }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores,
-        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-        )
+                expression_curve <- responseMatrix(list(model_fits), newdata = new_data)
+
+            colnames(expression_curve) <- 1:length(expression_curve)
+            return(expression_curve)
+            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data, 
+            fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
+            calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
+            )
+        expression_curve_matrix <- matrix(expression_curves, ncol = ncol(cds), byrow = T, dimnames = list(row.names(cds), c()))
     }
     else {
-        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
+        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
-            
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-            relative_expr = relative_expr, pseudocount = pseudocount)
+            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
+                                       relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
-            expression_curve_matrix <- rep(NA, length(x))
+                expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
             else
-            expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
-        },
-        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-        )
-    }
-    
-    expression_curve_matrix
+                expression_curve <- responseMatrix(list(model_fits), new_data)
+
+            }, 
+            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+            )
+        t(expression_curve_matrix)
+      }
+
 }
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
@@ -374,8 +418,7 @@ buildLineageBranchCellDataSet <- function(cds,
   }
   
   cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
-  
-  
+    
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
   
@@ -420,13 +463,13 @@ buildLineageBranchCellDataSet <- function(cds,
     pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
       (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
     
-    
     for(i in 1:length(short_branches)) { #stretch short branches
       pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
         (pData[pData$State == short_branches[i], 'Pseudotime'] - max(range_df[as.character(progenitor_states), 'max'])) * 
         short_branches_multipliers[i] + T_0
     }
   }
+
   pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
   for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
@@ -507,42 +550,4 @@ calulate_QP_dispersion_hint <- function(disp_func, f_expression)
     return (1 + f_expression_mean * max(disp_guess_fit, disp_guess_meth_moments))
   }
   return (NULL)
-}
-
-
-genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-    relative_expr = T, pseudocount = 0, new_data = rbind(str_new_cds_branchA, str_new_cds_branchB)) {
-    
-    expressionFamily <- cds@expressionFamily
-    
-    if(cores > 1) {
-        expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
-            environment(fit_model_helper) <- environment()
-            environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-            relative_expr = relative_expr, pseudocount = pseudocount)
-            if(is.null(model_fits))
-            expression_curve_matrix <- matrix(rep(NA, length(x)), nrow = 1)
-            else
-            expression_curve_matrix <- responseMatrix(list(model_fits), newdata = new_data)
-        }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores,
-        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-        )
-    }
-    else {
-        expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data = new_data){
-            environment(fit_model_helper) <- environment()
-            environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-            relative_expr = relative_expr, pseudocount = pseudocount)
-            if(is.null(model_fits))
-            expression_curve_matrix <- matrix(rep(NA, nrow(new_data)), nrow = 1)
-            else
-            expression_curve_matrix <- responseMatrix(list(model_fits), new_data)
-        },
-        trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-        )
-    }
-    
-    expression_curve_matrix
 }

@@ -5,7 +5,7 @@
 \title{Transform relative expression values into absolute transcript counts.}
 \usage{
 relative2abs(relative_cds, modelFormulaStr = "~1",
-  t_estimate = estimate_t(relative_expr_matrix), m = -3.652201,
+  t_estimate = estimate_t(exprs(relative_cds)), m = -3.652201,
   c = 2.263576, m_rng = c(-10, -0.1), c_rng = c(c, c),
   ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10,
   dilution = 40000, mixture_type = 1, detection_threshold = 800,

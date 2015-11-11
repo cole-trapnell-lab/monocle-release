@@ -146,8 +146,11 @@ plot_spanning_tree <- function(cds,
           data = subset(diam, State == i), na.rm = TRUE)
       }
   }
- g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
-  
+  else {
+      g <- g + geom_point(aes_string(color = color_by), size = I(cell_size),
+          na.rm = TRUE)
+  }
+
   if (show_backbone){
     #print (diam)
     if(backbone_color %in% colnames(diam))
@@ -417,137 +420,98 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     relative_expr=TRUE,
                                     method = "VGAM"){
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
-    integer_expression <- TRUE
-  }else{
-    integer_expression <- FALSE
-    relative_expr <- TRUE
-  }
-  
-  if (integer_expression)
-  {
-    cds_exprs <- exprs(cds_subset)
-    if (relative_expr){
-      if (is.null(sizeFactors(cds_subset)))
-      {
-        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
-      }
-      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+    if (cds_subset@expressionFamily@vfamily == "negbinomial") {
+        integer_expression <- TRUE
     }
-    cds_exprs <- reshape2::melt(round(cds_exprs))
-  }else{
-    cds_exprs <- reshape2::melt(exprs(cds_subset))
-  }
-  if (is.null(min_expr)){
-    min_expr <- cds_subset@lowerDetectionLimit
-  }
-  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
-  
-  cds_pData <- pData(cds_subset)
-  cds_fData <- fData(cds_subset)
-  
-  cds_exprs <- merge(cds_exprs, cds_fData, by.x="f_id", by.y="row.names")
-  cds_exprs <- merge(cds_exprs, cds_pData, by.x="Cell", by.y="row.names")
-  
-  if (integer_expression)
-  {
-    cds_exprs$adjusted_expression <- cds_exprs$expression
-  }else{
-    cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
-  }
-  
-  trend_formula <- paste("adjusted_expression", trend_formula, sep="")
-  
-  #cds_exprs$adjusted_expression <- log10(cds_exprs$adjusted_expression + abs(rnorm(nrow(cds_exprs), min_expr, sqrt(min_expr))))
-  
-  if (label_by_short_name == TRUE){
-    if (is.null(cds_exprs$gene_short_name) == FALSE){
-      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
-      cds_exprs$feature_label[is.na(cds_exprs$feature_label)]  <- cds_exprs$f_id
-    }else{
-      cds_exprs$feature_label <- cds_exprs$f_id
+    else {
+        integer_expression <- FALSE
+        relative_expr <- TRUE
     }
-  }else{
-    cds_exprs$feature_label <- cds_exprs$f_id
-  }
-  
-  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-   
-  merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label), function(x) { 
-    fit_res <- tryCatch({
-      #Extra <- list(leftcensored = with(x, adjusted_fpkm <= min_fpkm), rightcencored = rep(FALSE, nrow(x)))
-      vg <- suppressWarnings(VGAM::vgam(formula = as.formula(trend_formula), 
-                                  family = cds_subset@expressionFamily, 
-                                  data = x, maxit=30, checkwz=FALSE))
-      if (integer_expression){
-        res <- predict(vg, type="response")
-        res[res < min_expr] <- min_expr
-      }else{
-        res <- 10^(predict(vg, type="response"))
-        res[res < min_expr] <- min_expr
-      }
-      res
+    if (integer_expression) {
+        cds_exprs <- exprs(cds_subset)
+        if (relative_expr) {
+            if (is.null(sizeFactors(cds_subset))) {
+                stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+            }
+            cds_exprs <- t(t(cds_exprs)/sizeFactors(cds_subset))
+        }
+        cds_exprs <- reshape2::melt(round(cds_exprs))
     }
-    ,error = function(e) {
-      print("Error!")
-      print(e)
-      res <- rep(NA, nrow(x))
-      res
+    else {
+        cds_exprs <- reshape2::melt(exprs(cds_subset))
     }
-    )
-    
-    expectation = fit_res
+    if (is.null(min_expr)) {
+        min_expr <- cds_subset@lowerDetectionLimit
+    }
+    colnames(cds_exprs) <- c("f_id", "Cell", "expression")
+    cds_pData <- pData(cds_subset)
+    cds_fData <- fData(cds_subset)
+    cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
+    cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+    if (integer_expression) {
+        cds_exprs$adjusted_expression <- cds_exprs$expression
+    }
+    else {
+        cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+    }
+    # trend_formula <- paste("adjusted_expression", trend_formula,
+    #     sep = "")
+    if (label_by_short_name == TRUE) {
+        if (is.null(cds_exprs$gene_short_name) == FALSE) {
+            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
+        }
+        else {
+            cds_exprs$feature_label <- cds_exprs$f_id
+        }
+    }
+    else {
+        cds_exprs$feature_label <- cds_exprs$f_id
+    }
+    cds_exprs$feature_label <- factor(cds_exprs$feature_label)
 
-    data.frame(Pseudotime=x$Pseudotime, expectation=expectation)
-  })
-  
-  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
-  
-  if (is.null(panel_order) == FALSE)
-  {
-    cds_exprs$feature_label <- factor(cds_exprs$feature_label, levels=panel_order)
-  }
-  
-  q <- ggplot(aes(Pseudotime, expression), data=cds_exprs) 
-  
-  if (is.null(color_by) == FALSE){
-    q <- q + geom_point(aes_string(color=color_by), size=I(cell_size))
-  }else{
-    q <- q + geom_point(size=I(cell_size))
-  }
-    
-  if (method == "loess") {
-    q <- q + stat_smooth(aes(group=1, weight=I(0.1)), color=I("black"), method = "loess", se=F)
-  }
-  else if (method == "VGAM") {
-    q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = merged_df_with_vgam)
-  }
-  
-  #q <- q + geom_line(aes(Pseudotime, expectation), data=merged_df_with_vgam)
-  
-  #q <- q + geom_ribbon(aes(x=pseudo_time, ymin=conf_lo, ymax=conf_hi), alpha=I(0.15), data=merged_df_with_vgam)
-  
-  q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
-  
-  
-  # Need this to guard against plotting failures caused by non-expressed genes
-  if (min_expr < 1)
-  {
-    q <- q + expand_limits(y=c(min_expr, 1))
-  }
-  
-  
-  if (relative_expr){
-    q <- q + ylab("Relative Expression")
-  }else{
-    q <- q + ylab("Absolute Expression")
-  }
-  q <- q + xlab("Pseudo-time")
-  
-  q <- q + monocle_theme_opts()
-  
-  q
-  
+    new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime)
+    model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula,
+                        relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+    colnames(model_expectation) <- colnames(cds_subset)
+
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
+
+    cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
+    cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
+    if (is.null(panel_order) == FALSE) {
+        cds_subset$feature_label <- factor(cds_subset$feature_label,
+            levels = panel_order)
+    }
+    q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
+    if (is.null(color_by) == FALSE) {
+        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
+    }
+    else {
+        q <- q + geom_point(size = I(cell_size))
+    }
+    if (method == "loess") {
+        q <- q + stat_smooth(aes(group = 1), color = I("black"),
+            method = "loess", se = F)
+    }
+    else if (method == "VGAM") {
+        q <- q + geom_line(aes(x = Pseudotime, y = expectation),
+            data = cds_exprs)
+    }
+    q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow,
+        ncol = ncol, scales = "free_y")
+    if (min_expr < 1) {
+        q <- q + expand_limits(y = c(min_expr, 1))
+    }
+    if (relative_expr) {
+        q <- q + ylab("Relative Expression")
+    }
+    else {
+        q <- q + ylab("Absolute Expression")
+    }
+    q <- q + xlab("Pseudo-time")
+    q <- q + monocle_theme_opts()
+    q
 }
 
 #' Plots the minimum spanning tree on cells.
@@ -915,25 +879,39 @@ plot_genes_branched_pseudotime <- function (cds,
                                             ncol = 1, 
                                             panel_order = NULL, 
                                             color_by = "State",
+                                            cell_color_by = "State",
+                                            trajectory_color_by = "State", 
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
+                                            reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
                                             weighted = TRUE, 
                                             add_ABC = FALSE, 
-                                            normalize = TRUE, 
+                                            add_pval = FALSE,
+                                            normalize = TRUE,
+                                            bifurcation_time = NULL, 
                                             #gene_pairs = NULL,
     ...)
 {
     if (add_ABC) {
-        ABCs_df <- calABCs(cds, fullModelFormulaStr = trend_formula,
+        ABCs_df <- calABCs(cds, trend_formula = trend_formula,
             lineage_states = lineage_states, stretch = stretch,
             weighted = weighted, min_expr = min_expr, lineage_labels = lineage_labels,
             ...)
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
+    if (add_pval) {
+        pval_df <- branchTest(cds, fullModelFormulaStr = trend_formula,
+            reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)")
+        fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
+    }
     if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
         cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
         lineage_labels = lineage_labels, method = method, stretch = stretch,
         weighted = weighted, ...)
+    }
+    else {
+        cds_subset <- cds
+        pData(cds_subset)$Lineage <- pData(cds_subset)$State
     }
     if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
         "negbinomial", "poissonff", "quasipoissonff")) {
@@ -980,50 +958,27 @@ plot_genes_branched_pseudotime <- function (cds,
         cds_exprs$feature_label <- cds_exprs$f_id
     }
     cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
-    trend_formula <- paste("adjusted_expression", trend_formula,
-        sep = "")
-    cds_exprs$Lineage <- factor(cds_exprs$Lineage, levels=levels(pData(cds)$State))
-    merged_df_with_vgam <- plyr::ddply(cds_exprs, .(feature_label),
-        function(x) {
-            fit_res <- tryCatch({
-                expressionFamily <- cds@expressionFamily
-                if (expressionFamily@vfamily == "negbinomial") {
-                  if (!is.null(cds@dispFitInfo[["blind"]]$disp_func)) {
-                    disp_guess <- calulate_NB_dispersion_hint(cds@dispFitInfo[["blind"]]$disp_func,
-                      x$adjusted_expression)
-                    if (is.null(disp_guess) == FALSE && disp_guess >
-                      0 && is.na(disp_guess) == FALSE) {
-                      expressionFamily <- negbinomial(isize = 1/disp_guess)
-                    }
-                  }
-                }
-                vg <- suppressWarnings(vglm(formula = as.formula(trend_formula),
-                  family = expressionFamily, data = x, maxit = 30,
-                  checkwz = FALSE, trace = T))
-                if (integer_expression) {
-                  res <- predict(vg, type = "response")
-                  res[res < min_expr] <- min_expr
-                }
-                else {
-                  res <- 10^(predict(vg, type = "response"))
-                  res[res < log10(min_expr)] <- log10(min_expr)
-                }
-                res
-            }, error = function(e) {
-                print("Error!")
-                print(e)
-                res <- rep(NA, nrow(x))
-                res
-            })
-    #        df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-    #            Lineage = x$Lineage, knocout = x$knocout)
-    #        if (add_ABC)
-    #            df <- data.frame(Pseudotime = x$Pseudotime, expectation = fit_res,
-    #              Lineage = x$Lineage, knocout = x$knocout, ABCs = x$ABCs)
-             df <- cbind(x, expectation = fit_res)
+    # trend_formula <- paste("adjusted_expression", trend_formula,
+    #     sep = "")
+    cds_exprs$Lineage <- as.factor(cds_exprs$Lineage) 
 
-            df
-        })
+    new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
+ 
+    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, 
+                        relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+    colnames(full_model_expectation) <- colnames(cds_subset)
+    
+    cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
+    if(!is.null(reducedModelFormulaStr)){
+        reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
+                            relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+        colnames(reduced_model_expectation) <- colnames(cds_subset)
+        cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
+    }
+
+    if(!is.null(bifurcation_time)){
+        cds_exprs$bifurcation_time <- bifurcation_time[as.vector(cds_exprs$gene_short_name)]
+    }
     if (method == "loess")
         cds_exprs$expression <- cds_exprs$expression + cds@lowerDetectionLimit
     if (label_by_short_name == TRUE) {
@@ -1040,13 +995,22 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
     if (is.null(panel_order) == FALSE) {
-        cds_exprst$feature_label <- factor(cds_exprst$feature_label,
+        cds_exprs$feature_label <- factor(cds_exprs$feature_label,
             levels = panel_order)
     }
-    merged_df_with_vgam$expectation[is.na(merged_df_with_vgam$expectation)] <- min_expr
-    #cds_exprs$State <- as.factor(cds_exprs$State)
-    #merged_df_with_vgam$Lineage <- as.factor(merged_df_with_vgam$Lineage)
-    #merged_df_with_vgam <- cbind(merged_df_with_vgam, cds_exprs)
+    cds_exprs$expression[is.na(cds_exprs$expression)] <- min_expr
+    cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
+    cds_exprs$full_model_expectation[is.na(cds_exprs$full_model_expectation)] <- min_expr
+    cds_exprs$full_model_expectation[cds_exprs$full_model_expectation < min_expr] <- min_expr
+    
+    if(!is.null(reducedModelFormulaStr)){
+        cds_exprs$reduced_model_expectation[is.na(cds_exprs$reduced_model_expectation)] <- min_expr
+        cds_exprs$reduced_model_expectation[cds_exprs$reduced_model_expectation < min_expr] <- min_expr
+    }
+
+    cds_exprs$State <- as.factor(cds_exprs$State)
+    cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
+
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
     if (is.null(color_by) == FALSE) {
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
@@ -1054,14 +1018,22 @@ plot_genes_branched_pseudotime <- function (cds,
     if (add_ABC)
         q <- q + scale_y_log10() + facet_wrap(~feature_label +
             ABCs, nrow = nrow, ncol = ncol, scales = "free_y")
+    else if (add_pval)
+        q <- q + scale_y_log10() + facet_wrap(~feature_label +
+            pval, nrow = nrow, ncol = ncol, scales = "free_y")
     else q <- q + scale_y_log10() + facet_wrap(~feature_label,
         nrow = nrow, ncol = ncol, scales = "free_y")
     if (method == "loess")
         q <- q + stat_smooth(aes(fill = Lineage, color = Lineage),
             method = "loess")
     else if (method == "fitting") {
-        q <- q + geom_line(aes_string(x = "Pseudotime", y = "expectation",
-            color = color_by), data = merged_df_with_vgam)
+        q <- q + geom_line(aes_string(x = "Pseudotime", y = "full_model_expectation",
+            color = trajectory_color_by), data = cds_exprs) #+ scale_color_manual(name = "Type", values = c(colour_cell, colour), labels = c("Progenitor", "AT1", "AT2", "AT1", "AT2")
+    }
+
+    if(!is.null(reducedModelFormulaStr)) {
+        q <- q + geom_line(aes_string(x = "Pseudotime", y = "reduced_model_expectation"),
+            color = 'black', linetype = 2, data =  cds_exprs)   
     }
     if (stretch)
         q <- q + ylab("Expression") + xlab("Maturation levels")
@@ -1198,9 +1170,9 @@ plot_coexpression_matrix <- function(cds,
 #' @param cluster_num The minimum level of expression to show in the plot
 #' @return a heatmap plot from based on the pheatmap package
 #' @import pheatmap
-#' @export 
-#' 
-#' 
+#' @export
+#'
+#'
 plot_ILRs_heatmap <- function (cds, 
       ILRs_df, 
       ABC_df, 
@@ -1235,16 +1207,16 @@ plot_ILRs_heatmap <- function (cds,
     else if(ABC_type == 'all')
        ILRs_df <- ILRs_df
 
-    test <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
+    ph <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
         clustering_method = hclust_method, 
         ...)
 
     #create annotations for each gene
-    annotation <- data.frame(class = as.factor(cutree(test$tree_row, 
-        cluster_num)), row.names = names(cutree(test$tree_row, cluster_num)))
+    annotation <- data.frame(class = as.factor(cutree(ph$tree_row, 
+        cluster_num)), row.names = names(cutree(ph$tree_row, cluster_num)))
 
     #add also -log10(qval)
-    gene_names <- row.names(ILRs_df[test$tree_row$order, ]) 
+    gene_names <- row.names(ILRs_df[ph$tree_row$order, ]) 
     if(rownames_type == 'gene_short_name'){
       ensemble_names <- row.names(subset(fData(cds), gene_short_name %in% gene_names))
       #remove duplication: 
@@ -1256,13 +1228,19 @@ plot_ILRs_heatmap <- function (cds,
       log_qval <- log10(branching_pval_df[gene_names, 'qval'])
     }
     annotation$log_qval <- -log_qval
+    annotation[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation), 'ABCs']))
 
     #rotate the plot so that maturation level is on the x-axis
-    pheatmap(t(ILRs_df[test$tree_row$order, ]), cluster_cols = T, 
-        cluster_rows = F, show_rownames = F, show_colnames = F, 
-        border_color = NA, clustering_distance_cols = dist_method, 
-        clustering_method = hclust_method, annotation = annotation, 
-        annotation_legend = T, ...)
+    pheatmap(t(ILRs_df[ph$tree_row$order, ]), 
+      cluster_cols = T, 
+      cluster_rows = F, 
+      show_rownames = F, 
+      show_colnames = F, 
+      border_color = NA, 
+      clustering_distance_cols = dist_method, 
+      clustering_method = hclust_method, 
+      annotation = annotation, 
+      annotation_legend = T, ...)
 }
 
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
@@ -1291,103 +1269,191 @@ plot_ILRs_heatmap <- function (cds,
 #' @export
 #'
 #'
-plot_genes_branched_heatmap <- function(cds_subset, num_clusters = 6,
-    ABC_df, branchTest_df,
-    lineage_labels = c("AT1", "AT2"),
-    vstExprs = T, dist_method = NULL, hclust_method = "ward", heatmap_height = 3, heatmap_width = 4,
-    ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
-    qval_lowest_thrsd = 1, qval_highest_thrsd = 5,
-    hmcols = NULL, Cell_type_color = c('#979797', '#F05662', '#7990C8'), cores = 1) {
+plot_genes_branched_heatmap <- function(cds_subset, 
+  num_clusters = 6,
+  ABC_df = NULL, 
+  branchTest_df = NULL, 
+  lineage_labels = c("AT1", "AT2"), 
+  stretch = T, 
+  scaling = T,
+  norm_method = c("vstExprs", "log"), 
+  use_fitting_curves = T, 
+  dist_method = NULL, 
+  hclust_method = "ward", 
+  heatmap_height = 3, 
+  heatmap_width = 4,
+  ABC_lowest_thrsd = 0, 
+  ABC_highest_thrsd = 2,
+  qval_lowest_thrsd = 1, 
+  qval_highest_thrsd = 5,
+  hmcols = NULL, 
+  Cell_type_color = c('#979797', '#F05662', '#7990C8'), 
+  trend_formula = '~sm.ns(Pseudotime, df=3) * Lineage',
+  pseudo_cnt = 0, 
+  add_annotation_row = NULL,
+  add_annotation_col = NULL,
+  show_rownames = F, 
+  cores = 1,
+  use_gene_short_name = F,
+  file_name = 'branched_heatmap.pdf') {
     
-    new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = T)
+    new_cds <- buildLineageBranchCellDataSet(cds_subset, stretch = stretch)
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
-    
-    col_gap_ind <- 101
-    newdata <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
-    
-    LineageA_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],
-    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
-    
-    if(vstExprs) {
-        LineageA_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+
+    if(use_fitting_curves) {
+        col_gap_ind <- 101
+        # newdataA <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
+        # newdataB <- data.frame(Pseudotime = seq(0, 100, length.out = 100))
+
+        newdataA <- data.frame(Pseudotime = seq(0, 100,
+            length.out = 100), Lineage = as.factor(unique(as.character(pData(new_cds)$Lineage))[1]))   
+        newdataB <- data.frame(Pseudotime = seq(0, 100,
+            length.out = 100), Lineage = as.factor(unique(as.character(pData(new_cds)$Lineage))[2]))
+
+        LineageAB_exprs <- genSmoothCurves(new_cds[, ], cores=cores, trend_formula = trend_formula,  
+                    relative_expr = T, pseudocount = 0, new_data = rbind(newdataA, newdataB), weights = pData(new_cds)$weight)
+
+        LineageA_exprs <- LineageAB_exprs[, 1:100]
+        LineageB_exprs <- LineageAB_exprs[, 101:200]
+
+
+        # LineageA_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],  
+        #                                       modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataA)
+        # LineageB_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],  
+                                              # modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataB)
+        LineageP_num <- 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))
+        LineageA_num <- floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))
+        LineageB_num <- LineageA_num
     }
-    
-    LineageB_smoothed_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],
-    modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdata)
-    
-    if(vstExprs) {
-        LineageB_smoothed_exprs <- vstExprs(new_cds, expr_matrix=LineageA_smoothed_exprs)
+    else {
+        LineageA_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == 2])[, sort(pData(new_cds[, pData(new_cds)$Lineage == 2])$Pseudotime, index.return = T)$ix]
+        LineageB_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == 3])[, sort(pData(new_cds[, pData(new_cds)$Lineage == 3])$Pseudotime, index.return = T)$ix]
+
+        col_gap_ind <- sum(pData(new_cds)$Lineage == 2) + 1
+
+        newdataA <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == 2])$Pseudotime))
+        newdataB <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == 3])$Pseudotime))
+
+        LineageP_num <- sum(pData(new_cds)$State == 1) / 2
+        LineageA_num <- sum(pData(new_cds)$State == 2)
+        LineageB_num <- sum(pData(new_cds)$State == 3)
     }
+
+    if(norm_method == 'vstExprs') {
+        LineageA_exprs <- vstExprs(new_cds, expr_matrix=LineageA_exprs)
+        LineageB_exprs <- vstExprs(new_cds, expr_matrix=LineageB_exprs)
+    }     
+    else if(norm_method == 'log') {
+        LineageA_exprs <- log10(LineageA_exprs + 1)
+        LineageB_exprs <- log10(LineageB_exprs + 1)
+    }
+
+    heatmap_matrix <- cbind(LineageA_exprs[, (col_gap_ind - 1):1], LineageB_exprs)
     
-    heatmap_matrix <- cbind(LineageA_smoothed_exprs[, 100:1], LineageB_smoothed_exprs)
-    
-    heatmap_matrix <- t(scale(t(heatmap_matrix)))
-    heatmap_matrix[heatmap_matrix > 3] <- 3
-    heatmap_matrix[heatmap_matrix < -3] <- -3
-    
+    if(scaling) {
+        heatmap_matrix <- t(scale(t(heatmap_matrix)))
+        heatmap_matrix[heatmap_matrix > 3] <- 3
+        heatmap_matrix[heatmap_matrix < -3] <- -3     
+    }
+
+    heatmap_matrix_ori <- heatmap_matrix
+    heatmap_matrix <- heatmap_matrix[!is.na(heatmap_matrix[, 1]) & !is.na(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
+
     row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
-    
+
     if(is.null(hmcols)) {
         bk <- seq(-3.1,3.1, by=0.1)
         hmcols <- blue2green2red(length(bk) - 1)
     }
-    
-    ph <- pheatmap(heatmap_matrix,
-    cluster_cols=FALSE,
-    cluster_rows=TRUE,
-    show_rownames=F,
-    show_colnames=F,
-    #scale="row",
-    clustering_distance_rows=row_dist,
-    clustering_method = hclust_method,
-    cutree_rows=num_clusters,
-    #breaks=bks,
-    color=hmcols#,
-    # filename="expression_pseudotime_pheatmap.pdf",
-    )
+
+    # print(hmcols)
+    ph <- pheatmap(heatmap_matrix, 
+             useRaster = T,
+             cluster_cols=FALSE, 
+             cluster_rows=TRUE, 
+             show_rownames=F, 
+             show_colnames=F, 
+             #scale="row",
+             clustering_distance_rows=row_dist,
+             clustering_method = hclust_method,
+             cutree_rows=num_clusters,
+             #breaks=bks,
+             color=hmcols#,
+             # filename="expression_pseudotime_pheatmap.pdf",
+             )
+
+    #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
+
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
-    annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
-    annotation_row[which(annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd), "-log 10(qval)"] <- qval_lowest_thrsd
-    annotation_row[which(annotation_row[, "-log 10(qval)"] > qval_highest_thrsd), "-log 10(qval)"] <- qval_highest_thrsd
+    if(!is.null(branchTest_df)) {
+      annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
+      annotation_row[which(annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd), "-log 10(qval)"] <- qval_lowest_thrsd
+      annotation_row[which(annotation_row[, "-log 10(qval)"] > qval_highest_thrsd), "-log 10(qval)"] <- qval_highest_thrsd
+    }
+    if(!is.null(add_annotation_row)) {
+        annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+        annotation_row <- add_annotation_row 
+        # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+    }
+
+    if(!is.null(ABC_df)) {
+        annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
+        annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
+        annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
+    }
     
-    annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
-    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
-    annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
+    colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
+    annotation_col <- data.frame(row.names = c(1:ncol(heatmap_matrix)), "Cell Type" = c(rep(lineage_labels[1], LineageA_num),
+                                                rep("Progenitor",  2 * LineageP_num),
+                                                rep(lineage_labels[2], LineageB_num)))
+
+    colnames(annotation_col) <- "Cell Type"  
     
-    pData(AT12_cds_subset_all_gene)$cell_type <- "Progenitor"
-    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 2] <- lineage_labels[1]
-    pData(AT12_cds_subset_all_gene)$cell_type[pData(AT12_cds_subset_all_gene)$State == 3] <- lineage_labels[2]
-    
-    colnames(heatmap_matrix) <- c(1:200)
-    annotation_col <- data.frame(row.names = c(1:200), "Cell Type" = c(rep("AT1", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
-    rep("Progenitor",  2 * floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime']))),
-    rep("AT2", 100 - floor(max(pData(new_cds)[pData(new_cds)$State == 1, 'Pseudotime'])))
-    ))
-    colnames(annotation_col) <- "Cell Type"
-    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], 
-                                        A=Cell_type_color[2], 
-                                        B=Cell_type_color[3]))
+    if(!is.null(add_annotation_col)) {
+        annotation_col <- cbind(annotation_col, add_annotation_col[fData(absolute_cds[row.names(annotation_col), ])$gene_short_name, 1])  
+    }
+
+    Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
+    names(Cluster_color) <- 1:length(unique(annotation_row$Cluster))
+    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], AT1=Cell_type_color[2], AT2=Cell_type_color[3]), 
+                                'Cluster' = Cluster_color)
+
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
 
+    if(use_gene_short_name == T) { #use_gene_short_name
+        row.names(heatmap_matrix) <- fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name']
+        row.names(annotation_row) <- fData(cds_subset)[row.names(annotation_row), 'gene_short_name']
+    }
+
+    #print(annotation_row)
+    # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
+    #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
+    dev.off()
+    pdf(file_name, height = heatmap_height, width = heatmap_width)
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
-    cluster_cols=FALSE,
-    cluster_rows=TRUE,
-    show_rownames=F,
-    show_colnames=F,
-    clustering_distance_rows=row_dist, #row_dist
-    clustering_method = hclust_method, #ward.D2
-    cutree_rows=num_clusters,
-    cutree_cols = 2,
-    annotation_row=annotation_row,
-    annotation_col=annotation_col,
-    annotation_colors=annotation_colors,
-    gaps_col = col_gap_ind,
-    treeheight_row = 1.5,
-    #breaks=bks,
-    fontsize = 6,
-    color=hmcols
-    )
-    
-    return(list(heatmap_matrix = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+             useRaster = T,
+             cluster_cols=FALSE, 
+             cluster_rows=TRUE, 
+             show_rownames=show_rownames, 
+             show_colnames=F, 
+             #scale="row",
+             clustering_distance_rows=row_dist, #row_dist
+             clustering_method = hclust_method, #ward.D2
+             cutree_rows=num_clusters,
+             # cutree_cols = 2,
+             annotation_row=annotation_row,
+             annotation_col=annotation_col,
+             annotation_colors=annotation_colors,
+             gaps_col = col_gap_ind,
+             treeheight_row = 1.5, 
+             #breaks=bks,
+             fontsize = 6,
+             color=hmcols
+             # filename="expression_pseudotime_pheatmap2.pdf",
+             )
+    dev.off()
+
+    return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
+

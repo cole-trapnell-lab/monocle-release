@@ -35,7 +35,8 @@ Imports:
     dplyr,
     mixsmsn,
     pheatmap,
-    MASS
+    MASS,
+    colorRamps
 VignetteBuilder: knitr
 Suggests:
     knitr,
