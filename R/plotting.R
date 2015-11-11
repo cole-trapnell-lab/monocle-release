@@ -505,7 +505,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   
   if (is.null(panel_order) == FALSE)
   {
-    cds_subset$feature_label <- factor(cds_subset$feature_label, levels=panel_order)
+    cds_exprs$feature_label <- factor(cds_exprs$feature_label, levels=panel_order)
   }
   
   q <- ggplot(aes(Pseudotime, expression), data=cds_exprs) 
@@ -517,7 +517,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
   }
     
   if (method == "loess") {
-    q <- q + stat_smooth(aes(group=1), color=I("black"), method = "loess", se=F)
+    q <- q + stat_smooth(aes(group=1, weight=I(0.1)), color=I("black"), method = "loess", se=F)
   }
   else if (method == "VGAM") {
     q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = merged_df_with_vgam)
