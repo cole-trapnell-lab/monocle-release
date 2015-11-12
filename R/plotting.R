@@ -1243,6 +1243,48 @@ plot_ILRs_heatmap <- function (cds,
       annotation_legend = T, ...)
 }
 
+#The following code is swipped from colorRamps package which is used to make the pallette
+table.ramp <- function(n, mid = 0.5, sill = 0.5, base = 1, height = 1)
+{
+    x <- seq(0, 1, length.out = n)
+    y <- rep(0, length(x))
+    sill.min <- max(c(1, round((n - 1) * (mid - sill / 2)) + 1))
+    sill.max <- min(c(n, round((n - 1) * (mid + sill / 2)) + 1))
+    y[sill.min:sill.max] <- 1
+    base.min <- round((n - 1) * (mid - base / 2)) + 1
+    base.max <- round((n - 1) * (mid + base / 2)) + 1
+    xi <- base.min:sill.min
+    yi <- seq(0, 1, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    xi <- sill.max:base.max
+    yi <- seq(1, 0, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    height * y
+}
+
+rgb.tables <- function(n,
+red = c(0.75, 0.25, 1),
+green = c(0.5, 0.25, 1),
+blue = c(0.25, 0.25, 1))
+{
+    rr <- do.call("table.ramp", as.list(c(n, red)))
+    gr <- do.call("table.ramp", as.list(c(n, green)))
+    br <- do.call("table.ramp", as.list(c(n, blue)))
+    rgb(rr, gr, br)
+}
+
+matlab.like <- function(n) rgb.tables(n)
+
+matlab.like2 <- function(n)
+rgb.tables(n,
+red = c(0.8, 0.2, 1),
+green = c(0.5, 0.4, 0.8),
+blue = c(0.2, 0.2, 1))
+
+blue2green2red <- matlab.like2
+
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
 #'
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
@@ -1456,4 +1498,3 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
-
