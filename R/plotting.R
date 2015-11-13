@@ -1422,7 +1422,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              cutree_rows=num_clusters,
              #breaks=bks,
              color=hmcols#,
-             filename="tmp_expression_branch_pheatmap.pdf",
+             filename="tmp_expression_branch_pheatmap.pdf"
              )
 
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
