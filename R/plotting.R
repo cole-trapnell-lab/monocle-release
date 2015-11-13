@@ -1421,7 +1421,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
              #breaks=bks,
-             color=hmcols#,
+             color=hmcols,
              filename="tmp_expression_branch_pheatmap.pdf"
              )
 
