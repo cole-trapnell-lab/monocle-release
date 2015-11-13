@@ -1410,6 +1410,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     }
 
     # print(hmcols)
+    pdf("tmp_expression_branch_pheatmap.pdf")
     ph <- pheatmap(heatmap_matrix, 
              useRaster = T,
              cluster_cols=FALSE, 
@@ -1422,9 +1423,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
              cutree_rows=num_clusters,
              #breaks=bks,
              color=hmcols,
-             filename="tmp_expression_branch_pheatmap.pdf"
              )
-
+    dev.off()
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
 
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
