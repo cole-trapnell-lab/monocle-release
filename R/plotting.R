@@ -1422,7 +1422,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
              #breaks=bks,
-             color=hmcols,
+             color=hmcols
              )
     dev.off()
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
@@ -1471,7 +1471,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     #print(annotation_row)
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
     #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-    dev.off()
+
     pdf(file_name, height = heatmap_height, width = heatmap_width)
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
