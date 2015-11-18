@@ -152,11 +152,13 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	# 	  file_name = 'branched_heatmap.pdf')
 	# }
 
+
 	fd <- fData(cds)
 
 	#combined dataframe: 
-
-	fData(cds) <- cbind(cmbn_df, fd)
+	if(draw_branched_kinetics | draw_branched_heatmap | calILR | calABC | calBranchTimePoint){
+		fData(cds) <- cbind(cmbn_df, fd)
+	}
 
 	return(cds)
 }
