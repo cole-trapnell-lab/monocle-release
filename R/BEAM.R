@@ -162,8 +162,3 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 
 	return(cds)
 }
-
-
-
-
-
