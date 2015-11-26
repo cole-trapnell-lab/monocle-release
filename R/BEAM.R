@@ -11,12 +11,7 @@
 #' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
 #' @param cores the number of cores to be used while testing each gene for differential expression
-#' @param lineage_labelsthe name for each lineage, for example, AT1 or AT2  
-#' @param draw_branched_kinetics gene names used to make the bifurcation plots for two genes. 
-#' @param draw_branched_heatmap gene names used to make the bifurcation plots for two genes. 
-#' @param calILR gene names used to make the bifurcation plots for two genes. 
-#' @param calABC gene names used to make the bifurcation plots for two genes. 
-#' @param calBranchTimePoint gene names used to make the bifurcation plots for two genes. 
+#' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 #'
@@ -30,11 +25,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 					q_thrsld = 0.05, 
 					lineage_labels = NULL, 
 					cores = 1, 
-					draw_branched_kinetics = F, 
-					draw_branched_heatmap = F, 
-					calILR = F, 
-					calABC = F, 
-					calBranchTimePoint = F, 
 					...) {
 
 	branchTest_res <- branchTest(cds, fullModelFormulaStr = fullModelFormulaStr,
@@ -48,24 +38,23 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	                       lineage_labels = lineage_labels, ...)
 	cmbn_df <- branchTest_res[, 1:4] 
 
-	if(calABC) {
-		ABCs_res <- calABCs(cds, trajectory_type = "Lineage", 
-						  trajectory_states = lineage_states,
-						  branchTest = FALSE, 
-						  relative_expr = relative_expr, 
-						  trend_formula = fullModelFormulaStr,
-						  stretch = stretch, 
-						  pseudocount = pseudocount, 
-						  cores = cores, 
-						  weighted = weighted, 
-						  lineage_labels = lineage_labels,
-						  ...)
-
-		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
-	}
+# 	if(calABC) {
+# 		ABCs_res <- calABCs(cds, trajectory_type = "Lineage", 
+# 						  trajectory_states = lineage_states,
+# 						  branchTest = FALSE, 
+# 						  relative_expr = relative_expr, 
+# 						  trend_formula = fullModelFormulaStr,
+# 						  stretch = stretch, 
+# 						  pseudocount = pseudocount, 
+# 						  cores = cores, 
+# 						  weighted = weighted, 
+# 						  lineage_labels = lineage_labels,
+# 						  ...)
+# 
+# 		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
+# 	}
 
 	#make a newCellDataSet object with the smoothed data? 
-	if(calILRs) {
 		ILRs_res <- calILRs(cds = cds, 
 					  trajectory_type = "Lineage", 
 					  trajectory_states = lineage_states, 
@@ -80,9 +69,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 					  ...)
 
 		cmbn_df <- cbind(cmbn_df, ILRs_res[, 1])
-	}
 
-	if(calBranchTimePoint) {
 		BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
 		  lineage_states = lineage_states, 
 		  stretch = stretch, 
@@ -94,7 +81,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 			...)
 
 		cmbn_df <- cbind(cmbn_df, BifurcationTimePoint_res[, 1])
-	}
 
 	# if(draw_branched_kinetics) {
 	# 	plot_genes_branched_pseudotime(cds, 
@@ -156,9 +142,9 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	fd <- fData(cds)
 
 	#combined dataframe: 
-	if(draw_branched_kinetics | draw_branched_heatmap | calILR | calABC | calBranchTimePoint){
-		fData(cds) <- cbind(cmbn_df, fd)
-	}
+	
+	fData(cds) <- cbind(cmbn_df, fd)
+
 
 	return(cds)
 }
