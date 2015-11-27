@@ -2,7 +2,56 @@
 % \VignetteEngine{knitr::knitr}
 % \VignetteDepends{} 
 % \VignettePackage{monocle}
-\documentclass[10pt,oneside]{article}
+\documentclass[10pt,oneside]{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 
 \newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments}
 
@@ -20,17 +69,10 @@
 \texttt{coletrap@uw.edu} \and
 Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
 \texttt{davide@broadinstitute.org}}
-
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
-<<include=FALSE, eval=TRUE>>=
-library(Biobase)
-library(knitr)
-library(reshape2)
-library(ggplot2)
 
-knitr::opts_chunk$set(autodep=TRUE, cache=FALSE)
-@ %def
 
 \maketitle
 
@@ -40,51 +82,123 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 
 \tableofcontents
 
-<<init_monocle, include=FALSE, eval=TRUE>>=
-library(HSMMSingleCell)
-library(monocle)
-data(HSMM_expr_matrix)
-data(HSMM_gene_annotation)
-data(HSMM_sample_sheet)
-@ %def 
+
 
 \section{BEAM}
 
-<<init_treutlein, include=TRUE, eval=TRUE>>=
-baseLoc <- system.file(package="monocle")
-#baseLoc <- './inst'
-extPath <- file.path(baseLoc, "extdata")
-load(file.path(extPath, "lung_phenotype_data.RData"))
-load(file.path(extPath, "lung_exprs_data.RData"))
-load(file.path(extPath, "lung_feature_data.RData"))
-lung_exprs_data <- lung_exprs_data[,row.names(lung_phenotype_data)]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{baseLoc} \hlkwb{<-} \hlkwd{system.file}\hlstd{(}\hlkwc{package}\hlstd{=}\hlstr{"monocle"}\hlstd{)}
+\hlstd{baseLoc} \hlkwb{<-} \hlstr{'./inst'}
+\hlstd{extPath} \hlkwb{<-} \hlkwd{file.path}\hlstd{(baseLoc,} \hlstr{"extdata"}\hlstd{)}
+\hlkwd{load}\hlstd{(}\hlkwd{file.path}\hlstd{(extPath,} \hlstr{"lung_phenotype_data.RData"}\hlstd{))}
+\end{alltt}
 
-pd <- new("AnnotatedDataFrame", data = lung_phenotype_data)
-fd <- new("AnnotatedDataFrame", data = lung_feature_data)
 
-# Now, make a new CellDataSet using the RNA counts
-lung <- newCellDataSet(as.matrix(lung_exprs_data), 
-                       phenoData = pd, 
-                       featureData = fd,
-                       lowerDetectionLimit=1,
-                       expressionFamily=negbinomial())
+{\ttfamily\noindent\color{warningcolor}{\#\# Warning in readChar(con, 5L, useBytes = TRUE): cannot open compressed file './inst/extdata/lung\_phenotype\_data.RData', probable reason 'No such file or directory'}}
 
-lung <- estimateSizeFactors(lung)
-lung <- estimateDispersions(lung)
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection}}\begin{alltt}
+\hlkwd{load}\hlstd{(}\hlkwd{file.path}\hlstd{(extPath,} \hlstr{"lung_exprs_data.RData"}\hlstd{))}
+\end{alltt}
 
-pData(lung)$Total_mRNAs <- colSums(exprs(lung))
-lung <- detectGenes(lung, min_expr = 1)
-expressed_genes <- row.names(subset(fData(lung), num_cells_expressed >= 5))
-ordering_genes <- expressed_genes
-lung <- setOrderingFilter(lung, ordering_genes)
-lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-lung <- orderCells(lung, num_paths=2)
-plot_spanning_tree(lung, color_by="Time")
 
-BEAM_res <- BEAM(lung)
+{\ttfamily\noindent\color{warningcolor}{\#\# Warning in readChar(con, 5L, useBytes = TRUE): cannot open compressed file './inst/extdata/lung\_exprs\_data.RData', probable reason 'No such file or directory'}}
 
-head(fData(BEAM_res))
-@ %def 
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection}}\begin{alltt}
+\hlkwd{load}\hlstd{(}\hlkwd{file.path}\hlstd{(extPath,} \hlstr{"lung_feature_data.RData"}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\color{warningcolor}{\#\# Warning in readChar(con, 5L, useBytes = TRUE): cannot open compressed file './inst/extdata/lung\_feature\_data.RData', probable reason 'No such file or directory'}}
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in readChar(con, 5L, useBytes = TRUE): cannot open the connection}}\begin{alltt}
+\hlstd{lung_exprs_data} \hlkwb{<-} \hlstd{lung_exprs_data[,}\hlkwd{row.names}\hlstd{(lung_phenotype_data)]}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'lung\_exprs\_data' not found}}\begin{alltt}
+\hlstd{pd} \hlkwb{<-} \hlkwd{new}\hlstd{(}\hlstr{"AnnotatedDataFrame"}\hlstd{,} \hlkwc{data} \hlstd{= lung_phenotype_data)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in value[[3L]](cond): object 'lung\_phenotype\_data' not found\\\#\#\ \  AnnotatedDataFrame 'initialize' could not update varMetadata:\\\#\#\ \  perhaps pData and varMetadata are inconsistent?}}\begin{alltt}
+\hlstd{fd} \hlkwb{<-} \hlkwd{new}\hlstd{(}\hlstr{"AnnotatedDataFrame"}\hlstd{,} \hlkwc{data} \hlstd{= lung_feature_data)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in value[[3L]](cond): object 'lung\_feature\_data' not found\\\#\#\ \  AnnotatedDataFrame 'initialize' could not update varMetadata:\\\#\#\ \  perhaps pData and varMetadata are inconsistent?}}\begin{alltt}
+\hlcom{# Now, make a new CellDataSet using the RNA counts}
+\hlstd{lung} \hlkwb{<-} \hlkwd{newCellDataSet}\hlstd{(}\hlkwd{as.matrix}\hlstd{(lung_exprs_data),}
+                       \hlkwc{phenoData} \hlstd{= pd,}
+                       \hlkwc{featureData} \hlstd{= fd,}
+                       \hlkwc{lowerDetectionLimit}\hlstd{=}\hlnum{1}\hlstd{,}
+                       \hlkwc{expressionFamily}\hlstd{=}\hlkwd{negbinomial}\hlstd{())}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in as.matrix(lung\_exprs\_data): object 'lung\_exprs\_data' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{estimateSizeFactors}\hlstd{(lung)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in estimateSizeFactors(lung): error in evaluating the argument 'object' in selecting a method for function 'estimateSizeFactors': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{estimateDispersions}\hlstd{(lung)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in estimateDispersions(lung): error in evaluating the argument 'object' in selecting a method for function 'estimateDispersions': Error: object 'lung' not found}}\begin{alltt}
+\hlkwd{pData}\hlstd{(lung)}\hlopt{$}\hlstd{Total_mRNAs} \hlkwb{<-} \hlkwd{colSums}\hlstd{(}\hlkwd{exprs}\hlstd{(lung))}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in exprs(lung): error in evaluating the argument 'object' in selecting a method for function 'exprs': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{detectGenes}\hlstd{(lung,} \hlkwc{min_expr} \hlstd{=} \hlnum{1}\hlstd{)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in exprs(cds): error in evaluating the argument 'object' in selecting a method for function 'exprs': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{expressed_genes} \hlkwb{<-} \hlkwd{row.names}\hlstd{(}\hlkwd{subset}\hlstd{(}\hlkwd{fData}\hlstd{(lung), num_cells_expressed} \hlopt{>=} \hlnum{120}\hlstd{))}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in fData(lung): error in evaluating the argument 'object' in selecting a method for function 'fData': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{ordering_genes} \hlkwb{<-} \hlstd{expressed_genes}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): object 'expressed\_genes' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{setOrderingFilter}\hlstd{(lung, ordering_genes)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in fData(cds): error in evaluating the argument 'object' in selecting a method for function 'fData': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{reduceDimension}\hlstd{(lung,} \hlkwc{use_vst} \hlstd{= F,} \hlkwc{pseudo_expr} \hlstd{=} \hlnum{1}\hlstd{)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in exprs(cds): error in evaluating the argument 'object' in selecting a method for function 'exprs': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{lung} \hlkwb{<-} \hlkwd{orderCells}\hlstd{(lung,} \hlkwc{num_paths}\hlstd{=}\hlnum{2}\hlstd{)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in t(cds@reducedDimS): object 'lung' not found}}\begin{alltt}
+\hlkwd{plot_spanning_tree}\hlstd{(lung,} \hlkwc{color_by}\hlstd{=}\hlstr{"Time"}\hlstd{)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in pData(cds): error in evaluating the argument 'object' in selecting a method for function 'pData': Error: object 'lung' not found}}\begin{alltt}
+\hlstd{BEAM_res} \hlkwb{<-} \hlkwd{BEAM}\hlstd{(lung)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in eval(expr, envir, enclos): could not find function "{}BEAM"{}}}\begin{alltt}
+\hlkwd{head}\hlstd{(BEAM_res)}
+\end{alltt}
+
+
+{\ttfamily\noindent\bfseries\color{errorcolor}{\#\# Error in head(BEAM\_res): object 'BEAM\_res' not found}}\end{kframe}
+\end{knitrout}
 
 %' 
 %' \section{Introduction}
@@ -481,9 +595,42 @@ head(fData(BEAM_res))
 %' Monocle was built by Cole Trapnell and Davide Cacchiarelli, with substantial design input John Rinn and Tarjei Mikkelsen. We are grateful to Sharif Bordbar, Chris Zhu, Amy Wagers and the Broad RNAi platform for technical assistance, and Magali Soumillon for helpful discussions. Cole Trapnell is a Damon Runyon Postdoctoral Fellow. Davide Cacchiarelli is a Human Frontier Science Program Fellow. Cacchiarelli and Mikkelsen were supported by the Harvard Stem Cell Institute. John Rinn is the Alvin and Esta Star Associate Professor. This work was supported by NIH grants 1DP2OD00667, P01GM099117, and P50HG006193-01. This work was also supported in part by the Single Cell Genomics initiative, a collaboration between the Broad Institute and Fluidigm Inc. This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for \Rpackage{DESeq}, by Simon Anders and Wolfgang Huber.
 
 \section{Session Info}
-<<sessi>>=
-sessionInfo()
-@
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{sessionInfo}\hlstd{()}
+\end{alltt}
+\begin{verbatim}
+## R version 3.2.1 (2015-06-18)
+## Platform: x86_64-apple-darwin13.4.0 (64-bit)
+## Running under: OS X 10.10.1 (Yosemite)
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## attached base packages:
+##  [1] splines   stats4    parallel  stats     graphics  grDevices utils    
+##  [8] datasets  methods   base     
+## 
+## other attached packages:
+## [1] monocle_1.1.7          VGAM_0.9-8             HSMMSingleCell_0.101.5
+## [4] ggplot2_1.0.1          reshape2_1.4.1         Biobase_2.28.0        
+## [7] BiocGenerics_0.14.0    knitr_1.11            
+## 
+## loaded via a namespace (and not attached):
+##  [1] igraph_1.0.1       Rcpp_0.11.6        cluster_2.0.2     
+##  [4] magrittr_1.5       MASS_7.3-42        munsell_0.4.2     
+##  [7] lattice_0.20-31    colorspace_1.2-6   R6_2.0.1          
+## [10] dplyr_0.4.2        stringr_1.0.0      highr_0.5.1       
+## [13] plyr_1.8.3         tools_3.2.1        grid_3.2.1        
+## [16] gtable_0.1.2       irlba_1.0.3        DBI_0.3.1         
+## [19] matrixStats_0.14.2 assertthat_0.1     digest_0.6.8      
+## [22] Matrix_1.2-1       formatR_1.2.1      evaluate_0.8      
+## [25] limma_3.24.12      fastICA_1.2-0      stringi_0.5-5     
+## [28] scales_0.2.5       combinat_0.0-8     proto_0.3-10
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 
 \bibliographystyle{unsrt}
 \bibliography{monocle_alg}
