@@ -83,7 +83,7 @@ plot_spanning_tree(lung, color_by="Time")
 
 BEAM_res <- BEAM(lung)
 
-head(fData(BEAM_res))
+head(BEAM_res)
 @ %def 
 
 %' 
