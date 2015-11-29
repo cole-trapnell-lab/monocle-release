@@ -494,7 +494,7 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models, as well as the time point where the gene starts to bifurcate between two branches
 #' @export
 #'
 BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage", 
@@ -536,32 +536,32 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 # 		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
 # 	}
 
-	#make a newCellDataSet object with the smoothed data? 
-		ILRs_res <- calILRs(cds = cds, 
-					  trajectory_type = "Lineage", 
-					  trajectory_states = lineage_states, 
-					  lineage_labels = lineage_labels, 
-					  stretch = stretch, 
-					  cores = cores, 
-					  trend_formula = fullModelFormulaStr,
-					  ILRs_limit = 3, 
-					  relative_expr = relative_expr, 
-					  weighted = weighted, 
-					  pseudocount = pseudocount, 
-					  return_all = T,
-					  ...)
+  #make a newCellDataSet object with the smoothed data? 
+  ILRs_res <- calILRs(cds = cds, 
+  			  trajectory_type = "Lineage", 
+  			  trajectory_states = lineage_states, 
+  			  lineage_labels = lineage_labels, 
+  			  stretch = stretch, 
+  			  cores = cores, 
+  			  trend_formula = fullModelFormulaStr,
+  			  ILRs_limit = 3, 
+  			  relative_expr = relative_expr, 
+  			  weighted = weighted, 
+  			  pseudocount = pseudocount, 
+  			  return_all = T,
+  			  ...)
 
-		BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
-		  lineage_states = lineage_states, 
-		  stretch = stretch, 
-		  cores = cores, 
-		  trend_formula = fullModelFormulaStr, 
-		  relative_expr = relative_expr, 
-		  weighted = weighted, 
-		  pseudocount = pseudocount, 
-			...)
+  BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
+    lineage_states = lineage_states, 
+    stretch = stretch, 
+    cores = cores, 
+    trend_formula = fullModelFormulaStr, 
+    relative_expr = relative_expr, 
+    weighted = weighted, 
+    pseudocount = pseudocount, 
+  	...)
 
-		cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
+  cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	# if(draw_branched_kinetics) {
 	# 	plot_genes_branched_pseudotime(cds, 
@@ -624,8 +624,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 
 	#combined dataframe: 
 	
-	fData(cds) <- cbind(cmbn_df, fd)
+	cmbn_df <- cbind(cmbn_df, fd)
 
-
-	return(cds)
+	return(cmbn_df)
 }
