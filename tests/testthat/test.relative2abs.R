@@ -4,8 +4,8 @@ context("estimate_t")
 test_that("estimate_t() reports the estimated mode of the relative abundance"), {
 
 	HSMM <- load_HSMM()
-	t_estimate <- as.numeric(estimate_t(exprs(HSMM)))
+	rpc_matrix <- relative2abs(HSMM)
 
-	expect_equal(round(as.numeric(t_estimate[1:5])), 
-             c(1, 11, 25, 21, 51))
+	expect_equal(round(as.numeric(rpc_matrix[1, 1:5])), 
+             c(7, 0, 2, 0, 1))
 }

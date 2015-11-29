@@ -33,7 +33,6 @@ test_that("branchTest() report valid branch test results for markers in lung dat
 	lung <- setOrderingFilter(lung, ordering_genes)
 	lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
 	lung <- orderCells(lung, num_paths=2)
-	plot_spanning_tree(lung, color_by="Time")
 
 	branchTest_res <- branchTest(lung)
 

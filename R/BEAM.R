@@ -31,7 +31,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
-                                                lineage_labels = lineage_labels, method = 'fitting', stretch = stretch,
+                                                lineage_labels = lineage_labels, stretch = stretch,
                                                 weighted = weighted, ...)
   }
   else
@@ -100,7 +100,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
   
   if(trajectory_type == "Lineage") {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
-                                                lineage_labels = lineage_labels, method = method, stretch = stretch,
+                                                lineage_labels = lineage_labels, stretch = stretch,
                                                 weighted = weighted, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   }
@@ -251,7 +251,7 @@ calILRs <- function (cds = cds,
   
   if(trajectory_type == "Lineage") {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
-                                                lineage_labels = lineage_labels, method = method, stretch = stretch,
+                                                lineage_labels = lineage_labels, stretch = stretch,
                                                 weighted = weighted, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   }
@@ -567,7 +567,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	# 	plot_genes_branched_pseudotime(cds, 
 	# 		lineage_states = lineage_states, 
 	# 		lineage_labels = lineage_labels,
-	# 		method = "fitting", 
 	# 		stretch = TRUE, 
 	# 		min_expr = NULL, 
 	# 		cell_size = 0.75,
