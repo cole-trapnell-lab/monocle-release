@@ -1,7 +1,7 @@
 library(monocle)
 context("branchTest")
 
-test_that("branchTest() report valid branch test results for markers in lung dataset"), {
+test_that("branchTest() report valid branch test results for markers in lung dataset", {
 
 	set.seed(123)
 
@@ -40,4 +40,4 @@ test_that("branchTest() report valid branch test results for markers in lung dat
 	expect_equal(colnames(branchTest_res)[1:4], c("status", "family", "pval", "qval"))
 
 	expect_equal(sum(branchTest_res$qval < 0.01), 131)
-}
+})

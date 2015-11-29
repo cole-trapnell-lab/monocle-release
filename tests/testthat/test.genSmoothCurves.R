@@ -1,7 +1,7 @@
 library(monocle)
-context("estimate_t")
+context("genSmoothCurves")
 
-test_that("estimate_t() reports the estimated mode of the relative abundance"), {
+test_that("genSmoothCurves() fits (branched) smooth curves for the data along pseudotime", {
 
 	set.seed(123)
 
@@ -36,7 +36,7 @@ test_that("estimate_t() reports the estimated mode of the relative abundance"), 
 
 	cds_subset <- buildLineageBranchCellDataSet(cds = lung, #lineage_states = trajectory_states,
 	                                                lineage_labels = NULL, stretch = T,
-	                                                weighted = T, ...)
+	                                                weighted = T)
 
   	trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage"
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
@@ -63,4 +63,4 @@ test_that("estimate_t() reports the estimated mode of the relative abundance"), 
 	expect_equal(dim(str_branchAB_expression_curve_matrix), c(218, 200))
 
 	expect_equal(str_branchAB_expression_curve_matrix['ENSMUSG00000000058.6', 1:5], c(0.2579, 0.2864, 0.3180, 0.3530, 0.3917), tolerance=1e-4)
-}
+})

@@ -46,4 +46,4 @@ test_that("buildLineageBranchCellDataSet() creates a new CellDataSet object with
 	# test the weighted of duplicated cells 
 	expect_equal(unique(pData(lung_new[, ])$weight), c(0.5, 1))
 	
-}
+})

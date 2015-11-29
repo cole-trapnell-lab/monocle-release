@@ -1,7 +1,7 @@
 library(monocle)
 context("detectBifurcationPoint")
 
-test_that("detectBifurcationPoint() reports the bifurcation time point detected for the marker genes in lung dataset"), {
+test_that("detectBifurcationPoint() reports the bifurcation time point detected for the marker genes in lung dataset", {
 
 	set.seed(123)
 
@@ -60,4 +60,4 @@ test_that("detectBifurcationPoint() reports the bifurcation time point detected 
 	expect_false(is.null(lung))
 	expect_equal(as.vector(BifurcationTimePoint_res[1:4]), c(27, -45, 8, -36))
 
-}
+})
