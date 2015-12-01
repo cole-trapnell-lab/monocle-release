@@ -364,7 +364,7 @@ calABCs <- function(cds, trajectory_type = "Lineage",
 #' @importFrom reshape2 melt
 #' @export 
 #' 
-calILRs <- function (cds = cds, 
+calILRs <- function (cds, 
           trajectory_type = "Lineage", 
           trajectory_states = c(2, 3), 
           lineage_labels = NULL, 

@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .DS_Store
+vignettes/monocle-vignette.tex
+vignettes/monocle-vignette.toc
+vignettes/monocle-vignette.bbl
