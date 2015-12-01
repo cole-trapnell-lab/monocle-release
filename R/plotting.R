@@ -67,7 +67,7 @@ plot_spanning_tree <- function(cds,
   colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
 
   ica_space_df$sample_name <- row.names(ica_space_df)
-  ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  ica_space_with_state_df <- meege(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
  
@@ -1243,6 +1243,48 @@ plot_ILRs_heatmap <- function (cds,
       annotation_legend = T, ...)
 }
 
+#The following code is swipped from colorRamps package which is used to make the pallette
+table.ramp <- function(n, mid = 0.5, sill = 0.5, base = 1, height = 1)
+{
+    x <- seq(0, 1, length.out = n)
+    y <- rep(0, length(x))
+    sill.min <- max(c(1, round((n - 1) * (mid - sill / 2)) + 1))
+    sill.max <- min(c(n, round((n - 1) * (mid + sill / 2)) + 1))
+    y[sill.min:sill.max] <- 1
+    base.min <- round((n - 1) * (mid - base / 2)) + 1
+    base.max <- round((n - 1) * (mid + base / 2)) + 1
+    xi <- base.min:sill.min
+    yi <- seq(0, 1, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    xi <- sill.max:base.max
+    yi <- seq(1, 0, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    height * y
+}
+
+rgb.tables <- function(n,
+red = c(0.75, 0.25, 1),
+green = c(0.5, 0.25, 1),
+blue = c(0.25, 0.25, 1))
+{
+    rr <- do.call("table.ramp", as.list(c(n, red)))
+    gr <- do.call("table.ramp", as.list(c(n, green)))
+    br <- do.call("table.ramp", as.list(c(n, blue)))
+    rgb(rr, gr, br)
+}
+
+matlab.like <- function(n) rgb.tables(n)
+
+matlab.like2 <- function(n)
+rgb.tables(n,
+red = c(0.8, 0.2, 1),
+green = c(0.5, 0.4, 0.8),
+blue = c(0.2, 0.2, 1))
+
+blue2green2red <- matlab.like2
+
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
 #'
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
@@ -1368,6 +1410,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     }
 
     # print(hmcols)
+    pdf("tmp_expression_branch_pheatmap.pdf")
     ph <- pheatmap(heatmap_matrix, 
              useRaster = T,
              cluster_cols=FALSE, 
@@ -1379,10 +1422,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
              #breaks=bks,
-             color=hmcols#,
-             # filename="expression_pseudotime_pheatmap.pdf",
+             color=hmcols
              )
-
+    dev.off()
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
 
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
@@ -1429,7 +1471,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     #print(annotation_row)
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
     #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-    dev.off()
+
     pdf(file_name, height = heatmap_height, width = heatmap_width)
     pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
@@ -1456,4 +1498,3 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
-
