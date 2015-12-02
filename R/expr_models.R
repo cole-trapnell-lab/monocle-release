@@ -154,7 +154,7 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
         na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
             num_na_fits), nrow = num_na_fits)
         row.names(na_matrix) <- names(res_list[is.na(res_list)])
-        non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) ==
+        non_na_matrix <- Matrix::t(do.call(cbind, lapply(res_list[is.na(res_list) ==
             FALSE], unlist)))
         row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
@@ -162,7 +162,7 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
         res_matrix <- res_matrix[names(res_list), ]
     }
     else {
-        res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
+        res_matrix <- Matrix::t(do.call(cbind, lapply(res_list, unlist)))
         row.names(res_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
     }
@@ -224,7 +224,7 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
             }, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
-        t(expression_curve_matrix)
+        Matrix::t(expression_curve_matrix)
       }
 
 }
@@ -283,7 +283,7 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
   coefs <- attr( fitInfo$disp_func, "coefficients" )
   if (is.null(expr_matrix)){
     ncounts <- exprs(cds)
-    ncounts <- t(t(ncounts) / sizeFactors(cds))
+    ncounts <- Matrix::t(Matrix::t(ncounts) / sizeFactors(cds))
     if (round_vals)
       ncounts <- round(ncounts)
   }else{
@@ -293,6 +293,7 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
     log( (1 + coefs["extraPois"] + 2 * coefs["asymptDisp"] * q +
             2 * sqrt( coefs["asymptDisp"] * q * ( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) ) )
          / ( 4 * coefs["asymptDisp"] ) ) / log(2)
+  ## NOTE: this converts to a dense matrix
   vst( ncounts )
 }
 

@@ -9,7 +9,7 @@ makeprobsvec<-function(p){
 #' Calculate the probability matrix for a relative abundance matrix
 makeprobs<-function(a){
   colSums<-apply(a,2,sum)
-  b<-t(t(a)/colSums)
+  b<-Matrix::t(Matrix::t(a)/colSums)
   b[is.na(b)] = 0
   b
 }
@@ -39,7 +39,7 @@ opt_norm_t <- function(t, fpkm, m, c, expr_thresh = 0.1, pseudocnt = NULL, retur
                        -1), ncol = 2, nrow = 2, byrow = T)
   colnames(a_matrix) <- c("k", "b")
   b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
-  kb <- t(solve(a_matrix, b_matrix))
+  kb <- Matrix::t(solve(a_matrix, b_matrix))
   
   k <- kb[1]
   b <- kb[2]
@@ -100,7 +100,7 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
   
   cell_num <- ncol(relative_expr_matrix)
   names(t_estimate) <- colnames(relative_expr_matrix)
-  split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
+  split_t <- split(Matrix::t(t_estimate), col(as.matrix(Matrix::t(t_estimate)), as.factor = T))
   
   total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix), t_estimate = t_estimate)
   
@@ -110,7 +110,7 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
                            m_val, -1), ncol = 2, nrow = 2, byrow = T)
       colnames(a_matrix) <- c("k", "b")
       b_matrix <- matrix(c(0, -c_val), nrow = 2, byrow = T)
-      k_b_solution <- t(solve(a_matrix, b_matrix))
+      k_b_solution <- Matrix::t(solve(a_matrix, b_matrix))
     })
     k_b_solution},
     error = function(e) {print(e); c(NA, NA)}
@@ -142,15 +142,15 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
   #8.
   dmode_rmse_weight_total <- mean(weight*((cell_dmode - alpha)/alpha)^2 + (1 - weight)*((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)
   #add the JS distance measure:
-  split_relative_expr_matrix <- split(t(adj_est_std_cds), 1:ncol(adj_est_std_cds))
-  round_split_relative_expr_matrix <- split(t(round(adj_est_std_cds)), 1:ncol(adj_est_std_cds))
+  split_relative_expr_matrix <- split(Matrix::t(adj_est_std_cds), 1:ncol(adj_est_std_cds))
+  round_split_relative_expr_matrix <- split(Matrix::t(round(adj_est_std_cds)), 1:ncol(adj_est_std_cds))
   
   p_df <- makeprobs(relative_expr_matrix) #relative expression
-  p_list <- split(t(p_df), 1:ncol(p_df))
+  p_list <- split(Matrix::t(p_df), 1:ncol(p_df))
   q_df_round <- makeprobs(round(adj_est_std_cds)) #round
   q_df <- makeprobs(adj_est_std_cds) #no rounding
-  q_list <- split(t(q_df), 1:ncol(q_df))
-  q_list_round <- split(t(q_df_round), 1:ncol(q_df_round))
+  q_list <- split(Matrix::t(q_df), 1:ncol(q_df))
+  q_list_round <- split(Matrix::t(q_df_round), 1:ncol(q_df_round))
   
   dist_divergence <- mcmapply(function(x, y) {
     JSdistVec(x, y)

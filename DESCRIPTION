@@ -36,7 +36,8 @@ Imports:
     mixsmsn,
     pheatmap,
     MASS,
-    stringr
+    stringr, 
+    Matrix
 VignetteBuilder: knitr
 Suggests:
     knitr,

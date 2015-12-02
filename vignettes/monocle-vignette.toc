@@ -1,2 +1,16 @@
-\contentsline {section}{\numberline {1}BEAM}{1}{section.1}
-\contentsline {section}{\numberline {2}Session Info}{3}{section.2}
+\contentsline {section}{\numberline {1}BEAM}{2}{section.1}
+\contentsline {section}{\numberline {2}Introduction}{3}{section.2}
+\contentsline {section}{\numberline {3}Single-cell expression data in Monocle}{3}{section.3}
+\contentsline {subsection}{\numberline {3.1}The CellDataSet class}{3}{subsection.3.1}
+\contentsline {section}{\numberline {4}Quality control of single cell RNA-Seq experiments}{5}{section.4}
+\contentsline {section}{\numberline {5}Identifying cells of interest}{7}{section.5}
+\contentsline {section}{\numberline {6}Basic differential expression analysis}{8}{section.6}
+\contentsline {section}{\numberline {7}Ordering cells by progress in ``pseudotime''}{9}{section.7}
+\contentsline {section}{\numberline {8}Advanced differential expression analysis}{34}{section.8}
+\contentsline {subsection}{\numberline {8.1}Finding genes that distinguish cell type or state}{34}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Finding genes that change as a function of pseudotime}{35}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Multi-factorial differential expression analysis}{36}{subsection.8.3}
+\contentsline {section}{\numberline {9}Clustering genes by pseudotemporal expression pattern}{37}{section.9}
+\contentsline {section}{\numberline {10}Citation}{37}{section.10}
+\contentsline {section}{\numberline {11}Acknowledgements}{38}{section.11}
+\contentsline {section}{\numberline {12}Session Info}{38}{section.12}

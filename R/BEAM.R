@@ -94,7 +94,7 @@ buildLineageBranchCellDataSet <- function(cds,
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
   for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
     if (nrow(exprs_data) == 1)
-        exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
+        exprs_data <- cbind(exprs_data, Matrix::t(as.matrix(exprs_data[,
             progenitor_ind])))
     else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
     weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))

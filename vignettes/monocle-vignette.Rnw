@@ -4,7 +4,7 @@
 % \VignettePackage{monocle}
 \documentclass[10pt,oneside]{article}
 
-\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments}
+\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
 
 %\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
 \usepackage{whbiocvignette}
@@ -68,31 +68,29 @@ lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"),
                        featureData = fd,
                        lowerDetectionLimit=1,
                        expressionFamily=negbinomial())
+@ %def 
 
+<<collect_metrics_lung, include=TRUE, eval=TRUE>>=
 lung <- estimateSizeFactors(lung)
 lung <- estimateDispersions(lung)
-
-pData(lung)$Total_mRNAs <- colSums(exprs(lung))
+pData(lung)$Total_mRNAs <- Matrix::colSums(exprs(lung))
 lung <- detectGenes(lung, min_expr = 1)
 expressed_genes <- row.names(subset(fData(lung), num_cells_expressed >= 5))
+@ %def
+
+<<order_lung, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 ordering_genes <- expressed_genes
 lung <- setOrderingFilter(lung, ordering_genes)
-lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
+lung <- reduceDimension(lung, use_vst = T, pseudo_expr = 0)
 lung <- orderCells(lung, num_paths=2, reverse=T)
-plot_spanning_tree(lung, color_by="Pseudotime")
-
-
+plot_spanning_tree(lung, color_by="Time")
 @ %def 
 
 <<lung_beam_test, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 BEAM_res <- BEAM(lung, cores=8)
-
 head(BEAM_res)
-
-#plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),])
-
+plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),])
 @ %def 
-
 
 \section{Introduction}
 
@@ -149,7 +147,7 @@ HSMM <- newCellDataSet(HSMM_expr_matrix,
 rpc_matrix <- relative2abs(HSMM)
 
 # Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(rpc_matrix, 
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"), 
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
@@ -195,7 +193,7 @@ HSMM <- HSMM[,valid_cells]
 
 If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
 <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-pData(HSMM)$Total_mRNAs <- colSums(exprs(HSMM))
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
@@ -214,7 +212,7 @@ L <- log(exprs(HSMM[expressed_genes,]))
 
 # Standardize each gene, so that they are all on the same scale,
 # Then melt the data with plyr so we can plot it easily"
-melted_dens_df <- melt(t(scale(t(L))))
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
 
 # Plot the distribution of the standardized gene expression values.
 qplot(value, geom="density", data=melted_dens_df) +  stat_function(fun = dnorm, size=0.5, color='red') + 
@@ -337,7 +335,7 @@ HSMM_myo <- reduceDimension(HSMM_myo)
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
 
-<<order_cells, eval=TRUE>>=
+<<order_cells, eval=TRUE, warning=FALSE>>=
 HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
 @ %def
 

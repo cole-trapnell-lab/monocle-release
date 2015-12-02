@@ -852,6 +852,8 @@ setOrderingFilter <- function(cds, ordering_genes){
 #' Run the fastICA algorithm on a numeric matrix.
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @importFrom irlba irlba
+#' 
+#' #FIXME: This will internall convert to a dense matrix
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
@@ -1005,7 +1007,7 @@ reduceDimension <- function(cds,
     checkSizeFactors(cds)
     size_factors <- sizeFactors(cds)
     #print (size_factors)
-    FM <- t(t(FM) / size_factors)
+    FM <- Matrix::t(Matrix::t(FM) / size_factors)
     #FM <- log2(FM)
   }
   
@@ -1013,7 +1015,7 @@ reduceDimension <- function(cds,
     FM <- FM[fData(cds)$use_for_ordering,]
   
   if (cds@expressionFamily@vfamily == "binomialff"){
-    ncounts <- FM
+    ncounts <- FM > 0
     ncounts[ncounts != 0] <- 1
     FM <- t(t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
   }
@@ -1022,7 +1024,7 @@ reduceDimension <- function(cds,
     FM <- FM + pseudo_expr
   }
   
-  FM <- FM[matrixStats::rowSds(FM) > 0,]
+  FM <- FM[apply(FM, 1, sd) > 0,]
   
 
   if (cds@expressionFamily@vfamily != "binomialff"){
@@ -1058,14 +1060,14 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
-  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
+  init_ICA <- ica_helper(Matrix::t(FM), max_components, use_irlba=use_irlba, ...)
   
-  x_pca <- t(t(FM) %*% init_ICA$K)
-  W <- t(init_ICA$W)
+  x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
+  W <- Matrix::t(init_ICA$W)
   
   weights <- W
 
-  A <- t(solve(weights) %*% t(init_ICA$K))
+  A <- Matrix::t(Matrix::solve(weights) %*% Matrix::t(init_ICA$K))
   
   colnames(A) <- colnames(weights)
   rownames(A) <- rownames(FM)
@@ -1075,10 +1077,12 @@ reduceDimension <- function(cds,
   rownames(S) <- colnames(weights)
   colnames(S) <- colnames(FM) 
   
-  reducedDimW(cds) <- W
-  reducedDimA(cds) <- A
-  reducedDimS(cds) <- S
-  reducedDimK(cds) <- init_ICA$K
+  
+  # TODO: update checks to allow for sparseMatrices, and then remove these casts
+  reducedDimW(cds) <- as.matrix(W)
+  reducedDimA(cds) <- as.matrix(A)
+  reducedDimS(cds) <- as.matrix(S)
+  reducedDimK(cds) <- as.matrix(init_ICA$K)
   
   cds
 }
