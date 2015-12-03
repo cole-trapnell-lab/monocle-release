@@ -670,6 +670,22 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 # 		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
 # 	}
 
+<<<<<<< HEAD
+	#make a newCellDataSet object with the smoothed data? 
+		ILRs_res <- calILRs(cds, 
+					  trajectory_type = "Lineage", 
+					  trajectory_states = lineage_states, 
+					  lineage_labels = lineage_labels, 
+					  stretch = stretch, 
+					  cores = cores, 
+					  trend_formula = fullModelFormulaStr,
+					  ILRs_limit = 3, 
+					  relative_expr = relative_expr, 
+					  weighted = weighted, 
+					  pseudocount = pseudocount, 
+					  return_all = T,
+					  ...)
+=======
   #make a newCellDataSet object with the smoothed data? 
   ILRs_res <- calILRs(cds = cds, 
   			  trajectory_type = "Lineage", 
@@ -684,6 +700,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   			  pseudocount = pseudocount, 
   			  return_all = T,
   			  ...)
+>>>>>>> unittests
 
   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
     lineage_states = lineage_states, 
@@ -757,7 +774,13 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 
 	#combined dataframe: 
 	
+<<<<<<< HEAD
+	fd <- cbind(cmbn_df, fd)
+
+	return(fd)
+=======
 	cmbn_df <- cbind(cmbn_df, fd)
 
 	return(cmbn_df)
+>>>>>>> unittests
 }

@@ -36,7 +36,9 @@ Imports:
     mixsmsn,
     pheatmap,
     MASS,
+    RColorBrewer,
     stringr
+>>>>>>> unittests
 VignetteBuilder: knitr
 Suggests:
     knitr,

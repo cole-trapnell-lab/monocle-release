@@ -1308,6 +1308,7 @@ blue2green2red <- matlab.like2
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
+#' @import RColorBrewer
 #' @export
 #'
 #'
@@ -1406,7 +1407,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     if(is.null(hmcols)) {
         bk <- seq(-3.1,3.1, by=0.1)
-        hmcols <- blue2green2red(length(bk) - 1)
+        # hmcols <- blue2green2red(length(bk) - 1)
     }
 
     # print(hmcols)
@@ -1421,8 +1422,15 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_distance_rows=row_dist,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
+             silent=TRUE,
+             filename=NA
              #breaks=bks,
+<<<<<<< HEAD
              color=hmcols
+=======
+             #color=hmcols#,
+             # filename="expression_pseudotime_pheatmap.pdf",
+>>>>>>> origin/BEAM
              )
     dev.off()
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
@@ -1472,8 +1480,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
     #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
 
-    pdf(file_name, height = heatmap_height, width = heatmap_width)
-    pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+    #dev.off()
+    #pdf(file_name, height = heatmap_height, width = heatmap_width)
+    ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
              cluster_cols=FALSE, 
              cluster_rows=TRUE, 
@@ -1491,10 +1500,18 @@ plot_genes_branched_heatmap <- function(cds_subset,
              treeheight_row = 1.5, 
              #breaks=bks,
              fontsize = 6,
-             color=hmcols
+             #color=hmcols, 
+             silent=TRUE,
+             filename=NA
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
-    dev.off()
+    #dev.off()
 
-    return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+    #if (is.na(filename) & !silent) {
+    #grid.newpage()
+    grid.rect(gp=gpar("fill"))
+    grid.draw(ph_res$gtable)
+    #}
+    #return (ph_res)
+    #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
