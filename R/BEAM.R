@@ -537,7 +537,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 # 	}
 
 	#make a newCellDataSet object with the smoothed data? 
-		ILRs_res <- calILRs(cds = cds, 
+		ILRs_res <- calILRs(cds, 
 					  trajectory_type = "Lineage", 
 					  trajectory_states = lineage_states, 
 					  lineage_labels = lineage_labels, 
@@ -624,8 +624,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 
 	#combined dataframe: 
 	
-	fData(cds) <- cbind(cmbn_df, fd)
+	fd <- cbind(cmbn_df, fd)
 
-
-	return(cds)
+	return(fd)
 }
