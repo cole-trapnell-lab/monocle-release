@@ -1243,6 +1243,48 @@ plot_ILRs_heatmap <- function (cds,
       annotation_legend = T, ...)
 }
 
+#The following code is swipped from colorRamps package which is used to make the pallette
+table.ramp <- function(n, mid = 0.5, sill = 0.5, base = 1, height = 1)
+{
+    x <- seq(0, 1, length.out = n)
+    y <- rep(0, length(x))
+    sill.min <- max(c(1, round((n - 1) * (mid - sill / 2)) + 1))
+    sill.max <- min(c(n, round((n - 1) * (mid + sill / 2)) + 1))
+    y[sill.min:sill.max] <- 1
+    base.min <- round((n - 1) * (mid - base / 2)) + 1
+    base.max <- round((n - 1) * (mid + base / 2)) + 1
+    xi <- base.min:sill.min
+    yi <- seq(0, 1, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    xi <- sill.max:base.max
+    yi <- seq(1, 0, length.out = length(xi))
+    i <- which(xi > 0 & xi <= n)
+    y[xi[i]] <- yi[i]
+    height * y
+}
+
+rgb.tables <- function(n,
+red = c(0.75, 0.25, 1),
+green = c(0.5, 0.25, 1),
+blue = c(0.25, 0.25, 1))
+{
+    rr <- do.call("table.ramp", as.list(c(n, red)))
+    gr <- do.call("table.ramp", as.list(c(n, green)))
+    br <- do.call("table.ramp", as.list(c(n, blue)))
+    rgb(rr, gr, br)
+}
+
+matlab.like <- function(n) rgb.tables(n)
+
+matlab.like2 <- function(n)
+rgb.tables(n,
+red = c(0.8, 0.2, 1),
+green = c(0.5, 0.4, 0.8),
+blue = c(0.2, 0.2, 1))
+
+blue2green2red <- matlab.like2
+
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
 #'
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
@@ -1266,7 +1308,6 @@ plot_ILRs_heatmap <- function (cds,
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
-#' @import RColorBrewer
 #' @export
 #'
 #'
@@ -1365,7 +1406,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     if(is.null(hmcols)) {
         bk <- seq(-3.1,3.1, by=0.1)
-        # hmcols <- blue2green2red(length(bk) - 1)
+        hmcols <- blue2green2red(length(bk) - 1)
     }
 
     # print(hmcols)
@@ -1379,10 +1420,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_distance_rows=row_dist,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
-             silent=TRUE,
-             filename=NA
              #breaks=bks,
-             #color=hmcols#,
+             color=hmcols#,
              # filename="expression_pseudotime_pheatmap.pdf",
              )
 
@@ -1432,10 +1471,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
     #print(annotation_row)
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
     #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-    
-    #dev.off()
-    #pdf(file_name, height = heatmap_height, width = heatmap_width)
-    ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+    dev.off()
+    pdf(file_name, height = heatmap_height, width = heatmap_width)
+    pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
              cluster_cols=FALSE, 
              cluster_rows=TRUE, 
@@ -1453,19 +1491,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
              treeheight_row = 1.5, 
              #breaks=bks,
              fontsize = 6,
-             #color=hmcols, 
-             silent=TRUE,
-             filename=NA
+             color=hmcols
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
-    #dev.off()
+    dev.off()
 
-    #if (is.na(filename) & !silent) {
-    #grid.newpage()
-    grid.rect(gp=gpar("fill"))
-    grid.draw(ph_res$gtable)
-    #}
-    #return (ph_res)
-    #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+    return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
-
