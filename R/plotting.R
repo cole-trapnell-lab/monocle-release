@@ -1292,7 +1292,7 @@ blue2green2red <- matlab.like2
 #' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function
 #' @param branchTest_df Matrix of branchTest result (normally only on the branching genes)
 #' @param lineage_labels The label for the lineages (first (second) lineage corresponding to state 2 (3))
-#' @param vstExprs Logic flag to determine whether or not vst will be performed for the fitted gene expression values
+#' @param norm_method Either vstExprs or log, determine which normalization approach will be performed for the fitted gene expression values
 #' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)
 #' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
 #' @param heatmap_height Height of the saved heatmap
@@ -1315,10 +1315,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
   num_clusters = 6,
   ABC_df = NULL, 
   branchTest_df = NULL, 
-  lineage_labels = c("AT1", "AT2"), 
+  lineage_labels = c("Cell fate 1", "Cell fate 1"), 
   stretch = T, 
   scaling = T,
-  norm_method = c("vstExprs", "log"), 
+  norm_method = "vstExprs", 
   use_fitting_curves = T, 
   dist_method = NULL, 
   hclust_method = "ward", 
@@ -1406,10 +1406,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     if(is.null(hmcols)) {
         bk <- seq(-3.1,3.1, by=0.1)
-        hmcols <- blue2green2red(length(bk) - 1)
+        # hmcols <- blue2green2red(length(bk) - 1)
     }
-
-    # print(hmcols)
+    
+    # prin  t(hmcols)
     ph <- pheatmap(heatmap_matrix, 
              useRaster = T,
              cluster_cols=FALSE, 
@@ -1420,11 +1420,13 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_distance_rows=row_dist,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
+             silent=TRUE,
+             filename=NA,
              #breaks=bks,
-             color=hmcols#,
+             #color=hmcols
+             #color=hmcols#,
              # filename="expression_pseudotime_pheatmap.pdf",
              )
-
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
 
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
@@ -1471,9 +1473,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
     #print(annotation_row)
     # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
     #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-    dev.off()
-    pdf(file_name, height = heatmap_height, width = heatmap_width)
-    pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+
+    #dev.off()
+    #pdf(file_name, height = heatmap_height, width = heatmap_width)
+    ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
              cluster_cols=FALSE, 
              cluster_rows=TRUE, 
@@ -1491,10 +1494,18 @@ plot_genes_branched_heatmap <- function(cds_subset,
              treeheight_row = 1.5, 
              #breaks=bks,
              fontsize = 6,
-             color=hmcols
+             #color=hmcols, 
+             silent=TRUE,
+             filename=NA
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
-    dev.off()
+    #dev.off()
 
-    return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
+    #if (is.na(filename) & !silent) {
+    #grid.newpage()
+    grid::grid.rect(gp=grid::gpar("fill"))
+    grid::grid.draw(ph_res$gtable)
+    #}
+    #return (ph_res)
+    #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }

@@ -16,6 +16,7 @@ License: Artistic-2.0
 Depends:
     R (>= 2.7.0),
     Biobase,
+    RColorBrewer,
     ggplot2(>= 0.9.3.1),
     VGAM (>= 0.9-5),
     HSMMSingleCell (>= 0.101.5)
@@ -35,7 +36,6 @@ Imports:
     dplyr,
     mixsmsn,
     pheatmap,
-    RColorBrewer,
     MASS,
     stringr
 VignetteBuilder: knitr

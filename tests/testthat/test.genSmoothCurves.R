@@ -63,4 +63,20 @@ test_that("genSmoothCurves() fits (branched) smooth curves for the data along ps
 	expect_equal(dim(str_branchAB_expression_curve_matrix), c(218, 200))
 
 	expect_equal(str_branchAB_expression_curve_matrix['ENSMUSG00000000058.6', 1:5], c(0.2579, 0.2864, 0.3180, 0.3530, 0.3917), tolerance=1e-4)
+	
+	#test the parallel 
+	cds_subset <- buildLineageBranchCellDataSet(lung, #lineage_states = trajectory_states,
+	                                            lineage_labels = c(2, 3), stretch = T,
+	                                            weighted = T)
+	str_new_cds_branchA <- data.frame(Pseudotime = seq(0, 100,
+	                                                   length.out = 100), Lineage = as.factor(unique(as.character(pData(cds_subset)$Lineage))[1]))   
+	str_new_cds_branchB <- data.frame(Pseudotime = seq(0, 100,
+	                                                   length.out = 100), Lineage = as.factor(unique(as.character(pData(cds_subset)$Lineage))[2]))
+	
+	lung_smooth_df <- genSmoothCurves(cds_subset[, ], cores=2, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+	                               relative_expr = T, pseudocount = 0, 
+	                               new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
+	
+	expect_equal(dim(lung_smooth_df), c(10, 200))
+	
 })

@@ -190,25 +190,29 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
     expressionFamily <- cds@expressionFamily
 
     if(cores > 1) {
-        expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
+      expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
                                                               calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
             model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
                                        relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
-                expression_curve <- matrix(rep(NA, length(x)), nrow = 1)
+                expression_curve <- as.data.frame(matrix(rep(NA, nrow(new_data)), nrow = 1))
             else
-                expression_curve <- responseMatrix(list(model_fits), newdata = new_data)
+                expression_curve <- as.data.frame(responseMatrix(list(model_fits), newdata = new_data))
 
-            colnames(expression_curve) <- 1:length(expression_curve)
-            return(expression_curve)
+            #return(expression_curve)
             }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
             )
-        expression_curve_matrix <- matrix(expression_curves, ncol = ncol(cds), byrow = T, dimnames = list(row.names(cds), c()))
+        expression_curve_matrix <- plyr::laply(expression_curves, data.frame)
+        colnames(expression_curve_matrix) <- 1:nrow(new_data)
+        row.names(expression_curve_matrix) <- row.names(cds)
+        mode(expression_curve_matrix) <- "numeric" 
+        
+        return(expression_curve_matrix)
     }
     else {
         expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
