@@ -37,6 +37,7 @@ Imports:
     pheatmap,
     RColorBrewer,
     MASS,
+    RColorBrewer,
     stringr
 VignetteBuilder: knitr
 Suggests:
