@@ -67,7 +67,7 @@ plot_spanning_tree <- function(cds,
   colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
 
   ica_space_df$sample_name <- row.names(ica_space_df)
-  ica_space_with_state_df <- meege(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
  
@@ -1292,7 +1292,7 @@ blue2green2red <- matlab.like2
 #' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function
 #' @param branchTest_df Matrix of branchTest result (normally only on the branching genes)
 #' @param lineage_labels The label for the lineages (first (second) lineage corresponding to state 2 (3))
-#' @param vstExprs Logic flag to determine whether or not vst will be performed for the fitted gene expression values
+#' @param norm_method Either vstExprs or log, determine which normalization approach will be performed for the fitted gene expression values
 #' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)
 #' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
 #' @param heatmap_height Height of the saved heatmap
@@ -1308,7 +1308,6 @@ blue2green2red <- matlab.like2
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
-#' @import RColorBrewer
 #' @export
 #'
 #'
@@ -1319,7 +1318,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   lineage_labels = c("AT1", "AT2"), 
   stretch = T, 
   scaling = T,
-  norm_method = c("vstExprs", "log"), 
+  norm_method = "vstExprs", 
   use_fitting_curves = T, 
   dist_method = NULL, 
   hclust_method = "ward", 
@@ -1409,9 +1408,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
         bk <- seq(-3.1,3.1, by=0.1)
         # hmcols <- blue2green2red(length(bk) - 1)
     }
-
-    # print(hmcols)
-    pdf("tmp_expression_branch_pheatmap.pdf")
+    
+    # prin  t(hmcols)
     ph <- pheatmap(heatmap_matrix, 
              useRaster = T,
              cluster_cols=FALSE, 
@@ -1423,16 +1421,12 @@ plot_genes_branched_heatmap <- function(cds_subset,
              clustering_method = hclust_method,
              cutree_rows=num_clusters,
              silent=TRUE,
-             filename=NA
+             filename=NA,
              #breaks=bks,
-<<<<<<< HEAD
-             color=hmcols
-=======
+             #color=hmcols
              #color=hmcols#,
              # filename="expression_pseudotime_pheatmap.pdf",
->>>>>>> origin/BEAM
              )
-    dev.off()
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
 
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
@@ -1509,8 +1503,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     #if (is.na(filename) & !silent) {
     #grid.newpage()
-    grid.rect(gp=gpar("fill"))
-    grid.draw(ph_res$gtable)
+    grid::grid.rect(gp=grid::gpar("fill"))
+    grid::grid.draw(ph_res$gtable)
     #}
     #return (ph_res)
     #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))

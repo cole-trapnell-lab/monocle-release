@@ -378,8 +378,8 @@ calILRs <- function (cds,
           useVST = FALSE, 
           round_exprs = FALSE, 
           pseudocount = 0, 
-          output_type = c("all", "after_bifurcation"), 
-          file = "bifurcation_heatmap", 
+          output_type = "all", 
+          file = NULL, 
           return_all = F, 
           verbose = FALSE, ...){
   
@@ -460,7 +460,7 @@ calILRs <- function (cds,
   str_logfc_df[which(str_logfc_df >= ILRs_limit, arr.ind = T)] <- ILRs_limit
   if (output_type == "after_bifurcation") {
     t_bifurcation_ori <- min(pData(cds[, c(which(pData(cds)$State ==
-                                                   lineage_states[1]), which(pData(cds)$State == lineage_states[2]))])$Pseudotime)
+                                                   trajectory_states[1]), which(pData(cds)$State == trajectory_states[2]))])$Pseudotime)
     t_bifurcation <- pData(cds_subset[, pData(cds)$Pseudotime ==
                                         t_bifurcation_ori])$Pseudotime
     
@@ -538,7 +538,7 @@ detectBifurcationPoint <- function(str_log_df = NULL,
                                    useVST = FALSE,
                                    round_exprs = FALSE,
                                    pseudocount = 0,
-                                   output_type = c('all', 'after_bifurcation'),
+                                   output_type = 'all', #'after_bifurcation
                                    return_cross_point = T, 
                                    file = "bifurcation_heatmap", verbose = FALSE, ...) {
   if(is.null(str_log_df)) {
@@ -670,23 +670,8 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 # 		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
 # 	}
 
-<<<<<<< HEAD
-	#make a newCellDataSet object with the smoothed data? 
-		ILRs_res <- calILRs(cds, 
-					  trajectory_type = "Lineage", 
-					  trajectory_states = lineage_states, 
-					  lineage_labels = lineage_labels, 
-					  stretch = stretch, 
-					  cores = cores, 
-					  trend_formula = fullModelFormulaStr,
-					  ILRs_limit = 3, 
-					  relative_expr = relative_expr, 
-					  weighted = weighted, 
-					  pseudocount = pseudocount, 
-					  return_all = T,
-					  ...)
-=======
   #make a newCellDataSet object with the smoothed data? 
+	print('pass branchTest')
   ILRs_res <- calILRs(cds = cds, 
   			  trajectory_type = "Lineage", 
   			  trajectory_states = lineage_states, 
@@ -700,8 +685,8 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   			  pseudocount = pseudocount, 
   			  return_all = T,
   			  ...)
->>>>>>> unittests
-
+  print('pass calILRs')
+  
   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
     lineage_states = lineage_states, 
     stretch = stretch, 
@@ -711,7 +696,9 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
     weighted = weighted, 
     pseudocount = pseudocount, 
   	...)
-
+  
+  print('pass detectBifurcationPoint')
+  
   cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	# if(draw_branched_kinetics) {
@@ -773,14 +760,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	fd <- fData(cds)
 
 	#combined dataframe: 
-	
-<<<<<<< HEAD
-	fd <- cbind(cmbn_df, fd)
-
-	return(fd)
-=======
 	cmbn_df <- cbind(cmbn_df, fd)
 
 	return(cmbn_df)
->>>>>>> unittests
 }
