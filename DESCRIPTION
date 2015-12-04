@@ -38,7 +38,6 @@ Imports:
     MASS,
     RColorBrewer,
     stringr
->>>>>>> unittests
 VignetteBuilder: knitr
 Suggests:
     knitr,
