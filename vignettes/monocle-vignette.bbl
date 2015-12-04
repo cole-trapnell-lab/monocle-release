@@ -8,17 +8,4 @@ Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang
   pseudotemporal ordering of single cells}.
 \newblock {\em Nature Biotechnology}, 2014.
 
-\bibitem{Magwene:2003kq}
-P~M Magwene, P~Lizardi, and J~Kim.
-\newblock {Reconstructing the temporal ordering of biological samples using
-  microarray data}.
-\newblock {\em Bioinformatics}, 19(7):842--850, May 2003.
-
-\bibitem{Trapnell:2012kp}
-Cole Trapnell, Adam Roberts, Loyal Goff, Geo Pertea, Daehwan Kim, David~R
-  Kelley, Harold Pimentel, Steven~L Salzberg, John~L Rinn, and Lior Pachter.
-\newblock {Differential gene and transcript expression analysis of RNA-seq
-  experiments with TopHat and Cufflinks.}
-\newblock {\em Nature Protocols}, 7(3):562--578, March 2012.
-
 \end{thebibliography}

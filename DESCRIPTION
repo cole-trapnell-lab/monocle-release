@@ -1,6 +1,6 @@
 Package: monocle
 Type: Package
-Title: Analysis tools for single-cell expression experiments.
+Title: Analysis tools for single-cell expression experiments
 Version: 1.99.0
 Date: 2013-11-19
 Author: Cole Trapnell
@@ -36,7 +36,8 @@ Imports:
     mixsmsn,
     pheatmap,
     RColorBrewer,
-    MASS
+    MASS,
+    stringr
 VignetteBuilder: knitr
 Suggests:
     knitr,
@@ -48,3 +49,4 @@ biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Infrastructure, DataImport, DataRepresentation, Visualization,
     Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
+RoxygenNote: 5.0.1
