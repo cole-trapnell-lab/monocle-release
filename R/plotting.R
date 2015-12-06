@@ -1499,13 +1499,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              filename=NA
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
-    #dev.off()
 
-    #if (is.na(filename) & !silent) {
-    #grid.newpage()
     grid::grid.rect(gp=grid::gpar("fill"))
     grid::grid.draw(ph_res$gtable)
-    #}
-    #return (ph_res)
-    #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
