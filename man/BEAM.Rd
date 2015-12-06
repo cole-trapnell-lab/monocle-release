@@ -8,7 +8,7 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   lineage_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
   pseudocount = 0, weighted = T, q_thrsld = 0.05, lineage_labels = NULL,
-  cores = 1, ...)
+  cores = 1, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -32,7 +32,7 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 }
 \value{
-a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models, as well as the time point where the gene starts to bifurcate between two branches
 }
 \description{
 Perform BEAM analysis
