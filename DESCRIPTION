@@ -19,7 +19,9 @@ Depends:
     RColorBrewer,
     ggplot2(>= 0.9.3.1),
     VGAM (>= 0.9-5),
-    HSMMSingleCell (>= 0.101.5)
+    HSMMSingleCell (>= 0.101.5),
+    Matrix,
+    DDRTree
 Imports:
     BiocGenerics,
     igraph(>= 0.7.0),

@@ -256,248 +256,6 @@ make_canonical <-function(pq_tree)
   return (canonical_pq)
 }
 
-extract_ordering <- function(pq_tree, curr_node)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    if (runif(1) >= 0.5)
-    {
-      q_level <- rev(q_level)
-    }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-extract_fixed_ordering <- function(pq_tree, curr_node)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    #p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    # if (runif(1) >= 0.5)
-    # {
-    #     q_level <- rev(q_level)
-    # }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-weight_of_p_node_order<-function(p_level_list, dist_matrix)
-{
-  cost <- 0
-  if (length(p_level_list) <= 1)
-  {
-    return (0)
-  }
-  #print (p_level_list)
-  #print (length(p_level_list))
-  for (i in (1:(length(p_level_list)-1)))
-  {
-    #print (i)
-    #print ("***")
-    #print (p_level_list[[i]])
-    #print (paste("...", p_level_list[[i]][length(p_level_list[[i]])]))
-    #print (p_level_list[[i+1]])
-    #print (paste("...", p_level_list[[i+1]][1]))
-    #print (dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]])
-    cost <- cost + dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]]
-  }
-  return(cost)
-}
-
-#' Return an ordering for a P node in the PQ tree
-#' @importFrom combinat permn
-order_p_node <- function(q_level_list, dist_matrix)
-{ 
-  q_order_res <- combinat::permn(q_level_list, fun=order_q_node, dist_matrix)
-  #print (q_order_res)
-  all_perms <- lapply(q_order_res, function(x) { x$ql } )
-  #print ("perm ql:")
-  #print(all_perms)
-  all_perms_weights <- unlist(lapply(q_order_res, function(x) { x$wt }))
-  #print ("perm weights:")
-  #print (all_perms_weights)
-  
-  opt_perm_idx <- head((which(all_perms_weights == min(all_perms_weights))), 1)
-  opt_perm <- all_perms[[opt_perm_idx]]
-  
-  #print ("opt_path:")
-  #print (opt_perm)
-  #print ("opt_all_weight:")
-  #print (min(all_perms_weights))
-  #print ("weights:")
-  #print (all_perms_weights)
-  # print ("q_level_list:")
-  # print (q_level_list)
-  stopifnot (length(opt_perm) == length(q_level_list))
-  
-  return(opt_perm)
-}
-
-order_q_node <- function(q_level_list, dist_matrix)
-{
-  new_subtree <- graph.empty()
-  
-  if (length(q_level_list) == 1)
-  {
-    return (list(ql=q_level_list, wt=0))
-  }
-  for (i in 1:length(q_level_list))
-  {
-    new_subtree <- new_subtree + vertex(paste(i,"F"), type="forward")
-    new_subtree <- new_subtree + vertex(paste(i,"R"), type="reverse")
-  }
-  
-  for (i in (1:(length(q_level_list)-1)))
-  {
-    cost <- dist_matrix[q_level_list[[i]][length(q_level_list[[i]])], q_level_list[[i+1]][1]]
-    new_subtree <- new_subtree + edge(paste(i,"F"), paste(i+1,"F"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][length(q_level_list[[i]])], q_level_list[[i+1]][length(q_level_list[[i+1]])]]
-    new_subtree <- new_subtree + edge(paste(i,"F"), paste(i+1,"R"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][1], q_level_list[[i+1]][1]]
-    new_subtree <- new_subtree + edge(paste(i,"R"), paste(i+1,"F"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][1], q_level_list[[i+1]][length(q_level_list[[i+1]])]]
-    new_subtree <- new_subtree + edge(paste(i,"R"), paste(i+1,"R"), weight=cost)
-  }
-  
-  first_fwd = V(new_subtree)[paste(1,"F")]
-  first_rev = V(new_subtree)[paste(1,"R")]
-  last_fwd = V(new_subtree)[paste(length(q_level_list),"F")]
-  last_rev = V(new_subtree)[paste(length(q_level_list),"R")]
-  
-  FF_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_fwd), to=as.vector(last_fwd), mode="out", output="vpath")$vpath)
-  FR_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_fwd), to=as.vector(last_rev), mode="out", output="vpath")$vpath)
-  RF_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_rev), to=as.vector(last_fwd), mode="out", output="vpath")$vpath)
-  RR_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_rev), to=as.vector(last_rev), mode="out", output="vpath")$vpath)
-  
-  # print (FF_path)
-  # print (FR_path)
-  # print (RF_path)
-  # print (RR_path)
-  
-  FF_weight <- sum(E(new_subtree, path=FF_path)$weight)
-  FR_weight <- sum(E(new_subtree, path=FR_path)$weight)
-  RF_weight <- sum(E(new_subtree, path=RF_path)$weight)
-  RR_weight <- sum(E(new_subtree, path=RR_path)$weight)
-  
-  # print (FF_weight)
-  # print (FR_weight)
-  # print (RF_weight)
-  # print (RR_weight)
-  
-  paths <- list(FF_path, FR_path, RF_path, RR_path)
-  path_weights <- c(FF_weight, FR_weight, RF_weight, RR_weight)
-  opt_path_idx <- head((which(path_weights == min(path_weights))), 1)
-  opt_path <- paths[[opt_path_idx]]
-  
-  # print ("opt_path:")
-  # print (opt_path)
-  # print ("q_level_list:")
-  # print (q_level_list)
-  stopifnot (length(opt_path) == length(q_level_list))
-  
-  directions <- V(new_subtree)[opt_path]$type
-  #print (directions)
-  q_levels <- list()
-  for (i in 1:length(directions))
-  {
-    if (directions[[i]] == "forward"){
-      q_levels[[length(q_levels)+1]] <- q_level_list[[i]]
-    }else{
-      q_levels[[length(q_levels)+1]] <- rev(q_level_list[[i]])
-    }
-  }
-  
-  return(list(ql=q_levels, wt=min(path_weights)))
-}
-
-#order_q_node(q_level, dp)
-
-extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #print ("ordering leaf node")
-    return (V(pq_tree)[curr_node]$name)
-  }else if (V(pq_tree)[curr_node]$type == "P"){
-    #print ("ordering P node")
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    p_level <- order_p_node(p_level, dist_matrix)
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }else if(V(pq_tree)[curr_node]$type == "Q"){
-    #print ("ordering Q node")
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    q_level <- order_q_node(q_level, dist_matrix)
-    q_level <- q_level$ql
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
 count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 {
   nei <- NULL
@@ -576,240 +334,6 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
     }
     return(node_states)
   }
-}
-
-#' Extract a linear ordering of cells from a PQ tree
-#' @importFrom plyr arrange
-extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
-{
-  nei <- NULL
-  type <- NULL
-  pseudo_time <- NULL
-  
-  pq_tree <- orig_pq_tree
-  
-  # children_counts <- rep(0, length(as.vector(V(pq_tree))))
-  #     names(children_counts) <- V(pq_tree)$name
-  # children_counts <- count_leaf_descendents(pq_tree, curr_node, children_counts)
-  # 
-  # branch_node_counts <- children_counts[V(res$subtree)[type == "P"]]
-  # branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  # print (branch_node_counts)
-  
-  
-  branch_node_counts <- V(pq_tree)[type == "Q"]$diam_path_len
-  names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
-  if(length(names(branch_node_counts)) < num_branches)
-    stop('Number of branches attempted is larger than the branches constructed from pq_tree algorithm')
-
-  branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  #print (branch_node_counts)
-  
-  
-  cell_states <- rep(NA, length(as.vector(V(pq_tree)[type=="leaf"])))
-  names(cell_states) <- V(pq_tree)[type=="leaf"]$name
-  
-  cell_states <- assign_cell_lineage(pq_tree, curr_node, 1, cell_states)
-  
-  branch_point_roots <- list()
-  
-  # Start building the ordering tree. Each pseudo-time segment will be a node.
-  branch_tree <- graph.empty()
-  #root_branch_id <- "Q_1"
-  #branch_tree <- branch_tree + vertex(root_branch_id)
-  
-  for (i in 1:num_branches)
-  {
-    #cell_states <- assign_cell_lineage(pq_tree, names(branch_node_counts)[i], i+1, cell_states)
-    #print (head(cell_states))
-    #print(names(branch_node_counts)[i])
-    
-    branch_point_roots[[length(branch_point_roots) + 1]] <- names(branch_node_counts)[i]
-    branch_id <- names(branch_node_counts)[i]
-    #print (branch_id)
-    branch_tree <- branch_tree + vertex(branch_id)
-    parents <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-    if (length(parents) > 0 && parents$type == "P")
-    {
-      p_node_parent <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-      parent_branch_id <- V(pq_tree)[nei(p_node_parent, mode="in")]$name
-      #print (parent_branch_id)
-      #print (branch_id)
-      branch_tree <- branch_tree + edge(parent_branch_id, branch_id)
-    }
-    pq_tree[V(pq_tree) [ nei(names(branch_node_counts)[i], mode="in") ], names(branch_node_counts)[i] ] <- FALSE
-  }
-  
-  #branch_point_roots[[length(branch_point_roots) + 1]] <- curr_node
-  #branch_point_roots <- rev(branch_point_roots)
-  branch_pseudotimes <- list()
-  
-  for (i in 1:length(branch_point_roots))
-  {
-    branch_ordering <- extract_good_ordering(pq_tree, branch_point_roots[[i]], dist_matrix)
-    branch_ordering_time <- weight_of_ordering(branch_ordering, dist_matrix)
-    names(branch_ordering_time) <- branch_ordering
-    branch_pseudotimes[[length(branch_pseudotimes) + 1]] = branch_ordering_time
-    names(branch_pseudotimes)[length(branch_pseudotimes)] = branch_point_roots[[i]]
-  }
-  
-  cell_ordering_tree <- graph.empty()
-  curr_branch <- "Q_1"
-  
-  extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
-  {
-    nei <- NULL
-    
-    curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
-    #print (curr_branch_pseudotimes)
-    curr_branch_root_cell <- NA
-    for (i in 1:length(curr_branch_pseudotimes))
-    {
-      cell_ordering_tree <- cell_ordering_tree + vertex(names(curr_branch_pseudotimes)[i])
-      if (i > 1)
-      {
-        if (reverse_ordering == FALSE){
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i-1], names(curr_branch_pseudotimes)[i])
-        }else{
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i], names(curr_branch_pseudotimes)[i-1])
-        }
-      }
-    }
-    
-    if (reverse_ordering == FALSE)
-    {
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[1]
-    }else{
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[length(curr_branch_pseudotimes)]
-    }
-    
-    for (child in V(branch_tree) [ nei(curr_branch, mode="out") ])
-    {
-      child_cell_ordering_subtree <- graph.empty()
-      
-      child_head <- names(branch_pseudotimes[[child]])[1]
-      child_tail <- names(branch_pseudotimes[[child]])[length(branch_pseudotimes[[child]])]
-      
-      # find the closest cell in the parent branch for each of the head and the tail
-      
-      curr_branch_cell_names <- names(branch_pseudotimes[[curr_branch]])
-      head_dist_to_curr <- dist_matrix[child_head, curr_branch_cell_names]
-      closest_to_head <- names(head_dist_to_curr)[which(head_dist_to_curr == min(head_dist_to_curr))]
-      
-      head_dist_to_anchored_branch = NA
-      branch_index_for_head <- NA
-      
-      head_dist_to_anchored_branch <- dist_matrix[closest_to_head, child_head]
-      
-      tail_dist_to_curr <- dist_matrix[child_tail, curr_branch_cell_names]
-      closest_to_tail <- names(tail_dist_to_curr)[which(tail_dist_to_curr == min(tail_dist_to_curr))]
-      
-      tail_dist_to_anchored_branch = NA
-      branch_index_for_tail <- NA
-      
-      tail_dist_to_anchored_branch <- dist_matrix[closest_to_tail, child_tail]
-      
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        reverse_child <- TRUE
-      }else{
-        reverse_child <- FALSE
-      }
-      
-      res <- extract_branched_ordering_helper(branch_tree, child, child_cell_ordering_subtree, branch_pseudotimes, dist_matrix, reverse_child)
-      child_cell_ordering_subtree <- res$subtree
-      child_subtree_root <- res$root
-      
-      # Works, but slow:
-      for (v in V(child_cell_ordering_subtree))
-      {
-        cell_ordering_tree <- cell_ordering_tree + vertex(V(child_cell_ordering_subtree)[v]$name)
-      }
-      
-      edge_list <- get.edgelist(child_cell_ordering_subtree)
-      for (i in 1:nrow(edge_list))
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(V(cell_ordering_tree)[edge_list[i, 1]]$name, V(cell_ordering_tree)[edge_list[i, 2]]$name)
-      }   					
-      
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_tail, child_subtree_root)
-      }else{
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_head, child_subtree_root)
-      }
-      
-    }
-    
-    return (list(subtree=cell_ordering_tree, root=curr_branch_root_cell, last_cell_state=1, last_cell_pseudotime=0.0))
-  }
-  
-  res <- extract_branched_ordering_helper(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_main_path)
-  cell_ordering_tree <- res$subtree
-  
-  curr_state <- 1
-  
-  assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
-  {
-    nei <- NULL
-    
-    cell_tree <- ordering_tree_res$subtree
-    V(cell_tree)[curr_cell]$cell_state = curr_state
-    
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
-    ordering_tree_res$subtree <- cell_tree
-    
-    if (length(children) == 1){
-      ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
-    }else{
-      for (child in children)	{
-        curr_state <<- curr_state + 1
-        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
-      }
-    }
-    return (ordering_tree_res)
-  }
-  
-  res <- assign_cell_state_helper(res, res$root)
-  
-  assign_pseudotime_helper <- function(ordering_tree_res, dist_matrix, last_pseudotime, curr_cell)
-  {
-    nei <- NULL
-    
-    cell_tree <- ordering_tree_res$subtree
-    curr_cell_pseudotime <- last_pseudotime
-    V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
-    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ nei(curr_cell, mode="in") ]$name
-    #print (curr_cell_pseudotime)
-    
-    ordering_tree_res$subtree <- cell_tree
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
-    
-    for (child in children)	{
-      next_node <- V(cell_tree)[child]$name
-      delta_pseudotime <- dist_matrix[curr_cell, next_node]
-      ordering_tree_res <- assign_pseudotime_helper(ordering_tree_res, dist_matrix, last_pseudotime + delta_pseudotime, next_node)
-    }
-    
-    return (ordering_tree_res)
-  }
-  
-  res <- assign_pseudotime_helper(res, dist_matrix, 0.0, res$root)
-  
-  cell_names <- V(res$subtree)$name
-  cell_states <- V(res$subtree)$cell_state
-  cell_pseudotime <- V(res$subtree)$pseudotime
-  cell_parents <- V(res$subtree)$parent
-  # print (cell_names)
-  # print (cell_states)
-  # print (cell_pseudotime)
-  ordering_df <- data.frame(sample_name = cell_names,
-                            cell_state = factor(cell_states),
-                            pseudo_time = cell_pseudotime,
-                            parent = cell_parents)
-  
-  ordering_df <- plyr::arrange(ordering_df, pseudo_time)
-  return(ordering_df)
 }
 
 reverse_ordering <- function(pseudo_time_ordering)
@@ -925,6 +449,48 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   return(list(X = t(X), K = t(K), W = t(a), A = t(A), S = t(S), svs=svs))
 }
 
+extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
+{
+  nei <- NULL
+  type <- NULL
+  pseudo_time <- NULL
+  
+  dp_mst <- minSpanningTree(cds) 
+  
+  terminal_cell_ids <- V(dp_mst)[which(degree(dp_mst, mode = 'total') == 1)]
+  if(verbose) {
+    print('the cells on the end of MST: ')
+    print((degree(dp_mst, mode = 'total') == 1)[terminal_cell_ids])
+  }
+  
+  Pseudotime <- rep(0, ncol(cds))
+  names(Pseudotime) <- V(dp_mst)
+  
+  if(is.null(root_cell))
+    root_cell = terminal_cell_ids[1]
+  
+  Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
+ 
+  curr_state <- 1
+  
+  res <- list(subtree = dp_mst, root = root_cell)
+  res <- assign_cell_state_helper(res, res$root)
+  states <- V(res$subtree)[colnames(cds)]$cell_state
+  
+  cell_names <-  names(Pseudotime)
+  cell_states <- states
+  cell_pseudotime <- Pseudotime
+  cell_parents <- V(res$subtree)$parent
+
+  ordering_df <- data.frame(sample_name = cell_names,
+                            cell_state = factor(cell_states),
+                            pseudo_time = cell_pseudotime,
+                            parent = cell_parents)
+  
+  ordering_df <- plyr::arrange(ordering_df, pseudo_time)
+  return(ordering_df)
+}
+
 
 #' Orders cells according to progress through a learned biological process.
 #' @param cds the CellDataSet upon which to perform this operation
@@ -935,25 +501,13 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, scale_pseudotime = F){
+ 
+  if (is.null(root_cell)){
+    diameter <- get.diameter(minSpanningTree(cds))
+    root_cell = diameter[1]
+  }
   
-  adjusted_S <- t(cds@reducedDimS)
-  
-  dp <- as.matrix(dist(adjusted_S))
-  
-  #print (sum(rowSums(dp)))
-  #dp <- as.matrix(dist(dp))
-  #dp <- as.matrix(dist(adjusted_S))
-  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
-  # Build an MST of the cells in ICA space.
-  gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds) <- dp_mst
-  # Build the PQ tree
-  next_node <<- 0
-  res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
-  #stopifnot(length(V(res$subtree)[type == "leaf"]) == nrow(pData(cds)))
-  
-  cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, reverse)
+  cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
   row.names(cc_ordering) <- cc_ordering$sample_name
   
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
@@ -1058,30 +612,78 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
-  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
+  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=T)
   
-  x_pca <- t(t(FM) %*% init_ICA$K)
-  W <- t(init_ICA$W)
+#   x_pca <- t(t(FM) %*% init_ICA$K)
+#   W <- t(init_ICA$W)
+#   
+#   weights <- W
+# 
+#   A <- t(solve(weights) %*% t(init_ICA$K))
+#   
+#   colnames(A) <- colnames(weights)
+#   rownames(A) <- rownames(FM)
+#   
+#   S <- weights %*% x_pca
+#   
+   #rownames(ddrtree_res$Y) <- colnames(weights)
+  colnames(ddrtree_res$Y) <- colnames(FM) 
   
-  weights <- W
-
-  A <- t(solve(weights) %*% t(init_ICA$K))
+  #reducedDimW(cds) <- W
+  #reducedDimA(cds) <- A
+  reducedDimS(cds) <- ddrtree_res$Y
+  #reducedDimK(cds) <- init_ICA$K
   
-  colnames(A) <- colnames(weights)
-  rownames(A) <- rownames(FM)
+  ddrtree_res$stree[lower.tri(ddrtree_res$stree)] = Matrix::t(ddrtree_res$stree)[lower.tri(ddrtree_res$stree)]
   
-  S <- weights %*% x_pca
-  
-  rownames(S) <- colnames(weights)
-  colnames(S) <- colnames(FM) 
-  
-  reducedDimW(cds) <- W
-  reducedDimA(cds) <- A
-  reducedDimS(cds) <- S
-  reducedDimK(cds) <- init_ICA$K
+  gp <- graph.adjacency(ddrtree_res$stree, mode="undirected", weighted=TRUE)
+  minSpanningTree(cds) <- gp
   
   cds
 }
 
+
+#' a function to assign pseudotime for the MST
+assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell)
+{
+  nei <- NULL
+  
+  cell_tree <- ordering_tree_res$subtree
+  V(cell_tree)[curr_cell]$cell_state = curr_state
+  
+  children <- V(cell_tree) [ nei(curr_cell, mode="all") ]
+  children <- setdiff(children, visited_node)
+  
+  ordering_tree_res$subtree <- cell_tree
+  message('curr_cell: ', curr_cell)
+  message('children: ', children)
+  
+  if (length(children) == 1){
+    visited_node <- union(children, visited_node)
+    
+    ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, visited_node)
+  }else{
+    for (child in children)	{
+      visited_node <- union(child, visited_node)
+      
+      curr_state <<- curr_state + 1
+      ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, visited_node)
+    }
+  }
+  return (ordering_tree_res)
+}
+
+#' a function to assign pseudotime and states based on the projected coordinates from the DDRTree algorithm, the stree matrix maybe used later
+#' also: fix the bug when the scale_pseudotime can be used
+#' @param cds a matrix with N x N dimension
+#' @param root_cell a dataframe used to generate new data for interpolation of time points
+#' @param scale_pseudotime a matrix with N x N dimension
+#' @param verbose a matrix with N x N dimension
+#' @return a cds object with the states and the branch assigned correctly
+#' @export
+#' 
+assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F, verbose = F) {
+
+}
 
 
