@@ -458,15 +458,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
    
   dp_mst <- minSpanningTree(cds) 
   
-  # terminal_cell_ids <- V(dp_mst)[which(degree(dp_mst, mode = 'total') == 1)]
-  # if(verbose) {
-  #   print('the cells on the end of MST: ')
-  #   print((degree(dp_mst, mode = 'total') == 1)[terminal_cell_ids])
-  # }
-  
-  # if(is.null(root_cell))
-  #   root_cell = terminal_cell_ids[1]
-  
   Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
  
   curr_state <- 1
@@ -508,21 +499,64 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   cell_pseudotime <- Pseudotime
   
   #add parents
-  # cell_parents <- V(res$subtree)$parent
-
-  # ordering_df <- data.frame(sample_name = cell_names,
-  #                           cell_state = factor(cell_states),
-  #                           pseudo_time = cell_pseudotime,
-  #                           parent = cell_parents)
+  diameter <- get.diameter(dp_mst)
+  root_cell_id <- which(names(diameter) == names(root_cell))
   
+  #assign the parents for cells on the diameter path
+  if(root_cell_id == length(diameter)) {
+    V(dp_mst)[diameter[(length(diameter) - 1):1]]$parent = names(diameter[length(diameter):2])
+  }
+  else if(root_cell_id == 1) {
+    V(dp_mst)[diameter[2:(length(diameter))]]$parent = names(diameter[1:(length(diameter) - 1)])
+  }
+  
+  terminal_cells <- names(V(dp_mst)[which(degree(dp_mst, mode = 'total') == 1)])
+  terminal_cells <- setdiff(terminal_cells, names(root_cell))
+  #cell_parents <- rep(NA, vcount(dp_mst))
+
+  assign_progenitor_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell, diameter_node = names(get.diameter(ordering_tree_res))) {
+    nei <- NULL
+
+    parent <- names(V(ordering_tree_res) [ nei(curr_cell, mode="all") ])
+    parent <- setdiff(parent, visited_node)
+
+    message('curr_cell: ', curr_cell)
+    message('parent: ', parent)
+    
+    if(length(parent) < 1) {
+      return (ordering_tree_res)
+    }
+      
+    if (parent %in% diameter_node){
+        visited_node <- union(parent, visited_node)
+        V(ordering_tree_res)[curr_cell]$parent = parent
+
+        return (ordering_tree_res)
+    }else{
+        visited_node <- union(parent, visited_node)
+        V(ordering_tree_res)[curr_cell]$parent = parent
+
+        ordering_tree_res <- assign_progenitor_helper(ordering_tree_res, parent, visited_node, diameter_node)
+    }
+  }
+  
+  for(tip in terminal_cells) {
+    dp_mst <- assign_progenitor_helper(dp_mst, tip, tip, names(diameter))
+  }
+  
+#   if(is.null(root_cell))
+#     root_cell = terminal_cell_ids[1]
+
+  cell_parents <- V(dp_mst)$parent
+
   ordering_df <- data.frame(sample_name = cell_names,
                             cell_state = factor(cell_states),
-                            pseudo_time = as.vector(cell_pseudotime))
-
+                            pseudo_time = cell_pseudotime,
+                            parent = cell_parents)
+  
   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
   return(ordering_df)
 }
-
 
 #' Orders cells according to progress through a learned biological process.
 #' @param cds the CellDataSet upon which to perform this operation
@@ -543,6 +577,7 @@ orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, scale_ps
   if (is.null(root_cell)){
     diameter <- get.diameter(minSpanningTree(cds))
     root_cell = diameter[1]
+    print(root_cell)
   }
   
   cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
@@ -650,7 +685,7 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
-  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=T)
+  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose)
   
 #   x_pca <- t(t(FM) %*% init_ICA$K)
 #   W <- t(init_ICA$W)

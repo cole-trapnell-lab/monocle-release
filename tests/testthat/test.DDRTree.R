@@ -28,7 +28,7 @@ DDRTree_res <- DDRTree(X = X, params = params, T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #cpp implementation
-system.time(DDRTree_res_cpp <- DDRTree_cpp(X = X, params = params, T))
+system.time(DDRTree_res_cpp <- DDRTree_cpp(X = X, params = params, verbose = T))
 qplot(x = DDRTree_res_cpp$Y[1, ], y = DDRTree_res_cpp$Y[2, ])
 
 #ko tree:
@@ -135,6 +135,11 @@ res <- assignPseudotimePT(Shalek_golgi_update, 'LPS_4h_GolgiPlug_2h_S78_0', plot
 
 qplot(reducedDimS(res)[1, ], reducedDimS(res)[2, ], color = as.character(pData(res)$State), size = pData(res)$Pseudotime)
 
+Shalek_golgi_update <- reduceDimension(Shalek_golgi_update, max_components = 2, use_vst = T, use_irlba=F, pseudo_expr = 0, covariates = as.vector(pData(Shalek_golgi_update)$num_genes_expressed) )
+#HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=F, pseudo_expr=0.5, fun="exp")
+
+Shalek_golgi_update <- orderCells(Shalek_golgi_update, reverse=F, num_paths=2, root_cell = NULL)
+plot_spanning_tree()
 load('/Users/xqiu/Dropbox (Personal)/Infer_GRN/analysis_HSMM_data.RData')
 
 HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=T, pseudo_expr=0, fun="exp")
