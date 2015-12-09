@@ -11,7 +11,7 @@ context("DDRTRee")
 #note that dim (the inherent dimension the data reduced to and where the tree is constructed) can be changed (currently it is 2)
 
 test_that("DDRTRee() perform the DDRTree construction", {
-  
+
 #ko data:
 ko_exprs <- readMat('/Users/xqiu/Dropbox (Personal)/bifurcation_path/simplePPT/data/ko_exprs.mat')
 ko_exprs <- as.matrix(ko_exprs$ko.exprs)
@@ -31,7 +31,7 @@ qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 system.time(DDRTree_res_cpp <- DDRTree_cpp(X = X, params = params, T))
 qplot(x = DDRTree_res_cpp$Y[1, ], y = DDRTree_res_cpp$Y[2, ])
 
-#ko tree: 
+#ko tree:
 ko_DDRTree_res <- DDRTree_res
 
 #lung data:
@@ -49,7 +49,7 @@ params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, g
 DDRTree_res <- DDRTree(X = X, params = params, T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
-#lung tree: 
+#lung tree:
 lung_DDRTree_res <- DDRTree_res
 
 #golgi data:
@@ -64,10 +64,10 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree(X = X, params = params, T)
+DDRTree_res <- DDRTree_cpp(X = X, lambda = 2435, T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
-#golgi tree: 
+#golgi tree:
 golgi_DDRTree_res <- DDRTree_res
 
 #Cell data:
@@ -85,11 +85,11 @@ params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 5 * ncol(X), sigma = 
 DDRTree_res <- DDRTree(X = X, params = params, T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
-#cell tree: 
+#cell tree:
 valid_subset_GSE72857_DDRTree_res <- DDRTree_res
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ], color = MAP_cells_exprs)
 
-#cell tree: 
+#cell tree:
 cell_DDRTree_res <- DDRTree_res
 
 #HSMM data:
@@ -104,10 +104,10 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree(X = X, params = params, T)
+DDRTree_res <- DDRTree_cpp(X, verbose = T))
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
-#HSMM tree: 
+#HSMM tree:
 HSMM_DDRTree_res <- DDRTree_res
 
 #create a direct graph from the stree:
@@ -128,9 +128,23 @@ stree_g <- graph.adjacency(stree, mode = "undirected", diag = F, weighted = NULL
 res <- list(subtree = stree_g, root = "6")
 
 load('/Users/xqiu/Dropbox (Personal)/bifurcation_path/simplePPT/data/analysis_shalek_data.RData')
+
 Shalek_golgi_update@reducedDimS[1:2, ] <- DDRTree_res$Y
 res <- assignPseudotimePT(Shalek_golgi_update, 'LPS_4h_GolgiPlug_2h_S78_0', plotting = F, scale_pseudotime =
                             F)
+
+qplot(reducedDimS(res)[1, ], reducedDimS(res)[2, ], color = as.character(pData(res)$State), size = pData(res)$Pseudotime)
+
+load('/Users/xqiu/Dropbox (Personal)/Infer_GRN/analysis_HSMM_data.RData')
+
+HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=T, pseudo_expr=0, fun="exp")
+#HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=F, pseudo_expr=0.5, fun="exp")
+
+HSMM_myo <- orderCells(HSMM_myo, reverse=F, num_paths=1, root_cell = NULL)
+
+HSMM_myo@reducedDimS[1:2, ] <- DDRTree_res$Y
+res <- assignPseudotimePT(HSMM_myo, 'T0_CT_D03_0', plotting = F, scale_pseudotime =
+                              F)
 
 qplot(reducedDimS(res)[1, ], reducedDimS(res)[2, ], color = as.character(pData(res)$State), size = pData(res)$Pseudotime)
 

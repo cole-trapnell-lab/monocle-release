@@ -557,7 +557,7 @@ plot_clusters<-function(cds,
   cluster_sizes <- as.data.frame(table(m$cluster))    
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
-  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ")
+  facet_labels <- str_c(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
   
   facet_wrap_labeller <- function(gg.plot,labels=NULL) {
     #works with R 3.0.1 and ggplot2 0.9.3.1
