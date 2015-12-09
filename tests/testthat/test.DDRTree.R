@@ -2,6 +2,10 @@ library(monocle)
 library('R.matlab')
 library(igraph)
 library(ggplot2)
+library(DDRTree)
+library(irlba)
+library(Rcpp)
+library(RcppEigen)
 context("DDRTRee")
 
 #note that dim (the inherent dimension the data reduced to and where the tree is constructed) can be changed (currently it is 2)
@@ -22,6 +26,10 @@ sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
 DDRTree_res <- DDRTree(X = X, params = params, T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
+
+#cpp implementation
+system.time(DDRTree_res_cpp <- DDRTree_cpp(X = X, params = params, T))
+qplot(x = DDRTree_res_cpp$Y[1, ], y = DDRTree_res_cpp$Y[2, ])
 
 #ko tree: 
 ko_DDRTree_res <- DDRTree_res
@@ -101,5 +109,30 @@ qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #HSMM tree: 
 HSMM_DDRTree_res <- DDRTree_res
+
+#create a direct graph from the stree:
+
+curr_state <- 1
+
+#stree <- DDRTree_res$stree +  t(DDRTree_res$stree) != 0
+stree <- as.matrix(DDRTree_res$stree)
+# stree <- stree +  t(stree)
+tmp <- stree > 0
+stree[tmp == T] <- 1
+stree[tmp == F] <- 0
+
+#stree[upper.tri(stree)] <- 0
+dimnames(stree) <- list(as.character(1:nrow(stree)), as.character(1:nrow(stree)))
+stree_g <- graph.adjacency(stree, mode = "undirected", diag = F, weighted = NULL)
+
+res <- list(subtree = stree_g, root = "6")
+
+load('/Users/xqiu/Dropbox (Personal)/bifurcation_path/simplePPT/data/analysis_shalek_data.RData')
+Shalek_golgi_update@reducedDimS[1:2, ] <- DDRTree_res$Y
+res <- assignPseudotimePT(Shalek_golgi_update, 'LPS_4h_GolgiPlug_2h_S78_0', plotting = F, scale_pseudotime =
+                            F)
+
+qplot(reducedDimS(res)[1, ], reducedDimS(res)[2, ], color = as.character(pData(res)$State), size = pData(res)$Pseudotime)
+
 
 })

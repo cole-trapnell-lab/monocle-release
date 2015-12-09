@@ -1,3 +1,79 @@
+
+#' a function to assign pseudotime for the MST
+assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell)
+{
+    nei <- NULL
+    
+    cell_tree <- ordering_tree_res$subtree
+    V(cell_tree)[curr_cell]$cell_state = curr_state
+    
+    children <- V(cell_tree) [ nei(curr_cell, mode="all") ]
+    children <- setdiff(children, visited_node)
+    
+    ordering_tree_res$subtree <- cell_tree
+    message('curr_cell: ', curr_cell)
+    message('children: ', children)
+    
+    if (length(children) == 1){
+        visited_node <- union(children, visited_node)
+        
+        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, visited_node)
+    }else{
+        for (child in children)	{
+            visited_node <- union(child, visited_node)
+            
+            curr_state <<- curr_state + 1
+            ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, visited_node)
+        }
+    }
+    return (ordering_tree_res)
+}
+
+#' a function to assign pseudotime and states based on the projected coordinates from the DDRTree algorithm, the stree matrix maybe used later
+#' also: fix the bug when the scale_pseudotime can be used
+#' @param cds a matrix with N x N dimension
+#' @param root_cell a dataframe used to generate new data for interpolation of time points
+#' @param scale_pseudotime a matrix with N x N dimension
+#' @param verbose a matrix with N x N dimension
+#' @return a cds object with the states and the branch assigned correctly
+#' @export
+#' 
+assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F, verbose = F) {
+    adjusted_S <- t(cds@reducedDimS)
+    dp <- as.matrix(dist(adjusted_S))
+    cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = T)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+
+    terminal_cell_ids <- V(dp_mst)[which(degree(dp_mst, mode = 'total') == 1)]
+    if(verbose) {
+        print('the cells on the end of MST: ')
+        print((degree(dp_mst, mode = 'total') == 1)[terminal_cell_ids])
+    }
+
+    Pseudotime <- rep(0, ncol(cds))
+    names(Pseudotime) <- V(dp_mst)
+
+    if(is.null(root_cell))
+        root_cell = terminal_cell_ids[1]
+
+    Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
+    pData(cds)$Pseudotime <- as.vector(Pseudotime)
+
+    curr_state <- 1
+
+    res <- list(subtree = dp_mst, root = root_cell)
+    res <- assign_cell_state_helper(res, res$root)
+    pData(cds)$State <- V(res$subtree)[colnames(cds)]$cell_state
+
+    if (scale_pseudotime) {
+        cds <- scale_pseudotime(cds)
+    }
+
+    cds
+}
+
 #' perform PCA projection
 #' solve the problem size(C) = NxN, size(W) = NxL
 #' max_W trace( W' C W ) : W' W = I
