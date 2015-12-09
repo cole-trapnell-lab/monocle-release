@@ -77,9 +77,9 @@ lung <- detectGenes(lung, min_expr = 1)
 expressed_genes <- row.names(subset(fData(lung), num_cells_expressed >= 5))
 ordering_genes <- expressed_genes
 lung <- setOrderingFilter(lung, ordering_genes)
-lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-lung <- orderCells(lung, num_paths=2, reverse=T)
-plot_spanning_tree(lung, color_by="Pseudotime")
+lung <- reduceDimension(lung, use_vst = T, pseudo_expr = 0)
+lung <- orderCells(lung)
+plot_spanning_tree(lung, color_by="Time")
 
 @ %def 
 
@@ -339,13 +339,26 @@ HSMM_myo <- reduceDimension(HSMM_myo)
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
 
 <<order_cells, eval=TRUE>>=
-HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+HSMM_myo <- orderCells(HSMM_myo)
 @ %def
 
 Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.
 
 <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 plot_spanning_tree(HSMM_myo, color_by="Hours")
+@ %def 
+
+<<plot_ordering_mst_show_flip, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+plot_spanning_tree(HSMM_myo, color_by="Pseudotime")
+plot_spanning_tree(HSMM_myo, color_by="State")
+@ %def 
+
+<<order_cells_flipped, eval=TRUE>>=
+HSMM_myo <- orderCells(HSMM_myo, root_state = 3)
+@ %def
+
+<<plot_ordering_mst_flipped, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+plot_spanning_tree(HSMM_myo, color_by="Pseudotime")
 @ %def 
 
 To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
