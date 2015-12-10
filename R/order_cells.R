@@ -612,7 +612,6 @@ reduceDimension <- function(cds,
       VST_FM <- vstExprs(cds, round_vals=FALSE)
       if (is.null(VST_FM) == FALSE){
         FM <- VST_FM
-        FM <- FM[fData(cds)$use_for_ordering,]
       }else{
         stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
       }
@@ -639,6 +638,12 @@ reduceDimension <- function(cds,
   #FM <- log2(FM)
   if (verbose)
     message("Reducing to independent components")
+  
+  FM <- t(scale(t(FM)))
+  FM <- FM[rowSds(FM) >0,]
+  if (nrow(FM) == 0){
+    stop("Error: all rows have standard deviation zero")
+  }
   
   ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose, ...)
   

@@ -70,6 +70,8 @@ lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"),
                        expressionFamily=negbinomial())
 
 lung <- estimateSizeFactors(lung)
+pData(lung)$Size_Factor <- lung_phenotype_data$Size_Factor
+
 lung <- estimateDispersions(lung)
 
 pData(lung)$Total_mRNAs <- colSums(exprs(lung))
@@ -103,7 +105,6 @@ plot_genes_branched_pseudotime(lung[1:4, ], add_pval = T, ncol = 2,
                                bifurcation_time = bifurcation_time
                                 )
 @ %def 
-
 
 \section{Introduction}
 
