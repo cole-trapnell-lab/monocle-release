@@ -465,9 +465,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
     nei <- NULL
 
-    if(curr_cell == 'SRR1033901_0')
-      message('test')
-      
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
 
@@ -499,9 +496,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
   res <- assign_cell_state_helper(res, res$root)
   
-  print(res$root)
-  V(res$subtree)[res$root]$parent = NA
-
   states <- V(res$subtree)[colnames(cds)]$cell_state
   
   cell_names <-  colnames(Pseudotime)
@@ -646,7 +640,7 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
-  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose)
+  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose, ...)
   
 #   x_pca <- t(t(FM) %*% init_ICA$K)
 #   W <- t(init_ICA$W)

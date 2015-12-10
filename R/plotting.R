@@ -1277,7 +1277,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   num_clusters = 6,
   ABC_df = NULL, 
   branchTest_df = NULL, 
-  lineage_labels = c("Cell fate 1", "Cell fate 1"), 
+  lineage_labels = c("Cell fate 1", "Cell fate 2"), 
   stretch = T, 
   scaling = T,
   norm_method = "vstExprs", 
@@ -1422,7 +1422,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
     names(Cluster_color) <- 1:length(unique(annotation_row$Cluster))
-    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], AT1=Cell_type_color[2], AT2=Cell_type_color[3]), 
+    names(Cell_type_color) <- c("Progenitor", lineage_labels[1], lineage_labels[2])
+
+    annotation_colors=list("Cell Type"=Cell_type_color, 
                                 'Cluster' = Cluster_color)
 
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
