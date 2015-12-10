@@ -11,7 +11,6 @@ monocle_theme_opts <- function()
     theme(panel.background = element_rect(fill='white'))
 }
 
-
 #' Plots the minimum spanning tree on cells.
 #'
 #' @param cds CellDataSet for the experiment
@@ -24,7 +23,6 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_name_size the size of cell name labels
-#' @param show_all_lineages draw all the bifurcation trajectories with thick pathes
 #' @return a ggplot2 plot object
 #' @importFrom grid unit
 #' @import ggplot2
@@ -48,36 +46,37 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2,
-                               show_all_lineages = F){
+                               cell_name_size=2){
   gene_short_name <- NULL
   sample_name <- NULL
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
-
+  
+  
   #print (lib_info_with_pseudo)
   S_matrix <- reducedDimS(cds)
-
+  
   if (is.null(S_matrix)){
     stop("You must first call reduceDimension() before using this function")
   }
   
   ica_space_df <- data.frame(t(S_matrix[c(x,y),]))
   colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
-
+  
   ica_space_df$sample_name <- row.names(ica_space_df)
   ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
- 
+  
   if (is.null(dp_mst)){
     stop("You must first call orderCells() before using this function")
   }
   
+  
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
-
+  
   edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
   
   edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
@@ -87,36 +86,7 @@ plot_spanning_tree <- function(cds,
   diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
   colnames(diam) <- c("sample_name")
   diam <- plyr::arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
-
-  if(show_all_lineages) {
-    pro_state_pseudotime <- diam[as.numeric(diam$State) == min(as.numeric(diam$State)),
-        "Pseudotime"]
-    bifurcation_sample <- diam[which(diam$Pseudotime == max(pro_state_pseudotime)),
-        ]
-    bifurcation_sample$State <- diam$State[which(diam$Pseudotime ==
-        max(pro_state_pseudotime)) + 1]
-    diam <- rbind(diam[1:which(diam$Pseudotime == max(pro_state_pseudotime)),
-        ], bifurcation_sample, diam[(which(diam$Pseudotime ==
-        max(pro_state_pseudotime)) + 1):nrow(diam), ])
-    no_diam_states <- setdiff(lib_info_with_pseudo$State, lib_info_with_pseudo[diam[,
-        1], "State"])
-    for (state in no_diam_states) {
-        state_sample <- ica_space_with_state_df[ica_space_with_state_df$State ==
-            state, "sample_name"]
-        subset_dp_mst <- induced.subgraph(dp_mst, state_sample,
-            impl = "auto")
-        subset_diam <- as.data.frame(as.vector(V(subset_dp_mst)[get.diameter(subset_dp_mst,
-            weights = NA)]$name))
-        colnames(subset_diam) <- c("sample_name")
-        subset_diam <- plyr::arrange(merge(ica_space_with_state_df,
-            subset_diam, by.x = "sample_name", by.y = "sample_name"),
-            Pseudotime)
-        subset_diam$State <- state
-        bifurcation_sample$State <- state
-        diam <- rbind(diam, bifurcation_sample, subset_diam)
-    }
-  }
-
+  
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -140,23 +110,17 @@ plot_spanning_tree <- function(cds,
   }
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-      for(i in unique(diam[, 'State'])) { #plot each lineage separately
-          g <- g + geom_path(aes(x = ICA_dim_1, y = ICA_dim_2),
-          color = I(backbone_color), size = I(cell_link_size),
-          data = subset(diam, State == i), na.rm = TRUE)
-      }
+    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
+  }else{
+    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
   }
-  else {
-      g <- g + geom_point(aes_string(color = color_by), size = I(cell_size),
-          na.rm = TRUE)
-  }
-
+  
+  
+  
   if (show_backbone){
     #print (diam)
-    if(backbone_color %in% colnames(diam))
-        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=diam[, backbone_color], size=I(cell_link_size), data=diam, na.rm=TRUE)
-    else
-        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE)
+    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
+      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
   }
   
   if (show_cell_names){
@@ -174,6 +138,8 @@ plot_spanning_tree <- function(cds,
     theme(panel.background = element_rect(fill='white'))
   g
 }
+
+
 
 #' Plots expression for one or more genes as a jittered, grouped points
 #'
