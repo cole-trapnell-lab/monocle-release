@@ -1,6 +1,6 @@
-utils::globalVariables(c("Pseudotime", "value", "ids", "ICA_dim_1", "ICA_dim_2", "State", 
+utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin_graph_dim_2", "State", 
                          "value", "feature_label", "expectation", "colInd", "rowInd", "value", 
-                         "source_ICA_dim_1", "source_ICA_dim_2"))
+                         "source_prin_graph_dim_1", "source_prin_graph_dim_2"))
 
 monocle_theme_opts <- function()
 {
@@ -57,14 +57,15 @@ plot_spanning_tree <- function(cds,
   lib_info_with_pseudo <- pData(cds)
 
   #print (lib_info_with_pseudo)
-  S_matrix <- reducedDimS(cds)
-
-  if (is.null(S_matrix)){
+  #S_matrix <- reducedDimS(cds)
+  K_matrix <- reducedDimK(cds)
+  
+  if (is.null(K_matrix)){
     stop("You must first call reduceDimension() before using this function")
   }
   
-  ica_space_df <- data.frame(t(S_matrix[c(x,y),]))
-  colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
+  ica_space_df <- data.frame(t(K_matrix[c(x,y),]))
+  colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
 
   ica_space_df$sample_name <- row.names(ica_space_df)
   ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
@@ -80,43 +81,19 @@ plot_spanning_tree <- function(cds,
 
   edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
   
-  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
-  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "ICA_dim_1", "ICA_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
-  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="target_ICA_dim_1", "ICA_dim_2"="target_ICA_dim_2"))
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
+  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
   
-  diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
-  colnames(diam) <- c("sample_name")
-  diam <- plyr::arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
+  S_matrix <- reducedDimS(cds)
+  data_df <- data.frame(t(S_matrix[c(x,y),]))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- row.names(data_df)
+  data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  
+  #data_df <- plyr::rename(data_df, c("data_dim_1"="source_data_dim_1", "data_dim_2"="source_data_dim_2"))
 
-  if(show_all_lineages) {
-    pro_state_pseudotime <- diam[as.numeric(diam$State) == min(as.numeric(diam$State)),
-        "Pseudotime"]
-    bifurcation_sample <- diam[which(diam$Pseudotime == max(pro_state_pseudotime)),
-        ]
-    bifurcation_sample$State <- diam$State[which(diam$Pseudotime ==
-        max(pro_state_pseudotime)) + 1]
-    diam <- rbind(diam[1:which(diam$Pseudotime == max(pro_state_pseudotime)),
-        ], bifurcation_sample, diam[(which(diam$Pseudotime ==
-        max(pro_state_pseudotime)) + 1):nrow(diam), ])
-    no_diam_states <- setdiff(lib_info_with_pseudo$State, lib_info_with_pseudo[diam[,
-        1], "State"])
-    for (state in no_diam_states) {
-        state_sample <- ica_space_with_state_df[ica_space_with_state_df$State ==
-            state, "sample_name"]
-        subset_dp_mst <- induced.subgraph(dp_mst, state_sample,
-            impl = "auto")
-        subset_diam <- as.data.frame(as.vector(V(subset_dp_mst)[get.diameter(subset_dp_mst,
-            weights = NA)]$name))
-        colnames(subset_diam) <- c("sample_name")
-        subset_diam <- plyr::arrange(merge(ica_space_with_state_df,
-            subset_diam, by.x = "sample_name", by.y = "sample_name"),
-            Pseudotime)
-        subset_diam$State <- state
-        bifurcation_sample$State <- state
-        diam <- rbind(diam, bifurcation_sample, subset_diam)
-    }
-  }
-
+  
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -129,36 +106,18 @@ plot_spanning_tree <- function(cds,
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    edge_df <- merge(edge_df, markers_exprs, by.x="sample_name", by.y="Var2")
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="Var2")
     #print (head(edge_df))
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
   }else{
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid", na.rm=TRUE)
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
-  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-      for(i in unique(diam[, 'State'])) { #plot each lineage separately
-          g <- g + geom_path(aes(x = ICA_dim_1, y = ICA_dim_2),
-          color = I(backbone_color), size = I(cell_link_size),
-          data = subset(diam, State == i), na.rm = TRUE)
-      }
-  }
-  else {
-      g <- g + geom_point(aes_string(color = color_by), size = I(cell_size),
-          na.rm = TRUE)
-  }
-
-  if (show_backbone){
-    #print (diam)
-    if(backbone_color %in% colnames(diam))
-        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=diam[, backbone_color], size=I(cell_link_size), data=diam, na.rm=TRUE)
-    else
-        g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE)
-  }
-  
+  g <- g + geom_point(aes_string(color = color_by), size = I(cell_size), na.rm = TRUE)
+ 
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
@@ -557,7 +516,7 @@ plot_clusters<-function(cds,
   cluster_sizes <- as.data.frame(table(m$cluster))    
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
-  facet_labels <- str_c(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
+  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
   
   facet_wrap_labeller <- function(gg.plot,labels=NULL) {
     #works with R 3.0.1 and ggplot2 0.9.3.1

@@ -238,8 +238,8 @@ make_canonical <-function(pq_tree)
   
   for (p_node in single_child_p)
   {
-    child_of_p_node <- V(canonical_pq) [ nei(p_node, mode="out") ]
-    parent_of_p_node <- V(canonical_pq) [ nei(p_node, mode="in") ]
+    child_of_p_node <- V(canonical_pq) [ .nei(p_node, mode="out") ]
+    parent_of_p_node <- V(canonical_pq) [ .nei(p_node, mode="in") ]
     
     for (child_of_p in child_of_p_node)
     {
@@ -267,7 +267,7 @@ count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
     return(children_counts)
   } else {
     children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -297,7 +297,7 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
   } else {
     
     children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -328,7 +328,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
     node_states[V(pq_tree)[curr_node]$name] = assigned_state
     return(node_states)
   } else {
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
     {
       node_states <- assign_cell_lineage(pq_tree, child, assigned_state, node_states)
     }
@@ -457,7 +457,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   pseudo_time <- NULL
    
   dp_mst <- minSpanningTree(cds) 
-  
+    
   Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
  
   curr_state <- 1
@@ -465,95 +465,55 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
     nei <- NULL
 
+    if(curr_cell == 'SRR1033901_0')
+      message('test')
+      
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
 
-    children <- V(cell_tree) [ nei(curr_cell, mode="all") ]
-    children <- setdiff(children, visited_node)
+    children <- V(cell_tree) [ .nei(curr_cell, mode="all") ]$name 
+    children <- setdiff(children, V(cell_tree)[visited_node]$name)
 
     ordering_tree_res$subtree <- cell_tree
-#     message('curr_cell: ', curr_cell)
-#     message('children: ', children)
+    #V(ordering_tree_res$subtree)[curr_cell]$parent = visited_node
 
-    if (length(children) == 1){
-        visited_node <- union(children, visited_node)
-
-        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, visited_node)
+    if (length(children) == 0){
+      return (ordering_tree_res)
+    }else if (length(children) == 1){
+        #visited_node <- union(children, visited_node)
+        V(ordering_tree_res$subtree)[children]$parent = V(cell_tree)[curr_cell]$name
+        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, curr_cell)
     }else{
         for (child in children) {
-            visited_node <- union(child, visited_node)
-
+            #visited_node <- union(child, visited_node)
+            V(ordering_tree_res$subtree)[children]$parent = rep(V(cell_tree)[curr_cell]$name, length(children))
             curr_state <<- curr_state + 1
-            ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, visited_node)
+            ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, curr_cell)
         }
     }
     return (ordering_tree_res)
   }
 
+  
   res <- list(subtree = dp_mst, root = root_cell)
+  #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
   res <- assign_cell_state_helper(res, res$root)
+  
+  print(res$root)
+  V(res$subtree)[res$root]$parent = NA
+
   states <- V(res$subtree)[colnames(cds)]$cell_state
   
   cell_names <-  colnames(Pseudotime)
   cell_states <- states
   cell_pseudotime <- Pseudotime
+  cell_parents <- V(res$subtree)$parent
   
-  #add parents
-  diameter <- get.diameter(dp_mst)
-  root_cell_id <- which(names(diameter) == names(root_cell))
-  
-  #assign the parents for cells on the diameter path
-  if(root_cell_id == length(diameter)) {
-    V(dp_mst)[diameter[(length(diameter) - 1):1]]$parent = names(diameter[length(diameter):2])
-  }
-  else if(root_cell_id == 1) {
-    V(dp_mst)[diameter[2:(length(diameter))]]$parent = names(diameter[1:(length(diameter) - 1)])
-  }
-  
-  terminal_cells <- names(V(dp_mst)[which(degree(dp_mst, mode = 'total') == 1)])
-  terminal_cells <- setdiff(terminal_cells, names(root_cell))
-  #cell_parents <- rep(NA, vcount(dp_mst))
-
-  assign_progenitor_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell, diameter_node = names(get.diameter(ordering_tree_res))) {
-    nei <- NULL
-
-    parent <- names(V(ordering_tree_res) [ nei(curr_cell, mode="all") ])
-    parent <- setdiff(parent, visited_node)
-
-    message('curr_cell: ', curr_cell)
-    message('parent: ', parent)
-    
-    if(length(parent) < 1) {
-      return (ordering_tree_res)
-    }
-      
-    if (parent %in% diameter_node){
-        visited_node <- union(parent, visited_node)
-        V(ordering_tree_res)[curr_cell]$parent = parent
-
-        return (ordering_tree_res)
-    }else{
-        visited_node <- union(parent, visited_node)
-        V(ordering_tree_res)[curr_cell]$parent = parent
-
-        ordering_tree_res <- assign_progenitor_helper(ordering_tree_res, parent, visited_node, diameter_node)
-    }
-  }
-  
-  for(tip in terminal_cells) {
-    dp_mst <- assign_progenitor_helper(dp_mst, tip, tip, names(diameter))
-  }
-  
-#   if(is.null(root_cell))
-#     root_cell = terminal_cell_ids[1]
-
-  cell_parents <- V(dp_mst)$parent
-
   ordering_df <- data.frame(sample_name = cell_names,
                             cell_state = factor(cell_states),
-                            pseudo_time = cell_pseudotime,
+                            pseudo_time = as.vector(cell_pseudotime),
                             parent = cell_parents)
-  
+
   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
   return(ordering_df)
 }
@@ -566,18 +526,19 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 #' @param scale_pseudotime a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, scale_pseudotime = F){
-  adjusted_S <- t(cds@reducedDimS)
-  dp <- as.matrix(dist(adjusted_S))
-  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
-  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds) <- dp_mst
-  
-  if (is.null(root_cell)){
+orderCells <- function(cds, num_paths=1, root_state=NULL, scale_pseudotime = F){
+
+  if (is.null(root_state)){
     diameter <- get.diameter(minSpanningTree(cds))
-    root_cell = diameter[1]
-    print(root_cell)
+    root_cell = names(diameter[1])
+  }else{
+    # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
+    root_cell_candidates <- subset(pData(cds), State = root_state)
+    
+    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)])) == 1)
+      stop("An internal root_state ", root_state, " is not allowed, please select a terminal state to order cells")
+
+    root_cell <-row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
   }
   
   cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
@@ -701,26 +662,37 @@ reduceDimension <- function(cds,
 #   
    #rownames(ddrtree_res$Y) <- colnames(weights)
   colnames(ddrtree_res$Y) <- colnames(FM) 
+  colnames(ddrtree_res$Z) <- colnames(FM) 
   
-  #reducedDimW(cds) <- W
   #reducedDimA(cds) <- A
-  reducedDimS(cds) <- ddrtree_res$Y
+  reducedDimS(cds) <- ddrtree_res$Z
+  reducedDimK(cds) <- ddrtree_res$Y
   #reducedDimK(cds) <- init_ICA$K
   
-  # ddrtree_res$stree[lower.tri(ddrtree_res$stree)] = Matrix::t(ddrtree_res$stree)[lower.tri(ddrtree_res$stree)]
+  # Xiaojie, why did you change this? We should preserve this way.
+  #stree <- ddrtree_res$stree
+  #stree[lower.tri(stree)] = Matrix::t(stree)[lower.tri(stree)]
 
-  tmp <- as.matrix(ddrtree_res$stree)
-  stree <- tmp +  t(tmp) 
+  #tmp <- as.matrix(ddrtree_res$stree)
+  #stree <- tmp +  t(tmp) 
+  
   # stree <- as.matrix(stree)
   # stree[stree == T] <- 1
   # stree[stree == F] <- 0
 
   #stree[upper.tri(stree)] <- 0
-  dimnames(stree) <- list(colnames(FM), colnames(FM))
-  gp <- graph.adjacency(stree, mode = "undirected", diag = F, weighted = TRUE)
+  #dimnames(stree) <- list(colnames(FM), colnames(FM))
+  #gp <- graph.adjacency(stree, mode = "undirected", diag = F, weighted = TRUE)
 
+  adjusted_K <- t(reducedDimK(cds))
+  dp <- as.matrix(dist(adjusted_K))
+  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_K))
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  minSpanningTree(cds) <- dp_mst
+  
   # gp <- graph.adjacency(ddrtree_res$stree, mode="undirected", weighted=TRUE)
-  minSpanningTree(cds) <- gp
+  # minSpanningTree(cds) <- gp
   
   cds
 }

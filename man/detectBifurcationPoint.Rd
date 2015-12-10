@@ -10,7 +10,7 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
   relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
   useVST = FALSE, round_exprs = FALSE, pseudocount = 0,
-  output_type = c("all", "after_bifurcation"), return_cross_point = T,
+  output_type = "all", return_cross_point = T,
   file = "bifurcation_heatmap", verbose = FALSE, ...)
 }
 \arguments{
