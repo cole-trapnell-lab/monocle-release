@@ -70,6 +70,8 @@ lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"),
                        expressionFamily=negbinomial())
 
 lung <- estimateSizeFactors(lung)
+pData(lung)$Size_Factor <- lung_phenotype_data$Size_Factor
+
 lung <- estimateDispersions(lung)
 
 pData(lung)$Total_mRNAs <- colSums(exprs(lung))
@@ -92,6 +94,9 @@ head(BEAM_res)
 plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),], num_clusters = 4, 
       cores = detectCores(), use_gene_short_name = T, show_rownames = T)
 
+@ %def 
+
+<<lung_beam_kinetics, include=TRUE, eval=TRUE, fig.width = 5, fig.height = 3, fig.align="center", warning=FALSE>>=
 qval_sort <- sort(BEAM_res$qval, index.return = T)
 plot_genes_branched_pseudotime(lung[qval_sort$ix[1:4], ], add_pval = T, ncol = 2,
                                trajectory_color_by = 'Lineage', 
@@ -100,7 +105,6 @@ plot_genes_branched_pseudotime(lung[qval_sort$ix[1:4], ], add_pval = T, ncol = 2
                                bifurcation_time = BEAM_res$Bifurcation_time_point[qval_sort$ix[1:4]]
                                 )
 @ %def 
-
 
 \section{Introduction}
 

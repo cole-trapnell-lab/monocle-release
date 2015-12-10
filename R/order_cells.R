@@ -646,6 +646,12 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
+  FM <- t(scale(t(FM)))
+  FM <- FM[rowSds(FM) >0,]
+  if (nrow(FM) == 0){
+    stop("Error: all rows have standard deviation zero")
+  }
+  
   ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose)
   
 #   x_pca <- t(t(FM) %*% init_ICA$K)
