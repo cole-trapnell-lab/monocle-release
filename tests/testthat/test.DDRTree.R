@@ -104,7 +104,7 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree_cpp(X, verbose = T))
+DDRTree_res <- DDRTree_cpp(X, verbose = T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #HSMM tree:
@@ -127,9 +127,16 @@ plot_spanning_tree(Shalek_abs_subset_ko_LPS, color_by="interaction(experiment_na
 
 load('/Users/xqiu/Dropbox (Personal)/Infer_GRN/analysis_HSMM_data.RData')
 
-HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=T, pseudo_expr=0, fun="exp")
+HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=T, pseudo_expr=0)
 HSMM_myo <- orderCells(HSMM_myo, num_paths=1, root_state = NULL)
-plot_spanning_tree(HSMM_myo, color_by="Time)", cell_size=2) 
+plot_spanning_tree(HSMM_myo, color_by="Time", cell_size=2) 
+
+#all genes: 
+use_for_ordering_ori <- fData(HSMM_myo)$use_for_ordering
+fData(HSMM_myo)$use_for_ordering <- T
+HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, use_irlba=T, use_vst=T, pseudo_expr=0)
+HSMM_myo <- orderCells(HSMM_myo, num_paths=1, root_state = NULL)
+plot_spanning_tree(HSMM_myo, color_by="Time", cell_size=2) 
 
 #cell paper datasets: 
 MAP_cells_clusters <- readMat('/Users/xqiu/Dropbox (Personal)/bifurcation_path/simplePPT/data/MAP_cells_clusters.mat')
@@ -154,10 +161,11 @@ valid_subset_GSE72857_exprs <- newCellDataSet(as.matrix(valid_subset_GSE72857_ex
 valid_subset_GSE72857_exprs <- estimateSizeFactors(valid_subset_GSE72857_exprs)
 valid_subset_GSE72857_exprs <- estimateDispersions(valid_subset_GSE72857_exprs)
 
+options(expressions=500000)
 fData(valid_subset_GSE72857_exprs)$use_for_ordering <- T
 valid_subset_GSE72857_exprs <- reduceDimension(valid_subset_GSE72857_exprs, max_components = 2, use_irlba=T, use_vst=T)
 valid_subset_GSE72857_exprs <- orderCells(valid_subset_GSE72857_exprs, num_paths=1, root_state = NULL)
-plot_spanning_tree(HSMM_myo, color_by="Time)", cell_size=2) 
+plot_spanning_tree(valid_subset_GSE72857_exprs, color_by="clusters", cell_size=2) 
 
 })
 
