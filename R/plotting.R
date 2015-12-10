@@ -837,9 +837,8 @@ plot_genes_branched_pseudotime <- function (cds,
                                             nrow = NULL, 
                                             ncol = 1, 
                                             panel_order = NULL, 
-                                            color_by = "State",
                                             cell_color_by = "State",
-                                            trajectory_color_by = "State", 
+                                            trajectory_color_by = "Lineage", 
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
@@ -971,8 +970,12 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
 
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
-    if (is.null(color_by) == FALSE) {
-        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
+    if (!is.null(bifurcation_time)) {
+      q <- q + geom_vline(aes(xintercept = bifurcation_time),
+                          color = "black", linetype = "longdash")
+    }
+    if (is.null(cell_color_by) == FALSE) {
+        q <- q + geom_point(aes_string(color = cell_color_by), size = I(cell_size))
     }
     if (add_ABC)
         q <- q + scale_y_log10() + facet_wrap(~feature_label +

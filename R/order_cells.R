@@ -471,7 +471,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
 
-    children <- V(cell_tree) [ .nei(curr_cell, mode="all") ]$name 
+    children <- V(cell_tree) [ nei(curr_cell, mode="all") ]$name 
     children <- setdiff(children, V(cell_tree)[visited_node]$name)
 
     ordering_tree_res$subtree <- cell_tree
