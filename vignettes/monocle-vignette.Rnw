@@ -329,10 +329,12 @@ In most cases, however, we want to use all genes that are expressed above a reas
 
 <<select_ordering_cells, eval=TRUE>>=
 ordering_genes <- selectGenesInExpressionRange(HSMM_myo, 
-                                               min_expression_threshold=2,
+                                               min_expression_threshold=10,
                                                max_expression_threshold=Inf,
                                                detectionLimit=0.1, 
                                                stat_fun=function(x) { median(round(x)) })
+
+#ordering_genes <- expressed_genes
  
 @ %def
 
@@ -344,7 +346,7 @@ HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
 <<reduce_dimension, eval=TRUE>>=
-HSMM_myo <- reduceDimension(HSMM_myo)
+HSMM_myo <- reduceDimension(HSMM_myo, use_vst=T, pseudo_expr=0)
 @ %def
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
