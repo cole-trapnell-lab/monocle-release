@@ -382,9 +382,9 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_median <- median(f_expression[f_expression > 0])
-  if (is.null(expr_median) == FALSE) {
-    disp_guess_fit <- disp_func(expr_median)
+  expr_mean <- mean(f_expression[f_expression > 0])
+  if (is.null(expr_mean) == FALSE) {
+    disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)
     f_expression_var <- var(f_expression)
@@ -403,9 +403,9 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 # this function and calulate_NB_dispersion_hint
 calulate_QP_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_median <- median(f_expression[f_expression > 0])
-  if (is.null(expr_median) == FALSE) {
-    disp_guess_fit <- disp_func(expr_median)
+  expr_mean <- mean(f_expression[f_expression > 0])
+  if (is.null(expr_mean) == FALSE) {
+    disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)
     f_expression_var <- var(f_expression)
