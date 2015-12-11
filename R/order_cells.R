@@ -465,9 +465,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
     nei <- NULL
 
-    if(curr_cell == 'SRR1033901_0')
-      message('test')
-      
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
 
@@ -499,9 +496,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
   res <- assign_cell_state_helper(res, res$root)
   
-  print(res$root)
-  V(res$subtree)[res$root]$parent = NA
-
   states <- V(res$subtree)[colnames(cds)]$cell_state
   
   cell_names <-  colnames(Pseudotime)
@@ -535,7 +529,7 @@ orderCells <- function(cds, num_paths=1, root_state=NULL, scale_pseudotime = F){
     # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
     root_cell_candidates <- subset(pData(cds), State = root_state)
     
-    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)])) == 1)
+    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)]) == 1))
       stop("An internal root_state ", root_state, " is not allowed, please select a terminal state to order cells")
 
     root_cell <-row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
@@ -618,7 +612,6 @@ reduceDimension <- function(cds,
       VST_FM <- vstExprs(cds, round_vals=FALSE)
       if (is.null(VST_FM) == FALSE){
         FM <- VST_FM
-        FM <- FM[fData(cds)$use_for_ordering,]
       }else{
         stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
       }
@@ -652,7 +645,7 @@ reduceDimension <- function(cds,
     stop("Error: all rows have standard deviation zero")
   }
   
-  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose)
+  ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose, ...)
   
 #   x_pca <- t(t(FM) %*% init_ICA$K)
 #   W <- t(init_ICA$W)
@@ -715,6 +708,76 @@ reduceDimension <- function(cds,
 #' 
 assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F, verbose = F) {
 
+}
+
+#make the projection: 
+#' @export
+Project2MST <- function(cds){
+  dp_mst <- minSpanningTree(cds)
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
+  
+  #find the closest vertex: 
+  
+  #find segements from this vertex
+  
+  #find the shortest distance among all the segements 
+  
+  #build a mst from the projected data 
+  
+  closest_vertex <- apply(Z, 2, function(Z_i){
+    Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
+    which(Z_i_dist == min(Z_i_dist))
+  })
+  
+  P <- matrix(rep(0, length(Y)), nrow = 2)
+  cnt <- 1
+  for(i in names(closest_vertex)) {
+    neighbors <- names(V(dp_mst) [ nei(i, mode="all") ]) 
+    projection <- NULL
+    distance <- NULL 
+    Z_i <- Z[, i]
+    for(neighbor in neighbors) {
+      tmp <- projPointOnLine(Z_i, Y[, c(i, neighbor)])
+      projection <- rbind(projection, tmp)
+      distance <- c(distance, dist(rbind(Z_i, tmp)))
+    }
+    if(class(projection) != 'matrix')
+      projection <- as.matrix(projection)
+    P[, cnt] <- projection[which(distance == min(distance)), ]
+    cnt <- cnt + 1
+  }
+  
+  colnames(P) <- colnames(cds)
+  reducedDimK(cds) <- P
+  print(P[, 1:5])
+  dp <- as.matrix(dist(t(P)))
+  print(dp)
+  cellPairwiseDistances(cds) <- as.matrix(dist(P))
+  print(dp)
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  minSpanningTree(cds) <- dp_mst
+  print(dp_mst)
+  cds
+}
+
+#project points to a line
+projPointOnLine <- function(point, line){
+  vx = line[2, 1]
+  vy = line[2, 2]
+  
+  # difference of point with line origin
+  dx = point[1] - line[1,1]
+  dy = point[2] - line[1,2]
+  
+  # Position of projection on line, using dot product
+  tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
+  
+  # convert position on line to cartesian coordinates
+  point = c(line[1,1] + tp * vx, line[1,2] + tp * vy)
+  
+  return(point)
 }
 
 
