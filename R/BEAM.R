@@ -25,19 +25,23 @@ buildLineageBranchCellDataSet <- function(cds,
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
   
-  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+  all_lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
   
-  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
   ancestor_cells <- c()
   
-  while (1) {
-    ancestor_cells <- c(ancestor_cells, curr_cell)
-    if (is.na(pData(cds[,curr_cell])$Parent))
-      break
-    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+  for (leaf_state in lineage_states){
+    lineage_cells <- subset(pData(cds), leaf_state == State)
+    curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
+    
+    while (1) {
+      ancestor_cells <- c(ancestor_cells, curr_cell)
+      if (is.na(pData(cds[,curr_cell])$Parent))
+        break
+      curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+    }
   }
-  
-  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
+ 
+  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, all_lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
     
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
