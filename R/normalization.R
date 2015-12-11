@@ -272,9 +272,9 @@ estimate_t <- function(relative_expr_matrix, return_all = F, relative_expr_thres
 #' to convert the FPKM to estimated absolute transcript counts based on the the k^* and b^*. The default m/c values used in the algoritm are 3.652201, 2.263576, respectively.
 #' 
 #' @param relative_cds the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included
-#' @param modelFormulaStr modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.
 #' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 #' based on isoform FPKM will give better results in general
+#' @param modelFormulaStr modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.
 #' @param m the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)
 #' @param c the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).  
 #' @param m_rng the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1
@@ -303,8 +303,8 @@ estimate_t <- function(relative_expr_matrix, return_all = F, relative_expr_thres
 #'}
 
 relative2abs <- function(relative_cds, 
-  modelFormulaStr = "~1", 
   t_estimate = estimate_t(exprs(relative_cds)),
+  modelFormulaStr = "~1", 
   m = -3.652201, 
   c = 2.263576, 
   m_rng = c(-10, -0.1), 
