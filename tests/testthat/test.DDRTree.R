@@ -24,7 +24,7 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree(X = X, params = params, T)
+DDRTree_res <- DDRTree_cpp(X = X,  lambda = 2435, verbose = T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #cpp implementation
@@ -46,7 +46,7 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree(X = X, params = params, T)
+DDRTree_res <- DDRTree_cpp(X = X,  lambda = 2435, verbose = T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #lung tree:
@@ -64,7 +64,7 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 2435, sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree_cpp(X = X, lambda = 2435, T)
+DDRTree_res <- DDRTree_cpp(X = X,  lambda = 2435, verbose = T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #golgi tree:
@@ -82,7 +82,7 @@ X <- t(X)
 pca_res <- pca_projection(X[, ] %*% t(X [, ]), 2)
 sqdist_res <- sqdist(X, X)
 params <- list(maxIter = 20, eps = 1e-3, dim = 2, lambda = 5 * ncol(X), sigma = 1e-3, gamma = 10)
-DDRTree_res <- DDRTree(X = X, params = params, T)
+DDRTree_res <- DDRTree_cpp(X = X,  lambda = 2435, verbose = T)
 qplot(x = DDRTree_res$Y[1, ], y = DDRTree_res$Y[2, ])
 
 #cell tree:
@@ -119,8 +119,33 @@ Shalek_golgi_update <- orderCells(Shalek_golgi_update, num_paths=2, root_state =
 plot_spanning_tree(Shalek_golgi_update, color_by="interaction(experiment_name, time)", cell_size=2) + 
   scale_color_manual(values=shalek_custom_color_scale_plus_states)
 
+#select gene in range: 
+Shalek_golgi_update_use_for_ordering_ori <- fData(Shalek_golgi_update)$use_for_ordering
 
-Shalek_abs_subset_ko_LPS <- reduceDimension(Shalek_abs_subset_ko_LPS, max_components = 2, use_vst = T, use_irlba=F, pseudo_expr = 0, covariates = as.vector(pData(Shalek_abs_subset_ko_LPS)$num_genes_expressed) )
+genes_in_range <- selectGenesInExpressionRange(Shalek_golgi_update[expressed_genes,], 2, Inf, 0.1, stat_fun=function(x) { median(round(x)) })
+Shalek_golgi_update <- setOrderingFilter(Shalek_golgi_update, genes_in_range)
+
+Shalek_golgi_update <- reduceDimension(Shalek_golgi_update, max_components = 2, use_vst = T, use_irlba=F, pseudo_expr = 0, maxIter = 100, tol = 0.00001, 
+                                       covariates = as.vector(pData(Shalek_golgi_update)$num_genes_expressed), verbose = T)
+Shalek_golgi_update <- orderCells(Shalek_golgi_update, num_paths=2, root_state = NULL)
+plot_spanning_tree(Shalek_golgi_update, color_by="interaction(experiment_name, time)", cell_size=2) + 
+  scale_color_manual(values=shalek_custom_color_scale_plus_states)
+
+########
+Shalek_abs_subset_ko_LPS <- reduceDimension(Shalek_abs_subset_ko_LPS, max_components = 2, use_vst = T, use_irlba=F, pseudo_expr = 0, 
+                                            covariates = as.vector(pData(Shalek_abs_subset_ko_LPS)$num_genes_expressed) )
+Shalek_abs_subset_ko_LPS <- orderCells(Shalek_abs_subset_ko_LPS, num_paths=2, root_state = NULL)
+plot_spanning_tree(Shalek_abs_subset_ko_LPS, color_by="interaction(experiment_name, time)", cell_size=2) + 
+  scale_color_manual(values=shalek_custom_color_scale_plus_states)
+
+#select gene in range: 
+Shalek_golgi_update_use_for_ordering_ori <- fData(Shalek_abs_subset_ko_LPS)$use_for_ordering
+
+genes_in_range <- selectGenesInExpressionRange(Shalek_abs_subset_ko_LPS[expressed_genes,], 2, Inf, 0.1, stat_fun=function(x) { median(round(x)) })
+Shalek_abs_subset_ko_LPS <- setOrderingFilter(Shalek_abs_subset_ko_LPS, genes_in_range)
+
+fData(Shalek_abs_subset_ko_LPS)$use_for_ordering <- T
+Shalek_abs_subset_ko_LPS <- reduceDimension(Shalek_abs_subset_ko_LPS, max_components = 2, use_vst = T, use_irlba=F, pseudo_expr = 0, covariates = as.vector(pData(Shalek_abs_subset_ko_LPS)$num_genes_expressed), verbose = T)
 Shalek_abs_subset_ko_LPS <- orderCells(Shalek_abs_subset_ko_LPS, num_paths=2, root_state = NULL)
 plot_spanning_tree(Shalek_abs_subset_ko_LPS, color_by="interaction(experiment_name, time)", cell_size=2) + 
   scale_color_manual(values=shalek_custom_color_scale_plus_states)

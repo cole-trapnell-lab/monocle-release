@@ -529,7 +529,7 @@ orderCells <- function(cds, num_paths=1, root_state=NULL, scale_pseudotime = F){
     # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
     root_cell_candidates <- subset(pData(cds), State = root_state)
     
-    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)])) == 1)
+    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)]) == 1))
       stop("An internal root_state ", root_state, " is not allowed, please select a terminal state to order cells")
 
     root_cell <-row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
@@ -709,5 +709,52 @@ reduceDimension <- function(cds,
 assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F, verbose = F) {
 
 }
+
+#make the projection: 
+Project2MST <- function(cds){
+  dp_mst <- minSpanningTree(cds)
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
+  
+  #find the closest vertex: 
+  
+  #find segements from this vertex
+  
+  #find the shortest distance among all the segements 
+  
+  #build a mst from the projected data 
+  
+  closest_vertex <- apply(Z, 2, function(Z_i){
+    Z_i_dist <- apply(Y, 2, function(Y_i) {dist(t(cbind(Y_i, Z_i)))})
+    which(Z_i_dist == min(Z_i_dist))
+  })
+  
+  for(i in names(closest_vertex)) {
+    neighbors <- names(V(dp_mst) [ .nei(i, mode="all") ]) 
+    for(neighbor in neighbors) {
+      projPointOnLine(Z[, i], Y[, neighbor])
+    }
+  }
+  
+}
+
+#project points to a line
+projPointOnLine <- function(point, line){
+  vx = line[, 3]
+  vy = line[, 4]
+  
+  # difference of point with line origin
+  dx = point[,1] - line[,1]
+  dy = point[,2] - line[,2]
+  
+  # Position of projection on line, using dot product
+  tp = (dx * vx + dy * vy ) ./ (vx * vx + vy * vy)
+  
+  # convert position on line to cartesian coordinates
+  point = c(line[,1] + tp * vx, line[,2] + tp * vy)
+  
+  return(point)
+}
+
 
 

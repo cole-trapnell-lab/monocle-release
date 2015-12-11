@@ -11,7 +11,6 @@ monocle_theme_opts <- function()
     theme(panel.background = element_rect(fill='white'))
 }
 
-
 #' Plots the minimum spanning tree on cells.
 #'
 #' @param cds CellDataSet for the experiment
@@ -24,7 +23,6 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_name_size the size of cell name labels
-#' @param show_all_lineages draw all the bifurcation trajectories with thick pathes
 #' @return a ggplot2 plot object
 #' @importFrom grid unit
 #' @import ggplot2
@@ -48,15 +46,16 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2,
-                               show_all_lineages = F){
+                               cell_name_size=2){
   gene_short_name <- NULL
   sample_name <- NULL
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
-
+  
+  
   #print (lib_info_with_pseudo)
+
   #S_matrix <- reducedDimS(cds)
   K_matrix <- reducedDimK(cds)
   
@@ -71,16 +70,17 @@ plot_spanning_tree <- function(cds,
   ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
- 
+  
   if (is.null(dp_mst)){
     stop("You must first call orderCells() before using this function")
   }
   
+  
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
-
-  edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
   
+  edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
   edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
@@ -92,7 +92,6 @@ plot_spanning_tree <- function(cds,
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   
   #data_df <- plyr::rename(data_df, c("data_dim_1"="source_data_dim_1", "data_dim_2"="source_data_dim_2"))
-
   
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
@@ -133,6 +132,8 @@ plot_spanning_tree <- function(cds,
     theme(panel.background = element_rect(fill='white'))
   g
 }
+
+
 
 #' Plots expression for one or more genes as a jittered, grouped points
 #'
@@ -1463,13 +1464,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              filename=NA
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
-    #dev.off()
 
-    #if (is.na(filename) & !silent) {
-    #grid.newpage()
     grid::grid.rect(gp=grid::gpar("fill"))
     grid::grid.draw(ph_res$gtable)
-    #}
-    #return (ph_res)
-    #return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col))
 }
