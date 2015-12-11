@@ -711,6 +711,7 @@ assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F
 }
 
 #make the projection: 
+#' @export
 Project2MST <- function(cds){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
@@ -725,36 +726,58 @@ Project2MST <- function(cds){
   #build a mst from the projected data 
   
   closest_vertex <- apply(Z, 2, function(Z_i){
-    Z_i_dist <- apply(Y, 2, function(Y_i) {dist(t(cbind(Y_i, Z_i)))})
+    Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
     which(Z_i_dist == min(Z_i_dist))
   })
   
+  P <- matrix(rep(0, length(Y)), nrow = 2)
+  cnt <- 1
   for(i in names(closest_vertex)) {
-    neighbors <- names(V(dp_mst) [ .nei(i, mode="all") ]) 
+    neighbors <- names(V(dp_mst) [ nei(i, mode="all") ]) 
+    projection <- NULL
+    distance <- NULL 
+    Z_i <- Z[, i]
     for(neighbor in neighbors) {
-      projPointOnLine(Z[, i], Y[, neighbor])
+      tmp <- projPointOnLine(Z_i, Y[, c(i, neighbor)])
+      projection <- rbind(projection, tmp)
+      distance <- c(distance, dist(rbind(Z_i, tmp)))
     }
+    if(class(projection) != 'matrix')
+      projection <- as.matrix(projection)
+    P[, cnt] <- projection[which(distance == min(distance)), ]
+    cnt <- cnt + 1
   }
   
+  colnames(P) <- colnames(cds)
+  reducedDimK(cds) <- P
+  print(P[, 1:5])
+  dp <- as.matrix(dist(t(P)))
+  print(dp)
+  cellPairwiseDistances(cds) <- as.matrix(dist(P))
+  print(dp)
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  minSpanningTree(cds) <- dp_mst
+  print(dp_mst)
+  cds
 }
 
 #project points to a line
 projPointOnLine <- function(point, line){
-  vx = line[, 3]
-  vy = line[, 4]
+  vx = line[2, 1]
+  vy = line[2, 2]
   
   # difference of point with line origin
-  dx = point[,1] - line[,1]
-  dy = point[,2] - line[,2]
+  dx = point[1] - line[1,1]
+  dy = point[2] - line[1,2]
   
   # Position of projection on line, using dot product
-  tp = (dx * vx + dy * vy ) ./ (vx * vx + vy * vy)
+  tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
   
   # convert position on line to cartesian coordinates
-  point = c(line[,1] + tp * vx, line[,2] + tp * vy)
+  point = c(line[1,1] + tp * vx, line[1,2] + tp * vy)
   
   return(point)
 }
-
 
 
