@@ -38,6 +38,7 @@ test_that("BEAM() reports valid branch test results for markers in lung dataset"
 	BEAM_res <- BEAM(lung)
 
 	expect_false(is.null(lung))
+
 	expect_equal(colnames(BEAM_res)[1:4], c("status", "family", "pval", "qval"))
 
 	# test the branchTest

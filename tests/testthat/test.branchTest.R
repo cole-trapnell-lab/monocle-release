@@ -40,4 +40,16 @@ test_that("branchTest() report valid branch test results for markers in lung dat
 	expect_equal(colnames(branchTest_res)[1:4], c("status", "family", "pval", "qval"))
 
 	expect_equal(sum(branchTest_res$qval < 0.01), 131)
+	
+	#test with different parameters
+	branchTest_res <- branchTest(lung, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
+	                             reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
+	                             lineage_states =  c(2, 3), 
+	                             relative_expr = F,
+	                             stretch = F,
+	                             pseudocount = 1,
+	                             cores = detectCores(), 
+	                             weighted = F, 
+	                             lineage_labels = c('AT2', 'AT1'))
+	
 })
