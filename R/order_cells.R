@@ -491,7 +491,6 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
     return (ordering_tree_res)
   }
 
-  
   res <- list(subtree = dp_mst, root = root_cell)
   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
   res <- assign_cell_state_helper(res, res$root)
@@ -507,7 +506,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
                             cell_state = factor(cell_states),
                             pseudo_time = as.vector(cell_pseudotime),
                             parent = cell_parents)
-
+  row.names(ordering_df) <- ordering_df$sample_name
   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
   return(ordering_df)
 }
@@ -541,6 +540,11 @@ orderCells <- function(cds, num_paths=1, root_state=NULL, scale_pseudotime = F){
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
   pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
   pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+  cds <- Project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+  cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
+  pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
+  pData(cds)$State <- cc_ordering[cds@reducedDimW[, 1],]$cell_state #assign the state to the states from the closet vertex
   
   if(scale_pseudotime) {
       cds <- scale_pseudotime(cds)
@@ -712,11 +716,12 @@ assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F
 
 #make the projection: 
 #' @export
-Project2MST <- function(cds){
+Project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
   
+  tip_leaves <- names(which(degree(dp_mst) == 1))
   #find the closest vertex: 
   
   #find segements from this vertex
@@ -727,59 +732,105 @@ Project2MST <- function(cds){
   
   closest_vertex <- apply(Z, 2, function(Z_i){
     Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
-    which(Z_i_dist == min(Z_i_dist))
+    which(Z_i_dist == min(Z_i_dist))[1]
   })
   
-  P <- Y[, closest_vertex]
-  print(P)
-#   P <- matrix(rep(0, length(Y)), nrow = 2)
-#   cnt <- 1
-#   for(i in names(closest_vertex)) {
-#     neighbors <- names(V(dp_mst) [ nei(i, mode="all") ]) 
-#     projection <- NULL
-#     distance <- NULL 
-#     Z_i <- Z[, i]
-#     for(neighbor in neighbors) {
-#       tmp <- projPointOnLine(Z_i, Y[, c(i, neighbor)])
-#       projection <- rbind(projection, tmp)
-#       distance <- c(distance, dist(rbind(Z_i, tmp)))
-#     }
-#     if(class(projection) != 'matrix')
-#       projection <- as.matrix(projection)
-#     P[, cnt] <- projection[which(distance == min(distance)), ]
-#     cnt <- cnt + 1
-#   }
-  
-  colnames(P) <- colnames(cds)
+  closest_vertex <- as.vector(closest_vertex)
+  closest_vertex_names <- colnames(Y)[closest_vertex]
+  if(!is.function(projPointOnLine)) {
+    P <- Y[, closest_vertex]
+  }
+  else{
+    P <- matrix(rep(0, length(Y)), nrow = 2)
+    for(i in 1:length(closest_vertex)) {
+      neighbors <- names(V(dp_mst) [ .nei(closest_vertex_names[i], mode="all") ]) 
+      projection <- NULL
+      distance <- NULL 
+      Z_i <- Z[, i]
+     
+      for(neighbor in neighbors) {
+        if(closest_vertex_names[i] %in% tip_leaves) {
+          tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #update the tip cells? 
+        }
+        else {
+          tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])
+        }
+          projection <- rbind(projection, tmp)
+          distance <- c(distance, dist(rbind(Z_i, tmp)))
+      
+        if(class(projection) != 'matrix')
+          projection <- as.matrix(projection)
+        P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
+      }
+    }
+  }
+    
+  colnames(P) <- colnames(Z)
+
   reducedDimK(cds) <- P
-  print(P[, 1:5])
   dp <- as.matrix(dist(t(P)))
-  print(dp)
-  cellPairwiseDistances(cds) <- as.matrix(dist(P))
-  print(dp)
+  cellPairwiseDistances(cds) <- dp
   gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
   dp_mst <- minimum.spanning.tree(gp)
   minSpanningTree(cds) <- dp_mst
-  print(dp_mst)
+  reducedDimA(cds) <- P
+  reducedDimW(cds) <- as.matrix(closest_vertex)
   cds
 }
 
 #project points to a line
 projPointOnLine <- function(point, line){
-  vx = line[2, 1]
+  vx = line[1, 2]
   vy = line[2, 2]
   
   # difference of point with line origin
   dx = point[1] - line[1,1]
-  dy = point[2] - line[1,2]
+  dy = point[2] - line[2,1]
   
   # Position of projection on line, using dot product
   tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
   
   # convert position on line to cartesian coordinates
-  point = c(line[1,1] + tp * vx, line[1,2] + tp * vy)
+  point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
   
   return(point)
 }
 
+#' Project point to line segment
+#' @export
+project_point_to_line_segment <- function(p, df){
+  # returns q the closest point to p on the line segment from A to B 
+  A <- df[, 1]
+  B <- df[, 2]
+  # vector from A to B
+  AB <- (B-A)
+  # squared distance from A to B
+  AB_squared = sum(AB^2)
+  if(AB_squared == 0) {
+    # A and B are the same point
+    q <- A
+  }
+  else {
+    # vector from A to p
+    Ap <- (p-A)
+    # from http://stackoverflow.com/questions/849211/
+    # Consider the line extending the segment, parameterized as A + t (B - A)
+    # We find projection of point p onto the line. 
+    # It falls where t = [(p-A) . (B-A)] / |B-A|^2
+    t <- sum(Ap * AB) / AB_squared
+    if (t < 0.0) {
+      # "Before" A on the line, just return A
+      q <- A
+    }
+    else if (t > 1.0) {
+      # "After" B on the line, just return B
+      q <- B
+    }
+    else {
+      # projection lines "inbetween" A and B on the line
+      q <- A + t * AB#
+    }
+  }
+  return(q)
+}
 

@@ -25,19 +25,23 @@ buildLineageBranchCellDataSet <- function(cds,
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
   
-  lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+  all_lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
   
-  curr_cell <- setdiff(pData(cds[,lineage_cells])$Parent, lineage_cells)
   ancestor_cells <- c()
   
-  while (1) {
-    ancestor_cells <- c(ancestor_cells, curr_cell)
-    if (is.na(pData(cds[,curr_cell])$Parent))
-      break
-    curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+  for (leaf_state in lineage_states){
+    lineage_cells <- subset(pData(cds), leaf_state == State)
+    curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
+    
+    while (1) {
+      ancestor_cells <- c(ancestor_cells, curr_cell)
+      if (is.na(pData(cds[,curr_cell])$Parent))
+        break
+      curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+    }
   }
-  
-  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
+ 
+  cds <- cds[, row.names(pData(cds[,union(ancestor_cells, all_lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)
     
   State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
@@ -213,7 +217,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
-calABCs <- function(cds, trajectory_type = "Lineage", 
+calABCs <- function(cds,
                     trajectory_states = c(2, 3),
                     branchTest = FALSE, 
                     relative_expr = TRUE, 
@@ -232,35 +236,24 @@ calABCs <- function(cds, trajectory_type = "Lineage",
   if (length(trajectory_states) != 2)
     stop("Sorry, this function only supports the calculation of ABCs between TWO lineage trajectories")
   
-  if(trajectory_type == "Lineage") {
+  
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
                                                 lineage_labels = lineage_labels, stretch = stretch,
                                                 weighted = weighted, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
-  }
-  else{
-    pd <- pData(cds)
-    range_df <- ddply(pd, .(get(trajectory_type)), function(x) {
-      range(x$Pseudotime)
-    })
-    
-    overlap_rng <- c(max(range_df[, 2]), min(range_df[, 3])) #calculate the overlapping pseudotime range
-    # cds <- cds[, row.names(subset(pd, Pseudotime > overlap_rng[1] & Pseudotime < overlap_rng[2]))]
-    cds_subset <- cds
-  }
-  if (trajectory_type != "Lineage")
-    warning("Warning: You didn't choose Lineage to calculate the ILRs")
+ 
+ 
   if (length(trajectory_states) != 2)
     stop("calILRs can only work for two Lineages")
-  if(!all(trajectory_states %in% pData(cds_subset)[, trajectory_type]))
-    stop("state(s) in trajectory_states are not included in trajectory_type")
+  if(!all(trajectory_states %in% pData(cds_subset)[, "Lineage"]))
+    stop("state(s) in trajectory_states are not included in 'Lineage'")
   
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
-  cds_branchA <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+  cds_branchA <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[1]]
-  cds_branchB <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+  cds_branchB <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[2]]
   
   #use the genSmoothCurves to generate smooth curves for calculating the ABC scores:
@@ -365,7 +358,6 @@ calABCs <- function(cds, trajectory_type = "Lineage",
 #' @export 
 #' 
 calILRs <- function (cds, 
-          trajectory_type = "Lineage", 
           trajectory_states = c(2, 3), 
           lineage_labels = NULL, 
           stretch = T, 
@@ -383,35 +375,25 @@ calILRs <- function (cds,
           return_all = F, 
           verbose = FALSE, ...){
   
-  if(trajectory_type == "Lineage") {
+ 
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, #lineage_states = trajectory_states,
                                                 lineage_labels = lineage_labels, stretch = stretch,
                                                 weighted = weighted, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
-  }
-  else{
-    pd <- pData(cds)
-    range_df <- ddply(pd, .(get(trajectory_type)), function(x) {
-      range(x$Pseudotime)
-    })
-    
-    overlap_rng <- c(max(range_df[, 2]), min(range_df[, 3])) #calculate the overlapping pseudotime range
-    # cds <- cds[, row.names(subset(pd, Pseudotime > overlap_rng[1] & Pseudotime < overlap_rng[2]))]
-    cds_subset <- cds
-  }
-  if (trajectory_type != "Lineage")
-    warning("Warning: You didn't choose Lineage to calculate the ILRs")
+  
+
   if (length(trajectory_states) != 2)
     stop("calILRs can only work for two Lineages")
-  if(!all(trajectory_states %in% pData(cds_subset)[, trajectory_type]))
-    stop("state(s) in trajectory_states are not included in trajectory_type")
-  
+  if(!all(trajectory_states %in% pData(cds_subset)[, "Lineage"]))
+      stop("state(s) in trajectory_states are not included in 'Lineage'")
+    
+    
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
-  cds_branchA <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+  cds_branchA <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[1]]
-  cds_branchB <- cds_subset[, pData(cds_subset)[, trajectory_type] ==
+  cds_branchB <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[2]]
   
   formula_all_variables <- all.vars(as.formula(trend_formula))
@@ -655,59 +637,41 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	                       lineage_labels = lineage_labels, ...)
 	cmbn_df <- branchTest_res[, 1:4] 
 
-# 	if(calABC) {
-# 		ABCs_res <- calABCs(cds, trajectory_type = "Lineage", 
-# 						  trajectory_states = lineage_states,
-# 						  branchTest = FALSE, 
-# 						  relative_expr = relative_expr, 
-# 						  trend_formula = fullModelFormulaStr,
-# 						  stretch = stretch, 
-# 						  pseudocount = pseudocount, 
-# 						  cores = cores, 
-# 						  weighted = weighted, 
-# 						  lineage_labels = lineage_labels,
-# 						  ...)
-# 
-# 		cmbn_df <- cbind(cmbn_df, ABCs_res[, 1])
-# 	}
-
-
   #make a newCellDataSet object with the smoothed data? 
 	if(verbose)
    message('pass branchTest')
-
-  ILRs_res <- calILRs(cds = cds, 
-  			  trajectory_type = "Lineage", 
-  			  trajectory_states = lineage_states, 
-  			  lineage_labels = lineage_labels, 
-  			  stretch = stretch, 
-  			  cores = cores, 
-  			  trend_formula = fullModelFormulaStr,
-  			  ILRs_limit = 3, 
-  			  relative_expr = relative_expr, 
-  			  weighted = weighted, 
-  			  pseudocount = pseudocount, 
-  			  return_all = T,
-  			  ...)
-
-  # if(verbose)
-  #  message('pass calILRs')
-  
-  BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
-    lineage_states = lineage_states, 
-    stretch = stretch, 
-    cores = cores, 
-    trend_formula = fullModelFormulaStr, 
-    relative_expr = relative_expr, 
-    weighted = weighted, 
-    pseudocount = pseudocount, 
-  	...)
-  
-  if(verbose)
-   message('pass detectBifurcationPoint')
-  # print('pass detectBifurcationPoint')
-  
-  cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
+# 
+#   ILRs_res <- calILRs(cds = cds, 
+#   			  trajectory_states = lineage_states, 
+#   			  lineage_labels = lineage_labels, 
+#   			  stretch = stretch, 
+#   			  cores = cores, 
+#   			  trend_formula = fullModelFormulaStr,
+#   			  ILRs_limit = 3, 
+#   			  relative_expr = relative_expr, 
+#   			  weighted = weighted, 
+#   			  pseudocount = pseudocount, 
+#   			  return_all = T,
+#   			  ...)
+# 
+#   # if(verbose)
+#   #  message('pass calILRs')
+#   
+#   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
+#     lineage_states = lineage_states, 
+#     stretch = stretch, 
+#     cores = cores, 
+#     trend_formula = fullModelFormulaStr, 
+#     relative_expr = relative_expr, 
+#     weighted = weighted, 
+#     pseudocount = pseudocount, 
+#   	...)
+#   
+#   if(verbose)
+#    message('pass detectBifurcationPoint')
+#   # print('pass detectBifurcationPoint')
+#   
+#   cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	# if(draw_branched_kinetics) {
 	# 	plot_genes_branched_pseudotime(cds, 
@@ -768,7 +732,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	fd <- fData(cds)
 
 	#combined dataframe: 
-
 	cmbn_df <- cbind(cmbn_df, fd)
 
   if(verbose)

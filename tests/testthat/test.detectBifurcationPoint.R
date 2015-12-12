@@ -36,7 +36,6 @@ test_that("detectBifurcationPoint() reports the bifurcation time point detected 
 
 	#make a newCellDataSet object with the smoothed data? 
 	ILRs_res <- calILRs(cds = lung, 
-				  trajectory_type = "Lineage", 
 				  trajectory_states = c(2, 3), 
 				  lineage_labels = NULL, 
 				  stretch = T, 
