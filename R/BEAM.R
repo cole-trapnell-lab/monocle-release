@@ -640,38 +640,38 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   #make a newCellDataSet object with the smoothed data? 
 	if(verbose)
    message('pass branchTest')
-
-  ILRs_res <- calILRs(cds = cds, 
-  			  trajectory_states = lineage_states, 
-  			  lineage_labels = lineage_labels, 
-  			  stretch = stretch, 
-  			  cores = cores, 
-  			  trend_formula = fullModelFormulaStr,
-  			  ILRs_limit = 3, 
-  			  relative_expr = relative_expr, 
-  			  weighted = weighted, 
-  			  pseudocount = pseudocount, 
-  			  return_all = T,
-  			  ...)
-
-  # if(verbose)
-  #  message('pass calILRs')
-  
-  BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
-    lineage_states = lineage_states, 
-    stretch = stretch, 
-    cores = cores, 
-    trend_formula = fullModelFormulaStr, 
-    relative_expr = relative_expr, 
-    weighted = weighted, 
-    pseudocount = pseudocount, 
-  	...)
-  
-  if(verbose)
-   message('pass detectBifurcationPoint')
-  # print('pass detectBifurcationPoint')
-  
-  cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
+# 
+#   ILRs_res <- calILRs(cds = cds, 
+#   			  trajectory_states = lineage_states, 
+#   			  lineage_labels = lineage_labels, 
+#   			  stretch = stretch, 
+#   			  cores = cores, 
+#   			  trend_formula = fullModelFormulaStr,
+#   			  ILRs_limit = 3, 
+#   			  relative_expr = relative_expr, 
+#   			  weighted = weighted, 
+#   			  pseudocount = pseudocount, 
+#   			  return_all = T,
+#   			  ...)
+# 
+#   # if(verbose)
+#   #  message('pass calILRs')
+#   
+#   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
+#     lineage_states = lineage_states, 
+#     stretch = stretch, 
+#     cores = cores, 
+#     trend_formula = fullModelFormulaStr, 
+#     relative_expr = relative_expr, 
+#     weighted = weighted, 
+#     pseudocount = pseudocount, 
+#   	...)
+#   
+#   if(verbose)
+#    message('pass detectBifurcationPoint')
+#   # print('pass detectBifurcationPoint')
+#   
+#   cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	# if(draw_branched_kinetics) {
 	# 	plot_genes_branched_pseudotime(cds, 
