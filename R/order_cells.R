@@ -730,23 +730,25 @@ Project2MST <- function(cds){
     which(Z_i_dist == min(Z_i_dist))
   })
   
-  P <- matrix(rep(0, length(Y)), nrow = 2)
-  cnt <- 1
-  for(i in names(closest_vertex)) {
-    neighbors <- names(V(dp_mst) [ nei(i, mode="all") ]) 
-    projection <- NULL
-    distance <- NULL 
-    Z_i <- Z[, i]
-    for(neighbor in neighbors) {
-      tmp <- projPointOnLine(Z_i, Y[, c(i, neighbor)])
-      projection <- rbind(projection, tmp)
-      distance <- c(distance, dist(rbind(Z_i, tmp)))
-    }
-    if(class(projection) != 'matrix')
-      projection <- as.matrix(projection)
-    P[, cnt] <- projection[which(distance == min(distance)), ]
-    cnt <- cnt + 1
-  }
+  P <- Y[, closest_vertex]
+  print(P)
+#   P <- matrix(rep(0, length(Y)), nrow = 2)
+#   cnt <- 1
+#   for(i in names(closest_vertex)) {
+#     neighbors <- names(V(dp_mst) [ nei(i, mode="all") ]) 
+#     projection <- NULL
+#     distance <- NULL 
+#     Z_i <- Z[, i]
+#     for(neighbor in neighbors) {
+#       tmp <- projPointOnLine(Z_i, Y[, c(i, neighbor)])
+#       projection <- rbind(projection, tmp)
+#       distance <- c(distance, dist(rbind(Z_i, tmp)))
+#     }
+#     if(class(projection) != 'matrix')
+#       projection <- as.matrix(projection)
+#     P[, cnt] <- projection[which(distance == min(distance)), ]
+#     cnt <- cnt + 1
+#   }
   
   colnames(P) <- colnames(cds)
   reducedDimK(cds) <- P
