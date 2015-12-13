@@ -3,7 +3,7 @@
 #' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object which an
 #' @export
-scale_pseudotime <- function(cds) {
+scale_pseudotime <- function(cds, verbose = F) {
     pd <- pData(cds)
     pd$Cell_name <- row.names(pd)
     range_df <- plyr::ddply(pd, .(State), function(x) {
@@ -50,7 +50,8 @@ scale_pseudotime <- function(cds) {
         #scale the pseudotime between the parent cell of the first cell to the last cell on the remaing branch
         # print(path_vertex)
         min_cell_name <- row.names(subset(pd_subset, Pseudotime == min(Pseudotime)))
-        print(min_cell_name)
+        # print(min_cell_name)
+
         if(!is.na(pd[min_cell_name, 'Parent'])) {
             parent_min_cell <- as.character(pd[min_cell_name, 'Parent'])
             subset_min_pseudo <- pd[parent_min_cell, 'Pseudotime']
@@ -63,9 +64,13 @@ scale_pseudotime <- function(cds) {
             scaling_factor <- 100 / c(max(pd_subset$Pseudotime) - min(pd_subset$Pseudotime))
         }
         
-        scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
-        message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
-        pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
+        pseudotime_scaled <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
+
+        if(verbose)
+          message(i, '\t', range(pseudotime_scaled)[1],'\t', range(pseudotime_scaled)[2])
+        
+        pd[row.names(pd_subset), 'ori_pseudotime'] <- pd[row.names(pd_subset), 'Pseudotime']
+        pd[row.names(pd_subset), 'Pseudotime'] <- pseudotime_scaled
     }	
     
     pData(cds) <- pd

@@ -32,7 +32,9 @@ buildLineageBranchCellDataSet <- function(cds,
   for (leaf_state in lineage_states){
     lineage_cells <- subset(pData(cds), leaf_state == State)
     curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
-    
+    if(is.na(pData(cds[,curr_cell])$Parent))
+      stop('Make sure the progenitor cells are ordered earlier than other cell states')
+
     while (1) {
       ancestor_cells <- c(ancestor_cells, curr_cell)
       if (is.na(pData(cds[,curr_cell])$Parent))
@@ -201,8 +203,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param ABC_method the method used to calculate the ABC scores. It can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-#' We use "integral" by default, which is defined as the area between two spline curves. "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
 #' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
 #' @param branchTest a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results. 
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)
@@ -289,35 +291,38 @@ calABCs <- function(cds,
     if (ABC_method == "integral") {
       res <- round(sum(avg_delta_x * step), 3)
     }
-    else if (ABC_method == "global_normalization") {
-      max <- max(max(predictBranchOri), max(x))
-      res <- round(sum(avg_delta_x/max * step), 3)
+    else {
+      stop('Current the ABC method only supports integral')
     }
-    else if (ABC_method == "local_normalization") {
-      pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri),
-                             1, max)
-      res <- round(sum((((predictBranchOri - x)/pair_wise_max)[1:(num -
-                                                                    1)] + ((predictBranchOri - x)/pair_wise_max)[2:(num)])/2 *
-                         step), 3)
-    }
-    else if (ABC_method == "four_values") {
-      ori_ABCs <- round(sum((x[1:(num - 1)] + x[2:(num)])/2 *
-                              step), 3)
-      other_ABCs <- round(sum((predictBranchOri[1:(num -
-                                                     1)] + predictBranchOri[2:(num)])/2 * step),
-                          3)
-      ori_ABCs_H <- round(sum(avg_delta_x[avg_delta_x >
-                                            0] * step), 3)
-      other_ABCs_H <- round(sum(avg_delta_x[avg_delta_x <
-                                              0] * step), 3)
-      res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs,
-               ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
-    }
-    else if (ABC_method == "ILRs") {
-      str_logfc_df <- log2((predictBranchOri + 1)/(x +
-                                                     1))
-      res <- sum(str_logfc_df)
-    }
+    # else if (ABC_method == "global_normalization") {
+    #   max <- max(max(predictBranchOri), max(x))
+    #   res <- round(sum(avg_delta_x/max * step), 3)
+    # }
+    # else if (ABC_method == "local_normalization") {
+    #   pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri),
+    #                          1, max)
+    #   res <- round(sum((((predictBranchOri - x)/pair_wise_max)[1:(num -
+    #                                                                 1)] + ((predictBranchOri - x)/pair_wise_max)[2:(num)])/2 *
+    #                      step), 3)
+    # }
+    # else if (ABC_method == "four_values") {
+    #   ori_ABCs <- round(sum((x[1:(num - 1)] + x[2:(num)])/2 *
+    #                           step), 3)
+    #   other_ABCs <- round(sum((predictBranchOri[1:(num -
+    #                                                  1)] + predictBranchOri[2:(num)])/2 * step),
+    #                       3)
+    #   ori_ABCs_H <- round(sum(avg_delta_x[avg_delta_x >
+    #                                         0] * step), 3)
+    #   other_ABCs_H <- round(sum(avg_delta_x[avg_delta_x <
+    #                                           0] * step), 3)
+    #   res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs,
+    #            ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
+    # }
+    # else if (ABC_method == "ILRs") {
+    #   str_logfc_df <- log2((predictBranchOri + 1)/(x +
+    #                                                  1))
+    #   res <- sum(str_logfc_df)
+    # }
     return(res)}, num = num, ABC_method = ABC_method
   )
   

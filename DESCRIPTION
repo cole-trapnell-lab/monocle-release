@@ -34,7 +34,6 @@ Imports:
     reshape2,
     limma,
     dplyr,
-    mixsmsn,
     pheatmap,
     MASS,
     stringr
