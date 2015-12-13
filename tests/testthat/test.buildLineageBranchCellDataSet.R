@@ -34,9 +34,12 @@ test_that("buildLineageBranchCellDataSet() creates a new CellDataSet object with
 	lung <- orderCells(lung, num_paths=2)
 
     lung_new <- buildLineageBranchCellDataSet(cds = lung, lineage_states = c(2, 3),
-                                            lineage_labels = NULL, method = 'fitting', stretch = T,
+                                            lineage_labels = c('AT1', 'AT2'), method = 'fitting', stretch = T,
                                             weighted = T)
-	
+    lung_new2 <- buildLineageBranchCellDataSet(cds = lung, lineage_states = c(2, 3),
+                                        lineage_labels = c('AT1', 'AT2'), method = 'fitting', stretch = F,
+                                        weighted = F)
+
 	# test the dimension of new built cds object
 	expect_equal(as.vector(dim(lung_new)), c(218, 248))
 

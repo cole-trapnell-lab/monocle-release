@@ -74,7 +74,7 @@ test_that("genSmoothCurves() fits (branched) smooth curves for the data along ps
 	                                                   length.out = 100), Lineage = as.factor(unique(as.character(pData(cds_subset)$Lineage))[2]))
 	
 	lung_smooth_df <- genSmoothCurves(cds_subset[, ], cores=2, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
-	                               relative_expr = T, pseudocount = 0, 
+	                               relative_expr = F, pseudocount = 1, 
 	                               new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
 	
 	expect_equal(dim(lung_smooth_df), c(10, 200))

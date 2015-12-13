@@ -46,6 +46,11 @@ test_that("BEAM() reports valid branch test results for markers in lung dataset"
 
 	# test the bifurcation time point detection
 	expect_equal(BEAM_res['ENSMUSG00000000031.9', 'Bifurcation_time_point'], 27)
+	
+	BEAM_res <- BEAM(lung, relative_expr = F, stretch = F, weighted = F, 
+		pseudocount = 1, lineage_labels = c('AT1', 'AT2'), q_thrsld = 0.01, 
+		cores = detectCores(), verbose = T)
+
 
 })
 
