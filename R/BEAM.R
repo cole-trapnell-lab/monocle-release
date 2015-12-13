@@ -659,8 +659,8 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   			  return_all = T,
   			  ...)
 
-  # if(verbose)
-  #  message('pass calILRs')
+  if(verbose)
+   message('pass calILRs')
   
   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
     lineage_states = lineage_states, 
