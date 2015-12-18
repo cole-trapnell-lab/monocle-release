@@ -519,32 +519,87 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 #' @param scale_pseudotime a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, root_state=NULL, scale_pseudotime = F){
+orderCells <- function(cds, root_state=NULL, scale_pseudotime = F){
   
-  if (is.null(root_state)){
+  if (is.null(root_state) == FALSE) {
+    if (is.null(pData(cds)$State)){
+      stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
+    }
+    # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
+    root_cell_candidates <- subset(pData(cds), State == root_state)
+    if (nrow(root_cell_candidates) == 0){
+      stop(paste("Error: no cells for State =", root_state))
+    }
+    
+    # build a local MST to find a good root cell for this state
+    dp <- as.matrix(dist(t(reducedDimS(cds)[,row.names(root_cell_candidates)])))
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    
+    # Make sure to use the real MST here
+    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+    #root_cell_candidates <- root_cell_candidates[row.names(root_cell_candidates) %in% tip_leaves,]
+    #sg <- make_ego_graph(dp_mst, nodes=row.names(root_cell_candidates))[[1]]
+    
+    diameter <- get.diameter(dp_mst)
+    
+    if (length(diameter) == 0){
+      stop(paste("Error: no valid root cells for State =", root_state))
+    }
+    
+    #root_cell = names(diameter)[tip_leaves %in% names(diameter)]
+    root_cell_candidates <- root_cell_candidates[names(diameter),]
+    if (root_state == 1){
+      root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
+    }else{
+      root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
+    }
+    if (length(root_cell) > 1)
+      root_cell <- root_cell[1]
+    
+  }else{
     diameter <- get.diameter(minSpanningTree(cds))
     root_cell = names(diameter[1])
-  }else{
-    # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
-    root_cell_candidates <- subset(pData(cds), State = root_state)
-    
-    if(!any(degree(minSpanningTree(cds)[row.names(root_cell_candidates)]) == 1))
-      stop("An internal root_state ", root_state, " is not allowed, please select a terminal state to order cells")
-    
-    root_cell <-row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
   }
-  
   cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
-  row.names(cc_ordering) <- cc_ordering$sample_name
+  #row.names(cc_ordering) <- cc_ordering$sample_name
   
   pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-  pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
-  pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  #if (is.null(root_state) == TRUE){
+  #  pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
+  #}
+  
+  #pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+  K_old <- reducedDimK(cds)
+  old_dp <- cellPairwiseDistances(cds) 
+  old_mst <- minSpanningTree(cds)
+  old_A <- reducedDimA(cds)
+  old_W <- reducedDimW(cds)
   
   cds <- Project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+  minSpanningTree(cds) <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree 
+  
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_root_cell <- root_cell
+  
   cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
+  
   pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
-  pData(cds)$State <- cc_ordering[cds@reducedDimW[, 1],]$cell_state #assign the state to the states from the closet vertex
+  if (is.null(root_state) == TRUE) {
+    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+    pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
+    V(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree)$color <- 0
+    V(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree)$color <- pData(cds)[V(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree)$name,]$State
+    V(old_mst)$color <- 0
+    V(old_mst)$State <- cc_ordering[V(old_mst)$name,]$cell_state
+  }
+  #pData(cds)$Parent <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$parent
+  
+  reducedDimK(cds) <-  K_old 
+  cellPairwiseDistances(cds) <- old_dp
+  minSpanningTree(cds) <- old_mst
+  reducedDimA(cds) <- old_A
+  reducedDimW(cds) <- old_W
   
   if(scale_pseudotime) {
     cds <- scale_pseudotime(cds)
@@ -613,7 +668,7 @@ reduceDimension <- function(cds,
   
   if (cds@expressionFamily@vfamily != "binomialff"){
     if (use_vst){
-      VST_FM <- vstExprs(cds, round_vals=FALSE)
+      VST_FM <- vstExprs(cds, expr_matrix=FM, round_vals=FALSE)
       if (is.null(VST_FM) == FALSE){
         FM <- VST_FM
       }else{
@@ -730,12 +785,16 @@ Project2MST <- function(cds, Projection_Method){
   
   #build a mst from the projected data 
   
-  closest_vertex <- apply(Z, 2, function(Z_i){
-    Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
-    which(Z_i_dist == min(Z_i_dist))[1]
-  })
+#   closest_vertex <- apply(Z, 2, function(Z_i){
+#     Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
+#     which(Z_i_dist == min(Z_i_dist))[1]
+#   })
   
-  closest_vertex <- as.vector(closest_vertex)
+  distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
+  closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) ) } )
+  #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
+  
+  #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
   if(!is.function(projPointOnLine)) {
     P <- Y[, closest_vertex]
@@ -757,24 +816,29 @@ Project2MST <- function(cds, Projection_Method){
         }
         projection <- rbind(projection, tmp)
         distance <- c(distance, dist(rbind(Z_i, tmp)))
-        
-        if(class(projection) != 'matrix')
-          projection <- as.matrix(projection)
-        P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
       }
+      if(class(projection) != 'matrix')
+        projection <- as.matrix(projection)
+      P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
     }
   }
   
   colnames(P) <- colnames(Z)
   
-  reducedDimK(cds) <- P
+  #reducedDimK(cds) <- P
   dp <- as.matrix(dist(t(P)))
   cellPairwiseDistances(cds) <- dp
   gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
   dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds) <- dp_mst
-  reducedDimA(cds) <- P
-  reducedDimW(cds) <- as.matrix(closest_vertex)
+  
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- as.matrix(closest_vertex)
+  
+  #minSpanningTree(cds) <- dp_mst
+  #reducedDimA(cds) <- P
+  #reducedDimW(cds) <- as.matrix(closest_vertex)
+  
   cds
 }
 

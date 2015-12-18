@@ -30,15 +30,35 @@ buildLineageBranchCellDataSet <- function(cds,
   ancestor_cells <- c()
   
   for (leaf_state in lineage_states){
-    lineage_cells <- subset(pData(cds), leaf_state == State)
-    curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
+    #lineage_cells <- subset(pData(cds), leaf_state == State)
+    #curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
     
-    while (1) {
-      ancestor_cells <- c(ancestor_cells, curr_cell)
-      if (is.na(pData(cds[,curr_cell])$Parent))
-        break
-      curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
-    }
+    pr_graph_cell_proj_mst <- minSpanningTree(cds)
+    
+    curr_cell <- subset(pData(cds), State == leaf_state)
+    curr_cell <- names(which(degree(pr_graph_cell_proj_mst, v = row.names(curr_cell), mode = "all")==1, useNames = T))[1]
+    
+
+    root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_root_cell
+    root_state <- pData(cds)[root_cell,]$State
+    
+    pr_graph_root <- subset(pData(cds), State == root_state)
+    pr_graph_root <- names(which(degree(pr_graph_cell_proj_mst, v = row.names(pr_graph_root), mode = "all")==1, useNames = T))[1]
+    #pr_graph_cell_proj_mst <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree
+    
+    
+    path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
+    path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
+    #states_on_path_to_root <- unique(pData(cds[,path_to_ancestor])$State)
+    states_on_path_to_root <- unique(V(pr_graph_cell_proj_mst)[path_to_ancestor]$State)
+    ancestor_cells <- c(ancestor_cells, row.names(subset(pData(cds), State %in% states_on_path_to_root)))
+    
+#     while (1) {
+#       ancestor_cells <- c(ancestor_cells, curr_cell)
+#       if (is.na(pData(cds[,curr_cell])$Parent))
+#         break
+#       curr_cell <- as.character(pData(cds[,curr_cell])$Parent)
+#     }
   }
  
   cds <- cds[, row.names(pData(cds[,union(ancestor_cells, all_lineage_cells)]))] #or just union(ancestor_cells, lineage_cells)

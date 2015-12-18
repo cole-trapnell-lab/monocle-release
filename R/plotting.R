@@ -115,7 +115,9 @@ plot_spanning_tree <- function(cds,
     g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
-  g <- g + geom_point(aes_string(color = color_by), size = I(cell_size), na.rm = TRUE)
+  # FIXME: setting size here overrides the marker expression funtionality. 
+  # Don't do it!
+  g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
  
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
