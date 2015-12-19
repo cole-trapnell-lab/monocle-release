@@ -197,6 +197,41 @@ selectGenesInExpressionRange <- function(cds,
 }
 
 
+# TODO: we need to rename this function and its arguments.  What it actually
+# does is very confusing.
+####
+#' Filter genes outside of a given range of expression
+#'
+#' @export
+selectHighDispersionGenes <- function(cds, 
+                                      detectionLimit=-Inf, 
+                                      relative_expr=TRUE){
+  disp_df<-esApply(cds,1,
+                   function(f_expression) { 
+                     if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
+                       f_expression <- f_expression / Size_Factor
+                     }
+                     f_expression <- f_expression[f_expression > detectionLimit]
+                     expr_mean <- mean(f_expression[f_expression > 0])
+                     if (is.null(expr_mean) == FALSE) {
+                       disp_guess_fit <- cds@dispFitInfo[["blind"]]$disp_func(expr_mean)
+                       
+                       # For NB: Var(Y)=mu*(1+mu/k)
+                       f_expression_var <- var(f_expression)
+                       f_expression_mean <- mean(f_expression)
+                       
+                       disp_guess_meth_moments <- f_expression_var - f_expression_mean 
+                       disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
+                       
+                       return (data.frame(mean_exp=expr_mean, disp_fit=disp_guess_fit, disp_empirical=disp_guess_meth_moments))
+                     }
+                     return (NULL)
+                   } )
+  do.call(rbind,disp_df)
+}
+
+
+
 #####
 #' Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 

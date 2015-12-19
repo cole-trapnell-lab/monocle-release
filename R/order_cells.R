@@ -238,8 +238,8 @@ make_canonical <-function(pq_tree)
   
   for (p_node in single_child_p)
   {
-    child_of_p_node <- V(canonical_pq) [ .nei(p_node, mode="out") ]
-    parent_of_p_node <- V(canonical_pq) [ .nei(p_node, mode="in") ]
+    child_of_p_node <- V(canonical_pq) [ nei(p_node, mode="out") ]
+    parent_of_p_node <- V(canonical_pq) [ nei(p_node, mode="in") ]
     
     for (child_of_p in child_of_p_node)
     {
@@ -267,7 +267,7 @@ count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
     return(children_counts)
   } else {
     children_count = 0
-    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -297,7 +297,7 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
   } else {
     
     children_count = 0
-    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -328,7 +328,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
     node_states[V(pq_tree)[curr_node]$name] = assigned_state
     return(node_states)
   } else {
-    for (child in V(pq_tree) [ .nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
     {
       node_states <- assign_cell_lineage(pq_tree, child, assigned_state, node_states)
     }
@@ -796,16 +796,18 @@ Project2MST <- function(cds, Projection_Method){
   
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
-  if(!is.function(projPointOnLine)) {
+  if(!is.function(Projection_Method)) {
     P <- Y[, closest_vertex]
   }
   else{
-    P <- matrix(rep(0, length(Y)), nrow = 2)
+    P <- matrix(rep(0, length(Y)), nrow = nrow(Y))
     for(i in 1:length(closest_vertex)) {
-      neighbors <- names(V(dp_mst) [ .nei(closest_vertex_names[i], mode="all") ]) 
+      neighbors <- names(V(dp_mst) [ nei(closest_vertex_names[i], mode="all") ]) 
       projection <- NULL
       distance <- NULL 
       Z_i <- Z[, i]
+      
+      
       
       for(neighbor in neighbors) {
         if(closest_vertex_names[i] %in% tip_leaves) {
