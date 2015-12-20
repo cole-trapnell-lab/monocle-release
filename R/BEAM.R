@@ -9,6 +9,7 @@
 #'
 buildLineageBranchCellDataSet <- function(cds, 
                                           lineage_states = c(2, 3), 
+                                          branch_point = NULL,
                                           lineage_labels = NULL, 
                                           stretch = FALSE, 
                                           weighted = TRUE, 
@@ -25,45 +26,62 @@ buildLineageBranchCellDataSet <- function(cds,
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
   
-  all_lineage_cells <- row.names(pData(cds[,pData(cds)$State %in% lineage_states]))
+  pr_graph_cell_proj_mst <- minSpanningTree(cds)
+  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+  root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_root_cell
+  root_state <- pData(cds)[root_cell,]$State
+  #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
   
-  #ancestor_cells <- c()
+  pr_graph_root <- subset(pData(cds), State == root_state)
+  root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),] 
+  root_cell <- names(which(degree(pr_graph_cell_proj_mst, v = root_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
   
   paths_to_root <- list()
-  
-  for (leaf_state in lineage_states){
-    #lineage_cells <- subset(pData(cds), leaf_state == State)
-    #curr_cell <- row.names(lineage_cells[which(lineage_cells$Pseudotime == min(lineage_cells$Pseudotime)),])[1]
+  if (is.null(branch_point)){
     
+    # If the user didn't specify a branch point,
+    # let's walk back from the lineage states
+    for (leaf_state in lineage_states){
+      
+      curr_cell <- subset(pData(cds), State == leaf_state)
+      #Get all the nearest cells in Y for curr_cells:
+      
+      curr_cell_point_in_Y <- closest_vertex[row.names(curr_cell),] 
+      
+      # Narrow down to a single tip cell in Y:
+      curr_cell <- names(which(degree(pr_graph_cell_proj_mst, v = curr_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
+      
+      #pr_graph_cell_proj_mst <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree
+      
+      path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
+      path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
+      
+      ancestor_cells_for_lineage <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_ancestor)]
+      #ancestor_cells <- c(ancestor_cells, ancestor_cells_for_lineage)
+      
+      paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_lineage
+    }
+  }else{
     pr_graph_cell_proj_mst <- minSpanningTree(cds)
+    mst_branch_nodes <- cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points
+    branch_cell <- mst_branch_nodes[branch_point]
+    mst_no_branch_point <- pr_graph_cell_proj_mst - V(pr_graph_cell_proj_mst)[branch_cell]
     
-    curr_cell <- subset(pData(cds), State == leaf_state)
-    #Get all the nearest cells in Y for curr_cells:
-    
-    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-    curr_cell_point_in_Y <- closest_vertex[row.names(curr_cell),] 
-    
-    # Narrow down to a single tip cell in Y:
-    curr_cell <- names(which(degree(pr_graph_cell_proj_mst, v = curr_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
-    
-    root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_root_cell
-    root_state <- pData(cds)[root_cell,]$State
-    #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
-    
-    pr_graph_root <- subset(pData(cds), State == root_state)
-    root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),] 
-    root_cell <- names(which(degree(pr_graph_cell_proj_mst, v = root_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
-    #pr_graph_cell_proj_mst <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree
-    
-    path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
+    path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst, branch_cell, root_cell)
     path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
     
-    ancestor_cells_for_lineage <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_ancestor)]
-    #ancestor_cells <- c(ancestor_cells, ancestor_cells_for_lineage)
-    
-    paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_lineage
+    for (backbone_nei in V(pr_graph_cell_proj_mst)[nei(branch_cell)]$name){
+      descendents <- bfs(mst_no_branch_point, V(mst_no_branch_point)[backbone_nei], unreachable=FALSE)
+      descendents <- descendents$order[!is.na(descendents$order)]
+      descendents <- V(mst_no_branch_point)[descendents]$name
+      if (root_cell %in% descendents == FALSE){
+        path_to_root <- unique(c(path_to_ancestor, branch_cell, descendents))
+        path_to_root <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_root)]
+        
+        paths_to_root[[length(paths_to_root) + 1]] <-  path_to_root
+      }
+    }
   }
- 
   all_cells_in_subset <- c()
   
   for (path_to_ancestor in paths_to_root){
@@ -78,29 +96,21 @@ buildLineageBranchCellDataSet <- function(cds,
       common_ancestor_cells <- intersect(intersect(paths_to_root[i], paths_to_root[i-1]), common_ancestor_cells)
     }
   }
-
   
   cds <- cds[, row.names(pData(cds[,all_cells_in_subset]))] #or just union(ancestor_cells, lineage_cells)
-    
+  
   #State <- pData(cds)$State 
   Pseudotime <- pData(cds)$Pseudotime 
   
-  #progenitor_ind <- which(State %in% lineage_states == FALSE)
-  
-  #progenitor_states <- unique(State[progenitor_ind])
-  
   pData <- pData(cds)
-  #exprs_data <- exprs(cds)
   
-  #weight_vec <- rep(1, nrow(pData(cds))) #weighted by the number of branches
-  #names(weight_vec) <- row.names(pData(cds))
   if (weighted) {
-      weight_constant <- 1/length(lineage_states)
-      #weight_vec[common_ancestor_cells] <- weight_constant
+    weight_constant <- 1/length(paths_to_root)
+    #weight_vec[common_ancestor_cells] <- weight_constant
   } else {
-      weight_constant <- 1
+    weight_constant <- 1
   }
-
+  
   max_pseudotime <- -1
   for (path_to_ancestor in paths_to_root){
     max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime)  
@@ -110,104 +120,63 @@ buildLineageBranchCellDataSet <- function(cds,
   }
   
   branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
-  ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
-  pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime * ancestor_scaling_factor
+  #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
   
   for (path_to_ancestor in paths_to_root){
     max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
-    path_scaling_factor <-(max_pseudotime - branch_pseudotime)/ (max_pseudotime_on_path - branch_pseudotime)  
+    path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
     if (is.finite(path_scaling_factor)){
       lineage_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
-      pData[lineage_cells,]$Pseudotime <- (pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime
+      pData[lineage_cells,]$Pseudotime <- ((pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
     }
   }
+  #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
   
   pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
-  
-#   range_df <- plyr::ddply(pData(cds), .(State), function(x) { range(x$Pseudotime)}) #pseudotime range for each state
-#   row.names(range_df) <- as.character(range_df$State)
-#   colnames(range_df) <- c("State","min", "max")
-#   
-#   #longest_branch <- groups[which(range_df[, 2] == max(range_df[, 2]))] 
-#   longest_lineage_branch <- tail(plyr::arrange(range_df[as.character(lineage_states),], max)$Pseudotime, n=1)
-#   
-  #first stretch pseudotime and then duplicate 
-#   if(stretch) { #should we stretch each lineage's pseudotime to have the same length (assume the same maturation real time)
-#     short_branches <- setdiff(row.names(range_df), as.character(c(progenitor_states, longest_lineage_branch)))
-#     
-#     #stretch (condense) the pseudotime from 0 to 100 
-#     #longest_branch_multiplier <- 100 / (range_df[as.character(longest_lineage_branch), 'max'] - range_df[as.character(progenitor_state), 'min']) 
-#     longest_branch_range <- range_df[as.character(longest_lineage_branch), 'max'] - min(range_df[, 'min'])
-#     longest_branch_multiplier <- 100 / longest_branch_range
-#     
-#     T_0 <- (max(range_df[as.character(progenitor_states), 'max']) - min(range_df[as.character(progenitor_states), 'min']))  * longest_branch_multiplier
-#     
-#     short_branches_multipliers <- (100 - T_0) / (range_df[short_branches , 'max'] - max(range_df[as.character(progenitor_states), 'max']))
-#     
-#     heterochrony_constant <- c(longest_branch_multiplier, short_branches_multipliers)
-#     names(heterochrony_constant) <- c(longest_lineage_branch, short_branches)
-#     
-#     pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] <- 
-#       (pData[pData$State %in% c(progenitor_states, longest_lineage_branch), 'Pseudotime'] - min(range_df[progenitor_states, 'min'])) * longest_branch_multiplier
-#     
-#     for(i in 1:length(short_branches)) { #stretch short branches
-#       pData[pData$State  == short_branches[i], 'Pseudotime'] <- 
-#         (pData[pData$State == short_branches[i], 'Pseudotime'] - max(range_df[as.character(progenitor_states), 'max'])) * 
-#         short_branches_multipliers[i] + T_0
-#     }
-#   }
-
   pData$original_cell_id <- row.names(pData)
   
   ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
   expr_blocks <- list()
   
   # Duplicate the expression data
-  for (i in 1:length(lineage_states)) { #duplicate progenitors for multiple branches
+  for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
     if (nrow(ancestor_exprs) == 1)
-        exprs_data <- t(as.matrix(ancestor_exprs))
+      exprs_data <- t(as.matrix(ancestor_exprs))
     else exprs_data <- ancestor_exprs
     
-    colnames(exprs_data) <- paste('duplicate', lineage_states[i], 1:length(common_ancestor_cells), sep = '_')
+    colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
     expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
     exprs_data <- cbind(exprs_data, expr_lineage_data)
-    expr_blocks[[as.character(lineage_states[i])]] <- exprs_data
+    expr_blocks[[i]] <- exprs_data
   }
   
   # Make a bunch of copies of the pData entries from the common ancestors
   ancestor_pData_block <- pData[common_ancestor_cells,]
-  #pData[common_ancestor_cells,]$State <- lineage_states[1] #set progenitors to the lineage 1
+  
   pData_blocks <- list()
   
   weight_vec <- c()
-  for (i in 1:length(lineage_states)) {
+  for (i in 1:length(paths_to_root)) {
     #weight_vec <- c(weight_vec, rep(weight_constant, length(common_ancestor_cells)))
     weight_vec_block <- rep(weight_constant, length(common_ancestor_cells))
     
     #pData <- rbind(pData, pData[common_ancestor_cells, ])
     new_pData_block <- ancestor_pData_block
-    new_pData_block$Lineage <- lineage_states[i]
-    row.names(new_pData_block) <- paste('duplicate', lineage_states[i], 1:length(common_ancestor_cells), sep = '_')
+    new_pData_block$Lineage <- i
+    row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
     
     pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
-    pData_lineage_cells$Lineage <- lineage_states[i]
+    pData_lineage_cells$Lineage <- i
     weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
     
     weight_vec <- c(weight_vec, weight_vec_block)
     
     new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
-    pData_blocks[[as.character(lineage_states[i])]] <- new_pData_block
+    pData_blocks[[i]] <- new_pData_block
   }
   pData <- do.call(rbind, pData_blocks)
   exprs_data <- do.call(cbind, expr_blocks)
   
-#   if (!is.null(lineage_labels))
-#     pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
-#   else
-#     pData$Lineage <- as.factor(pData$State)
-  
-  #pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
-  #                      levels =levels(cds$State))
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   
@@ -223,7 +192,7 @@ buildLineageBranchCellDataSet <- function(cds,
   pData(cds_subset)$Size_Factor <- Size_Factor
   
   cds_subset@dispFitInfo <- cds@dispFitInfo
-
+  
   return (cds_subset)
 }
 
@@ -250,6 +219,7 @@ buildLineageBranchCellDataSet <- function(cds,
 branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
                        reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
                        lineage_states = c(2, 3), 
+                       branch_point=NULL,
                        relative_expr = TRUE,
                        stretch = TRUE,
                        pseudocount=0,
@@ -258,8 +228,11 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        lineage_labels = NULL, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
-    cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
-                                                lineage_labels = lineage_labels, stretch = stretch,
+    cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
+                                                lineage_states = lineage_states,
+                                                branch_point=branch_point,
+                                                lineage_labels = lineage_labels,
+                                                stretch = stretch,
                                                 weighted = weighted, ...)
   }
   else
@@ -706,7 +679,8 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #'
 BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage", 
 					reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-					lineage_states = c(2, 3), 
+					lineage_states = c(2, 3),
+					branch_point=NULL,
 					relative_expr = TRUE, 
 					stretch = TRUE, 
 					pseudocount = 0, 
@@ -720,6 +694,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	branchTest_res <- branchTest(cds, fullModelFormulaStr = fullModelFormulaStr,
 	                       reducedModelFormulaStr = reducedModelFormulaStr, 
 	                       lineage_states = lineage_states, 
+	                       branch_point=branch_point,
 	                       relative_expr = relative_expr,
 	                       stretch = stretch,
 	                       pseudocount = pseudocount,

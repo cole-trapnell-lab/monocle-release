@@ -600,9 +600,11 @@ orderCells <- function(cds, root_state=NULL, scale_pseudotime = F){
   minSpanningTree(cds) <- old_mst
   reducedDimA(cds) <- old_A
   reducedDimW(cds) <- old_W
-  
+
+  # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
+  # for now
   if(scale_pseudotime) {
-    cds <- scale_pseudotime(cds)
+    #cds <- scale_pseudotime(cds)
   }
   
   cds
@@ -727,21 +729,6 @@ reduceDimension <- function(cds,
   reducedDimK(cds) <- ddrtree_res$Y
   #reducedDimK(cds) <- init_ICA$K
   
-  # Xiaojie, why did you change this? We should preserve this way.
-  #stree <- ddrtree_res$stree
-  #stree[lower.tri(stree)] = Matrix::t(stree)[lower.tri(stree)]
-  
-  #tmp <- as.matrix(ddrtree_res$stree)
-  #stree <- tmp +  t(tmp) 
-  
-  # stree <- as.matrix(stree)
-  # stree[stree == T] <- 1
-  # stree[stree == F] <- 0
-  
-  #stree[upper.tri(stree)] <- 0
-  #dimnames(stree) <- list(colnames(FM), colnames(FM))
-  #gp <- graph.adjacency(stree, mode = "undirected", diag = F, weighted = TRUE)
-  
   adjusted_K <- t(reducedDimK(cds))
   dp <- as.matrix(dist(adjusted_K))
   cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_K))
@@ -751,6 +738,9 @@ reduceDimension <- function(cds,
   
   # gp <- graph.adjacency(ddrtree_res$stree, mode="undirected", weighted=TRUE)
   # minSpanningTree(cds) <- gp
+  
+  mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points <- mst_branch_nodes
   
   cds
 }

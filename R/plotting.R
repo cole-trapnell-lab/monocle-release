@@ -118,7 +118,19 @@ plot_spanning_tree <- function(cds,
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
- 
+  
+  
+  mst_branch_nodes <- cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points
+  branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
+  branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
+  branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
+  
+  g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
+                        size=5, na.rm=TRUE, data=branch_point_df) +
+           geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
+                        size=4, color="white", na.rm=TRUE, data=branch_point_df)
+  
+  
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
@@ -832,6 +844,7 @@ plot_genes_heatmap <- function(cds,
 
 plot_genes_branched_pseudotime <- function (cds, 
                                             lineage_states = c(2, 3), 
+                                            branch_point=NULL,
                                             lineage_labels = NULL,
                                             method = "fitting", 
                                             stretch = TRUE, 
@@ -866,9 +879,14 @@ plot_genes_branched_pseudotime <- function (cds,
         fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
     }
     if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
-        cds_subset <- buildLineageBranchCellDataSet(cds = cds, lineage_states = lineage_states,
-        lineage_labels = lineage_labels, method = method, stretch = stretch,
-        weighted = weighted, ...)
+        cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
+                                                    lineage_states = lineage_states, 
+                                                    branch_point=branch_point,
+                                                    lineage_labels = lineage_labels, 
+                                                    method = method, 
+                                                    stretch = stretch,
+                                                    weighted = weighted, 
+                                                    ...)
     }
     else {
         cds_subset <- cds
