@@ -448,19 +448,24 @@ calILRs <- function (cds,
 
   if (length(trajectory_states) != 2)
     stop("calILRs can only work for two Lineages")
-  if(!all(trajectory_states %in% pData(cds_subset)[, "Lineage"]))
+  if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Lineage"] %in% pData(cds_subset)[, "Lineage"]))
       stop("state(s) in trajectory_states are not included in 'Lineage'")
-    
     
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
+  if(!is.null(lineage_labels)){
+    trajectory_states <- lineage_labels
+  }
   cds_branchA <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[1]]
   cds_branchB <- cds_subset[, pData(cds_subset)[, "Lineage"] ==
                               trajectory_states[2]]
   
   formula_all_variables <- all.vars(as.formula(trend_formula))
+  
+  if(!all(formula_all_variables %in% colnames(pData(cds_subset))))
+    stop('All the variables in the model formula has to be included in the pData columns (excepting Lineage)')
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
