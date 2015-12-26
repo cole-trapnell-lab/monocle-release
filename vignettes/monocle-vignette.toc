@@ -1,0 +1,16 @@
+\contentsline {section}{\numberline {1}BEAM}{2}{section.1}
+\contentsline {section}{\numberline {2}Introduction}{5}{section.2}
+\contentsline {section}{\numberline {3}Single-cell expression data in Monocle}{6}{section.3}
+\contentsline {subsection}{\numberline {3.1}The CellDataSet class}{6}{subsection.3.1}
+\contentsline {section}{\numberline {4}Quality control of single cell RNA-Seq experiments}{7}{section.4}
+\contentsline {section}{\numberline {5}Identifying cells of interest}{9}{section.5}
+\contentsline {section}{\numberline {6}Basic differential expression analysis}{10}{section.6}
+\contentsline {section}{\numberline {7}Ordering cells by progress in ``pseudotime''}{12}{section.7}
+\contentsline {section}{\numberline {8}Advanced differential expression analysis}{22}{section.8}
+\contentsline {subsection}{\numberline {8.1}Finding genes that distinguish cell type or state}{22}{subsection.8.1}
+\contentsline {subsection}{\numberline {8.2}Finding genes that change as a function of pseudotime}{24}{subsection.8.2}
+\contentsline {subsection}{\numberline {8.3}Multi-factorial differential expression analysis}{25}{subsection.8.3}
+\contentsline {section}{\numberline {9}Clustering genes by pseudotemporal expression pattern}{25}{section.9}
+\contentsline {section}{\numberline {10}Citation}{26}{section.10}
+\contentsline {section}{\numberline {11}Acknowledgements}{27}{section.11}
+\contentsline {section}{\numberline {12}Session Info}{27}{section.12}

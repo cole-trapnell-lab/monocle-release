@@ -53,17 +53,23 @@ plot_spanning_tree <- function(cds,
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
   
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  }
   
-  #print (lib_info_with_pseudo)
+  if (cds@dim_reduce_type == "ICA"){
+    reduced_dim_coords <- reducedDimS(cds)
+  }else if (cds@dim_reduce_type == "DDRTree"){
+    reduced_dim_coords <- reducedDimK(cds)
+  }else {
+    stop("Error: unrecognized dimensionality reduction method.")
+  }
 
-  #S_matrix <- reducedDimS(cds)
-  K_matrix <- reducedDimK(cds)
-  
-  if (is.null(K_matrix)){
+  if (is.null(reduced_dim_coords)){
     stop("You must first call reduceDimension() before using this function")
   }
   
-  ica_space_df <- data.frame(t(K_matrix[c(x,y),]))
+  ica_space_df <- data.frame(t(reduced_dim_coords[c(x,y),]))
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
 
   ica_space_df$sample_name <- row.names(ica_space_df)
@@ -74,7 +80,6 @@ plot_spanning_tree <- function(cds,
   if (is.null(dp_mst)){
     stop("You must first call orderCells() before using this function")
   }
-  
   
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
@@ -90,9 +95,7 @@ plot_spanning_tree <- function(cds,
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
-  
-  #data_df <- plyr::rename(data_df, c("data_dim_1"="source_data_dim_1", "data_dim_2"="source_data_dim_2"))
-  
+
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -119,8 +122,7 @@ plot_spanning_tree <- function(cds,
   # Don't do it!
   g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
-  
-  mst_branch_nodes <- cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points
+  mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
   branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
   branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
   branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
@@ -129,7 +131,6 @@ plot_spanning_tree <- function(cds,
                         size=5, na.rm=TRUE, data=branch_point_df) +
            geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
                         size=4, color="white", na.rm=TRUE, data=branch_point_df)
-  
   
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)

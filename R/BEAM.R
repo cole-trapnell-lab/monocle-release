@@ -28,7 +28,7 @@ buildLineageBranchCellDataSet <- function(cds,
   
   pr_graph_cell_proj_mst <- minSpanningTree(cds)
   closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-  root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_root_cell
+  root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_root_cell
   root_state <- pData(cds)[root_cell,]$State
   #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
   
@@ -50,20 +50,17 @@ buildLineageBranchCellDataSet <- function(cds,
       
       # Narrow down to a single tip cell in Y:
       curr_cell <- names(which(degree(pr_graph_cell_proj_mst, v = curr_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
-      
-      #pr_graph_cell_proj_mst <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree
-      
+
       path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
       path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
       
       ancestor_cells_for_lineage <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_ancestor)]
-      #ancestor_cells <- c(ancestor_cells, ancestor_cells_for_lineage)
-      
+
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_lineage
     }
   }else{
     pr_graph_cell_proj_mst <- minSpanningTree(cds)
-    mst_branch_nodes <- cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points
+    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_cell <- mst_branch_nodes[branch_point]
     mst_no_branch_point <- pr_graph_cell_proj_mst - V(pr_graph_cell_proj_mst)[branch_cell]
     
@@ -265,8 +262,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param ABC_method the method used to calculate the ABC scores. It can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-#' We use "integral" by default, which is defined as the area between two spline curves. "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
 #' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
 #' @param branchTest a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results. 
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)
@@ -353,35 +350,38 @@ calABCs <- function(cds,
     if (ABC_method == "integral") {
       res <- round(sum(avg_delta_x * step), 3)
     }
-    else if (ABC_method == "global_normalization") {
-      max <- max(max(predictBranchOri), max(x))
-      res <- round(sum(avg_delta_x/max * step), 3)
+    else {
+      stop('Current the ABC method only supports integral')
     }
-    else if (ABC_method == "local_normalization") {
-      pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri),
-                             1, max)
-      res <- round(sum((((predictBranchOri - x)/pair_wise_max)[1:(num -
-                                                                    1)] + ((predictBranchOri - x)/pair_wise_max)[2:(num)])/2 *
-                         step), 3)
-    }
-    else if (ABC_method == "four_values") {
-      ori_ABCs <- round(sum((x[1:(num - 1)] + x[2:(num)])/2 *
-                              step), 3)
-      other_ABCs <- round(sum((predictBranchOri[1:(num -
-                                                     1)] + predictBranchOri[2:(num)])/2 * step),
-                          3)
-      ori_ABCs_H <- round(sum(avg_delta_x[avg_delta_x >
-                                            0] * step), 3)
-      other_ABCs_H <- round(sum(avg_delta_x[avg_delta_x <
-                                              0] * step), 3)
-      res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs,
-               ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
-    }
-    else if (ABC_method == "ILRs") {
-      str_logfc_df <- log2((predictBranchOri + 1)/(x +
-                                                     1))
-      res <- sum(str_logfc_df)
-    }
+    # else if (ABC_method == "global_normalization") {
+    #   max <- max(max(predictBranchOri), max(x))
+    #   res <- round(sum(avg_delta_x/max * step), 3)
+    # }
+    # else if (ABC_method == "local_normalization") {
+    #   pair_wise_max <- apply(data.frame(x = x, y = predictBranchOri),
+    #                          1, max)
+    #   res <- round(sum((((predictBranchOri - x)/pair_wise_max)[1:(num -
+    #                                                                 1)] + ((predictBranchOri - x)/pair_wise_max)[2:(num)])/2 *
+    #                      step), 3)
+    # }
+    # else if (ABC_method == "four_values") {
+    #   ori_ABCs <- round(sum((x[1:(num - 1)] + x[2:(num)])/2 *
+    #                           step), 3)
+    #   other_ABCs <- round(sum((predictBranchOri[1:(num -
+    #                                                  1)] + predictBranchOri[2:(num)])/2 * step),
+    #                       3)
+    #   ori_ABCs_H <- round(sum(avg_delta_x[avg_delta_x >
+    #                                         0] * step), 3)
+    #   other_ABCs_H <- round(sum(avg_delta_x[avg_delta_x <
+    #                                           0] * step), 3)
+    #   res <- c(ori_ABCs = ori_ABCs, other_ABCs = other_ABCs,
+    #            ori_ABCs_H = ori_ABCs_H, other_ABCs_H = other_ABCs_H)
+    # }
+    # else if (ABC_method == "ILRs") {
+    #   str_logfc_df <- log2((predictBranchOri + 1)/(x +
+    #                                                  1))
+    #   res <- sum(str_logfc_df)
+    # }
     return(res)}, num = num, ABC_method = ABC_method
   )
   
@@ -711,94 +711,38 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   #make a newCellDataSet object with the smoothed data? 
 	if(verbose)
    message('pass branchTest')
-# 
-#   ILRs_res <- calILRs(cds = cds, 
-#   			  trajectory_states = lineage_states, 
-#   			  lineage_labels = lineage_labels, 
-#   			  stretch = stretch, 
-#   			  cores = cores, 
-#   			  trend_formula = fullModelFormulaStr,
-#   			  ILRs_limit = 3, 
-#   			  relative_expr = relative_expr, 
-#   			  weighted = weighted, 
-#   			  pseudocount = pseudocount, 
-#   			  return_all = T,
-#   			  ...)
-# 
-#   # if(verbose)
-#   #  message('pass calILRs')
-#   
-#   BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
-#     lineage_states = lineage_states, 
-#     stretch = stretch, 
-#     cores = cores, 
-#     trend_formula = fullModelFormulaStr, 
-#     relative_expr = relative_expr, 
-#     weighted = weighted, 
-#     pseudocount = pseudocount, 
-#   	...)
-#   
-#   if(verbose)
-#    message('pass detectBifurcationPoint')
-#   # print('pass detectBifurcationPoint')
-#   
-#   cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
-	# if(draw_branched_kinetics) {
-	# 	plot_genes_branched_pseudotime(cds, 
-	# 		lineage_states = lineage_states, 
-	# 		lineage_labels = lineage_labels,
-	# 		stretch = TRUE, 
-	# 		min_expr = NULL, 
-	# 		cell_size = 0.75,
-	# 		nrow = NULL, 
-	# 		ncol = 1, 
-	# 		panel_order = NULL, 
-	# 		color_by = "State",
-	# 		cell_color_by = "State",
-	# 		trajectory_color_by = "State", 
-	# 		trend_formula = fullModelFormulaStr, 
-	# 		reducedModelFormulaStr = reducedModelFormulaStr, 
-	# 		label_by_short_name = TRUE,
-	# 		weighted = TRUE, 
-	# 		add_ABC = FALSE, 
-	# 		add_pval = FALSE,
-	# 		normalize = TRUE,
-	# 		bifurcation_time = NULL, 
-	# 		#gene_pairs = NULL,
-	# 	...)
-	# }
+  ILRs_res <- calILRs(cds = cds, 
+  			  trajectory_states = lineage_states, 
+  			  lineage_labels = lineage_labels, 
+  			  stretch = stretch, 
+  			  cores = cores, 
+  			  trend_formula = fullModelFormulaStr,
+  			  ILRs_limit = 3, 
+  			  relative_expr = relative_expr, 
+  			  weighted = weighted, 
+  			  pseudocount = pseudocount, 
+  			  return_all = T,
+  			  ...)
 
-	# if(draw_branched_heatmap) {
-	# 	plot_genes_branched_heatmap(cds_subset, 
-	# 	  num_clusters = 6,
-	# 	  ABC_df = NULL, 
-	# 	  branchTest_df = NULL, 
-	# 	  lineage_labels = lineage_labels, 
-	# 	  stretch = T, 
-	# 	  scaling = T,
-	# 	  norm_method = c("vstExprs", "log"), 
-	# 	  use_fitting_curves = T, 
-	# 	  dist_method = NULL, 
-	# 	  hclust_method = "ward", 
-	# 	  heatmap_height = 3, 
-	# 	  heatmap_width = 4,
-	# 	  ABC_lowest_thrsd = 0, 
-	# 	  ABC_highest_thrsd = 2,
-	# 	  qval_lowest_thrsd = 1, 
-	# 	  qval_highest_thrsd = 5,
-	# 	  hmcols = NULL, 
-	# 	  Cell_type_color = c('#979797', '#F05662', '#7990C8'), 
-	# 	  trend_formula = '~sm.ns(Pseudotime, df=3) * Lineage',
-	# 	  pseudo_cnt = 0, 
-	# 	  add_annotation_row = NULL,
-	# 	  add_annotation_col = NULL,
-	# 	  show_rownames = F, 
-	# 	  cores = cores,
-	# 	  use_gene_short_name = F,
-	# 	  file_name = 'branched_heatmap.pdf')
-	# }
-
+  if(verbose)
+   message('pass calILRs')
+  
+  BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
+    lineage_states = lineage_states, 
+    stretch = stretch, 
+    cores = cores, 
+    trend_formula = fullModelFormulaStr, 
+    relative_expr = relative_expr, 
+    weighted = weighted, 
+    pseudocount = pseudocount, 
+  	...)
+  
+  if(verbose)
+   message('pass detectBifurcationPoint')
+  # print('pass detectBifurcationPoint')
+  
+  cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	fd <- fData(cds)
 
