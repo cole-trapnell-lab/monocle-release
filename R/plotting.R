@@ -121,7 +121,12 @@ plot_spanning_tree <- function(cds,
   
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
-  g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  }else {
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+  }
+  
   
   if (show_branch_points){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
