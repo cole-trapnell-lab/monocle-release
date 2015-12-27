@@ -933,6 +933,9 @@ select_root_cell <- function(cds, root_state=NULL){
       root_cell <- root_cell[1]
     
   }else{
+    if (is.null(minSpanningTree(cds))){
+      stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
+    }
     diameter <- get.diameter(minSpanningTree(cds))
     root_cell = names(diameter[1])
   }
@@ -1054,11 +1057,11 @@ orderCells <- function(cds,
 reduceDimension <- function(cds, 
                             max_components=2, 
                             method=c("DDRTree", "ICA"),
-                            pseudo_expr=1, 
+                            pseudo_expr=NULL, 
                             batch=NULL, 
                             batch2=NULL, 
                             covariates=NULL, 
-                            use_vst=FALSE,
+                            use_vst=NULL,
                             verbose=FALSE,
                             use_irlba=NULL,
                             ...){
@@ -1072,6 +1075,18 @@ reduceDimension <- function(cds,
   if (is.null(use_vst) && cds@expressionFamily@vfamily == "negbinomial"){
     use_vst = TRUE
     pseudo_expr = 0
+  }
+  
+  if (cds@expressionFamily@vfamily == "negbinomial"){
+    if (is.null(use_vst)) 
+      use_vst = TRUE
+    if (is.null(pseudo_expr))
+      pseudo_expr = 0
+  } else {
+    if (is.null(use_vst)) 
+      use_vst = FALSE
+    if (is.null(pseudo_expr))
+      pseudo_expr = 1
   }
   
   # If we aren't using VST, then normalize the expression values by size factor
