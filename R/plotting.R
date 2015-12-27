@@ -46,7 +46,8 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2){
+                               cell_name_size=2,
+                               show_branch_points=TRUE){
   gene_short_name <- NULL
   sample_name <- NULL
   
@@ -100,7 +101,7 @@ plot_spanning_tree <- function(cds,
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-      markers_exprs <- reshape2::melt(exprs(cds[row.names(markers_fData),]))
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
       markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
@@ -122,16 +123,17 @@ plot_spanning_tree <- function(cds,
   # Don't do it!
   g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
   
-  mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
-  branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
-  branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
-  branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
+  if (show_branch_points){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
+    branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
+    branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
   
-  g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
+    g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
                         size=5, na.rm=TRUE, data=branch_point_df) +
-           geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
+             geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
                         size=4, color="white", na.rm=TRUE, data=branch_point_df)
-  
+  }
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }

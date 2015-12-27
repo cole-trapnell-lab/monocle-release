@@ -895,7 +895,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   return(ordering_df)
 }
 
-select_root_cell <- function(cds, root_state=NULL){
+select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
   if (is.null(root_state) == FALSE) {
     if (is.null(pData(cds)$State)){
       stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
@@ -937,7 +937,11 @@ select_root_cell <- function(cds, root_state=NULL){
       stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
     }
     diameter <- get.diameter(minSpanningTree(cds))
-    root_cell = names(diameter[1])
+    if (is.null(reverse) == FALSE && reverse == TRUE){
+      root_cell = names(diameter[length(diameter)])
+    } else {
+      root_cell = names(diameter[1])
+    }
   }
   return(root_cell)
 }
@@ -959,7 +963,7 @@ orderCells <- function(cds,
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  root_cell <- select_root_cell(cds, root_state)
+  root_cell <- select_root_cell(cds, root_state, reverse)
   
   if (is.null(reverse) == FALSE){
     message("Warning: argument 'reverse' is deprecated and will be removed in a future release")
