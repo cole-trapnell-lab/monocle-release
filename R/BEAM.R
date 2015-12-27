@@ -83,7 +83,7 @@ buildLineageBranchCellDataSet <- function(cds,
     path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst, branch_cell, root_cell)
     path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
     
-    for (backbone_nei in V(pr_graph_cell_proj_mst)[nei(branch_cell)]$name){
+    for (backbone_nei in V(pr_graph_cell_proj_mst)[suppressWarnings(nei(branch_cell))]$name){
       descendents <- bfs(mst_no_branch_point, V(mst_no_branch_point)[backbone_nei], unreachable=FALSE)
       descendents <- descendents$order[!is.na(descendents$order)]
       descendents <- V(mst_no_branch_point)[descendents]$name
@@ -195,7 +195,7 @@ buildLineageBranchCellDataSet <- function(cds,
   }
   pData <- do.call(rbind, pData_blocks)
   exprs_data <- do.call(cbind, expr_blocks)
-  
+
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   

@@ -24,7 +24,7 @@ newCellDataSet <- function( cellData,
                             lowerDetectionLimit = 0.1, 
                             expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
 {
-  cellData <- as.matrix( cellData )
+  #cellData <- as.matrix( cellData )
   
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )
@@ -113,7 +113,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
-    FM <- t(t(FM)/colSums(FM))
+    FM <- Matrix::t(Matrix::t(FM)/colSums(FM))
   }
   
   negentropy_exp <- apply(FM,1,function(x) { 
@@ -247,7 +247,6 @@ selectHighDispersionGenes <- function(cds,
 #' HSMM <- detectGenes(HSMM, min_expr=0.1)
 #' }
 detectGenes <- function(cds, min_expr=NULL){
-  FM <- exprs(cds)
   if (is.null(min_expr))
   {
     min_expr <- cds@lowerDetectionLimit
@@ -276,8 +275,8 @@ detectGenes <- function(cds, min_expr=NULL){
 #   
 #   pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
 #   
-  fData(cds)$num_cells_expressed <- rowSums(FM > min_expr)
-  pData(cds)$num_genes_expressed <- colSums(FM > min_expr)
+  fData(cds)$num_cells_expressed <- Matrix::rowSums(exprs(cds) > min_expr)
+  pData(cds)$num_genes_expressed <- Matrix::colSums(exprs(cds))
 
   cds
 }
@@ -328,7 +327,7 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
     })
   }else if(method == "median"){
     row_median <- apply(CM, 1, median)
-    sfs <- apply(t(t(CM) - row_median), 2, median)
+    sfs <- apply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
   }else if(method == 'mode'){
     sfs <- estimate_t(CM)
   }else if(method == 'geometric-mean-total') {

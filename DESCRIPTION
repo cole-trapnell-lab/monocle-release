@@ -23,7 +23,7 @@ Depends:
     DDRTree
 Imports:
     BiocGenerics,
-    igraph(>= 0.7.0),
+    igraph(>= 1.0.0),
     plyr,
     cluster,
     combinat,
@@ -38,7 +38,8 @@ Imports:
     pheatmap,
     MASS,
     stringr,
-    proxy
+    proxy,
+    Matrix
 VignetteBuilder: knitr
 Suggests:
     knitr,

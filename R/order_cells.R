@@ -246,8 +246,8 @@ make_canonical <-function(pq_tree)
   
   for (p_node in single_child_p)
   {
-    child_of_p_node <- V(canonical_pq) [ nei(p_node, mode="out") ]
-    parent_of_p_node <- V(canonical_pq) [ nei(p_node, mode="in") ]
+    child_of_p_node <- V(canonical_pq) [ suppressWarnings(nei(p_node, mode="out")) ]
+    parent_of_p_node <- V(canonical_pq) [ suppressWarnings(nei(p_node, mode="in")) ]
     
     for (child_of_p in child_of_p_node)
     {
@@ -275,7 +275,7 @@ count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
     return(children_counts)
   } else {
     children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -415,7 +415,7 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
   } else {
     
     children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -446,7 +446,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
     node_states[V(pq_tree)[curr_node]$name] = assigned_state
     return(node_states)
   } else {
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       node_states <- assign_cell_lineage(pq_tree, child, assigned_state, node_states)
     }
@@ -466,7 +466,7 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
   }else if (V(pq_tree)[curr_node]$type == "P"){
     #print ("ordering P node")
     p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       p_level[[length(p_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
     }
@@ -477,7 +477,7 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
   }else if(V(pq_tree)[curr_node]$type == "Q"){
     #print ("ordering Q node")
     q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       q_level[[length(q_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
     }
@@ -541,16 +541,16 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     branch_id <- names(branch_node_counts)[i]
     #print (branch_id)
     branch_tree <- branch_tree + vertex(branch_id)
-    parents <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
+    parents <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
     if (length(parents) > 0 && parents$type == "P")
     {
-      p_node_parent <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-      parent_branch_id <- V(pq_tree)[nei(p_node_parent, mode="in")]$name
+      p_node_parent <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
+      parent_branch_id <- V(pq_tree)[suppressWarnings(nei(p_node_parent, mode="in"))]$name
       #print (parent_branch_id)
       #print (branch_id)
       branch_tree <- branch_tree + edge(parent_branch_id, branch_id)
     }
-    pq_tree[V(pq_tree) [ nei(names(branch_node_counts)[i], mode="in") ], names(branch_node_counts)[i] ] <- FALSE
+    pq_tree[V(pq_tree) [ suppressWarnings(nei(names(branch_node_counts)[i], mode="in")) ], names(branch_node_counts)[i] ] <- FALSE
   }
   
   #branch_point_roots[[length(branch_point_roots) + 1]] <- curr_node
@@ -596,7 +596,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       curr_branch_root_cell <- names(curr_branch_pseudotimes)[length(curr_branch_pseudotimes)]
     }
     
-    for (child in V(branch_tree) [ nei(curr_branch, mode="out") ])
+    for (child in V(branch_tree) [ suppressWarnings(nei(curr_branch, mode="out")) ])
     {
       child_cell_ordering_subtree <- graph.empty()
       
@@ -669,7 +669,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
     
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     ordering_tree_res$subtree <- cell_tree
     
     if (length(children) == 1){
@@ -692,11 +692,11 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     cell_tree <- ordering_tree_res$subtree
     curr_cell_pseudotime <- last_pseudotime
     V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
-    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ nei(curr_cell, mode="in") ]$name
+    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ suppressWarnings(nei(curr_cell, mode="in")) ]$name
     #print (curr_cell_pseudotime)
     
     ordering_tree_res$subtree <- cell_tree
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     
     for (child in children)	{
       next_node <- V(cell_tree)[child]$name
@@ -765,6 +765,8 @@ setOrderingFilter <- function(cds, ordering_genes){
 #' Run the fastICA algorithm on a numeric matrix.
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @importFrom irlba irlba
+#' 
+#' #FIXME: This will internall convert to a dense matrix
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
@@ -850,7 +852,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
     
-    children <- V(cell_tree) [ nei(curr_cell, mode="all") ]$name 
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="all")) ]$name 
     children <- setdiff(children, V(cell_tree)[visited_node]$name)
     
     ordering_tree_res$subtree <- cell_tree
@@ -1078,7 +1080,7 @@ reduceDimension <- function(cds,
     checkSizeFactors(cds)
     size_factors <- sizeFactors(cds)
     #print (size_factors)
-    FM <- t(t(FM) / size_factors)
+    FM <- Matrix::t(Matrix::t(FM) / size_factors)
     #FM <- log2(FM)
   }
   
@@ -1086,7 +1088,7 @@ reduceDimension <- function(cds,
     FM <- FM[fData(cds)$use_for_ordering,]
   
   if (cds@expressionFamily@vfamily == "binomialff"){
-    ncounts <- FM
+    ncounts <- FM > 0
     ncounts[ncounts != 0] <- 1
     FM <- t(t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
   }
@@ -1095,7 +1097,7 @@ reduceDimension <- function(cds,
     FM <- FM + pseudo_expr
   }
   
-  FM <- FM[matrixStats::rowSds(FM) > 0,]
+  FM <- FM[apply(FM, 1, sd) > 0,]
   
   if (cds@expressionFamily@vfamily != "binomialff"){
     if (use_vst){
@@ -1136,10 +1138,10 @@ reduceDimension <- function(cds,
   }
   
   if (method == "ICA"){
-    init_ICA <- ica_helper(t(FM), max_components, ...)
+    init_ICA <- ica_helper(Matrix::t(FM), max_components, use_irlba=use_irlba, ...)
     
-    x_pca <- t(t(FM) %*% init_ICA$K)
-    W <- t(init_ICA$W)
+    x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
+    W <- Matrix::t(init_ICA$W)
     
     weights <- W
     
@@ -1153,10 +1155,10 @@ reduceDimension <- function(cds,
     rownames(S) <- colnames(weights)
     colnames(S) <- colnames(FM) 
     
-    reducedDimW(cds) <- W
-    reducedDimA(cds) <- A
-    reducedDimS(cds) <- S
-    reducedDimK(cds) <- init_ICA$K
+    reducedDimW(cds) <- as.matrix(W)
+    reducedDimA(cds) <- as.matrix(A)
+    reducedDimS(cds) <- as.matrix(S)
+    reducedDimK(cds) <- as.matrix(init_ICA$K)
     
     adjusted_S <- t(reducedDimS(cds))
     dp <- as.matrix(dist(adjusted_S))
@@ -1188,41 +1190,15 @@ reduceDimension <- function(cds,
   cds
 }
 
-
-#' a function to assign pseudotime and states based on the projected coordinates from the DDRTree algorithm, the stree matrix maybe used later
-#' also: fix the bug when the scale_pseudotime can be used
-#' @param cds a matrix with N x N dimension
-#' @param root_cell a dataframe used to generate new data for interpolation of time points
-#' @param scale_pseudotime a matrix with N x N dimension
-#' @param verbose a matrix with N x N dimension
-#' @return a cds object with the states and the branch assigned correctly
-#' @export
-#' 
-assignPseudotimeBranchPT <- function(cds, root_cell = NULL, scale_pseudotime = F, verbose = F) {
-  
-}
-
 #make the projection: 
 #' @export
 Project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
-  
+
   tip_leaves <- names(which(degree(dp_mst) == 1))
-  #find the closest vertex: 
-  
-  #find segements from this vertex
-  
-  #find the shortest distance among all the segements 
-  
-  #build a mst from the projected data 
-  
-#   closest_vertex <- apply(Z, 2, function(Z_i){
-#     Z_i_dist <- apply(Y, 2, function(Y_i) {dist(rbind(Y_i, Z_i))})
-#     which(Z_i_dist == min(Z_i_dist))[1]
-#   })
-  
+
   distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
   closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) ) } )
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
@@ -1235,7 +1211,7 @@ Project2MST <- function(cds, Projection_Method){
   else{
     P <- matrix(rep(0, length(Y)), nrow = nrow(Y))
     for(i in 1:length(closest_vertex)) {
-      neighbors <- names(V(dp_mst) [ nei(closest_vertex_names[i], mode="all") ]) 
+      neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ]) 
       projection <- NULL
       distance <- NULL 
       Z_i <- Z[, i]

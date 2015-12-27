@@ -4,7 +4,7 @@
 % \VignettePackage{monocle}
 \documentclass[10pt,oneside]{article}
 
-\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments}
+\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
 
 %\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
 \usepackage{whbiocvignette}
@@ -68,7 +68,6 @@ plot_genes_branched_pseudotime(lung[1:5,])
 
 @ %def 
 
-
 \section{Introduction}
 
 The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. It was developed to analyze single cell RNA-seq data, but can also be used with qPCR measurements. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
@@ -124,7 +123,7 @@ HSMM <- newCellDataSet(HSMM_expr_matrix,
 rpc_matrix <- relative2abs(HSMM, cores = detectCores())
 
 # Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(rpc_matrix, 
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"), 
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
@@ -170,7 +169,7 @@ HSMM <- HSMM[,valid_cells]
 
 If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
 <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-pData(HSMM)$Total_mRNAs <- colSums(exprs(HSMM))
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
@@ -189,7 +188,7 @@ L <- log(exprs(HSMM[expressed_genes,]))
 
 # Standardize each gene, so that they are all on the same scale,
 # Then melt the data with plyr so we can plot it easily"
-melted_dens_df <- melt(t(scale(t(L))))
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
 
 # Plot the distribution of the standardized gene expression values.
 qplot(value, geom="density", data=melted_dens_df) +  stat_function(fun = dnorm, size=0.5, color='red') + 
