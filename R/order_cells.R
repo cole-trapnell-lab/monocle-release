@@ -1051,7 +1051,7 @@ orderCells <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            method=c("ICA", "DDRTree"),
+                            method=c("DDRTree", "ICA"),
                             pseudo_expr=1, 
                             batch=NULL, 
                             batch2=NULL, 

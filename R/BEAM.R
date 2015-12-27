@@ -27,13 +27,20 @@ buildLineageBranchCellDataSet <- function(cds,
   }
   
   pr_graph_cell_proj_mst <- minSpanningTree(cds)
-  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-  root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_root_cell
+  
+  root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell
   root_state <- pData(cds)[root_cell,]$State
   #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
   
   pr_graph_root <- subset(pData(cds), State == root_state)
-  root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),] 
+  
+  if (cds@dim_reduce_type == "DDRTree"){
+    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+    root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),]
+  }else{
+    root_cell_point_in_Y <- row.names(pr_graph_root)
+  }
+  
   root_cell <- names(which(degree(pr_graph_cell_proj_mst, v = root_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
   
   paths_to_root <- list()
@@ -46,7 +53,12 @@ buildLineageBranchCellDataSet <- function(cds,
       curr_cell <- subset(pData(cds), State == leaf_state)
       #Get all the nearest cells in Y for curr_cells:
       
-      curr_cell_point_in_Y <- closest_vertex[row.names(curr_cell),] 
+      if (cds@dim_reduce_type == "DDRTree"){
+        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+        curr_cell_point_in_Y <- closest_vertex[row.names(curr_cell),] 
+      }else{
+        curr_cell_point_in_Y <- row.names(curr_cell)
+      }
       
       # Narrow down to a single tip cell in Y:
       curr_cell <- names(which(degree(pr_graph_cell_proj_mst, v = curr_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
@@ -54,8 +66,12 @@ buildLineageBranchCellDataSet <- function(cds,
       path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
       path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
       
-      ancestor_cells_for_lineage <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_ancestor)]
-
+      if (cds@dim_reduce_type == "DDRTree"){
+        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+        ancestor_cells_for_lineage <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_ancestor)]
+      }else if (cds@dim_reduce_type == "ICA"){
+        ancestor_cells_for_lineage <- path_to_ancestor
+      }
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_lineage
     }
   }else{
@@ -73,7 +89,13 @@ buildLineageBranchCellDataSet <- function(cds,
       descendents <- V(mst_no_branch_point)[descendents]$name
       if (root_cell %in% descendents == FALSE){
         path_to_root <- unique(c(path_to_ancestor, branch_cell, descendents))
-        path_to_root <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_root)]
+        
+        if (cds@dim_reduce_type == "DDRTree"){
+          closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+          path_to_root <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex]$name %in% path_to_root)]
+        }else{
+          path_to_root <- path_to_root
+        }
         
         paths_to_root[[length(paths_to_root) + 1]] <-  path_to_root
       }
