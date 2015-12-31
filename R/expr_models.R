@@ -184,8 +184,8 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
 #' @export
 #'
 
-genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
-                        relative_expr = T, pseudocount = 0, new_data) { 
+genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
+                        relative_expr = T, pseudocount = 0, cores = 1) { 
     
     expressionFamily <- cds@expressionFamily
 
