@@ -9,7 +9,7 @@ makeprobsvec<-function(p){
 #' Calculate the probability matrix for a relative abundance matrix
 makeprobs<-function(a){
   colSums<-apply(a,2,sum)
-  b<-t(t(a)/colSums)
+  b<-Matrix::t(Matrix::t(a)/colSums)
   b[is.na(b)] = 0
   b
 }
@@ -39,7 +39,7 @@ opt_norm_t <- function(t, fpkm, m, c, expr_thresh = 0.1, pseudocnt = NULL, retur
                        -1), ncol = 2, nrow = 2, byrow = T)
   colnames(a_matrix) <- c("k", "b")
   b_matrix <- matrix(c(0, -c), nrow = 2, byrow = T)
-  kb <- t(solve(a_matrix, b_matrix))
+  kb <- Matrix::t(solve(a_matrix, b_matrix))
   
   k <- kb[1]
   b <- kb[2]
@@ -85,7 +85,6 @@ dmode <- function(x, breaks="Sturges") {
 }
 
 #' Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
-#' @export
 optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),
@@ -100,7 +99,7 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
   
   cell_num <- ncol(relative_expr_matrix)
   names(t_estimate) <- colnames(relative_expr_matrix)
-  split_t <- split(t(t_estimate), col(as.matrix(t(t_estimate)), as.factor = T))
+  split_t <- split(Matrix::t(t_estimate), col(as.matrix(Matrix::t(t_estimate)), as.factor = T))
   
   total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix), t_estimate = t_estimate)
   
@@ -110,7 +109,7 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
                            m_val, -1), ncol = 2, nrow = 2, byrow = T)
       colnames(a_matrix) <- c("k", "b")
       b_matrix <- matrix(c(0, -c_val), nrow = 2, byrow = T)
-      k_b_solution <- t(solve(a_matrix, b_matrix))
+      k_b_solution <- Matrix::t(solve(a_matrix, b_matrix))
     })
     k_b_solution},
     error = function(e) {print(e); c(NA, NA)}
@@ -142,15 +141,15 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
   #8.
   dmode_rmse_weight_total <- mean(weight*((cell_dmode - alpha)/alpha)^2 + (1 - weight)*((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)
   #add the JS distance measure:
-  split_relative_expr_matrix <- split(t(adj_est_std_cds), 1:ncol(adj_est_std_cds))
-  round_split_relative_expr_matrix <- split(t(round(adj_est_std_cds)), 1:ncol(adj_est_std_cds))
+  split_relative_expr_matrix <- split(Matrix::t(adj_est_std_cds), 1:ncol(adj_est_std_cds))
+  round_split_relative_expr_matrix <- split(Matrix::t(round(adj_est_std_cds)), 1:ncol(adj_est_std_cds))
   
   p_df <- makeprobs(relative_expr_matrix) #relative expression
-  p_list <- split(t(p_df), 1:ncol(p_df))
+  p_list <- split(Matrix::t(p_df), 1:ncol(p_df))
   q_df_round <- makeprobs(round(adj_est_std_cds)) #round
   q_df <- makeprobs(adj_est_std_cds) #no rounding
-  q_list <- split(t(q_df), 1:ncol(q_df))
-  q_list_round <- split(t(q_df_round), 1:ncol(q_df_round))
+  q_list <- split(Matrix::t(q_df), 1:ncol(q_df))
+  q_list_round <- split(Matrix::t(q_df_round), 1:ncol(q_df_round))
   
   dist_divergence <- mcmapply(function(x, y) {
     JSdistVec(x, y)
@@ -199,15 +198,10 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
 #' values with each row and column representing genes/isoforms and cells, 
 #' respectively. Row and column names should be included. 
 #' Expression values should not be log-transformed.
-#' @param return_all parameter for the intended return results. If setting TRUE, 
-#' matrix of dmode as well as max mu and min mu of two gaussian distribution 
-#' mixture will be returned
 #' @param relative_expr_thresh Relative expression values below this threshold 
 #' are considered zero.
 #' @return an vector of most abundant relative_expr value corresponding to the 
-#' RPC 1. If setting return_all = TRUE, the mode based on gaussian 
-#' density function and the max or min
-#' mode from the mixture gaussian model
+#' RPC 1. 
 #' @details This function estimates the most abundant relative expression value 
 #' (t^*) using a gaussian kernel density function. It can also optionally 
 #' output the t^* based on a two gaussian mixture model
@@ -219,45 +213,11 @@ optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count
 #' t_estimate = estimate_t(HSMM_fpkm_matrix)
 #'}
 
-estimate_t <- function(relative_expr_matrix, return_all = F, relative_expr_thresh = 0.1, ...) {
+estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
   
-  smsn_mode_test <- function(relative_expr, g = 2, relative_expr_thresh = 0.1) {
-    log_relative_exprs <- log10(relative_expr[relative_expr > relative_expr_thresh]) #only look the transcripts above a certain threshold
-    sm_2 <- smsn.mix(log_relative_exprs, nu = 3, g = 2, get.init = TRUE, criteria = TRUE, iter.max=1000,calc.im = FALSE, family="Normal")
-    #   print (sm_2)
-    
-    sm_1 <- smsn.mix(log_relative_exprs, nu = 3, g = 1, get.init = TRUE, criteria = TRUE, iter.max=1000, calc.im = FALSE, family="Normal")
-    #   print (sm_1)
-    
-    if (sm_1$aic >= sm_2$aic){
-      trick_location_max <- 10^max(sm_2$mu)
-      trick_location_min <- 10^min(sm_2$mu) #use the min / max
-    }else{
-      trick_location_max <- 10^max(sm_1$mu)
-      trick_location_min <- 10^min(sm_1$mu)
-    }
-    
-    #best_cov <- 10^sm_analysis$mu[best_location]
-    best_cov_dmode <- 10^(dmode(log_relative_exprs))
-    
-    best_cov_max <- trick_location_max
-    best_cov_min <- trick_location_min
-    sd_relative_expr <- 0
-    #   print (c(best_cov_max, best_cov_min, best_cov_dmode))
-    data.frame(best_cov_dmode = best_cov_dmode,
-               best_cov_max = best_cov_max,
-               best_cov_min = best_cov_min
-    )
-  }
-  
   #apply each column
-  if(return_all){
-    do.call(rbind, apply(relative_expr_matrix, 2, function(relative_expr) smsn_mode_test(relative_expr, ...)))
-  }
-  else{
-    apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))) #best coverage estimate}
-  }
+  apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))) #best coverage estimate}
 }
 
 #' Transform relative expression values into absolute transcript counts.

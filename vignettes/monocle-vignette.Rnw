@@ -4,7 +4,7 @@
 % \VignettePackage{monocle}
 \documentclass[10pt,oneside]{article}
 
-\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments}
+\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
 
 %\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
 \usepackage{whbiocvignette}
@@ -51,36 +51,8 @@ data(HSMM_sample_sheet)
 \section{BEAM}
 
 <<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-baseLoc <- system.file(package="monocle")
-#baseLoc <- './inst'
-extPath <- file.path(baseLoc, "extdata")
-load(file.path(extPath, "lung_phenotype_data.RData"))
-load(file.path(extPath, "lung_exprs_data.RData"))
-load(file.path(extPath, "lung_feature_data.RData"))
-lung_exprs_data <- lung_exprs_data[,row.names(lung_phenotype_data)]
-
-pd <- new("AnnotatedDataFrame", data = lung_phenotype_data)
-fd <- new("AnnotatedDataFrame", data = lung_feature_data)
-
-# Now, make a new CellDataSet using the RNA counts
-lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"), 
-                       phenoData = pd, 
-                       featureData = fd,
-                       lowerDetectionLimit=1,
-                       expressionFamily=negbinomial())
-
-lung <- estimateSizeFactors(lung)
-lung <- estimateDispersions(lung)
-
-pData(lung)$Total_mRNAs <- colSums(exprs(lung))
-lung <- detectGenes(lung, min_expr = 1)
-expressed_genes <- row.names(subset(fData(lung), num_cells_expressed >= 5))
-ordering_genes <- expressed_genes
-lung <- setOrderingFilter(lung, ordering_genes)
-lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-lung <- orderCells(lung)
+lung <- load_lung()
 plot_spanning_tree(lung, color_by="Pseudotime")
-
 @ %def 
 
 <<lung_beam_test, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 8, fig.align="center", warning=FALSE>>=
@@ -95,7 +67,6 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),], num
 plot_genes_branched_pseudotime(lung[1:5,])
 
 @ %def 
-
 
 \section{Introduction}
 
@@ -152,7 +123,7 @@ HSMM <- newCellDataSet(HSMM_expr_matrix,
 rpc_matrix <- relative2abs(HSMM, cores = detectCores())
 
 # Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(rpc_matrix, 
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"), 
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
@@ -198,7 +169,7 @@ HSMM <- HSMM[,valid_cells]
 
 If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
 <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-pData(HSMM)$Total_mRNAs <- colSums(exprs(HSMM))
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
@@ -217,7 +188,7 @@ L <- log(exprs(HSMM[expressed_genes,]))
 
 # Standardize each gene, so that they are all on the same scale,
 # Then melt the data with plyr so we can plot it easily"
-melted_dens_df <- melt(t(scale(t(L))))
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
 
 # Plot the distribution of the standardized gene expression values.
 qplot(value, geom="density", data=melted_dens_df) +  stat_function(fun = dnorm, size=0.5, color='red') + 

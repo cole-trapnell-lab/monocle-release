@@ -19,9 +19,8 @@
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
-clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(t(x)))/2)}, ...){
+clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matrix::t(x)))/2)}, ...){
   expr_matrix <- expr_matrix[rowSums(is.na(expr_matrix)) == 0,] 
-  #expr_matrix <- t(scale(t(log10(expr_matrix))))
   expr_matrix <- expr_matrix[is.nan(rowSums(expr_matrix)) == FALSE,] 
   expr_matrix[is.na(expr_matrix)] <- 0
   n<-method(expr_matrix)

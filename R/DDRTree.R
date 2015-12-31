@@ -7,7 +7,7 @@ assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node 
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
     
-    children <- V(cell_tree) [ nei(curr_cell, mode="all") ]
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="all")) ]
     children <- setdiff(children, visited_node)
     
     ordering_tree_res$subtree <- cell_tree

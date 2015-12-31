@@ -46,24 +46,31 @@ plot_spanning_tree <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_link_size=0.75,
-                               cell_name_size=2){
+                               cell_name_size=2,
+                               show_branch_points=TRUE){
   gene_short_name <- NULL
   sample_name <- NULL
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
   
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  }
   
-  #print (lib_info_with_pseudo)
+  if (cds@dim_reduce_type == "ICA"){
+    reduced_dim_coords <- reducedDimS(cds)
+  }else if (cds@dim_reduce_type == "DDRTree"){
+    reduced_dim_coords <- reducedDimK(cds)
+  }else {
+    stop("Error: unrecognized dimensionality reduction method.")
+  }
 
-  #S_matrix <- reducedDimS(cds)
-  K_matrix <- reducedDimK(cds)
-  
-  if (is.null(K_matrix)){
+  if (is.null(reduced_dim_coords)){
     stop("You must first call reduceDimension() before using this function")
   }
   
-  ica_space_df <- data.frame(t(K_matrix[c(x,y),]))
+  ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
 
   ica_space_df$sample_name <- row.names(ica_space_df)
@@ -74,7 +81,6 @@ plot_spanning_tree <- function(cds,
   if (is.null(dp_mst)){
     stop("You must first call orderCells() before using this function")
   }
-  
   
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
@@ -90,14 +96,12 @@ plot_spanning_tree <- function(cds,
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
-  
-  #data_df <- plyr::rename(data_df, c("data_dim_1"="source_data_dim_1", "data_dim_2"="source_data_dim_2"))
-  
+
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-      markers_exprs <- reshape2::melt(exprs(cds[row.names(markers_fData),]))
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
       markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
@@ -117,20 +121,24 @@ plot_spanning_tree <- function(cds,
   
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
-  g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  }else {
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+  }
   
   
-  mst_branch_nodes <- cds@auxOrderingData[["DDRTree"]]$pr_graph_branch_points
-  branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
-  branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
-  branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
+  if (show_branch_points){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
+    branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
+    branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
   
-  g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
+    g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
                         size=5, na.rm=TRUE, data=branch_point_df) +
-           geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
+             geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
                         size=4, color="white", na.rm=TRUE, data=branch_point_df)
-  
-  
+  }
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
@@ -194,12 +202,12 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
       {
         stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
       }
-      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+      cds_exprs <- Matrix::t(Matrix::t(cds_exprs) / sizeFactors(cds_subset))
     }
-    cds_exprs <- reshape2::melt(round(cds_exprs))
+    cds_exprs <- reshape2::melt(as.matrix(round(cds_exprs)))
   }else{
     cds_exprs <- exprs(cds_subset)
-    cds_exprs <- reshape2::melt(cds_exprs)
+    cds_exprs <- reshape2::melt(as.matrix(cds_exprs))
   }
   if (is.null(min_expr)){
     min_expr <- cds_subset@lowerDetectionLimit
@@ -308,11 +316,11 @@ plot_genes_positive_cells <- function(cds_subset,
       {
         stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
       }
-      marker_exprs <- t(t(marker_exprs) / sizeFactors(cds_subset))
+      marker_exprs <- Matrix::t(Matrix::t(marker_exprs) / sizeFactors(cds_subset))
     }
-    marker_exprs_melted <- reshape2::melt(round(marker_exprs))
+    marker_exprs_melted <- reshape2::melt(as.matrix(round(marker_exprs)))
   }else{
-    marker_exprs_melted <- reshape2::melt(exprs(marker_exprs))
+    marker_exprs_melted <- reshape2::melt(as.matrix(exprs(marker_exprs)))
   }
    
   colnames(marker_exprs_melted) <- c("f_id", "Cell", "expression")
@@ -407,12 +415,12 @@ plot_genes_in_pseudotime <-function(cds_subset,
             if (is.null(sizeFactors(cds_subset))) {
                 stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
             }
-            cds_exprs <- t(t(cds_exprs)/sizeFactors(cds_subset))
+            cds_exprs <- Matrix::t(Matrix::t(cds_exprs)/sizeFactors(cds_subset))
         }
-        cds_exprs <- reshape2::melt(round(cds_exprs))
+        cds_exprs <- reshape2::melt(as.matrix(round(cds_exprs)))
     }
     else {
-        cds_exprs <- reshape2::melt(exprs(cds_subset))
+        cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
     }
     if (is.null(min_expr)) {
         min_expr <- cds_subset@lowerDetectionLimit
@@ -639,7 +647,7 @@ plot_genes_heatmap <- function(cds,
       {
         stop("Error: you must call estimateSizeFactors() first")
       }
-      FM <- t(t(FM) / sizeFactors(cds))
+      FM <- Matrix::t(Matrix::t(FM) / sizeFactors(cds))
     }
     FM <- round(FM)
   }
@@ -691,7 +699,7 @@ plot_genes_heatmap <- function(cds,
     }
     if(rescaling=='row'){ 
       m=m[!apply(m,1,sd)==0,]
-      m=t(scale(t(m),center=TRUE))
+      m=Matrix::t(scale(Matrix::t(m),center=TRUE))
       m[is.nan(m)] = 0
       m[m>scaleMax] = scaleMax
       m[m<scaleMin] = scaleMin
@@ -705,9 +713,9 @@ plot_genes_heatmap <- function(cds,
   if(clustering=='row')
     m=m[hclust(method(m))$order, ]
   if(clustering=='column')  
-    m=m[,hclust(method(t(m)))$order]
+    m=m[,hclust(method(Matrix::t(m)))$order]
   if(clustering=='both')
-    m=m[hclust(method(m))$order ,hclust(method(t(m)))$order]
+    m=m[hclust(method(m))$order ,hclust(method(Matrix::t(m)))$order]
   
   
   rows=dim(m)[1]
@@ -902,11 +910,11 @@ plot_genes_branched_pseudotime <- function (cds,
     if (integer_expression) {
         CM <- exprs(cds_subset)
         if (normalize)
-            CM <- t(t(CM)/sizeFactors(cds_subset))
-        cds_exprs <- reshape2::melt(round(CM))
+            CM <- Matrix::t(Matrix::t(CM)/sizeFactors(cds_subset))
+        cds_exprs <- reshape2::melt(as.matrix(round(CM)))
     }
     else {
-        cds_exprs <- reshape2::melt(exprs(cds_subset))
+        cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
     }
     if (is.null(min_expr)) {
         min_expr <- cds_subset@lowerDetectionLimit
@@ -1072,11 +1080,11 @@ plot_coexpression_matrix <- function(cds,
       {
         stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
       }
-      cds_exprs <- t(t(cds_exprs) / sizeFactors(cds_subset))
+      cds_exprs <- Matrix::t(Matrix::t(cds_exprs) / sizeFactors(cds_subset))
     }
-    cds_exprs <- reshape2::melt(round(cds_exprs))
+    cds_exprs <- reshape2::melt(as.matrix(round(cds_exprs)))
   }else{
-    cds_exprs <- reshape2::melt(exprs(cds_subset))
+    cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
   }
   if (is.null(min_expr)){
     min_expr <- cds_subset@lowerDetectionLimit
@@ -1214,7 +1222,7 @@ plot_ILRs_heatmap <- function (cds,
     annotation[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation), 'ABCs']))
 
     #rotate the plot so that maturation level is on the x-axis
-    pheatmap(t(ILRs_df[ph$tree_row$order, ]), 
+    pheatmap(Matrix::t(ILRs_df[ph$tree_row$order, ]), 
       cluster_cols = T, 
       cluster_rows = F, 
       show_rownames = F, 
@@ -1376,7 +1384,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     heatmap_matrix <- cbind(LineageA_exprs[, (col_gap_ind - 1):1], LineageB_exprs)
     
     if(scaling) {
-        heatmap_matrix <- t(scale(t(heatmap_matrix)))
+        heatmap_matrix <- Matrix::t(scale(Matrix::t(heatmap_matrix)))
         heatmap_matrix[heatmap_matrix > 3] <- 3
         heatmap_matrix[heatmap_matrix < -3] <- -3     
     }
@@ -1384,7 +1392,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     heatmap_matrix_ori <- heatmap_matrix
     heatmap_matrix <- heatmap_matrix[!is.na(heatmap_matrix[, 1]) & !is.na(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
 
-    row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
+    row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
 
     if(is.null(hmcols)) {
