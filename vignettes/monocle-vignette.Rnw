@@ -57,7 +57,7 @@ plot_spanning_tree(lung, color_by="Pseudotime")
 
 <<lung_beam_test, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 8, fig.align="center", warning=FALSE>>=
 
-BEAM_res <- BEAM(lung, cores = detectCores())
+BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
 
 head(BEAM_res)
 

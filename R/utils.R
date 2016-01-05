@@ -409,7 +409,7 @@ load_lung <- function(){
   ordering_genes <- expressed_genes
   lung <- setOrderingFilter(lung, ordering_genes)
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-  lung <- orderCells(lung, num_paths=2)
+  lung <- orderCells(lung)
 
   lung
 }
