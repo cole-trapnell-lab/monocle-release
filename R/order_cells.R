@@ -1109,7 +1109,7 @@ reduceDimension <- function(cds,
   if (cds@expressionFamily@vfamily == "binomialff"){
     ncounts <- FM > 0
     ncounts[ncounts != 0] <- 1
-    FM <- t(t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
+    FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
   }
   
   if (cds@expressionFamily@vfamily != "binomialff"){
@@ -1150,7 +1150,7 @@ reduceDimension <- function(cds,
   if (verbose)
     message("Reducing to independent components")
   
-  FM <- t(scale(t(FM)))
+  FM <- Matrix::t(scale(Matrix::t(FM)))
   FM <- FM[rowSds(FM) >0,]
   if (nrow(FM) == 0){
     stop("Error: all rows have standard deviation zero")
@@ -1164,7 +1164,7 @@ reduceDimension <- function(cds,
     
     weights <- W
     
-    A <- t(solve(weights) %*% t(init_ICA$K))
+    A <- Matrix::t(solve(weights) %*% Matrix::t(init_ICA$K))
     
     colnames(A) <- colnames(weights)
     rownames(A) <- rownames(FM)
@@ -1179,7 +1179,7 @@ reduceDimension <- function(cds,
     reducedDimS(cds) <- as.matrix(S)
     reducedDimK(cds) <- as.matrix(init_ICA$K)
     
-    adjusted_S <- t(reducedDimS(cds))
+    adjusted_S <- Matrix::t(reducedDimS(cds))
     dp <- as.matrix(dist(adjusted_S))
     cellPairwiseDistances(cds) <- dp
     gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
@@ -1195,7 +1195,7 @@ reduceDimension <- function(cds,
     reducedDimS(cds) <- ddrtree_res$Z
     reducedDimK(cds) <- ddrtree_res$Y
     
-    adjusted_K <- t(reducedDimK(cds))
+    adjusted_K <- Matrix::t(reducedDimK(cds))
     dp <- as.matrix(dist(adjusted_K))
     cellPairwiseDistances(cds) <- dp
     gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
