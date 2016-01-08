@@ -4,8 +4,8 @@
 \alias{calABCs}
 \title{Calculate the area between TWO fitted lineage trajectories}
 \usage{
-calABCs(cds, trajectory_type = "Lineage", trajectory_states = c(2, 3),
-  branchTest = FALSE, relative_expr = TRUE,
+calABCs(cds, trajectory_states = c(2, 3), branchTest = FALSE,
+  relative_expr = TRUE,
   trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage", stretch = TRUE,
   pseudocount = 0, cores = 1, weighted = TRUE, verbose = F,
   min_expr = 0.5, integer_expression = FALSE, num = 5000,
@@ -36,8 +36,8 @@ calABCs(cds, trajectory_type = "Lineage", trajectory_states = c(2, 3),
 
 \item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
 
-\item{ABC_method}{the method used to calculate the ABC scores. It can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-We use "integral" by default, which is defined as the area between two spline curves. "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+\item{ABC_method}{the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+"global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
 "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function}
 
 \item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}

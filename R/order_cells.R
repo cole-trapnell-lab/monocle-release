@@ -766,11 +766,10 @@ setOrderingFilter <- function(cds, ordering_genes){
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @importFrom irlba irlba
 #' 
-#' #FIXME: This will internall convert to a dense matrix
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
-  
+  #FIXME: This will internally convert to a dense matrix
   d <- dd[dd != 1L]
   if (length(d) != 2L) 
     stop("data must be matrix-conformal")
@@ -879,7 +878,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
   res <- assign_cell_state_helper(res, res$root)
   
-  states <- V(res$subtree)[colnames(cds)]$cell_state
+  states <- V(res$subtree)$cell_state
   
   cell_names <-  colnames(Pseudotime)
   cell_states <- states
@@ -1018,6 +1017,13 @@ orderCells <- function(cds,
     
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
     
+    root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
+    cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
+    cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
+    
+    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+    root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
+      
     cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
     
     pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
@@ -1189,7 +1195,7 @@ reduceDimension <- function(cds,
   } else if (method == "DDRTree"){
     ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose, ...)
     
-    colnames(ddrtree_res$Y) <- colnames(FM) 
+    colnames(ddrtree_res$Y) <- paste("Y_",1:ncol(ddrtree_res$Y), sep="") 
     colnames(ddrtree_res$Z) <- colnames(FM) 
     
     reducedDimS(cds) <- ddrtree_res$Z
@@ -1228,7 +1234,7 @@ Project2MST <- function(cds, Projection_Method){
     P <- Y[, closest_vertex]
   }
   else{
-    P <- matrix(rep(0, length(Y)), nrow = nrow(Y))
+    P <- matrix(rep(0, length(Z)), nrow = nrow(Z))
     for(i in 1:length(closest_vertex)) {
       neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ]) 
       projection <- NULL
@@ -1250,7 +1256,7 @@ Project2MST <- function(cds, Projection_Method){
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
     }
   }
-  
+
   colnames(P) <- colnames(Z)
   
   #reducedDimK(cds) <- P

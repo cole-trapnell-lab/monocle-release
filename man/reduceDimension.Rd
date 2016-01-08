@@ -4,22 +4,22 @@
 \alias{reduceDimension}
 \title{Computes a projection of a CellDataSet object into a lower dimensional space}
 \usage{
-reduceDimension(cds, max_components = 2, use_irlba = TRUE,
-  pseudo_expr = 1, batch = NULL, batch2 = NULL, covariates = NULL,
-  use_vst = FALSE, verbose = FALSE, ...)
+reduceDimension(cds, max_components = 2, method = c("DDRTree", "ICA"),
+  pseudo_expr = NULL, batch = NULL, batch2 = NULL, covariates = NULL,
+  use_vst = NULL, verbose = FALSE, use_irlba = NULL, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{max_components}{the dimensionality of the reduced space}
 
-\item{use_irlba}{Whether to use the IRLBA package for ICA reduction.}
-
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
 \item{batch}{a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.}
 
 \item{covariates}{a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction}
+
+\item{use_irlba}{Whether to use the IRLBA package for ICA reduction.}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 }

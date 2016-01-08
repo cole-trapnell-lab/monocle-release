@@ -200,19 +200,20 @@ selectGenesInExpressionRange <- function(cds,
 # TODO: we need to rename this function and its arguments.  What it actually
 # does is very confusing.
 ####
+
 #' Filter genes outside of a given range of expression
 #'
 #' @export
 selectHighDispersionGenes <- function(cds, 
-                                      detectionLimit=-Inf, 
+                                      dispersionThresh=0.1,
                                       relative_expr=TRUE){
   disp_df<-esApply(cds,1,
                    function(f_expression) { 
                      if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
                        f_expression <- f_expression / Size_Factor
                      }
-                     f_expression <- f_expression[f_expression > detectionLimit]
-                     expr_mean <- mean(f_expression[f_expression > 0])
+                     #f_expression <- f_expression[f_expression > detectionLimit]
+                     expr_mean <- mean(f_expression)
                      if (is.null(expr_mean) == FALSE) {
                        disp_guess_fit <- cds@dispFitInfo[["blind"]]$disp_func(expr_mean)
                        
@@ -227,7 +228,17 @@ selectHighDispersionGenes <- function(cds,
                      }
                      return (NULL)
                    } )
-  do.call(rbind,disp_df)
+  disp_res <- do.call(rbind,disp_df)
+}
+
+#' Calculate a threshhold below which to exclude genes from ordering
+#' based on the dispersion curve
+#'
+#' @export
+calculateExpressionThreshold <- function(cds, 
+                                         dispersionThresh=0.1){
+  coefs <- attr(cds@dispFitInfo[["blind"]]$disp_func, "coefficients")
+  expr_thresh <- (coefs[["extraPois"]] / (dispersionThresh * coefs[["asymptDisp"]]) - coefs[["asymptDisp"]])
 }
 
 

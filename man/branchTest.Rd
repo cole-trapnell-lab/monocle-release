@@ -6,9 +6,9 @@
 \usage{
 branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  lineage_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
-  pseudocount = 0, cores = 1, weighted = TRUE, lineage_labels = NULL,
-  ...)
+  lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
+  stretch = TRUE, pseudocount = 0, cores = 1, weighted = TRUE,
+  lineage_labels = NULL, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

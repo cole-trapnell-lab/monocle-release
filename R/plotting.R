@@ -74,7 +74,7 @@ plot_spanning_tree <- function(cds,
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
   ica_space_df$sample_name <- row.names(ica_space_df)
-  ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
   
@@ -85,10 +85,10 @@ plot_spanning_tree <- function(cds,
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
   
-  edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
-  
+  edge_df <- merge(ica_space_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+  #edge_df <- ica_space_df
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
-  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
   
   S_matrix <- reducedDimS(cds)
@@ -1411,9 +1411,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
     row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
 
+    bks <- seq(-3.1,3.1, by=0.1)
     if(is.null(hmcols)) {
-        bk <- seq(-3.1,3.1, by=0.1)
-        # hmcols <- blue2green2red(length(bk) - 1)
+        hmcols <- blue2green2red(length(bks) - 1)
     }
     
     # prin  t(hmcols)
@@ -1429,7 +1429,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              cutree_rows=num_clusters,
              silent=TRUE,
              filename=NA,
-             #breaks=bks,
+             breaks=bks,
              color=hmcols
              #color=hmcols#,
              # filename="expression_pseudotime_pheatmap.pdf",
@@ -1501,7 +1501,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              annotation_colors=annotation_colors,
              gaps_col = col_gap_ind,
              treeheight_row = 1.5, 
-             #breaks=bks,
+             breaks=bks,
              fontsize = 6,
              color=hmcols, 
              silent=TRUE,

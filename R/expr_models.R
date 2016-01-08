@@ -236,17 +236,17 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 parametricDispersionFit <- function( means, disps )
 {
-  coefs <- c( .1, 1 )
+  coefs <- c( 1e-6, 1 )
   iter <- 0
   while(TRUE) {
     residuals <- disps / ( coefs[1] + coefs[2] / means )
-    good <- which( (residuals > 1e-4) & (residuals < 15) )
+    good <- which( (residuals > 1e-4) & (residuals < 10000) )
     fit <- glm( disps[good] ~ I(1/means[good]),
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
-    if (coefs[1] < 0.01){
-      coefs[1] <- 0.01
+    if (coefs[1] < 1e-6){
+      coefs[1] <- 1e-6
     }
     if (coefs[2] < 0){
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
@@ -258,6 +258,7 @@ parametricDispersionFit <- function( means, disps )
     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
     iter <- iter + 1
+    print(coefs)
     if( iter > 10 ) {
       warning( "Dispersion fit did not converge." )
       break }
@@ -270,10 +271,32 @@ parametricDispersionFit <- function( means, disps )
   
   names( coefs ) <- c( "asymptDisp", "extraPois" )
   ans <- function( q )
+    
     coefs[1] + coefs[2] / q
   #ans
   coefs
 }
+
+# parametricDispersionFit <- function( means, disps )
+# {
+#   coefs <- c( 1e-6, 1 )
+#   iter <- 0
+#  
+#     residuals <- disps / ( coefs[1] + coefs[2] / means )
+#     good <- which( (residuals > 1e-4) & (residuals < 10000) )
+#     fit <- vglm( log(disps[good]) ~ log(means[good]), family=gaussianff())
+#     oldcoefs <- coefs
+#     coefs <- coefficients(fit)
+# 
+#     iter <- iter + 1
+#     print(coefs)
+#   names( coefs ) <- c( "asymptDisp", "extraPois" )
+#   ans <- function( q )
+#     exp(coefs[1] + coefs[2] * log(q))
+#   #ans
+#   coefs
+# }
+
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @export
@@ -383,8 +406,8 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_mean <- mean(f_expression[f_expression > 0])
-  if (is.null(expr_mean) == FALSE) {
+  expr_mean <- mean(f_expression)
+  if (expr_mean > 0 && is.null(expr_mean) == FALSE) {
     disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)
@@ -404,8 +427,8 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 # this function and calulate_NB_dispersion_hint
 calulate_QP_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_mean <- mean(f_expression[f_expression > 0])
-  if (is.null(expr_mean) == FALSE) {
+  expr_mean <- mean(f_expression)
+  if (expr_mean > 0 && is.null(expr_mean) == FALSE) {
     disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)

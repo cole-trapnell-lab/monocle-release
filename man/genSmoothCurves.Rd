@@ -4,14 +4,13 @@
 \alias{genSmoothCurves}
 \title{Fit smooth spline curves and return the response matrix}
 \usage{
-genSmoothCurves(cds, cores = 1,
-  trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL,
-  relative_expr = T, pseudocount = 0, new_data)
+genSmoothCurves(cds, new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)",
+  weights = NULL, relative_expr = T, pseudocount = 0, cores = 1)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
 
-\item{cores}{the number of cores to be used while testing each gene for differential expression}
+\item{new_data}{a data.frame object including columns (for example, Pseudotime) with names specified in the model formula. The values in the data.frame should be consist with the corresponding values from cds object.}
 
 \item{trend_formula}{a formula string specifying the model formula used in fitting the spline curve for each gene/feature.}
 
@@ -19,7 +18,7 @@ genSmoothCurves(cds, cores = 1,
 
 \item{pseudocount}{pseudo count added before fitting the spline curves}
 
-\item{new_data}{a data.frame object including columns (for example, Pseudotime) with names specified in the model formula. The values in the data.frame should be consist with the corresponding values from cds object.}
+\item{cores}{the number of cores to be used while testing each gene for differential expression}
 }
 \value{
 a data frame containing the data for the fitted spline curves.

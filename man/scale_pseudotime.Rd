@@ -4,7 +4,7 @@
 \alias{scale_pseudotime}
 \title{Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)}
 \usage{
-scale_pseudotime(cds)
+scale_pseudotime(cds, verbose = F)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
