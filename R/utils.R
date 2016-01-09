@@ -286,8 +286,8 @@ detectGenes <- function(cds, min_expr=NULL){
 #   
 #   pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
 #   
-  fData(cds)$num_cells_expressed <- rowSums(exprs(cds) > min_expr)
-  pData(cds)$num_genes_expressed <- colSums(exprs(cds))
+  fData(cds)$num_cells_expressed <- Matrix::rowSums(exprs(cds) > min_expr)
+  pData(cds)$num_genes_expressed <- Matrix::colSums(exprs(cds))
 
   cds
 }
