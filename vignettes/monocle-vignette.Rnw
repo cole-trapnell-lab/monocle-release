@@ -169,7 +169,7 @@ HSMM <- HSMM[,valid_cells]
 
 If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
 <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+pData(HSMM)$Total_mRNAs <-colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
