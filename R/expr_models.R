@@ -383,10 +383,17 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
-    disp_table<-esApply(cds,1,disp_calc_helper, 
-                        modelFormulaStr=modelFormulaStr, 
-                        expressionFamily=cds@expressionFamily)
+    if (isSparseMatrix(exprs(cds))){
+      disp_table<-smartEsApply(cds,1,disp_calc_helper, 
+                          modelFormulaStr=modelFormulaStr, 
+                          expressionFamily=cds@expressionFamily)
+    }else{
+      disp_table<-esApply(cds,1,disp_calc_helper, 
+                          modelFormulaStr=modelFormulaStr, 
+                          expressionFamily=cds@expressionFamily)
+    }
   }
+  message("fitting disersion curves")
   #print (disp_table)
   if(!is.list(disp_table))
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")

@@ -39,7 +39,8 @@ Imports:
     MASS,
     stringr,
     proxy,
-    Matrix
+    Matrix,
+    slam
 VignetteBuilder: knitr
 Suggests:
     knitr,

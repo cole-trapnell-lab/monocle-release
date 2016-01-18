@@ -931,6 +931,14 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
     if (length(root_cell) > 1)
       root_cell <- root_cell[1]
     
+    # If we used DDRTree, we need to go from this actual cell to the nearst
+    # point on the principal graph
+    if (cds@dim_reduce_type == "DDRTree"){
+      #root_cell_idx <- which(V(minSpanningTree(cds))$name == root_cell, arr.ind=T)
+      graph_point_for_root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex[root_cell,]
+      root_cell = V(minSpanningTree(cds))[graph_point_for_root_cell]$name
+    }
+    
   }else{
     if (is.null(minSpanningTree(cds))){
       stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
@@ -1012,10 +1020,8 @@ orderCells <- function(cds,
     old_A <- reducedDimA(cds)
     old_W <- reducedDimW(cds)
     
-    cds <- Project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+    cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
     minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree 
-    
-    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
     
     root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
     cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
@@ -1023,7 +1029,9 @@ orderCells <- function(cds,
     
     tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
     root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
-      
+    
+    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+    
     cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
     
     pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
@@ -1208,6 +1216,9 @@ reduceDimension <- function(cds,
     dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- dp_mst
     cds@dim_reduce_type <- "DDRTree"
+    
+    cds <- findNearestPointOnMST(cds)
+    
   } else {
     stop("Error: unrecognized dimensionality reduction method")
   }
@@ -1215,21 +1226,40 @@ reduceDimension <- function(cds,
   cds
 }
 
-#make the projection: 
-#' @export
-Project2MST <- function(cds, Projection_Method){
+# Project each point to the nearest on the MST:
+findNearestPointOnMST <- function(cds){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
-
+  
   tip_leaves <- names(which(degree(dp_mst) == 1))
-
+  
   distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
   closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) ) } )
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
+  
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- as.matrix(closest_vertex)
+  cds
+}
+
+                        
+#make the projection: 
+#' @export
+project2MST <- function(cds, Projection_Method){
+  dp_mst <- minSpanningTree(cds)
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
+  
+  cds <- findNearestPointOnMST(cds)
+  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+
+  #closest_vertex <- as.vector(closest_vertex)
+  closest_vertex_names <- colnames(Y)[closest_vertex]
+  tip_leaves <- names(which(degree(dp_mst) == 1))
+  
   if(!is.function(Projection_Method)) {
     P <- Y[, closest_vertex]
   }

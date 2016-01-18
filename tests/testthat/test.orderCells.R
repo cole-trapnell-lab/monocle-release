@@ -51,7 +51,7 @@ test_that("orderCells() properly validates its input",{
   q <- project_point_to_line_segment(p, cbind(A, B))
   #project_point_to_line_segment()
   
-  test <- Project2MST(HSMM_myo, project_point_to_line_segment)
+  test <- project2MST(HSMM_myo, project_point_to_line_segment)
   test <- orderCells(test, num_paths=1, root_state = NULL)
   plot_spanning_tree(test, color_by="Time", cell_size=2)
   plot_genes_in_pseudotime(test[46319, ], cell_size = 3)

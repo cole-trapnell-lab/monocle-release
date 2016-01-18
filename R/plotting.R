@@ -862,8 +862,8 @@ plot_genes_branched_pseudotime <- function (cds,
                                             nrow = NULL, 
                                             ncol = 1, 
                                             panel_order = NULL, 
-                                            cell_color_by = "State",
-                                            trajectory_color_by = "Lineage", 
+                                            color_by = "State",
+                                            trajectory_linetype_by = "Lineage", 
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
@@ -876,14 +876,22 @@ plot_genes_branched_pseudotime <- function (cds,
     ...)
 {
     if (add_ABC) {
-        ABCs_df <- calABCs(cds, trend_formula = trend_formula,
-            lineage_states = lineage_states, stretch = stretch,
-            weighted = weighted, min_expr = min_expr, lineage_labels = lineage_labels,
+        ABCs_df <- calABCs(cds, 
+                           trend_formula = trend_formula,
+                           lineage_states = lineage_states, 
+                           branch_point=branch_point,
+                           stretch = stretch,
+                           weighted = weighted, 
+                           min_expr = min_expr, 
+                           lineage_labels = lineage_labels,
             ...)
         fData(cds)[, "ABCs"] <- ABCs_df$ABCs
     }
     if (add_pval) {
-        pval_df <- branchTest(cds, fullModelFormulaStr = trend_formula,
+        pval_df <- branchTest(cds, 
+                              lineage_states=lineage_states,
+                              branch_point=branch_point,
+                              fullModelFormulaStr = trend_formula,
             reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)")
         fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
     }
@@ -1004,8 +1012,8 @@ plot_genes_branched_pseudotime <- function (cds,
       q <- q + geom_vline(aes(xintercept = bifurcation_time),
                           color = "black", linetype = "longdash")
     }
-    if (is.null(cell_color_by) == FALSE) {
-        q <- q + geom_point(aes_string(color = cell_color_by), size = I(cell_size))
+    if (is.null(color_by) == FALSE) {
+        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
     }
     if (add_ABC)
         q <- q + scale_y_log10() + facet_wrap(~feature_label +
@@ -1020,7 +1028,7 @@ plot_genes_branched_pseudotime <- function (cds,
             method = "loess")
     else if (method == "fitting") {
         q <- q + geom_line(aes_string(x = "Pseudotime", y = "full_model_expectation",
-            color = trajectory_color_by), data = cds_exprs) #+ scale_color_manual(name = "Type", values = c(colour_cell, colour), labels = c("Progenitor", "AT1", "AT2", "AT1", "AT2")
+            linetype = trajectory_linetype_by), data = cds_exprs) #+ scale_color_manual(name = "Type", values = c(colour_cell, colour), labels = c("Progenitor", "AT1", "AT2", "AT1", "AT2")
     }
 
     if(!is.null(reducedModelFormulaStr)) {
@@ -1028,7 +1036,7 @@ plot_genes_branched_pseudotime <- function (cds,
             color = 'black', linetype = 2, data =  cds_exprs)   
     }
     if (stretch)
-        q <- q + ylab("Expression") + xlab("Maturation levels")
+        q <- q + ylab("Expression") + xlab("Pseudotime (stretched)")
     else q <- q + ylab("Expression") + xlab("Pseudotime")
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
