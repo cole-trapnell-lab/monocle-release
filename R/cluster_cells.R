@@ -4,7 +4,7 @@
 #' @param ncenter number of desired cell clusters
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @export
-clusterCells <- function(cds, max_comp=18, ncent=15) {
+clusterCells <- function(cds, max_comp=18, ncent=15, ...) {
 
   cds <- reduceDimension(cds, 
                          max_components=max_comp, 
