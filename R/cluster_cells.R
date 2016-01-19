@@ -8,7 +8,7 @@ clusterCells <- function(cds, max_comp=18, ncent=15, ...) {
 
   cds <- reduceDimension(cds, 
                          max_components=max_comp, 
-                         covariates=as.numeric(log(pData(mix)$num_genes_expressed)), 
+                         covariates=as.numeric(log(pData(cds)$num_genes_expressed)), 
                          use_vst=T, 
                          pseudo_expr=0, 
                          verbose=T,
