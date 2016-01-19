@@ -104,6 +104,9 @@ buildLineageBranchCellDataSet <- function(cds,
   all_cells_in_subset <- c()
   
   for (path_to_ancestor in paths_to_root){
+    if (length(path_to_ancestor) == 0){
+      stop("Error: common ancestors between selected State values on path to root State")
+    }
     all_cells_in_subset <- c(all_cells_in_subset, path_to_ancestor)
   }
   all_cells_in_subset <- unique(all_cells_in_subset)

@@ -1071,6 +1071,7 @@ orderCells <- function(cds,
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
+#' @import DDRTree
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 

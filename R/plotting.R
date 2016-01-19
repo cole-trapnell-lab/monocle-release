@@ -1523,3 +1523,19 @@ plot_genes_branched_heatmap <- function(cds_subset,
       return(ph_res)
     }
 }
+
+#' Plots genes by mean vs. dispersion, highlighting those selected for ordering
+#' @export
+plot_ordering_genes <- function(cds){
+  disp_table <- dispersionTable(cds)
+
+  ordering_genes <- row.names(subset(fData(cds), use_for_ordering))
+  
+  g <- qplot(mean_expression, dispersion_empirical, data=disp_table, log="xy", color=I("darkgrey")) + 
+    geom_line(aes(y=dispersion_fit), color="red") 
+  if (length(ordering_genes) > 0){
+    g <- g + geom_point(aes(mean_expression, dispersion_empirical), 
+                        data=disp_table[ordering_genes,], color="black")
+  }
+  g
+}
