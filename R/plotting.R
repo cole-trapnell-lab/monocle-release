@@ -1,6 +1,6 @@
-utils::globalVariables(c("Pseudotime", "value", "ids", "ICA_dim_1", "ICA_dim_2", "State", 
+utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin_graph_dim_2", "State", 
                          "value", "feature_label", "expectation", "colInd", "rowInd", "value", 
-                         "source_ICA_dim_1", "source_ICA_dim_2"))
+                         "source_prin_graph_dim_1", "source_prin_graph_dim_2"))
 
 monocle_theme_opts <- function()
 {
@@ -55,15 +55,17 @@ plot_spanning_tree <- function(cds,
   
   
   #print (lib_info_with_pseudo)
-  S_matrix <- reducedDimS(cds)
+
+  #S_matrix <- reducedDimS(cds)
+  K_matrix <- reducedDimK(cds)
   
-  if (is.null(S_matrix)){
+  if (is.null(K_matrix)){
     stop("You must first call reduceDimension() before using this function")
   }
   
-  ica_space_df <- data.frame(t(S_matrix[c(x,y),]))
-  colnames(ica_space_df) <- c("ICA_dim_1", "ICA_dim_2")
-  
+  ica_space_df <- data.frame(t(K_matrix[c(x,y),]))
+  colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
+
   ica_space_df$sample_name <- row.names(ica_space_df)
   ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
@@ -78,14 +80,18 @@ plot_spanning_tree <- function(cds,
   colnames(edge_list) <- c("source", "target")
   
   edge_df <- merge(ica_space_with_state_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
+  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
   
-  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="source_ICA_dim_1", "ICA_dim_2"="source_ICA_dim_2"))
-  edge_df <- merge(edge_df, ica_space_with_state_df[,c("sample_name", "ICA_dim_1", "ICA_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
-  edge_df <- plyr::rename(edge_df, c("ICA_dim_1"="target_ICA_dim_1", "ICA_dim_2"="target_ICA_dim_2"))
+  S_matrix <- reducedDimS(cds)
+  data_df <- data.frame(t(S_matrix[c(x,y),]))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- row.names(data_df)
+  data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   
-  diam <- as.data.frame(as.vector(V(dp_mst)[get.diameter(dp_mst, weights=NA)]$name))
-  colnames(diam) <- c("sample_name")
-  diam <- plyr::arrange(merge(ica_space_with_state_df,diam, by.x="sample_name", by.y="sample_name"), Pseudotime)
+  #data_df <- plyr::rename(data_df, c("data_dim_1"="source_data_dim_1", "data_dim_2"="source_data_dim_2"))
   
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
@@ -99,30 +105,18 @@ plot_spanning_tree <- function(cds,
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    edge_df <- merge(edge_df, markers_exprs, by.x="sample_name", by.y="Var2")
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="Var2")
     #print (head(edge_df))
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
   }else{
-    g <- ggplot(data=edge_df, aes(x=source_ICA_dim_1, y=source_ICA_dim_2)) 
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(xend="target_ICA_dim_1", yend="target_ICA_dim_2", color=color_by), size=.3, linetype="solid", na.rm=TRUE)
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
-  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g +geom_point(aes_string(color=color_by), na.rm=TRUE) 
-  }else{
-    g <- g +geom_point(aes_string(color=color_by), size=I(cell_size), na.rm=TRUE) 
-  }
-  
-  
-  
-  if (show_backbone){
-    #print (diam)
-    g <- g +geom_path(aes(x=ICA_dim_1, y=ICA_dim_2), color=I(backbone_color), size=I(cell_link_size), data=diam, na.rm=TRUE) + 
-      geom_point(aes_string(x="ICA_dim_1", y="ICA_dim_2", color=color_by), size=I(cell_size), data=diam, na.rm=TRUE)
-  }
-  
+  g <- g + geom_point(aes_string(color = color_by), size = I(cell_size), na.rm = TRUE)
+ 
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
@@ -523,7 +517,7 @@ plot_clusters<-function(cds,
   cluster_sizes <- as.data.frame(table(m$cluster))    
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
-  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ")
+  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
   
   facet_wrap_labeller <- function(gg.plot,labels=NULL) {
     #works with R 3.0.1 and ggplot2 0.9.3.1
@@ -844,9 +838,8 @@ plot_genes_branched_pseudotime <- function (cds,
                                             nrow = NULL, 
                                             ncol = 1, 
                                             panel_order = NULL, 
-                                            color_by = "State",
                                             cell_color_by = "State",
-                                            trajectory_color_by = "State", 
+                                            trajectory_color_by = "Lineage", 
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
@@ -978,8 +971,12 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_exprs$Lineage <- as.factor(cds_exprs$Lineage)
 
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
-    if (is.null(color_by) == FALSE) {
-        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
+    if (!is.null(bifurcation_time)) {
+      q <- q + geom_vline(aes(xintercept = bifurcation_time),
+                          color = "black", linetype = "longdash")
+    }
+    if (is.null(cell_color_by) == FALSE) {
+        q <- q + geom_point(aes_string(color = cell_color_by), size = I(cell_size))
     }
     if (add_ABC)
         q <- q + scale_y_log10() + facet_wrap(~feature_label +
@@ -1281,7 +1278,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   num_clusters = 6,
   ABC_df = NULL, 
   branchTest_df = NULL, 
-  lineage_labels = c("Cell fate 1", "Cell fate 1"), 
+  lineage_labels = c("Cell fate 1", "Cell fate 2"), 
   stretch = T, 
   scaling = T,
   norm_method = "vstExprs", 
@@ -1426,7 +1423,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
     names(Cluster_color) <- 1:length(unique(annotation_row$Cluster))
-    annotation_colors=list("Cell Type"=c(Progenitor=Cell_type_color[1], AT1=Cell_type_color[2], AT2=Cell_type_color[3]), 
+    names(Cell_type_color) <- c("Progenitor", lineage_labels[1], lineage_labels[2])
+
+    annotation_colors=list("Cell Type"=Cell_type_color, 
                                 'Cluster' = Cluster_color)
 
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)

@@ -742,7 +742,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	fd <- fData(cds)
 
 	#combined dataframe: 
-
 	cmbn_df <- cbind(cmbn_df, fd)
 
   if(verbose)

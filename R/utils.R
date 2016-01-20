@@ -360,13 +360,15 @@ load_lung <- function(){
   fd <- new("AnnotatedDataFrame", data = lung_feature_data)
 
   # Now, make a new CellDataSet using the RNA counts
-  lung <- newCellDataSet(as.matrix(lung_exprs_data), 
+  lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"), 
                          phenoData = pd, 
                          featureData = fd,
                          lowerDetectionLimit=1,
                          expressionFamily=negbinomial())
 
   lung <- estimateSizeFactors(lung)
+  pData(lung)$Size_Factor <- lung_phenotype_data$Size_Factor
+
   lung <- estimateDispersions(lung)
 
   pData(lung)$Total_mRNAs <- colSums(exprs(lung))
@@ -375,7 +377,7 @@ load_lung <- function(){
   ordering_genes <- expressed_genes
   lung <- setOrderingFilter(lung, ordering_genes)
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-  lung <- orderCells(lung, num_paths=2)
+  lung <- orderCells(lung)
 
   lung
 }
