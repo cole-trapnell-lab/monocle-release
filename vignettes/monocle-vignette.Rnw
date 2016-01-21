@@ -181,7 +181,7 @@ ylab("Density")
 
 Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} or \emph{MEF2C} excludes the fibroblasts. In the block of code below we first grab the values of \emph{MYF5} and \emph{MEF2C} for each cell, and then set these as columns in the pData table for the HSMM object.  We don't have to do this, but it makes filtering a little more convenient. Next we create a vector that has a boolean flag for each cell: TRUE for a myoblast, false for a fibroblast. We then use that vector to creat a third column in the that specicies each cell's type. Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts.  
 
-<<identify_cell_type, eval=TRUE>>=
+<<identify_cell_type, fig.width = 3, fig.height = 2, fig.align="center", eval=TRUE>>=
 MEF2C_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MEF2C")),])
 MYF5_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MYF5")),])
 
