@@ -67,14 +67,18 @@ splitRows <- function (x, ncl) {
 
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
-  do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- row.names(x)
+  par_res
 }
 
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
-  do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- colnames(x)
+  par_res
 }
 
 
@@ -88,7 +92,13 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   e1 <- new.env(parent=parent)
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
-  cl <- parallel::makeCluster(cores)
+  
+  # Note: use outfile argument to makeCluster for debugging
+  platform <- Sys.info()[['sysname']]
+  if (platform == "Windows")
+    cl <- parallel::makeCluster(cores)
+  if (platform %in% c("Linux", "Darwin")) 
+    cl <- parallel::makeCluster(cores, type="FORK")
   
   cleanup <- function(){
     parallel::stopCluster(cl)

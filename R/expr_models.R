@@ -105,7 +105,7 @@ fitModel <- function(cds,
                      pseudocount=0,
                      cores=1){
   if (cores > 1){
-    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr", "Matrix"), cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
                  expressionFamily=cds@expressionFamily,
                  relative_expr=relative_expr,
@@ -379,7 +379,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 {
   
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr"), cores=cores, 
+    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr", "Matrix"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{

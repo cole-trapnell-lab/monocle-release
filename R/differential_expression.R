@@ -146,7 +146,7 @@ differentialGeneTest <- function(cds,
   
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, 
-                             c("BiocGenerics", "VGAM"), 
+                             c("BiocGenerics", "VGAM", "Matrix"), 
                              cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
                              reducedModelFormulaStr=reducedModelFormulaStr,

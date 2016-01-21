@@ -48,26 +48,6 @@ data(HSMM_gene_annotation)
 data(HSMM_sample_sheet)
 @ %def 
 
-\section{BEAM}
-
-<<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-lung <- load_lung()
-plot_spanning_tree(lung, color_by="Pseudotime")
-@ %def 
-
-<<lung_beam_test, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 8, fig.align="center", warning=FALSE>>=
-
-BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
-
-head(BEAM_res)
-
-plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),], branch_point = 1, num_clusters = 4, 
-      cores = detectCores(), use_gene_short_name = T, show_rownames = T)
-
-plot_genes_branched_pseudotime(lung[1:5,], branch_point=1)
-
-@ %def 
-
 \section{Introduction}
 
 The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. It was developed to analyze single cell RNA-seq data, but can also be used with qPCR measurements. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
@@ -253,7 +233,7 @@ marker_genes <- row.names(subset(fData(HSMM_myo),
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
 <<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~Media")
+                                      fullModelFormulaStr="~Media", cores=2)
 
 # Select genes that are significant at an FDR < 10%
 sig_genes <- subset(diff_test_res, qval < 0.1)
@@ -448,6 +428,34 @@ Now we'll feed this matrix to a function, \Rfunction{clusterGenes}, that will cl
 clusters <- clusterGenes(expression_curve_matrix, k=4)
 plot_clusters(HSMM_filtered, clusters)
 @ %def
+
+\section{BEAM}
+
+Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
+
+Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell development that reveals a key cell fate decision. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
+
+<<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+lung <- load_lung()
+plot_spanning_tree(lung, color_by="Time")
+@ %def 
+
+BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
+
+<<lung_beam_test, include=TRUE, eval=TRUE, warning=FALSE>>=
+BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
+BEAM_res <- BEAM_res[order(BEAM_res$qval),]
+BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
+@ %def 
+
+<<lung_beam_branched_heatmap, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 8, fig.align="center", warning=FALSE>>=
+plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),], branch_point = 1, num_clusters = 4, 
+      cores = detectCores(), use_gene_short_name = T, show_rownames = T)
+@ %def 
+
+<<lung_beam_branched_pseudotime, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3, fig.align="center", warning=FALSE>>=
+plot_genes_branched_pseudotime(lung[1:5,], branch_point=1, ncol=2)
+@ %def 
 
 The \Rfunction{plot\_clusters} function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.  The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red.
 
