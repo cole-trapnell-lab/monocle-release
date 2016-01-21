@@ -17,7 +17,7 @@ clusterCells <- function(cds,
   
   cds <- reduceDimension(cds, 
                          max_components=num_reduced_dims, 
-                         residualModelFormulaStr=residualModelFormulaStr, 
+                         residualModelFormulaStr=residualModelFormulaStr,
                          use_vst=T, 
                          pseudo_expr=0, 
                          verbose=F,
