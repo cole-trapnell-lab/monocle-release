@@ -207,7 +207,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
     cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
   }else{
     cds_exprs <- exprs(cds_subset)
-    cds_exprs <- reshape2::melt(cds_exprs)
+    cds_exprs <- reshape2::melt(as.matrix(cds_exprs))
   }
   if (is.null(min_expr)){
     min_expr <- cds_subset@lowerDetectionLimit
@@ -421,7 +421,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
         cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
     }
     else {
-        cds_exprs <- reshape2::melt(exprs(cds_subset))
+        cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
     }
     if (is.null(min_expr)) {
         min_expr <- cds_subset@lowerDetectionLimit
@@ -1537,5 +1537,6 @@ plot_ordering_genes <- function(cds){
     g <- g + geom_point(aes(mean_expression, dispersion_empirical), 
                         data=disp_table[ordering_genes,], color="black")
   }
+  g <- g + monocle_theme_opts()
   g
 }

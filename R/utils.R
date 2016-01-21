@@ -49,7 +49,33 @@ newCellDataSet <- function( cellData,
   cds
 }
 
+sparseApply <- function(Sp_X, MARGIN, FUN, ...){
+  if (MARGIN == 1){
+    lapply(row.names(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[i,]), ...) 
+    }, FUN, ...)
+  }else{
+    lapply(colnames(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[,i]), ...) 
+    }, FUN, ...)
+  }
+}
 
+splitRows <- function (x, ncl) {
+  lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
+}
+
+sparseParRApply <- function (cl, x, FUN, ...) 
+{
+  do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+}
+
+sparseParCApply <- function (cl = NULL, x, FUN, ...) 
+{
+  do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+}
 
 
 #' Multicore esApply wrapper
@@ -78,9 +104,9 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   }
   
   if (MARGIN == 1){
-    res <- parRapply(cl, exprs(X), FUN, ...)
+    res <- sparseParRApply(cl, exprs(X), FUN, ...)
   }else{
-    res <- parCapply(cl, exprs(X), FUN, ...)
+    res <- sparseParCApply(cl, exprs(X), FUN, ...)
   }
   
   res

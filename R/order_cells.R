@@ -1058,7 +1058,6 @@ orderCells <- function(cds,
   cds
 }
 
-
 #' Computes a projection of a CellDataSet object into a lower dimensional space
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
@@ -1071,15 +1070,14 @@ orderCells <- function(cds,
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
+#' @import irlba
 #' @import DDRTree
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
                             method=c("DDRTree", "ICA"),
                             pseudo_expr=NULL, 
-                            batch=NULL, 
-                            batch2=NULL, 
-                            covariates=NULL, 
+                            residualModelFormulaStr=NULL,
                             use_vst=NULL,
                             verbose=FALSE,
                             use_irlba=NULL,
@@ -1148,17 +1146,27 @@ reduceDimension <- function(cds,
   }
   
   # TODO: get rid of this if possible.
-  if (is.null(batch) == FALSE || is.null(batch2) == FALSE|| is.null(covariates) == FALSE)
+  if (is.null(residualModelFormulaStr) == FALSE)
   {
     if (verbose)
       message("Removing batch effects")
-    #FM <- log2(FM)
-    FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
+    
+    #X.model_mat <- model.matrix(as.formula(residualModelFormulaStr), data=pData(cds))
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), data=pData(cds), drop.unused.levels=TRUE)
+    
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[,-1])
+    
+#     #FM <- log2(FM)
+#     FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
     if (cds@expressionFamily@vfamily != "binomialff"){
       if (use_vst == FALSE) {
         FM <- 2^FM
       }
     }
+    
   }
   
   #FM <- log2(FM)
@@ -1166,7 +1174,9 @@ reduceDimension <- function(cds,
     message("Reducing to independent components")
   
   FM <- Matrix::t(scale(Matrix::t(FM)))
-  FM <- FM[rowSds(FM) >0,]
+
+  FM <- FM[apply(FM, 1, sd) > 0,]
+  
   if (nrow(FM) == 0){
     stop("Error: all rows have standard deviation zero")
   }
