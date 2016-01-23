@@ -773,7 +773,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   
   #cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
-	fd <- fData(cds)
+	fd <- fData(cds)[row.names(cmbn_df),]
 
 	#combined dataframe: 
 	cmbn_df <- cbind(cmbn_df, fd)
