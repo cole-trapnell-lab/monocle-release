@@ -833,66 +833,131 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 }
 
 #
+# extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
+# {
+#   nei <- NULL
+#   type <- NULL
+#   pseudo_time <- NULL
+#   
+#   dp_mst <- minSpanningTree(cds) 
+#   
+#   Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
+#   
+#   curr_state <- 1
+#   #' a function to assign pseudotime for the MST
+#   assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
+#     nei <- NULL
+#     
+#     cell_tree <- ordering_tree_res$subtree
+#     V(cell_tree)[curr_cell]$cell_state = curr_state
+#     
+#     children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="all")) ]$name 
+#     children <- setdiff(children, V(cell_tree)[visited_node]$name)
+#     
+#     ordering_tree_res$subtree <- cell_tree
+#     #V(ordering_tree_res$subtree)[curr_cell]$parent = visited_node
+#     
+#     if (length(children) == 0){
+#       return (ordering_tree_res)
+#     }else if (length(children) == 1){
+#       #visited_node <- union(children, visited_node)
+#       V(ordering_tree_res$subtree)[children]$parent = V(cell_tree)[curr_cell]$name
+#       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, curr_cell)
+#     }else{
+#       for (child in children) {
+#         #visited_node <- union(child, visited_node)
+#         V(ordering_tree_res$subtree)[children]$parent = rep(V(cell_tree)[curr_cell]$name, length(children))
+#         curr_state <<- curr_state + 1
+#         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, curr_cell)
+#       }
+#     }
+#     return (ordering_tree_res)
+#   }
+#   
+#   res <- list(subtree = dp_mst, root = root_cell)
+#   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
+#   res <- assign_cell_state_helper(res, res$root)
+#   
+#   states <- V(res$subtree)$cell_state
+#   
+#   cell_names <-  colnames(Pseudotime)
+#   cell_states <- states
+#   cell_pseudotime <- Pseudotime
+#   cell_parents <- V(res$subtree)$parent
+#   
+#   ordering_df <- data.frame(sample_name = cell_names,
+#                             cell_state = factor(cell_states),
+#                             pseudo_time = as.vector(cell_pseudotime),
+#                             parent = cell_parents)
+#   row.names(ordering_df) <- ordering_df$sample_name
+#   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
+#   return(ordering_df)
+# }
+
 extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 {
   nei <- NULL
   type <- NULL
   pseudo_time <- NULL
   
+  dp <- cellPairwiseDistances(cds) 
   dp_mst <- minSpanningTree(cds) 
   
-  Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
-  
   curr_state <- 1
-  #' a function to assign pseudotime for the MST
-  assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
-    nei <- NULL
+
+  res <- list(subtree = dp_mst, root = root_cell)
+  
+  states = rep(1, ncol(dp))
+  names(states) <- V(dp_mst)$name
+  
+  pseudotimes = rep(0, ncol(dp))
+  names(pseudotimes) <- V(dp_mst)$name
+  
+  parents = rep(NA, ncol(dp))
+  names(parents) <- V(dp_mst)$name
+  
+  mst_traversal <- graph.dfs(dp_mst, 
+                             root=root_cell, 
+                             neimode = "all", 
+                             unreachable=FALSE, 
+                             father=TRUE)
+  mst_traversal$father <- as.numeric(mst_traversal$father)
+  curr_state <- 1
+  
+  for (i in 1:length(mst_traversal$order)){
+    curr_node = mst_traversal$order[i]
+    curr_node_name = V(dp_mst)[curr_node]$name
     
-    cell_tree <- ordering_tree_res$subtree
-    V(cell_tree)[curr_cell]$cell_state = curr_state
-    
-    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="all")) ]$name 
-    children <- setdiff(children, V(cell_tree)[visited_node]$name)
-    
-    ordering_tree_res$subtree <- cell_tree
-    #V(ordering_tree_res$subtree)[curr_cell]$parent = visited_node
-    
-    if (length(children) == 0){
-      return (ordering_tree_res)
-    }else if (length(children) == 1){
-      #visited_node <- union(children, visited_node)
-      V(ordering_tree_res$subtree)[children]$parent = V(cell_tree)[curr_cell]$name
-      ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, curr_cell)
-    }else{
-      for (child in children) {
-        #visited_node <- union(child, visited_node)
-        V(ordering_tree_res$subtree)[children]$parent = rep(V(cell_tree)[curr_cell]$name, length(children))
-        curr_state <<- curr_state + 1
-        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, curr_cell)
+    if (is.na(mst_traversal$father[curr_node]) == FALSE){
+      parent_node = mst_traversal$father[curr_node]
+      parent_node_name = V(dp_mst)[parent_node]$name
+      parent_node_pseudotime = pseudotimes[parent_node_name]
+      parent_node_state = states[parent_node_name]
+      curr_node_pseudotime = parent_node_pseudotime + dp[curr_node_name, parent_node_name]
+      if (degree(dp_mst, v=parent_node_name) > 2){
+        curr_state <- curr_state + 1
       }
+    }else{
+      parent_node = NA
+      parent_node_name = NA
+      curr_node_pseudotime = 0
     }
-    return (ordering_tree_res)
+    
+    curr_node_state = curr_state
+    pseudotimes[curr_node_name] <- curr_node_pseudotime
+    states[curr_node_name] <- curr_node_state
+    parents[curr_node_name] <- parent_node_name
   }
   
-  res <- list(subtree = dp_mst, root = root_cell)
-  #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
-  res <- assign_cell_state_helper(res, res$root)
-  
-  states <- V(res$subtree)$cell_state
-  
-  cell_names <-  colnames(Pseudotime)
-  cell_states <- states
-  cell_pseudotime <- Pseudotime
-  cell_parents <- V(res$subtree)$parent
-  
-  ordering_df <- data.frame(sample_name = cell_names,
-                            cell_state = factor(cell_states),
-                            pseudo_time = as.vector(cell_pseudotime),
-                            parent = cell_parents)
+  ordering_df <- data.frame(sample_name = names(states),
+                            cell_state = factor(states),
+                            pseudo_time = as.vector(pseudotimes),
+                            parent = parents)
   row.names(ordering_df) <- ordering_df$sample_name
   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
   return(ordering_df)
 }
+
 
 select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
   if (is.null(root_state) == FALSE) {
@@ -1302,6 +1367,11 @@ project2MST <- function(cds, Projection_Method){
   
   #reducedDimK(cds) <- P
   dp <- as.matrix(dist(t(P)))
+  
+  min_dist = min(dp[dp!=0])
+  dp[dp == 0] <- min_dist
+  diag(dp) <- 0
+  
   cellPairwiseDistances(cds) <- dp
   gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
   dp_mst <- minimum.spanning.tree(gp)
