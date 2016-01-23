@@ -1369,7 +1369,8 @@ project2MST <- function(cds, Projection_Method){
   dp <- as.matrix(dist(t(P)))
   
   min_dist = min(dp[dp!=0])
-  dp[dp == 0] <- min_dist
+  #dp[dp == 0] <- min_dist
+  dp <- dp + min_dist
   diag(dp) <- 0
   
   cellPairwiseDistances(cds) <- dp
