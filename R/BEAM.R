@@ -4,10 +4,12 @@
 #' @param lineage_labels The names for each branching lineage
 #' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param progenitor_method The method to treat the progenitor cells, either split or duplicate
 #' @return a CellDataSet with the duplicated cells and stretched lineages
 #' @export
 #'
 buildLineageBranchCellDataSet <- function(cds, 
+                                          progenitor_method = c('split', 'duplicate'), 
                                           lineage_states = c(2, 3), 
                                           lineage_labels = NULL, 
                                           stretch = FALSE, 
@@ -98,21 +100,34 @@ buildLineageBranchCellDataSet <- function(cds,
 
   pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
-  for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
-    if (nrow(exprs_data) == 1)
-        exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
-            progenitor_ind])))
-    else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
-    weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
 
-    colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
-      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
-    pData <- rbind(pData, pData[progenitor_ind, ])
-    
-    pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
-    row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
-      paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+  if (progenitor_method == 'duplicate') {
+    for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+      if (nrow(exprs_data) == 1)
+          exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
+              progenitor_ind])))
+      else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+      weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
+
+      colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+        paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+      pData <- rbind(pData, pData[progenitor_ind, ])
+      
+      pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+      row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+        paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    }
   }
+  else if(progenitor_method == 'split') {
+    if(length(lineage_states) != 2)
+      stop('more than 2 lineage states are used!')
+
+    lineageA <- sample(progenitor_ind, round(length(progenitor_ind) / 2))
+    pData[lineageA, 'State'] <- lineage_states[1]
+    lineageB <- setdiff(progenitor_ind, lineageA)
+    pData[lineageB, 'State'] <- lineage_states[2]    
+  }
+
   if (!is.null(lineage_labels))
     pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
   else
