@@ -1277,7 +1277,7 @@ reduceDimension <- function(cds,
     minSpanningTree(cds) <- dp_mst
     cds@dim_reduce_type <- "ICA"
   } else if (method == "DDRTree"){
-    ddrtree_res <- DDRTree_cpp(FM, max_components, verbose=verbose, ...)
+    ddrtree_res <- DDRTree(FM, max_components, verbose=verbose, ...)
     
     colnames(ddrtree_res$Y) <- paste("Y_",1:ncol(ddrtree_res$Y), sep="") 
     colnames(ddrtree_res$Z) <- colnames(FM) 
