@@ -104,6 +104,9 @@ buildLineageBranchCellDataSet <- function(cds,
   all_cells_in_subset <- c()
   
   for (path_to_ancestor in paths_to_root){
+    if (length(path_to_ancestor) == 0){
+      stop("Error: common ancestors between selected State values on path to root State")
+    }
     all_cells_in_subset <- c(all_cells_in_subset, path_to_ancestor)
   }
   all_cells_in_subset <- unique(all_cells_in_subset)
@@ -770,7 +773,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   
   #cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
-	fd <- fData(cds)
+	fd <- fData(cds)[row.names(cmbn_df),]
 
 	#combined dataframe: 
 	cmbn_df <- cbind(cmbn_df, fd)

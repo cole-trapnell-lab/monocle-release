@@ -20,7 +20,8 @@ Depends:
     ggplot2(>= 1.0.0),
     VGAM (>= 0.9-5),
     HSMMSingleCell (>= 0.101.5),
-    DDRTree
+    DDRTree,
+    Matrix
 Imports:
     BiocGenerics,
     igraph(>= 1.0.0),
@@ -39,7 +40,6 @@ Imports:
     MASS,
     stringr,
     proxy,
-    Matrix,
     slam
 VignetteBuilder: knitr
 Suggests:

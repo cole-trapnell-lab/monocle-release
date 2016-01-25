@@ -49,7 +49,37 @@ newCellDataSet <- function( cellData,
   cds
 }
 
+sparseApply <- function(Sp_X, MARGIN, FUN, ...){
+  if (MARGIN == 1){
+    lapply(row.names(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[i,]), ...) 
+    }, FUN, ...)
+  }else{
+    lapply(colnames(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[,i]), ...) 
+    }, FUN, ...)
+  }
+}
 
+splitRows <- function (x, ncl) {
+  lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
+}
+
+sparseParRApply <- function (cl, x, FUN, ...) 
+{
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- row.names(x)
+  par_res
+}
+
+sparseParCApply <- function (cl = NULL, x, FUN, ...) 
+{
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- colnames(x)
+  par_res
+}
 
 
 #' Multicore esApply wrapper
@@ -62,7 +92,13 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   e1 <- new.env(parent=parent)
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
-  cl <- parallel::makeCluster(cores)
+  
+  # Note: use outfile argument to makeCluster for debugging
+  platform <- Sys.info()[['sysname']]
+  if (platform == "Windows")
+    cl <- parallel::makeCluster(cores)
+  if (platform %in% c("Linux", "Darwin")) 
+    cl <- parallel::makeCluster(cores, type="FORK")
   
   cleanup <- function(){
     parallel::stopCluster(cl)
@@ -78,9 +114,9 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   }
   
   if (MARGIN == 1){
-    res <- parRapply(cl, exprs(X), FUN, ...)
+    res <- sparseParRApply(cl, exprs(X), FUN, ...)
   }else{
-    res <- parCapply(cl, exprs(X), FUN, ...)
+    res <- sparseParCApply(cl, exprs(X), FUN, ...)
   }
   
   res
@@ -218,47 +254,16 @@ selectGenesInExpressionRange <- function(cds,
 # does is very confusing.
 ####
 
-#' Filter genes outside of a given range of expression
+#' Compute a table of 
 #'
 #' @export
-selectHighDispersionGenes <- function(cds, 
-                                      dispersionThresh=0.1,
-                                      relative_expr=TRUE){
-  disp_df<-smartEsApply(cds,1,
-                   function(f_expression) { 
-                     if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
-                       f_expression <- f_expression / Size_Factor
-                     }
-                     #f_expression <- f_expression[f_expression > detectionLimit]
-                     expr_mean <- mean(f_expression)
-                     if (is.null(expr_mean) == FALSE) {
-                       disp_guess_fit <- cds@dispFitInfo[["blind"]]$disp_func(expr_mean)
-                       
-                       # For NB: Var(Y)=mu*(1+mu/k)
-                       f_expression_var <- var(f_expression)
-                       f_expression_mean <- mean(f_expression)
-                       
-                       disp_guess_meth_moments <- f_expression_var - f_expression_mean 
-                       disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
-                       
-                       return (data.frame(mean_exp=expr_mean, disp_fit=disp_guess_fit, disp_empirical=disp_guess_meth_moments))
-                     }
-                     return (NULL)
-                   } )
-  disp_res <- do.call(rbind,disp_df)
+dispersionTable <- function(cds){
+  disp_df<-data.frame(row.names=row.names(cds@dispFitInfo[["blind"]]$disp_table),
+                      mean_expression=cds@dispFitInfo[["blind"]]$disp_table$mu, 
+                      dispersion_fit=cds@dispFitInfo[["blind"]]$disp_func(cds@dispFitInfo[["blind"]]$disp_table$mu),
+                      dispersion_empirical=cds@dispFitInfo[["blind"]]$disp_table$disp)
+  return(disp_df)
 }
-
-#' Calculate a threshhold below which to exclude genes from ordering
-#' based on the dispersion curve
-#'
-#' @export
-calculateExpressionThreshold <- function(cds, 
-                                         dispersionThresh=0.1){
-  coefs <- attr(cds@dispFitInfo[["blind"]]$disp_func, "coefficients")
-  expr_thresh <- (coefs[["extraPois"]] / (dispersionThresh * coefs[["asymptDisp"]]) - coefs[["asymptDisp"]])
-}
-
-
 
 #####
 #' Sets the global expression detection threshold to be used with this CellDataSet.
@@ -309,6 +314,9 @@ detectGenes <- function(cds, min_expr=NULL){
   cds
 }
 
+# Convert a slam matrix to a sparseMatrix
+#' @import slam
+#' @import Matrix
 asSparseMatrix = function (simpleTripletMatrix) {
   retVal = sparseMatrix(i=simpleTripletMatrix[["i"]],
                         j=simpleTripletMatrix[["j"]],
@@ -320,15 +328,22 @@ asSparseMatrix = function (simpleTripletMatrix) {
   return(retVal)
 }
 
+# Convert a sparseMatrix from Matrix package to a slam matrix
+#' @import slam
 asSlamMatrix = function (sp_mat) {
   sp <- Matrix::summary(sp_mat)
   simple_triplet_matrix(sp[,"i"], sp[,"j"], sp[,"x"], ncol=ncol(sp_mat), nrow=nrow(sp_mat), dimnames=dimnames(sp_mat))
 }
 
+# Convert a sparseMatrix from Matrix package to a slam matrix
+#' @import Matrix
 isSparseMatrix <- function(x){
   class(x) %in% c("dgCMatrix", "dgTMatrix")
 }
 
+# Estimate size factors for each column, given a sparseMatrix from the Matrix
+# package
+#' @import slam
 estimateSizeFactorsForSparseMatrix <- function(counts, 
                                                locfunc = median, 
                                                round_exprs=TRUE, 
@@ -522,6 +537,7 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
   lung <- orderCells(lung)
+  lung <- orderCells(lung, root_state=3)
 
   lung
 }
