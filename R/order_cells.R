@@ -1150,7 +1150,7 @@ reduceDimension <- function(cds,
   
   FM <- exprs(cds)
   
-  if (is.null(use_irlba)){
+  if (!is.null(use_irlba)){
     message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
   }
   
