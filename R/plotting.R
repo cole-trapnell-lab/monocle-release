@@ -1362,7 +1362,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     }
 
     heatmap_matrix_ori <- heatmap_matrix
-    heatmap_matrix <- heatmap_matrix[!is.na(heatmap_matrix[, 1]) & !is.na(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
+    heatmap_matrix <- heatmap_matrix[is.finite(heatmap_matrix[, 1]) & is.finite(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
 
     row_dist <- as.dist((1 - cor(t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
