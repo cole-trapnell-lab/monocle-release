@@ -7,7 +7,7 @@
 plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_link_size = 0.75, cell_name_size = 2, show_all_lineages = F)
+  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -29,8 +29,6 @@ plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",
 \item{show_cell_names}{draw the name of each cell in the plot}
 
 \item{cell_name_size}{the size of cell name labels}
-
-\item{show_all_lineages}{draw all the bifurcation trajectories with thick pathes}
 }
 \value{
 a ggplot2 plot object

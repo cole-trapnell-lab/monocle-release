@@ -38,7 +38,9 @@ setClass( "CellDataSet",
                     cellPairwiseDistances="matrix",
                     expressionFamily="vglmff",
                     lowerDetectionLimit="numeric",
-                    dispFitInfo = "environment"),
+                    dispFitInfo = "environment",
+                    dim_reduce_type="character",
+                    auxOrderingData = "environment"),
           prototype = prototype( new( "VersionedBiobase",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.1.0" ) ))
 )

@@ -4,8 +4,8 @@
 \alias{calILRs}
 \title{Calculate the Instant Log Ratio between two branching lineages}
 \usage{
-calILRs(cds, trajectory_type = "Lineage", trajectory_states = c(2, 3),
-  lineage_labels = NULL, stretch = T, cores = 1,
+calILRs(cds, trajectory_states = c(2, 3), lineage_labels = NULL,
+  stretch = T, cores = 1,
   trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage", ILRs_limit = 3,
   relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
   useVST = FALSE, round_exprs = FALSE, pseudocount = 0,

@@ -4,7 +4,7 @@
 % \VignettePackage{monocle}
 \documentclass[10pt,oneside]{article}
 
-\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments}
+\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
 
 %\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
 \usepackage{whbiocvignette}
@@ -48,6 +48,7 @@ data(HSMM_gene_annotation)
 data(HSMM_sample_sheet)
 @ %def 
 
+<<<<<<< HEAD
 \section{BEAM}
 
 <<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
@@ -77,6 +78,8 @@ plot_genes_branched_pseudotime(lung[1:4, ], add_pval = T, ncol = 2,
                                 )
 @ %def 
 
+=======
+>>>>>>> DDRTree
 \section{Introduction}
 
 The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. It was developed to analyze single cell RNA-seq data, but can also be used with qPCR measurements. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
@@ -124,7 +127,7 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
 # First create a CellDataSet from the relative expression levels
-HSMM <- newCellDataSet(HSMM_expr_matrix, 
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),  
                        phenoData = pd, 
                        featureData = fd)
 
@@ -132,11 +135,12 @@ HSMM <- newCellDataSet(HSMM_expr_matrix,
 rpc_matrix <- relative2abs(HSMM, cores = detectCores())
 
 # Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(rpc_matrix, 
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"), 
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
                        expressionFamily=negbinomial())
+
 @ %def
 
 Note that since we are using RPC values, we have changed the value of \Robject{lowerDetectionLimit} to reflect the new scale of expression. Importantly, we have also set the \Robject{expressionFamily} to \Robject{negbinomial()}, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests. Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
@@ -178,7 +182,7 @@ HSMM <- HSMM[,valid_cells]
 
 If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
 <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-pData(HSMM)$Total_mRNAs <- colSums(exprs(HSMM))
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
   geom_vline(xintercept=10000) + 
@@ -197,7 +201,7 @@ L <- log(exprs(HSMM[expressed_genes,]))
 
 # Standardize each gene, so that they are all on the same scale,
 # Then melt the data with plyr so we can plot it easily"
-melted_dens_df <- melt(t(scale(t(L))))
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
 
 # Plot the distribution of the standardized gene expression values.
 qplot(value, geom="density", data=melted_dens_df) +  stat_function(fun = dnorm, size=0.5, color='red') + 
@@ -209,7 +213,7 @@ ylab("Density")
 
 Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} or \emph{MEF2C} excludes the fibroblasts. In the block of code below we first grab the values of \emph{MYF5} and \emph{MEF2C} for each cell, and then set these as columns in the pData table for the HSMM object.  We don't have to do this, but it makes filtering a little more convenient. Next we create a vector that has a boolean flag for each cell: TRUE for a myoblast, false for a fibroblast. We then use that vector to creat a third column in the that specicies each cell's type. Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts.  
 
-<<identify_cell_type, eval=TRUE>>=
+<<identify_cell_type, fig.width = 3, fig.height = 2, fig.align="center", eval=TRUE>>=
 MEF2C_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MEF2C")),])
 MYF5_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MYF5")),])
 
@@ -226,7 +230,11 @@ names(cell_is_hsmm) <- row.names(pData(HSMM))
 pData(HSMM)$CellType <- "Myoblast"
 pData(HSMM)$CellType[cell_is_hsmm == FALSE] <-  "Fibroblast"
 
-HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]								  
+HSMM <- clusterCells(HSMM, residualModelFormulaStr="~num_genes_expressed + Media", num_clusters=2)
+
+plot_spanning_tree(HSMM, color_by="CellType")
+
+HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]			
 @ %def
 
 Now that we have tagged the cells, it's easy to quantify the level of fibroblast ``contaminantation'' in the HSMM culture:
@@ -257,7 +265,7 @@ marker_genes <- row.names(subset(fData(HSMM_myo),
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
 <<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~Media")
+                                      fullModelFormulaStr="~Media", cores=2)
 
 # Select genes that are significant at an FDR < 10%
 sig_genes <- subset(diff_test_res, qval < 0.1)
@@ -296,28 +304,23 @@ We could also leverage the developmental biology community's extensive knowledge
 ordering_genes <- intersect (marker_genes, expressed_genes)
 @ %def
 
-In most cases, however, we want to use all genes that are expressed above a reasonable threshold. Including genes that are expressed at extremely low levels in only a few cells just injects noise into the ordering analysis, so we'll exclude them. Monocle provides a function to collect the list of genes that are expressed above or below given thresholds. The function \Robject{selectGenesInExpressionRange} allows you to select genes that have, for example, a median expression level across cells of at least 2 RPC. This function is quite flexible: see the man page for ?selectGenesInExpressionRange for more details
+Finally, we can select genes that vary a lot across the population of cells. These tend to be key marker genes, and are highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
 
-<<select_ordering_cells, eval=TRUE>>=
-ordering_genes <- selectGenesInExpressionRange(HSMM_myo, 
-                                               min_expression_threshold=10,
-                                               max_expression_threshold=Inf,
-                                               detectionLimit=0.1, 
-                                               stat_fun=function(x) { median(round(x)) })
-
-#ordering_genes <- expressed_genes
- 
+<<select_ordering_genes, eval=TRUE>>=
+disp_table <- dispersionTable(HSMM_myo)
+ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
 @ %def
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
 
 <<set_ordering_filter, eval=TRUE>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
+plot_ordering_genes(HSMM_myo)
 @ %def
 
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
 <<reduce_dimension, eval=TRUE>>=
-HSMM_myo <- reduceDimension(HSMM_myo, use_vst=T, pseudo_expr=0)
+HSMM_myo <- reduceDimension(HSMM_myo)
 @ %def
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
@@ -330,19 +333,6 @@ Once the cells are ordered, we can visualize the trajectory in the reducted dime
 
 <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 plot_spanning_tree(HSMM_myo, color_by="Hours")
-@ %def 
-
-<<plot_ordering_mst_show_flip, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-plot_spanning_tree(HSMM_myo, color_by="Pseudotime")
-plot_spanning_tree(HSMM_myo, color_by="State")
-@ %def 
-
-<<order_cells_flipped, eval=TRUE>>=
-HSMM_myo <- orderCells(HSMM_myo, root_state = 3)
-@ %def
-
-<<plot_ordering_mst_flipped, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-plot_spanning_tree(HSMM_myo, color_by="Pseudotime")
 @ %def 
 
 To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
@@ -470,6 +460,34 @@ Now we'll feed this matrix to a function, \Rfunction{clusterGenes}, that will cl
 clusters <- clusterGenes(expression_curve_matrix, k=4)
 plot_clusters(HSMM_filtered, clusters)
 @ %def
+
+\section{BEAM}
+
+Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
+
+Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell development that reveals a key cell fate decision. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
+
+<<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+lung <- load_lung()
+plot_spanning_tree(lung, color_by="Time")
+@ %def 
+
+BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
+
+<<lung_beam_test, include=TRUE, eval=TRUE, warning=FALSE>>=
+BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
+BEAM_res <- BEAM_res[order(BEAM_res$qval),]
+BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
+@ %def 
+
+<<lung_beam_branched_heatmap, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 8, fig.align="center", warning=FALSE>>=
+plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 0.05)),], branch_point = 1, num_clusters = 4, 
+      cores = detectCores(), use_gene_short_name = T, show_rownames = T)
+@ %def 
+
+<<lung_beam_branched_pseudotime, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3, fig.align="center", warning=FALSE>>=
+plot_genes_branched_pseudotime(lung[1:5,], branch_point=1, ncol=2)
+@ %def 
 
 The \Rfunction{plot\_clusters} function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.  The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red.
 

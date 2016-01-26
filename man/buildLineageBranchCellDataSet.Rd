@@ -5,7 +5,8 @@
 \title{Build a CellDataSet with appropriate duplication along two lineages}
 \usage{
 buildLineageBranchCellDataSet(cds, lineage_states = c(2, 3),
-  lineage_labels = NULL, stretch = FALSE, weighted = TRUE, ...)
+  branch_point = NULL, lineage_labels = NULL, stretch = FALSE,
+  weighted = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

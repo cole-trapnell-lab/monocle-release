@@ -55,7 +55,7 @@ diff_test_helper <- function(x,
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { 
-    #print (e);
+    print (e);
     # If we threw an exception, re-try with a simpler model.  Which one depends on
     # what the user has specified for expression family
     #print(disp_guess)
@@ -85,7 +85,7 @@ diff_test_helper <- function(x,
       }, 
       #warning = function(w) { FM_fit },
       error = function(e) { 
-        #print (e);
+        print (e);
         data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
       })
       #print(test_res)
@@ -146,7 +146,7 @@ differentialGeneTest <- function(cds,
   
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper, 
-                             c("BiocGenerics", "VGAM"), 
+                             c("BiocGenerics", "VGAM", "Matrix"), 
                              cores=cores, 
                              fullModelFormulaStr=fullModelFormulaStr,
                              reducedModelFormulaStr=reducedModelFormulaStr,

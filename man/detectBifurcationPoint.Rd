@@ -5,8 +5,8 @@
 \title{Detect the maturation time point where the gene expression starts to diverge}
 \usage{
 detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
-  detect_all = T, cds = cds, Lineage = "Lineage", lineage_states = c(2,
-  3), stretch = T, cores = detectCores(),
+  detect_all = T, cds = cds, Lineage = "Lineage", branch_point = NULL,
+  lineage_states = c(2, 3), stretch = T, cores = detectCores(),
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
   relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
   useVST = FALSE, round_exprs = FALSE, pseudocount = 0,

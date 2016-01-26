@@ -1,5 +1,2 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-.DS_Store
-.git
-.gitignore

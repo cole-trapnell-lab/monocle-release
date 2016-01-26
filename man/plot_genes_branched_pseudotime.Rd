@@ -5,10 +5,10 @@
 \title{Plot the branch genes in pseduotime with separate lineage curves.}
 \usage{
 plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
-  lineage_labels = NULL, method = "fitting", stretch = TRUE,
-  min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1,
-  panel_order = NULL, color_by = "State", cell_color_by = "State",
-  trajectory_color_by = "State",
+  branch_point = NULL, lineage_labels = NULL, method = "fitting",
+  stretch = TRUE, min_expr = NULL, cell_size = 0.75, nrow = NULL,
+  ncol = 1, panel_order = NULL, color_by = "State",
+  trajectory_linetype_by = "Lineage",
   trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage",
   reducedModelFormulaStr = NULL, label_by_short_name = TRUE,
   weighted = TRUE, add_ABC = FALSE, add_pval = FALSE, normalize = TRUE,

@@ -105,7 +105,7 @@ fitModel <- function(cds,
                      pseudocount=0,
                      cores=1){
   if (cores > 1){
-    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr", "Matrix"), cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
                  expressionFamily=cds@expressionFamily,
                  relative_expr=relative_expr,
@@ -154,7 +154,7 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
         na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
             num_na_fits), nrow = num_na_fits)
         row.names(na_matrix) <- names(res_list[is.na(res_list)])
-        non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) ==
+        non_na_matrix <- Matrix::t(do.call(cbind, lapply(res_list[is.na(res_list) ==
             FALSE], unlist)))
         row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
@@ -162,7 +162,7 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
         res_matrix <- res_matrix[names(res_list), ]
     }
     else {
-        res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
+        res_matrix <- Matrix::t(do.call(cbind, lapply(res_list, unlist)))
         row.names(res_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
     }
@@ -184,8 +184,8 @@ responseMatrix <- function(models, newdata = NULL, cores = detectCores()) {
 #' @export
 #'
 
-genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
-                        relative_expr = T, pseudocount = 0, new_data) { 
+genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
+                        relative_expr = T, pseudocount = 0, cores = 1) { 
     
     expressionFamily <- cds@expressionFamily
 
@@ -228,7 +228,7 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
             }, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
-        t(expression_curve_matrix)
+        Matrix::t(expression_curve_matrix)
       }
 
 }
@@ -236,17 +236,17 @@ genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 parametricDispersionFit <- function( means, disps )
 {
-  coefs <- c( .1, 1 )
+  coefs <- c( 1e-6, 1 )
   iter <- 0
   while(TRUE) {
     residuals <- disps / ( coefs[1] + coefs[2] / means )
-    good <- which( (residuals > 1e-4) & (residuals < 15) )
+    good <- which( (residuals > 1e-4) & (residuals < 10000) )
     fit <- glm( disps[good] ~ I(1/means[good]),
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
-    if (coefs[1] < 0.01){
-      coefs[1] <- 0.01
+    if (coefs[1] < 1e-6){
+      coefs[1] <- 1e-6
     }
     if (coefs[2] < 0){
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
@@ -258,6 +258,7 @@ parametricDispersionFit <- function( means, disps )
     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
     iter <- iter + 1
+    print(coefs)
     if( iter > 10 ) {
       warning( "Dispersion fit did not converge." )
       break }
@@ -270,10 +271,32 @@ parametricDispersionFit <- function( means, disps )
   
   names( coefs ) <- c( "asymptDisp", "extraPois" )
   ans <- function( q )
+    
     coefs[1] + coefs[2] / q
   #ans
   coefs
 }
+
+# parametricDispersionFit <- function( means, disps )
+# {
+#   coefs <- c( 1e-6, 1 )
+#   iter <- 0
+#  
+#     residuals <- disps / ( coefs[1] + coefs[2] / means )
+#     good <- which( (residuals > 1e-4) & (residuals < 10000) )
+#     fit <- vglm( log(disps[good]) ~ log(means[good]), family=gaussianff())
+#     oldcoefs <- coefs
+#     coefs <- coefficients(fit)
+# 
+#     iter <- iter + 1
+#     print(coefs)
+#   names( coefs ) <- c( "asymptDisp", "extraPois" )
+#   ans <- function( q )
+#     exp(coefs[1] + coefs[2] * log(q))
+#   #ans
+#   coefs
+# }
+
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @export
@@ -287,7 +310,7 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
   coefs <- attr( fitInfo$disp_func, "coefficients" )
   if (is.null(expr_matrix)){
     ncounts <- exprs(cds)
-    ncounts <- t(t(ncounts) / sizeFactors(cds))
+    ncounts <- Matrix::t(Matrix::t(ncounts) / sizeFactors(cds))
     if (round_vals)
       ncounts <- round(ncounts)
   }else{
@@ -297,6 +320,7 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
     log( (1 + coefs["extraPois"] + 2 * coefs["asymptDisp"] * q +
             2 * sqrt( coefs["asymptDisp"] * q * ( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) ) )
          / ( 4 * coefs["asymptDisp"] ) ) / log(2)
+  ## NOTE: this converts to a dense matrix
   vst( ncounts )
 }
 
@@ -355,14 +379,21 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 {
   
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr"), cores=cores, 
+    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr", "Matrix"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
-    disp_table<-esApply(cds,1,disp_calc_helper, 
-                        modelFormulaStr=modelFormulaStr, 
-                        expressionFamily=cds@expressionFamily)
+    if (isSparseMatrix(exprs(cds))){
+      disp_table<-smartEsApply(cds,1,disp_calc_helper, 
+                          modelFormulaStr=modelFormulaStr, 
+                          expressionFamily=cds@expressionFamily)
+    }else{
+      disp_table<-esApply(cds,1,disp_calc_helper, 
+                          modelFormulaStr=modelFormulaStr, 
+                          expressionFamily=cds@expressionFamily)
+    }
   }
+  message("fitting disersion curves")
   #print (disp_table)
   if(!is.list(disp_table))
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
@@ -382,8 +413,8 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 
 calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_mean <- mean(f_expression[f_expression > 0])
-  if (is.null(expr_mean) == FALSE) {
+  expr_mean <- mean(f_expression)
+  if (expr_mean > 0 && is.null(expr_mean) == FALSE) {
     disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)
@@ -403,8 +434,8 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression)
 # this function and calulate_NB_dispersion_hint
 calulate_QP_dispersion_hint <- function(disp_func, f_expression)
 {
-  expr_mean <- mean(f_expression[f_expression > 0])
-  if (is.null(expr_mean) == FALSE) {
+  expr_mean <- mean(f_expression)
+  if (expr_mean > 0 && is.null(expr_mean) == FALSE) {
     disp_guess_fit <- disp_func(expr_mean)
     
     # For NB: Var(Y)=mu*(1+mu/k)

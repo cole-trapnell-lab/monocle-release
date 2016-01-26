@@ -24,7 +24,7 @@ newCellDataSet <- function( cellData,
                             lowerDetectionLimit = 0.1, 
                             expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
 {
-  cellData <- as.matrix( cellData )
+  #cellData <- as.matrix( cellData )
   
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )
@@ -49,7 +49,37 @@ newCellDataSet <- function( cellData,
   cds
 }
 
+sparseApply <- function(Sp_X, MARGIN, FUN, ...){
+  if (MARGIN == 1){
+    lapply(row.names(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[i,]), ...) 
+    }, FUN, ...)
+  }else{
+    lapply(colnames(Sp_X), function(i, FUN, ...) {
+      FUN(as.matrix(Sp_X[,i]), ...) 
+    }, FUN, ...)
+  }
+}
 
+splitRows <- function (x, ncl) {
+  lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
+}
+
+sparseParRApply <- function (cl, x, FUN, ...) 
+{
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- row.names(x)
+  par_res
+}
+
+sparseParCApply <- function (cl = NULL, x, FUN, ...) 
+{
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+  names(par_res) <- colnames(x)
+  par_res
+}
 
 
 #' Multicore esApply wrapper
@@ -62,7 +92,13 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   e1 <- new.env(parent=parent)
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
-  cl <- parallel::makeCluster(cores)
+  
+  # Note: use outfile argument to makeCluster for debugging
+  platform <- Sys.info()[['sysname']]
+  if (platform == "Windows")
+    cl <- parallel::makeCluster(cores)
+  if (platform %in% c("Linux", "Darwin")) 
+    cl <- parallel::makeCluster(cores, type="FORK")
   
   cleanup <- function(){
     parallel::stopCluster(cl)
@@ -78,9 +114,26 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   }
   
   if (MARGIN == 1){
-    res <- parRapply(cl, exprs(X), FUN, ...)
+    res <- sparseParRApply(cl, exprs(X), FUN, ...)
   }else{
-    res <- parCapply(cl, exprs(X), FUN, ...)
+    res <- sparseParCApply(cl, exprs(X), FUN, ...)
+  }
+  
+  res
+}
+
+smartEsApply <- function(X, MARGIN, FUN, ...) {
+  parent <- environment(FUN)
+  if (is.null(parent))
+    parent <- emptyenv()
+  e1 <- new.env(parent=parent)
+  multiassign(names(pData(X)), pData(X), envir=e1)
+  environment(FUN) <- e1
+  sp_X <- asSlamMatrix(exprs(X))
+  if (MARGIN == 1){
+    res <- rowapply_simple_triplet_matrix(sp_X, FUN, ...)
+  }else{
+    res <- colapply_simple_triplet_matrix(sp_X, FUN, ...)
   }
   
   res
@@ -113,7 +166,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
-    FM <- t(t(FM)/colSums(FM))
+    FM <- Matrix::t(Matrix::t(FM)/colSums(FM))
   }
   
   negentropy_exp <- apply(FM,1,function(x) { 
@@ -197,6 +250,21 @@ selectGenesInExpressionRange <- function(cds,
 }
 
 
+# TODO: we need to rename this function and its arguments.  What it actually
+# does is very confusing.
+####
+
+#' Compute a table of 
+#'
+#' @export
+dispersionTable <- function(cds){
+  disp_df<-data.frame(row.names=row.names(cds@dispFitInfo[["blind"]]$disp_table),
+                      mean_expression=cds@dispFitInfo[["blind"]]$disp_table$mu, 
+                      dispersion_fit=cds@dispFitInfo[["blind"]]$disp_func(cds@dispFitInfo[["blind"]]$disp_table$mu),
+                      dispersion_empirical=cds@dispFitInfo[["blind"]]$disp_table$disp)
+  return(disp_df)
+}
+
 #####
 #' Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 
@@ -212,7 +280,6 @@ selectGenesInExpressionRange <- function(cds,
 #' HSMM <- detectGenes(HSMM, min_expr=0.1)
 #' }
 detectGenes <- function(cds, min_expr=NULL){
-  FM <- exprs(cds)
   if (is.null(min_expr))
   {
     min_expr <- cds@lowerDetectionLimit
@@ -241,29 +308,103 @@ detectGenes <- function(cds, min_expr=NULL){
 #   
 #   pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
 #   
-  fData(cds)$num_cells_expressed <- rowSums(FM > min_expr)
-  pData(cds)$num_genes_expressed <- colSums(FM > min_expr)
+  fData(cds)$num_cells_expressed <- Matrix::rowSums(exprs(cds) > min_expr)
+  pData(cds)$num_genes_expressed <- Matrix::colSums(exprs(cds))
 
   cds
 }
 
-#' Function to calculate the size factor for the single-cell RNA-seq data
-#'  
-#' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
-#' @param locfunc The location function used to find the representive value 
-#' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
-#' @param pseudocount Pseudo count added to the expression data counts 
-#' @param method A character to specify the size factor calculation appraoches. It can be either "mean-geometric-mean-total" (default), 
-#' "weighted-median", "median-geometric-mean", "median", "mode", "geometric-mean-total". 
-#' @export
-#'
-estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
-{
+# Convert a slam matrix to a sparseMatrix
+#' @import slam
+#' @import Matrix
+asSparseMatrix = function (simpleTripletMatrix) {
+  retVal = sparseMatrix(i=simpleTripletMatrix[["i"]],
+                        j=simpleTripletMatrix[["j"]],
+                        x=simpleTripletMatrix[["v"]],
+                        dims=c(simpleTripletMatrix[["nrow"]],
+                               simpleTripletMatrix[["ncol"]]))
+  if (!is.null(simpleTripletMatrix[["dimnames"]]))
+    dimnames(retVal) = simpleTripletMatrix[["dimnames"]]
+  return(retVal)
+}
+
+# Convert a sparseMatrix from Matrix package to a slam matrix
+#' @import slam
+asSlamMatrix = function (sp_mat) {
+  sp <- Matrix::summary(sp_mat)
+  simple_triplet_matrix(sp[,"i"], sp[,"j"], sp[,"x"], ncol=ncol(sp_mat), nrow=nrow(sp_mat), dimnames=dimnames(sp_mat))
+}
+
+# Convert a sparseMatrix from Matrix package to a slam matrix
+#' @import Matrix
+isSparseMatrix <- function(x){
+  class(x) %in% c("dgCMatrix", "dgTMatrix")
+}
+
+# Estimate size factors for each column, given a sparseMatrix from the Matrix
+# package
+#' @import slam
+estimateSizeFactorsForSparseMatrix <- function(counts, 
+                                               locfunc = median, 
+                                               round_exprs=TRUE, 
+                                               pseudocount=0.0, 
+                                               method="mean-geometric-mean-total"){
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
   CM <- CM + pseudocount
+  CM <- asSlamMatrix(CM)
   
+  if (method == "weighted-median"){
+
+    log_medians <- rowapply_simple_triplet_matrix(CM, function(cell_expr) { 
+      log(locfunc(cell_expr))
+    })
+    
+    weights <- rowapply_simple_triplet_matrix(CM, function(cell_expr) {
+      num_pos <- sum(cell_expr > 0)
+      num_pos / length(cell_expr)
+    })
+    
+    sfs <- colapply_simple_triplet_matrix(CM, function(cnts) {
+      norm_cnts <-  weights * (log(cnts) -  log_medians)
+      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
+      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
+      #print (head(norm_cnts))
+      exp( mean(norm_cnts) )
+    })
+  }else if (method == "median-geometric-mean"){
+    log_geo_means <- rowapply_simple_triplet_matrix(CM, function(x) { mean(log(CM)) })
+    
+    sfs <- colapply_simple_triplet_matrix(CM, function(cnts) {
+      norm_cnts <- log(cnts) -  log_geo_means
+      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
+      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
+      #print (head(norm_cnts))
+      exp( locfunc( norm_cnts ))
+    })
+  }else if(method == "median"){
+    stop("Error: method 'median' not yet supported for sparse matrices")
+  }else if(method == 'mode'){
+    stop("Error: method 'mode' not yet supported for sparse matrices")
+  }else if(method == 'geometric-mean-total') {
+    cell_total <- col_sums(CM)
+    sfs <- log(cell_total) / mean(log(cell_total))
+  }else if(method == 'mean-geometric-mean-total') {
+    cell_total <- col_sums(CM)
+    sfs <- cell_total / exp(mean(log(cell_total)))
+  } 
+  
+  sfs[is.na(sfs)] <- 1 
+  sfs   
+}
+
+estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total"){
+  
+  CM <- counts
+  if (round_exprs)
+    CM <- round(CM)
+  CM <- CM + pseudocount
   if (method == "weighted-median"){
     log_medians <- apply(CM, 1, function(cell_expr) { 
       log(locfunc(cell_expr))
@@ -283,7 +424,7 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
     })
   }else if (method == "median-geometric-mean"){
     log_geo_means <- rowMeans(log(CM))
-
+    
     sfs <- apply( CM, 2, function(cnts) {
       norm_cnts <- log(cnts) -  log_geo_means
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
@@ -293,7 +434,7 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
     })
   }else if(method == "median"){
     row_median <- apply(CM, 1, median)
-    sfs <- apply(t(t(CM) - row_median), 2, median)
+    sfs <- apply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
   }else if(method == 'mode'){
     sfs <- estimate_t(CM)
   }else if(method == 'geometric-mean-total') {
@@ -303,12 +444,32 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
     cell_total <- apply(CM, 2, sum)
     sfs <- cell_total / exp(mean(log(cell_total)))
   } 
-
+  
   sfs[is.na(sfs)] <- 1 
   sfs  
 }
 
 
+
+#' Function to calculate the size factor for the single-cell RNA-seq data
+#'  
+#' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
+#' @param locfunc The location function used to find the representive value 
+#' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
+#' @param pseudocount Pseudo count added to the expression data counts 
+#' @param method A character to specify the size factor calculation appraoches. It can be either "mean-geometric-mean-total" (default), 
+#' "weighted-median", "median-geometric-mean", "median", "mode", "geometric-mean-total". 
+#' @export
+#'
+estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+{
+  if (isSparseMatrix(counts)){
+    estimateSizeFactorsForSparseMatrix(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+  }else{
+    estimateSizeFactorsForDenseMatrix(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+  }
+  
+}
 
 ################
 
@@ -378,6 +539,10 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
   lung <- orderCells(lung)
+<<<<<<< HEAD
+=======
+  lung <- orderCells(lung, root_state=3)
+>>>>>>> DDRTree
 
   lung
 }

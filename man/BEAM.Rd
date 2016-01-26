@@ -6,9 +6,9 @@
 \usage{
 BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  lineage_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
-  pseudocount = 0, weighted = T, q_thrsld = 0.05, lineage_labels = NULL,
-  cores = 1, verbose = FALSE, ...)
+  lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
+  stretch = TRUE, pseudocount = 0, weighted = T, q_thrsld = 0.05,
+  lineage_labels = NULL, cores = 1, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
