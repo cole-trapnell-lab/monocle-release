@@ -201,7 +201,6 @@ buildLineageBranchCellDataSet <- function(cds,
   pData <- do.call(rbind, pData_blocks)
   exprs_data <- do.call(cbind, expr_blocks)
 
-<<<<<<< HEAD
   pData$original_cell_id <- row.names(pData)
   pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
 
@@ -239,8 +238,6 @@ buildLineageBranchCellDataSet <- function(cds,
   
   pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
                         levels =levels(cds$State))
-=======
->>>>>>> DDRTree
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   
@@ -780,39 +777,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   #make a newCellDataSet object with the smoothed data? 
 	if(verbose)
    message('pass branchTest')
-<<<<<<< HEAD
-
-  ILRs_res <- calILRs(cds = cds, 
-  			  trajectory_states = lineage_states, 
-  			  lineage_labels = lineage_labels, 
-  			  stretch = stretch, 
-  			  cores = cores, 
-  			  trend_formula = fullModelFormulaStr,
-  			  ILRs_limit = 3, 
-  			  relative_expr = relative_expr, 
-  			  weighted = weighted, 
-  			  pseudocount = pseudocount, 
-  			  return_all = T,
-  			  ...)
-
-  if(verbose)
-   message('pass calILRs')
-  
-  BifurcationTimePoint_res <- detectBifurcationPoint(str_log_df = ILRs_res$str_norm_div_df,
-    lineage_states = lineage_states, 
-    stretch = stretch, 
-    cores = cores, 
-    trend_formula = fullModelFormulaStr, 
-    relative_expr = relative_expr, 
-    weighted = weighted, 
-    pseudocount = pseudocount, 
-  	...)
-  
-  if(verbose)
-   message('pass detectBifurcationPoint')
-  # print('pass detectBifurcationPoint')
-  
-  cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
 
 	# if(draw_branched_kinetics) {
 	# 	plot_genes_branched_pseudotime(cds, 
@@ -869,7 +833,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
 	# 	  file_name = 'branched_heatmap.pdf')
 	# }
 
-=======
 # 
 #   ILRs_res <- calILRs(cds = cds, 
 #                       branch_point=branch_point,
@@ -904,7 +867,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   # print('pass detectBifurcationPoint')
   
   #cmbn_df <- cbind(cmbn_df, data.frame(Bifurcation_time_point = BifurcationTimePoint_res))
->>>>>>> DDRTree
 
 	fd <- fData(cds)[row.names(cmbn_df),]
 

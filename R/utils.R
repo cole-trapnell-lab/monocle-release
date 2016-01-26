@@ -538,11 +538,6 @@ load_lung <- function(){
   ordering_genes <- expressed_genes
   lung <- setOrderingFilter(lung, ordering_genes)
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-  lung <- orderCells(lung)
-<<<<<<< HEAD
-=======
   lung <- orderCells(lung, root_state=3)
->>>>>>> DDRTree
-
   lung
 }

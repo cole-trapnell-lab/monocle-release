@@ -52,10 +52,6 @@ export(selectGenesInExpressionRange)
 export(selectNegentropyGenes)
 export(setOrderingFilter)
 export(vstExprs)
-<<<<<<< HEAD
-export(BEAM)
-=======
->>>>>>> DDRTree
 exportClasses(CellDataSet)
 import(DDRTree)
 import(Matrix)
