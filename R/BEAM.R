@@ -1,15 +1,18 @@
 #' Build a CellDataSet with appropriate duplication along two lineages
 #' @param cds CellDataSet for the experiment
+#' @param progenitor_method The method to treat the progenitor cells, there are three options: sequential_split, random_split, duplicate. 
+#' They represent that the progenitors can be either splitted one by one (sequential_split) or randomly (random_split) or duplicate the 
+#' progenitors (duplicate). For random_split and sequential_split, the cells will be evenly split (when number of progenitors are odd, 
+#' there will be one more cell in one lineage)
 #' @param lineage_states The states for two branching lineages
 #' @param lineage_labels The names for each branching lineage
 #' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @param progenitor_method The method to treat the progenitor cells, either split or duplicate
 #' @return a CellDataSet with the duplicated cells and stretched lineages
 #' @export
 #'
 buildLineageBranchCellDataSet <- function(cds, 
-                                          progenitor_method = c('split', 'duplicate'), 
+                                          progenitor_method = c('sequential_split','random_split', 'duplicate'), 
                                           lineage_states = c(2, 3), 
                                           branch_point = NULL,
                                           lineage_labels = NULL, 
@@ -221,7 +224,7 @@ buildLineageBranchCellDataSet <- function(cds,
         paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
     }
   }
-  else if(progenitor_method == 'split') {
+  else if(progenitor_method == 'random_split') {
     if(length(lineage_states) != 2)
       stop('more than 2 lineage states are used!')
 
@@ -229,6 +232,17 @@ buildLineageBranchCellDataSet <- function(cds,
     pData[lineageA, 'State'] <- lineage_states[1]
     lineageB <- setdiff(progenitor_ind, lineageA)
     pData[lineageB, 'State'] <- lineage_states[2]    
+  }
+  else if(progenitor_method == 'sequential_split') {
+    if(length(lineage_states) != 2)
+      stop('more than 2 lineage states are used!')
+
+    progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
+
+    lineageA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
+    pData[progenitor_ind[lineageA], 'State'] <- lineage_states[1]
+    lineageB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
+    pData[progenitor_ind[lineageB], 'State'] <- lineage_states[2]    
   }
 
   if (!is.null(lineage_labels))
