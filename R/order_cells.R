@@ -1152,7 +1152,7 @@ reduceDimension <- function(cds,
                             use_vst=NULL,
                             verbose=FALSE,
                             use_irlba=NULL,
-                            scaling = FALSE, 
+                            scaling = TRUE, 
                             ...){
  FM <- exprs(cds)
     if (is.null(use_irlba)) {
