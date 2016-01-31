@@ -1135,6 +1135,7 @@ orderCells <- function(cds,
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
 #' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
+#' @param scaling a logic argument to determine whether or not we should scale the data before dimension reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
@@ -1151,15 +1152,13 @@ reduceDimension <- function(cds,
                             use_vst=NULL,
                             verbose=FALSE,
                             use_irlba=NULL,
+                            scaling = FALSE, 
                             ...){
  FM <- exprs(cds)
     if (is.null(use_irlba)) {
         message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
     }
-    if (is.null(use_vst) && cds@expressionFamily@vfamily == "negbinomial") {
-        use_vst = TRUE
-        pseudo_expr = 0
-    }
+
     if (cds@expressionFamily@vfamily == "negbinomial") {
         if (is.null(use_vst)) 
             use_vst = TRUE
@@ -1220,7 +1219,9 @@ reduceDimension <- function(cds,
     }
     if (verbose) 
         message("Reducing to independent components")
-    FM <- Matrix::t(scale(Matrix::t(FM)))
+    
+    if(scaling)
+      FM <- Matrix::t(scale(Matrix::t(FM)))
     FM <- FM[apply(FM, 1, sd) > 0, ]
     if (nrow(FM) == 0) {
         stop("Error: all rows have standard deviation zero")
