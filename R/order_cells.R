@@ -1045,7 +1045,6 @@ orderCells <- function(cds,
     if (is.null(num_paths)){
       num_paths = 1
     }
-    
     adjusted_S <- t(cds@reducedDimS)
     
     dp <- as.matrix(dist(adjusted_S))
@@ -1070,7 +1069,12 @@ orderCells <- function(cds,
     pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
     pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
     #pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name 
     
+    minSpanningTree(cds) <- dp_mst
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
+
   } else if (cds@dim_reduce_type == "DDRTree"){
     if (is.null(num_paths) == FALSE){
       message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
@@ -1110,9 +1114,10 @@ orderCells <- function(cds,
     minSpanningTree(cds) <- old_mst
     reducedDimA(cds) <- old_A
     reducedDimW(cds) <- old_W
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } 
   
-  mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
   # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
   # for now

@@ -31,8 +31,13 @@ buildLineageBranchCellDataSet <- function(cds,
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
   
-  pr_graph_cell_proj_mst <- minSpanningTree(cds)
-  
+  if(cds@dim_reduce_type == "DDRTree") {
+    pr_graph_cell_proj_mst <- minSpanningTree(cds)
+  }
+  else {
+    pr_graph_cell_proj_mst <- cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree
+  }
+
   root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell
   root_state <- pData(cds)[root_cell,]$State
   #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
@@ -162,67 +167,66 @@ buildLineageBranchCellDataSet <- function(cds,
   pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   pData$original_cell_id <- row.names(pData)
   
-  ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
-  expr_blocks <- list()
-  
-  # Duplicate the expression data
-  for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
-    if (nrow(ancestor_exprs) == 1)
-      exprs_data <- t(as.matrix(ancestor_exprs))
-    else exprs_data <- ancestor_exprs
-    
-    colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
-    expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
-    exprs_data <- cbind(exprs_data, expr_lineage_data)
-    expr_blocks[[i]] <- exprs_data
-  }
-  
-  # Make a bunch of copies of the pData entries from the common ancestors
-  ancestor_pData_block <- pData[common_ancestor_cells,]
-  
-  pData_blocks <- list()
-  
-  weight_vec <- c()
-  for (i in 1:length(paths_to_root)) {
-    #weight_vec <- c(weight_vec, rep(weight_constant, length(common_ancestor_cells)))
-    weight_vec_block <- rep(weight_constant, length(common_ancestor_cells))
-    
-    #pData <- rbind(pData, pData[common_ancestor_cells, ])
-    new_pData_block <- ancestor_pData_block
-    new_pData_block$Lineage <- i
-    row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
-    
-    pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
-    pData_lineage_cells$Lineage <- i
-    weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
-    
-    weight_vec <- c(weight_vec, weight_vec_block)
-    
-    new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
-    pData_blocks[[i]] <- new_pData_block
-  }
-  pData <- do.call(rbind, pData_blocks)
-  exprs_data <- do.call(cbind, expr_blocks)
-
   pData$original_cell_id <- row.names(pData)
-  pData$State[progenitor_ind] <- lineage_states[1] #set progenitors to the lineage 1
+  pData[common_ancestor_cells, "State"] <- lineage_states[1] #set progenitors to the lineage 1
 
   if (progenitor_method == 'duplicate') {
-    for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
-      if (nrow(exprs_data) == 1)
-          exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
-              progenitor_ind])))
-      else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
-      weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
+    # for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+    #   if (nrow(exprs_data) == 1)
+    #       exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
+    #           progenitor_ind])))
+    #   else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    #   weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
 
-      colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
-        paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
-      pData <- rbind(pData, pData[progenitor_ind, ])
+    #   colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+    #     paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    #   pData <- rbind(pData, pData[progenitor_ind, ])
       
-      pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
-      row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
-        paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    #   pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+    #   row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+    #     paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    # }
+    ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
+    expr_blocks <- list()
+  
+    # Duplicate the expression data
+    for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
+      if (nrow(ancestor_exprs) == 1)
+        exprs_data <- t(as.matrix(ancestor_exprs))
+      else exprs_data <- ancestor_exprs
+      
+      colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
+      exprs_data <- cbind(exprs_data, expr_lineage_data)
+      expr_blocks[[i]] <- exprs_data
     }
+    
+    # Make a bunch of copies of the pData entries from the common ancestors
+    ancestor_pData_block <- pData[common_ancestor_cells,]
+    
+    pData_blocks <- list()
+    
+    weight_vec <- c()
+    for (i in 1:length(paths_to_root)) {
+      #weight_vec <- c(weight_vec, rep(weight_constant, length(common_ancestor_cells)))
+      weight_vec_block <- rep(weight_constant, length(common_ancestor_cells))
+      
+      #pData <- rbind(pData, pData[common_ancestor_cells, ])
+      new_pData_block <- ancestor_pData_block
+      new_pData_block$Lineage <- i
+      row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      
+      pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
+      pData_lineage_cells$Lineage <- i
+      weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
+      
+      weight_vec <- c(weight_vec, weight_vec_block)
+      
+      new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
+      pData_blocks[[i]] <- new_pData_block
+    }
+    pData <- do.call(rbind, pData_blocks)
+    exprs_data <- do.call(cbind, expr_blocks)
   }
   else if(progenitor_method == 'random_split') {
     if(length(lineage_states) != 2)
@@ -237,12 +241,26 @@ buildLineageBranchCellDataSet <- function(cds,
     if(length(lineage_states) != 2)
       stop('more than 2 lineage states are used!')
 
-    progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
+    # progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
 
-    lineageA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
-    pData[progenitor_ind[lineageA], 'State'] <- lineage_states[1]
-    lineageB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
-    pData[progenitor_ind[lineageB], 'State'] <- lineage_states[2]    
+    # lineageA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
+    # pData[progenitor_ind[lineageA], 'State'] <- lineage_states[1]
+    # lineageB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
+    # pData[progenitor_ind[lineageB], 'State'] <- lineage_states[2]    
+
+    progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
+
+    lineageA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[lineageA], 'State'] <- lineage_states[1]
+    lineageB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[lineageB], 'State'] <- lineage_states[2]   
+
+    zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
+    exprs_data <- cbind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
+    pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
+    row.names(pData)[nrow(pData)] <- 'duplicate_root'
+    pData[nrow(pData), 'State'] <- lineage_states[2]
+    weight_vec <- rep(1, nrow(pData))
   }
 
   if (!is.null(lineage_labels))

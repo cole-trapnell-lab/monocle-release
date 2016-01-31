@@ -128,7 +128,7 @@ plot_spanning_tree <- function(cds,
   }
   
   
-  if (show_branch_points){
+  if (show_branch_points & cds@auxOrderingData[[cds@dim_reduce_type]] == 'DDRTree'){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
     branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
