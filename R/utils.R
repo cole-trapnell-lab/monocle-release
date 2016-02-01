@@ -51,14 +51,17 @@ newCellDataSet <- function( cellData,
 
 sparseApply <- function(Sp_X, MARGIN, FUN, ...){
   if (MARGIN == 1){
-    lapply(row.names(Sp_X), function(i, FUN, ...) {
+    res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[i,]), ...) 
     }, FUN, ...)
+    names(res) <- row.names(Sp_X)
   }else{
-    lapply(colnames(Sp_X), function(i, FUN, ...) {
+    res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[,i]), ...) 
     }, FUN, ...)
+    names(res) <- colnames(Sp_x)
   }
+  res
 }
 
 splitRows <- function (x, ncl) {
@@ -98,7 +101,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   if (platform == "Windows")
     cl <- parallel::makeCluster(cores)
   if (platform %in% c("Linux", "Darwin")) 
-    cl <- parallel::makeCluster(cores, type="FORK")
+    cl <- parallel::makeCluster(cores)
   
   cleanup <- function(){
     parallel::stopCluster(cl)
@@ -129,13 +132,13 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   e1 <- new.env(parent=parent)
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
-  sp_X <- asSlamMatrix(exprs(X))
-  if (MARGIN == 1){
-    res <- rowapply_simple_triplet_matrix(sp_X, FUN, ...)
-  }else{
-    res <- colapply_simple_triplet_matrix(sp_X, FUN, ...)
-  }
   
+  if (isSparseMatrix(exprs(X))){
+    res <- sparseApply(exprs(X), MARGIN, FUN, ...)
+  }else{
+    res <- apply(exprs(X), MARGIN, FUN, ...)
+  }
+
   res
 }
 
