@@ -5,7 +5,7 @@
 \title{Cluster cells to nearest DDRTree center.}
 \usage{
 clusterCells(cds, num_clusters = 2, num_reduced_dims = 10,
-  residualModelFormulaStr = NULL, ddrtree_gamma = 100)
+  residualModelFormulaStr = NULL, ddrtree_gamma = 100, verbose = F)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
