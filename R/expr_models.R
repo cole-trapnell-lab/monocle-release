@@ -230,7 +230,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
     expressionFamily <- cds@expressionFamily
 
     if(cores > 1) {
-      expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
+      expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
                                                               calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
@@ -247,11 +247,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
             )
-        expression_curve_matrix <- plyr::laply(expression_curves, data.frame)
-        colnames(expression_curve_matrix) <- 1:nrow(new_data)
-        row.names(expression_curve_matrix) <- row.names(cds)
-        mode(expression_curve_matrix) <- "numeric" 
-        
+
         return(expression_curve_matrix)
     }
     else {
@@ -268,7 +264,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             }, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
-        Matrix::t(expression_curve_matrix)
+        return(expression_curve_matrix)
       }
 
 }
@@ -331,7 +327,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
     }, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount
     )
-    Matrix::t(expression_curve_matrix)
+    return(expression_curve_matrix)
   }
   
 }
@@ -455,7 +451,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
     disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
     
     if (f_expression_mean == 0){
-      disp_vals <- NULL
+      disp_vals <- data.frame(mu=NA, disp=NA)
     } else {
       disp_vals <- data.frame(mu=f_expression_mean, disp=disp_guess_meth_moments)
     }
@@ -472,7 +468,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
       df_res <- data.frame(mu=disp_vals$mu, disp=disp_vals$disp)
     },
     #warning = function(w) { print (w) },
-    error = function(e) { print (e); NULL }
+    error = function(e) { print (e); data.frame(mu=NA, disp=NA) }
     )
   }
   disp_vals$disp[disp_vals$disp < 0] <- 0
@@ -483,7 +479,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 {
   
   if (cores > 1){
-    disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr", "Matrix"), cores=cores, 
+      disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr", "Matrix"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }else{
@@ -491,13 +487,12 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
                           modelFormulaStr=modelFormulaStr, 
                           expressionFamily=cds@expressionFamily)
   }
-  message("fitting disersion curves")
+  #message("fitting disersion curves")
   #print (disp_table)
   if(!is.list(disp_table))
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
 
-  disp_table <- do.call(rbind.data.frame, disp_table)
-  
+  disp_table <- subset(disp_table, is.na(mu) == FALSE)
   coefs <- parametricDispersionFit(disp_table$mu, disp_table$disp)
   
   names( coefs ) <- c( "asymptDisp", "extraPois" )

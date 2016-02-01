@@ -117,7 +117,7 @@ Note that since we are using RPC values, we have changed the value of \Robject{l
 Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
 <<estimate_size_and_dispersion, eval=TRUE >>=
 HSMM <- estimateSizeFactors(HSMM)
-HSMM <- estimateDispersions(HSMM)
+HSMM <- estimateDispersions(HSMM, cores=6)
 @ %
 We're now ready to start using the \Robject{HSMM} object in our analysis.
 
@@ -215,7 +215,6 @@ Monocle also gives you some tools to cluster cells by type even if you don't
 have a good set of marker genes to distinguish them. The \Rfunction{clusterCells} groups cells by similarity in expression profiles. Cells of the same type should group together. Sometimes, however, it may be necessary to subtract the differences in expression between cells that arise due to other sources of variation in the experiment. In the muscle experment, the cells were collected on different days and cells at the beginning of the experiment were placed in different culture media. Monocle allows you to subtract these effects by specifying a model formula. 
 <<cluster_cells, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
 HSMM <- clusterCells(HSMM, residualModelFormulaStr="~num_genes_expressed + Media", num_clusters=2)
-
 plot_spanning_tree(HSMM, color_by="CellType")
 @ %def
 
@@ -341,7 +340,7 @@ To test the effects of \Robject{CellType} on gene expression, we simply call \Rf
 To set up the test based on \Robject{CellType}, we simply call \Rfunction{differentialGeneTest} with a string specifying \Robject{fullModelFormulaStr}.  We don't have to specify the reduced model in this case, because the default of \Robject{~1} is what we want here.
 
 <<all_in_one_test, eval = TRUE, warning=FALSE>>=
-diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="~CellType", )
+diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="~CellType")
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 @ %def
 
