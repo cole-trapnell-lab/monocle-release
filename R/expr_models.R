@@ -30,7 +30,7 @@ fit_model_helper <- function(x,
             }
         }
     }
-    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")) {
+    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")) {
         f_expression <- x
     }
     else {
