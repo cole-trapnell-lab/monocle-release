@@ -88,6 +88,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' Multicore esApply wrapper
 #'
 #' @importFrom parallel makeCluster stopCluster clusterCall parRapply parCapply
+#' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
