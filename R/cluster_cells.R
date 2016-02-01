@@ -12,9 +12,9 @@ clusterCells <- function(cds,
                          ddrtree_gamma=100,
 			 verbose = F) {
   
- # disp_table <- dispersionTable(cds)
- # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
- # cds <- setOrderingFilter(cds, ordering_genes)
+  disp_table <- dispersionTable(cds)
+  ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
+  cds <- setOrderingFilter(cds, ordering_genes)
   
   cds <- reduceDimension(cds, 
                          max_components=num_reduced_dims, 
