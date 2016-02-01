@@ -158,19 +158,19 @@ differentialGeneTest <- function(cds,
                              verbose=verbose)
     diff_test_res
   }else{
-    diff_test_res<-esApply(cds,1,diff_test_helper, 
-                           fullModelFormulaStr=fullModelFormulaStr,
-                           reducedModelFormulaStr=reducedModelFormulaStr, 
-                           expressionFamily=cds@expressionFamily, 
-                           relative_expr=relative_expr,
-                           weights=weights,
-                           disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                           pseudocount=pseudocount,
-                           verbose=verbose)
+    diff_test_res<-smartEsApply(cds,1,diff_test_helper, 
+                                fullModelFormulaStr=fullModelFormulaStr,
+                                reducedModelFormulaStr=reducedModelFormulaStr, 
+                                expressionFamily=cds@expressionFamily, 
+                                relative_expr=relative_expr,
+                                weights=weights,
+                                disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                                pseudocount=pseudocount,
+                                verbose=verbose)
     diff_test_res
   }
   
-  diff_test_res <- do.call(rbind.data.frame, diff_test_res)
+  #diff_test_res <- do.call(rbind.data.frame, diff_test_res)
 
   diff_test_res$qval <- 1
   diff_test_res$qval[which(diff_test_res$status == 'OK')] <- p.adjust(subset(diff_test_res, status == 'OK')[, 'pval'], method="BH")

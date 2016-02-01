@@ -51,14 +51,22 @@ newCellDataSet <- function( cellData,
 
 sparseApply <- function(Sp_X, MARGIN, FUN, ...){
   if (MARGIN == 1){
-    lapply(row.names(Sp_X), function(i, FUN, ...) {
+    res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[i,]), ...) 
     }, FUN, ...)
+    names(res) <- row.names(Sp_X)
+    res <- do.call(rbind, res, quote = TRUE)
+    row.names(res) <- row.names(Sp_X)
   }else{
-    lapply(colnames(Sp_X), function(i, FUN, ...) {
+    res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[,i]), ...) 
     }, FUN, ...)
+    names(res) <- colnames(Sp_x)
+    res <- do.call(cbind, res, quote = TRUE)
+    colnames(res) <- colnames(Sp_X)
   }
+  return(res)
+  
 }
 
 splitRows <- function (x, ncl) {
@@ -67,17 +75,17 @@ splitRows <- function (x, ncl) {
 
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
-  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(rbind, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
-  names(par_res) <- row.names(x)
+  #names(par_res) <- row.names(x)
   par_res
 }
 
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
-  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(cbind, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
-  names(par_res) <- colnames(x)
+  #names(par_res) <- colnames(x)
   par_res
 }
 
@@ -85,6 +93,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' Multicore esApply wrapper
 #'
 #' @importFrom parallel makeCluster stopCluster clusterCall parRapply parCapply
+#' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
@@ -98,7 +107,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   if (platform == "Windows")
     cl <- parallel::makeCluster(cores)
   if (platform %in% c("Linux", "Darwin")) 
-    cl <- parallel::makeCluster(cores, type="FORK")
+    cl <- parallel::makeCluster(cores)
   
   cleanup <- function(){
     parallel::stopCluster(cl)
@@ -129,13 +138,13 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   e1 <- new.env(parent=parent)
   multiassign(names(pData(X)), pData(X), envir=e1)
   environment(FUN) <- e1
-  sp_X <- asSlamMatrix(exprs(X))
-  if (MARGIN == 1){
-    res <- rowapply_simple_triplet_matrix(sp_X, FUN, ...)
-  }else{
-    res <- colapply_simple_triplet_matrix(sp_X, FUN, ...)
-  }
   
+  if (isSparseMatrix(exprs(X))){
+    res <- sparseApply(exprs(X), MARGIN, FUN, ...)
+  }else{
+    res <- apply(exprs(X), MARGIN, FUN, ...)
+  }
+
   res
 }
 

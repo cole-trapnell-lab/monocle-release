@@ -9,7 +9,8 @@ clusterCells <- function(cds,
                          num_clusters=2, 
                          num_reduced_dims=10, 
                          residualModelFormulaStr=NULL,
-                         ddrtree_gamma=100) {
+                         ddrtree_gamma=100,
+			 verbose = F) {
   
   disp_table <- dispersionTable(cds)
   ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
@@ -19,8 +20,9 @@ clusterCells <- function(cds,
                          max_components=num_reduced_dims, 
                          residualModelFormulaStr=residualModelFormulaStr,
                          use_vst=T, 
-                         pseudo_expr=0, 
-                         verbose=F,
+                         method = "DDRTree",
+			 pseudo_expr=0, 
+                         verbose=verbose,
                          maxIter=20,
                          param.gamma=ddrtree_gamma,
                          ncenter=num_clusters)
