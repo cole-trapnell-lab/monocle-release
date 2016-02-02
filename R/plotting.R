@@ -1529,7 +1529,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     grid::grid.rect(gp=grid::gpar("fill"))
     grid::grid.draw(ph_res$gtable)
-    if (return_heatmap){
+    if (return_all){
       return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, 
         heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col, 
         ph_res = ph_res))
