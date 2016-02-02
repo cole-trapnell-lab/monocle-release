@@ -1344,8 +1344,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
   show_rownames = F, 
   cores = 1,
   use_gene_short_name = F,
-  file_name = 'branched_heatmap.pdf', 
-  return_heatmap=FALSE) {
+  # file_name = 'branched_heatmap.pdf', 
+  return_all=FALSE) {
     
     new_cds <- buildLineageBranchCellDataSet(cds_subset, 
                                              lineage_states=lineage_states, 
@@ -1530,7 +1530,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
     grid::grid.rect(gp=grid::gpar("fill"))
     grid::grid.draw(ph_res$gtable)
     if (return_heatmap){
-      return(ph_res)
+      return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, 
+        heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col, 
+        ph_res = ph_res))
     }
 }
 
