@@ -240,14 +240,15 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
                 expression_curve <- as.data.frame(matrix(rep(NA, nrow(new_data)), nrow = 1))
             else
                 expression_curve <- as.data.frame(responseMatrix(list(model_fits), newdata = new_data, response_type=response_type))
-
+            colnames(expression_curve) <- row.names(new_data)
+            expression_curve
             #return(expression_curve)
             }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
             )
-        expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
+        expression_curve_matrix <- as.matrix(do.call(rbind, expression_curve_matrix))
         return(expression_curve_matrix)
     }
     else {
@@ -257,14 +258,15 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
                                        relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
             if(is.null(model_fits))
-                expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
+                expression_curve <- as.data.frame(matrix(rep(NA, nrow(new_data)), nrow = 1))
             else
-                expression_curve <- responseMatrix(list(model_fits), new_data, response_type=response_type)
-
+                expression_curve <- as.data.frame(responseMatrix(list(model_fits), new_data, response_type=response_type))
+            colnames(expression_curve) <- row.names(new_data)
+            expression_curve
             }, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
-        expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
+        expression_curve_matrix <- as.matrix(do.call(rbind, expression_curve_matrix))
         row.names(expression_curve_matrix) <- row.names(fData(cds))
         return(expression_curve_matrix)
       }
