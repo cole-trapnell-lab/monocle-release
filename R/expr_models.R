@@ -224,51 +224,55 @@ residualMatrix <- function(models,  residual_type="pearson", cores = detectCores
 #' @return a data frame containing the data for the fitted spline curves.
 #' @export
 #'
-genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
-                        relative_expr = T, pseudocount = 0, response_type="response", cores = 1) { 
+
+genSmoothCurves <- function(cds, cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
+                            relative_expr = T, pseudocount = 0, new_data) { 
+  
+  expressionFamily <- cds@expressionFamily
+  
+  if(cores > 1) {
+    expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
+                                                    calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
+      environment(fit_model_helper) <- environment()
+      environment(responseMatrix) <- environment()
+      model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
+                                     relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
+      if(is.null(model_fits))
+        expression_curve <- as.data.frame(matrix(rep(NA, nrow(new_data)), nrow = 1))
+      else
+        expression_curve <- as.data.frame(responseMatrix(list(model_fits), newdata = new_data))
+      
+      #return(expression_curve)
+    }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+    trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data, 
+    fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
+    calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
+    )
+    expression_curve_matrix <- plyr::laply(expression_curves, data.frame)
+    colnames(expression_curve_matrix) <- 1:nrow(new_data)
+    row.names(expression_curve_matrix) <- row.names(cds)
+    mode(expression_curve_matrix) <- "numeric" 
     
-    expressionFamily <- cds@expressionFamily
-
-    if(cores > 1) {
-      expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
-                                                              calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
-            environment(fit_model_helper) <- environment()
-            environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
-                                       relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
-            if(is.null(model_fits))
-                expression_curve <- as.data.frame(matrix(rep(NA, nrow(new_data)), nrow = 1))
-            else
-                expression_curve <- as.data.frame(responseMatrix(list(model_fits), newdata = new_data, response_type=response_type))
-
-            #return(expression_curve)
-            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data, 
-            fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
-            calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
-            )
-
-        return(expression_curve_matrix)
-    }
-    else {
-        expression_curve_matrix <- smartEsApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
-            environment(fit_model_helper) <- environment()
-            environment(responseMatrix) <- environment()
-            model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
-                                       relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
-            if(is.null(model_fits))
-                expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
-            else
-                expression_curve <- responseMatrix(list(model_fits), new_data, response_type=response_type)
-
-            }, 
-            trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
-            )
-        return(expression_curve_matrix)
-      }
-
+    return(expression_curve_matrix)
+  }
+  else {
+    expression_curve_matrix <- esApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data){
+      environment(fit_model_helper) <- environment()
+      environment(responseMatrix) <- environment()
+      model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
+                                     relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
+      if(is.null(model_fits))
+        expression_curve <- matrix(rep(NA, nrow(new_data)), nrow = 1)
+      else
+        expression_curve <- responseMatrix(list(model_fits), new_data)
+      
+    }, 
+    trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
+    )
+    t(expression_curve_matrix)
+  }
+  
 }
-
 #' Fit smooth spline curves and return the residuals matrix
 #'
 #' This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return

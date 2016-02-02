@@ -1391,21 +1391,19 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
         #change to half of the number of the progenitor cell 
         #common_ancestor_cells <- row.names(pData(new_cds)[duplicated(pData(new_cds)$original_cell_id),])
-        common_ancestor_cells <- row.names(pData(cds)[pData(new_cds)$State == setdiff(pData(cds)$State, lineage_states),])
+        common_ancestor_cells <- row.names(pData(cds_subset)[pData(cds_subset)$State == setdiff(pData(cds_subset)$State, lineage_states),])
         
         #account for the changes in the buildLineageBranchCellDataSet
         if(length(common_ancestor_cells) %% 2 == 0) {
           LineageP_num <- length(common_ancestor_cells) / 2
-          LineageA_num <- sum(pData(cds)$State == as.numeric(unique(as.character(pData(cds)$Lineage))[1]))
-          LineageB_num <- sum(pData(cds)$State == as.numeric(unique(as.character(pData(cds)$Lineage))[2])) + 1
+          LineageA_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1]))
+          LineageB_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2])) + 1
         }
         else {
           LineageP_num <- (length(common_ancestor_cells) + 1) / 2
-          LineageA_num <- sum(pData(cds)$State == as.numeric(unique(as.character(pData(cds)$Lineage))[1]))
-          LineageB_num <- sum(pData(cds)$State == as.numeric(unique(as.character(pData(cds)$Lineage))[2]))        
+          LineageA_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1]))
+          LineageB_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2]))        
         }
-        
-        LineageP_num <- length(common_ancestor_cells) / 2
     }
 
     if(norm_method == 'vstExprs') {
