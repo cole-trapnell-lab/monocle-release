@@ -142,7 +142,14 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   if (isSparseMatrix(exprs(X))){
     res <- sparseApply(exprs(X), MARGIN, FUN, ...)
   }else{
-    res <- apply(X, MARGIN, FUN, ...)
+    res <- apply(exprs(X), MARGIN, FUN, ...)
+  }
+  
+  if (MARGIN == 1)
+  {
+    names(res) <- row.names(X)
+  }else{
+    names(res) <- colnames(X)
   }
 
   res

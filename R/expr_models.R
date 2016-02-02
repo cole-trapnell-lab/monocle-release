@@ -265,6 +265,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
         expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
+        row.names(expression_curve_matrix) <- row.names(fData(cds))
         return(expression_curve_matrix)
       }
 
