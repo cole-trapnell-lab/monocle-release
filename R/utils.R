@@ -26,6 +26,9 @@ newCellDataSet <- function( cellData,
 {
   #cellData <- as.matrix( cellData )
   
+  if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
+    stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
+  }
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )
   
@@ -73,6 +76,10 @@ splitRows <- function (x, ncl) {
   lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
+splitCols <- function (x, ncl) {
+  lapply(splitIndices(ncol(x), ncl), function(i) x[i, , drop = FALSE])
+}
+
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
   par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
@@ -83,7 +90,7 @@ sparseParRApply <- function (cl, x, FUN, ...)
 
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
-  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitCols(x, length(cl)), 
                           fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
   names(par_res) <- colnames(x)
   par_res
