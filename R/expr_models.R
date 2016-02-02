@@ -247,7 +247,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
             )
-
+        expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
         return(expression_curve_matrix)
     }
     else {
@@ -264,6 +264,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             }, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount, new_data = new_data
             )
+        expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
         return(expression_curve_matrix)
       }
 
@@ -306,11 +307,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
     fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
     calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
     )
-    expression_curve_matrix <- plyr::laply(expression_curves, data.frame)
-    colnames(expression_curve_matrix) <- 1:nrow(pData(cds))
-    row.names(expression_curve_matrix) <- row.names(cds)
-    mode(expression_curve_matrix) <- "numeric" 
-    
+    express_curve_matrix <- do.call(rbind, expression_curve_matrix)
     return(expression_curve_matrix)
   }
   else {
@@ -327,6 +324,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
     }, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount
     )
+    express_curve_matrix <- do.call(rbind, expression_curve_matrix)
     return(expression_curve_matrix)
   }
   
@@ -491,7 +489,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   #print (disp_table)
   if(!is.list(disp_table))
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
-
+  disp_table <- do.call(rbind.data.frame, disp_table)
   disp_table <- subset(disp_table, is.na(mu) == FALSE)
   coefs <- parametricDispersionFit(disp_table$mu, disp_table$disp)
   

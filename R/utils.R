@@ -54,16 +54,16 @@ sparseApply <- function(Sp_X, MARGIN, FUN, ...){
     res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[i,]), ...) 
     }, FUN, ...)
-    names(res) <- row.names(Sp_X)
-    res <- do.call(rbind, res, quote = TRUE)
-    row.names(res) <- row.names(Sp_X)
+#     names(res) <- row.names(Sp_X)
+#     res <- do.call(c, res, quote = TRUE)
+#     names(res) <- row.names(Sp_X)
   }else{
     res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
       FUN(as.matrix(Sp_X[,i]), ...) 
     }, FUN, ...)
-    names(res) <- colnames(Sp_x)
-    res <- do.call(cbind, res, quote = TRUE)
-    colnames(res) <- colnames(Sp_X)
+#     names(res) <- colnames(Sp_x)
+#     res <- do.call(c, res, quote = TRUE)
+#     names(res) <- colnames(Sp_X)
   }
   return(res)
   
@@ -75,17 +75,17 @@ splitRows <- function (x, ncl) {
 
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
-  par_res <- do.call(rbind, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
-  #names(par_res) <- row.names(x)
+  names(par_res) <- row.names(x)
   par_res
 }
 
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
-  par_res <- do.call(cbind, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
-  #names(par_res) <- colnames(x)
+  names(par_res) <- colnames(x)
   par_res
 }
 
@@ -142,7 +142,7 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   if (isSparseMatrix(exprs(X))){
     res <- sparseApply(exprs(X), MARGIN, FUN, ...)
   }else{
-    res <- apply(exprs(X), MARGIN, FUN, ...)
+    res <- apply(X, MARGIN, FUN, ...)
   }
 
   res
