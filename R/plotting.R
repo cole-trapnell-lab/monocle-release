@@ -1310,6 +1310,7 @@ blue2green2red <- matlab.like2
 #' @param hmcols The color scheme for drawing the heatmap
 #' @param cores Number of cores to run this function
 #' @param Cell_type_color The color for the progenitors and two lineages
+#' @param return_all 
 #' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)

@@ -298,7 +298,8 @@ buildLineageBranchCellDataSet <- function(cds,
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @param lineage_states  states corresponding to two branches 
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
@@ -351,34 +352,32 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' Calculate the area between TWO fitted lineage trajectories  
 #' 
 #' This function is used to calculate the ABC score based on the the nature spline curves fitted for each lineage. ABC score is used to 
-#' quantify the magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
+#' quantify the total magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
 #' The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
 #' potential major regulators for lineage bifurcation. 
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
-#' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
-#' @param branchTest a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results. 
-#' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)
+#' @param trajectory_states States corresponding to two branches 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param cores the number of cores to be used while testing each gene for differential expression
-#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param weighted a logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param verbose a logic flag to determine whether or not we should output detailed running information 
 #' @param min_expr the lower limit for the expressed gene
 #' @param integer_expression the logic flag to determine whether or not the integer numbers are used for calculating the ABCs. Default is False. 
 #' @param num number of points on the fitted lineage trajectories used for calculating the ABCs. Default is 5000. 
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+#' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
+#' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 #' @export
 calABCs <- function(cds,
-                    trajectory_states = c(2, 3),
-                    branchTest = FALSE, 
-                    relative_expr = TRUE, 
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+                    trajectory_states = c(2, 3),
+                    relative_expr = TRUE, 
                     stretch = TRUE, 
                     pseudocount = 0, 
                     cores = 1, 
@@ -498,39 +497,43 @@ calABCs <- function(cds,
 #' used as a measure for the magnitude of divergence between two branching lineages. 
 #'
 #' @param cds CellDataSet for the experiment
-#' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
-#' @param lineage_states The states for two branching lineages
-#' @param cores Number of cores when fitting the spline curves
-#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
-#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
+#' @param trend_formula trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param trajectory_states states corresponding to two branches 
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
+#' @param stretch a logic flag to determine whether or not each lineage should be stretched
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param cores Number of cores when fitting the spline curves
+#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
 #' @param label_by_short_name label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)
 #' @param useVST A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
 #' When VST is used, the difference between two lineages are used instead of the log-ratio.
 #' @param round_exprs A logic flag to determine whether or not the expression value should be rounded into integer
-#' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param output_type A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected
+#' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @param file the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored
+#' @param return_all A logic flag to determine whether or not all the results from the analysis should be returned, this includes 
+#' a dataframe for the log fold change, normalized log fold change, raw divergence, normalized divergence, fitting curves for each lineage 
+#' @param verbose A logic flag to determine whether or not detailed running information should be returned 
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @export 
 #' 
 calILRs <- function (cds, 
-          trajectory_states = c(2, 3), 
-          lineage_labels = NULL, 
-          stretch = T, 
-          cores = 1, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
-          ILRs_limit = 3, 
+          trajectory_states = c(2, 3), 
           relative_expr = TRUE, 
+          stretch = T, 
+          pseudocount = 0, 
+          cores = 1, 
+          ILRs_limit = 3, 
           weighted = FALSE, 
           label_by_short_name = TRUE,
           useVST = FALSE, 
           round_exprs = FALSE, 
-          pseudocount = 0, 
           output_type = "all", 
+          lineage_labels = NULL, 
           file = NULL, 
           return_all = F, 
           verbose = FALSE, ...){
@@ -651,7 +654,9 @@ calILRs <- function (cds,
 #' @param detect_all a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point
 #' @param cds CellDataSet for the experiment
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param lineage_states The states for two branching lineages
+#' @param stretch a logic flag to determine whether or not each lineage should be stretched
 #' @param cores Number of cores when fitting the spline curves
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
 #' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
@@ -771,12 +776,14 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
-#' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param q_thrsld The threshold for the qval 
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
+#' @param cores the number of cores to be used while testing each gene for differential expression
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models, as well as the time point where the gene starts to bifurcate between two branches
 #' @export
 #'
