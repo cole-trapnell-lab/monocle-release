@@ -1041,6 +1041,7 @@ orderCells <- function(cds,
     message("Warning: argument 'reverse' is deprecated and will be removed in a future release")
   }
   
+  cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
     if (is.null(num_paths)){
       num_paths = 1
@@ -1159,7 +1160,7 @@ reduceDimension <- function(cds,
       message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
 
   }
-
+  
   if (cds@expressionFamily@vfamily == "negbinomial") {
       if (is.null(use_vst)) 
           use_vst = TRUE
