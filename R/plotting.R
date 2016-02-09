@@ -892,7 +892,7 @@ plot_genes_branched_pseudotime <- function (cds,
                               lineage_states=lineage_states,
                               branch_point=branch_point,
                               fullModelFormulaStr = trend_formula,
-            reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)")
+            reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)", ...)
         fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
     }
     if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells

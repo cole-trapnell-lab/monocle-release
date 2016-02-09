@@ -1199,7 +1199,7 @@ reduceDimension <- function(cds,
   
   if (cds@expressionFamily@vfamily != "binomialff") {
       if (use_vst) {
-          VST_FM <- vstExprs(cds, expr_matrix = FM, round_vals = FALSE)
+          VST_FM <- vstExprs(cds[row.names(subset(fData(cds), use_for_ordering == TRUE)),], round_vals = FALSE)
           if (is.null(VST_FM) == FALSE) {
               FM <- VST_FM
           }
