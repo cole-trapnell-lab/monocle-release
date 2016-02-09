@@ -307,6 +307,8 @@ buildLineageBranchCellDataSet <- function(cds,
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_labelsthe name for each lineage, for example, AT1 or AT2  
 #' @param gene_names gene names used to make the bifurcation plots for two genes. 
+#' @param exprs_thrsld_percentage For the gene under test, the percentage of cells expressed across all cells. Default is 0.05
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 #'
@@ -319,7 +321,9 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        pseudocount=0,
                        cores = 1, 
                        weighted = TRUE, 
-                       lineage_labels = NULL, ...) {
+                       lineage_labels = NULL, 
+                       exprs_thrsld_percentage = 0.05,
+                       verbose = F, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
@@ -339,7 +343,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          relative_expr = relative_expr, 
                                          weights = pData(cds_subset)$weight,
                                          pseudocount = pseudocount,
-                                         verbose=T)
+                                         exprs_thrsld_percentage = exprs_thrsld_percentage,
+                                         verbose=verbose, ...)
   
   return(branchTest_res)
 }
