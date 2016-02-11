@@ -390,17 +390,26 @@ relative2abs <- function(relative_cds,
                         0.001)), hessian = FALSE)
               }
               else {
-                  if (verbose)
-                  message("optimization m and fix c as discussed in the method")
+                  if (verbose){
+                    message("optimization m and fix c as discussed in the method")
+                    message("current m value before optimization is, ", m)
+                    message("fixed c value before optimization is, ", c)
+                  }
                   optim_para <- optim(par = c(m = m), optim_mc_func_fix_c,
                     gr = NULL, c = c, t_estimate = t_estimate_subset,
                     alpha = alpha_v, total_RNAs = total_RNAs, cores = cores,
                     weight = weight, pseudocnt = 0.01, relative_expr_matrix = relative_expr_matrix_subsets,
                     split_relative_expr_matrix = split_relative_exprs,
-                    method = c("Brent"), lower = c(rep(as.vector(t_estimate_subset) -
-                      0, 0), m_rng[1]), upper = c(rep(as.vector(t_estimate_subset) +
-                      0, 0), m_rng[2]), control = list(factr = 1e+12,
-                      pgtol = 0.001, trace = 1, ndeps = c(0.001)),
+                    method = c("Brent"), 
+                    lower = c(#rep(as.vector(t_estimate_subset) -
+                    #  0, 0), 
+                    m_rng[1]), 
+                  upper = c(#rep(as.vector(t_estimate_subset) +
+                      #0, 0), 
+                      m_rng[2]
+                      
+                      ), control = list(#factr = 1e+12, pgtol = 0.001,
+                       trace = 1, ndeps = c(0.001)),
                   hessian = FALSE)
               }
               if (verbose)
@@ -408,6 +417,12 @@ relative2abs <- function(relative_cds,
               m <- optim_para$par[1]
               if (c_rng[1] != c_rng[2])
                   c <- optim_para$par[2]
+              
+              if (verbose){
+                message("current m value after optimization is, ", m)
+                message("fixed c value after optimization is, ", c)
+              }
+              
               total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix_subsets),
                   t_estimate = t_estimate_subset)
               if (verbose)
@@ -455,7 +470,7 @@ relative2abs <- function(relative_cds,
       if (verbose)
         message("Return results...")
       if (return_all == T) {
-        return(list(norm_cds = norm_cds, m = m, c = c, k_b_solution = k_b_solution))
+        return(list(norm_cds = norm_cds, m = m_vec, c = c_vec, k_b_solution = k_b_solution))
     }
     norm_cds
   }

@@ -128,7 +128,7 @@ plot_spanning_tree <- function(cds,
   }
   
   
-  if (show_branch_points){
+  if (show_branch_points & cds@auxOrderingData[[cds@dim_reduce_type]] == 'DDRTree'){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
     branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
@@ -1047,7 +1047,7 @@ plot_genes_branched_pseudotime <- function (cds,
                               lineage_states=lineage_states,
                               branch_point=branch_point,
                               fullModelFormulaStr = trend_formula,
-            reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)")
+            reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)", ...)
         fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
     }
     if("Lineage" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Lineage is in the model formula we will duplicate the "progenitor" cells
@@ -1465,12 +1465,12 @@ blue2green2red <- matlab.like2
 #' @param hmcols The color scheme for drawing the heatmap
 #' @param cores Number of cores to run this function
 #' @param Cell_type_color The color for the progenitors and two lineages
+#' @param return_all 
 #' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
 #' @export
-#'
 #'
 plot_genes_branched_heatmap <- function(cds_subset, 
   num_clusters = 6,
@@ -1500,8 +1500,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
   show_rownames = F, 
   cores = 1,
   use_gene_short_name = F,
-  file_name = 'branched_heatmap.pdf', 
-  return_heatmap=FALSE) {
+  # file_name = 'branched_heatmap.pdf', 
+  return_all=FALSE) {
     
     new_cds <- buildLineageBranchCellDataSet(cds_subset, 
                                              lineage_states=lineage_states, 
@@ -1525,30 +1525,41 @@ plot_genes_branched_heatmap <- function(cds_subset,
         LineageA_exprs <- LineageAB_exprs[, 1:100]
         LineageB_exprs <- LineageAB_exprs[, 101:200]
 
-        common_ancestor_cells <- row.names(pData(new_cds)[duplicated(pData(new_cds)$original_cell_id),])
+        #common_ancestor_cells <- row.names(pData(new_cds)[duplicated(pData(new_cds)$original_cell_id),])
+        common_ancestor_cells <- row.names(pData(new_cds)[pData(new_cds)$State == setdiff(pData(new_cds)$State, lineage_states),])
         
 #         LineageA_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 2],  
 #                                               modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataA)
 #         LineageB_exprs <- monocle::responseMatrix(monocle::fitModel(new_cds[, pData(new_cds)$Lineage == 3],  
 #                                               modelFormulaStr="~sm.ns(Pseudotime, df=3)", cores=cores), newdataB)
-        LineageP_num <- 100 - floor(max(pData(new_cds)[common_ancestor_cells, 'Pseudotime']))
+        LineageP_num <- (100 - floor(max(pData(new_cds)[common_ancestor_cells, 'Pseudotime'])))
         LineageA_num <- floor(max(pData(new_cds)[common_ancestor_cells, 'Pseudotime']))
         LineageB_num <- LineageA_num
     }
     else {
-        LineageA_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[1])])[, sort(pData(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[1])])$Pseudotime, index.return = T)$ix]
-        LineageB_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[2])])[, sort(pData(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[2])])$Pseudotime, index.return = T)$ix]
+        LineageA_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1])])[, sort(pData(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1])])$Pseudotime, index.return = T)$ix]
+        LineageB_exprs <- exprs(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2])])[, sort(pData(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2])])$Pseudotime, index.return = T)$ix]
 
-        col_gap_ind <- sum(pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[1])) + 1
+        col_gap_ind <- sum(pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1])) + 1
 
-        newdataA <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[1])])$Pseudotime))
-        newdataB <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == as.factor(unique(as.character(pData(new_cds)$Lineage))[2])])$Pseudotime))
+        newdataA <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1])])$Pseudotime))
+        newdataB <- data.frame(Pseudotime = sort(pData(new_cds[, pData(new_cds)$Lineage == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2])])$Pseudotime))
 
-        common_ancestor_cells <- row.names(pData(new_cds)[duplicated(pData(new_cds)$original_cell_id),])
+        #change to half of the number of the progenitor cell 
+        #common_ancestor_cells <- row.names(pData(new_cds)[duplicated(pData(new_cds)$original_cell_id),])
+        common_ancestor_cells <- row.names(pData(cds_subset)[pData(cds_subset)$State == setdiff(pData(cds_subset)$State, lineage_states),])
         
-        LineageP_num <- length(common_ancestor_cells) / 2
-        LineageA_num <- sum(pData(new_cds)$State == as.factor(unique(as.character(pData(new_cds)$Lineage))[1]))
-        LineageB_num <- sum(pData(new_cds)$State == as.factor(unique(as.character(pData(new_cds)$Lineage))[2]))
+        #account for the changes in the buildLineageBranchCellDataSet
+        if(length(common_ancestor_cells) %% 2 == 0) {
+          LineageP_num <- length(common_ancestor_cells) / 2
+          LineageA_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1]))
+          LineageB_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2])) + 1
+        }
+        else {
+          LineageP_num <- (length(common_ancestor_cells) + 1) / 2
+          LineageA_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[1]))
+          LineageB_num <- sum(pData(cds_subset)$State == as.numeric(unique(as.character(pData(new_cds)$Lineage))[2]))        
+        }
     }
 
     if(norm_method == 'vstExprs') {
@@ -1569,7 +1580,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     }
 
     heatmap_matrix_ori <- heatmap_matrix
-    heatmap_matrix <- heatmap_matrix[!is.na(heatmap_matrix[, 1]) & !is.na(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
+    heatmap_matrix <- heatmap_matrix[is.finite(heatmap_matrix[, 1]) & is.finite(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
 
     row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
@@ -1625,7 +1636,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     colnames(annotation_col) <- "Cell Type"  
     
     if(!is.null(add_annotation_col)) {
-        annotation_col <- cbind(annotation_col, add_annotation_col[fData(absolute_cds[row.names(annotation_col), ])$gene_short_name, 1])  
+        annotation_col <- cbind(annotation_col, add_annotation_col[fData(cds[row.names(annotation_col), ])$gene_short_name, 1])  
     }
 
     Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
@@ -1674,8 +1685,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     grid::grid.rect(gp=grid::gpar("fill", col=NA))
     grid::grid.draw(ph_res$gtable)
-    if (return_heatmap){
-      return(ph_res)
+    if (return_all){
+      return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, 
+        heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col, 
+        ph_res = ph_res))
     }
 }
 

@@ -9,7 +9,15 @@ diff_test_helper <- function(x,
                              weights,
                              disp_func=NULL,
                              pseudocount=0,
+                             exprs_thrsld_percentage = NULL, 
                              verbose=FALSE){
+  if(is.null(exprs_thrsld_percentage) == FALSE) {
+    if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
+      test_res <- data.frame(status = "no_test", family=NA, pval=1.0, qval=1.0)
+      return(test_res)
+    }
+  }
+  
   reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
   
@@ -61,7 +69,7 @@ diff_test_helper <- function(x,
     #print(disp_guess)
     backup_expression_family <- NULL
     if (expressionFamily@vfamily == "negbinomial"){
-        disp_guess <- calulate_QP_dispersion_hint(disp_func, round(f_expression / Size_Factor))
+        disp_guess <- calulate_QP_dispersion_hint(disp_func, round(x_orig))
         backup_expression_family <- poissonff(dispersion=disp_guess)
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
       backup_expression_family <- NULL
@@ -125,8 +133,9 @@ compareModels <- function(full_models, reduced_models){
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param cores the number of cores to be used while testing each gene for differential expression
-#' @param relative_expr Whether to transform expression into relative values
+#' @param cores the number of cores to be used while testing each gene for differential expression.
+#' @param relative_expr Whether to transform expression into relative values.
+#' @param exprs_thrsld_percentage For the gene under test, the percentage of cells expressed across all cells. Default is 0.05.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
@@ -137,6 +146,7 @@ differentialGeneTest <- function(cds,
                                  relative_expr=TRUE,
                                  weights=NULL,
                                  pseudocount=0,
+                                 exprs_thrsld_percentage = NULL, 
                                  verbose=FALSE){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
@@ -155,6 +165,7 @@ differentialGeneTest <- function(cds,
                              weights=weights,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                              pseudocount=pseudocount,
+                             exprs_thrsld_percentage = exprs_thrsld_percentage, 
                              verbose=verbose)
     diff_test_res
   }else{
@@ -166,6 +177,7 @@ differentialGeneTest <- function(cds,
                                 weights=weights,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                                 pseudocount=pseudocount,
+                                exprs_thrsld_percentage = exprs_thrsld_percentage, 
                                 verbose=verbose)
     diff_test_res
   }

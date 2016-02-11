@@ -1,5 +1,9 @@
 #' Build a CellDataSet with appropriate duplication along two lineages
 #' @param cds CellDataSet for the experiment
+#' @param progenitor_method The method to treat the progenitor cells, there are three options: sequential_split, random_split, duplicate. 
+#' They represent that the progenitors can be either splitted one by one (sequential_split) or randomly (random_split) or duplicate the 
+#' progenitors (duplicate). For random_split and sequential_split, the cells will be evenly split (when number of progenitors are odd, 
+#' there will be one more cell in one lineage)
 #' @param lineage_states The states for two branching lineages
 #' @param lineage_labels The names for each branching lineage
 #' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
@@ -8,6 +12,7 @@
 #' @export
 #'
 buildLineageBranchCellDataSet <- function(cds, 
+                                          progenitor_method = c('sequential_split','random_split', 'duplicate'), 
                                           lineage_states = c(2, 3), 
                                           branch_point = NULL,
                                           lineage_labels = NULL, 
@@ -26,8 +31,13 @@ buildLineageBranchCellDataSet <- function(cds,
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
   }
   
-  pr_graph_cell_proj_mst <- minSpanningTree(cds)
-  
+  if(cds@dim_reduce_type == "DDRTree") {
+    pr_graph_cell_proj_mst <- minSpanningTree(cds)
+  }
+  else {
+    pr_graph_cell_proj_mst <- cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree
+  }
+
   root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell
   root_state <- pData(cds)[root_cell,]$State
   #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
@@ -157,48 +167,109 @@ buildLineageBranchCellDataSet <- function(cds,
   pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   pData$original_cell_id <- row.names(pData)
   
-  ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
-  expr_blocks <- list()
-  
-  # Duplicate the expression data
-  for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
-    if (nrow(ancestor_exprs) == 1)
-      exprs_data <- t(as.matrix(ancestor_exprs))
-    else exprs_data <- ancestor_exprs
-    
-    colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
-    expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
-    exprs_data <- cbind(exprs_data, expr_lineage_data)
-    expr_blocks[[i]] <- exprs_data
-  }
-  
-  # Make a bunch of copies of the pData entries from the common ancestors
-  ancestor_pData_block <- pData[common_ancestor_cells,]
-  
-  pData_blocks <- list()
-  
-  weight_vec <- c()
-  for (i in 1:length(paths_to_root)) {
-    #weight_vec <- c(weight_vec, rep(weight_constant, length(common_ancestor_cells)))
-    weight_vec_block <- rep(weight_constant, length(common_ancestor_cells))
-    
-    #pData <- rbind(pData, pData[common_ancestor_cells, ])
-    new_pData_block <- ancestor_pData_block
-    new_pData_block$Lineage <- i
-    row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
-    
-    pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
-    pData_lineage_cells$Lineage <- i
-    weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
-    
-    weight_vec <- c(weight_vec, weight_vec_block)
-    
-    new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
-    pData_blocks[[i]] <- new_pData_block
-  }
-  pData <- do.call(rbind, pData_blocks)
-  exprs_data <- do.call(cbind, expr_blocks)
+  pData$original_cell_id <- row.names(pData)
+  pData[common_ancestor_cells, "State"] <- lineage_states[1] #set progenitors to the lineage 1
 
+  if (progenitor_method == 'duplicate') {
+    # for (i in 1:(length(lineage_states) - 1)) { #duplicate progenitors for multiple branches
+    #   if (nrow(exprs_data) == 1)
+    #       exprs_data <- cbind(exprs_data, t(as.matrix(exprs_data[,
+    #           progenitor_ind])))
+    #   else exprs_data <- cbind(exprs_data, exprs_data[, progenitor_ind])
+    #   weight_vec <- c(weight_vec, rep(weight_constant, length(progenitor_ind)))
+
+    #   colnames(exprs_data)[(ncol(exprs_data) - length(progenitor_ind) + 1):ncol(exprs_data)] <- 
+    #     paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    #   pData <- rbind(pData, pData[progenitor_ind, ])
+      
+    #   pData$State[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- lineage_states[i + 1]
+    #   row.names(pData)[(length(pData$State) - length(progenitor_ind) + 1):length(pData$State)] <- 
+    #     paste('duplicate', lineage_states[i], 1:length(progenitor_ind), sep = '_')
+    # }
+    ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
+    expr_blocks <- list()
+  
+    # Duplicate the expression data
+    for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
+      if (nrow(ancestor_exprs) == 1)
+        exprs_data <- t(as.matrix(ancestor_exprs))
+      else exprs_data <- ancestor_exprs
+      
+      colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
+      exprs_data <- cbind(exprs_data, expr_lineage_data)
+      expr_blocks[[i]] <- exprs_data
+    }
+    
+    # Make a bunch of copies of the pData entries from the common ancestors
+    ancestor_pData_block <- pData[common_ancestor_cells,]
+    
+    pData_blocks <- list()
+    
+    weight_vec <- c()
+    for (i in 1:length(paths_to_root)) {
+      #weight_vec <- c(weight_vec, rep(weight_constant, length(common_ancestor_cells)))
+      weight_vec_block <- rep(weight_constant, length(common_ancestor_cells))
+      
+      #pData <- rbind(pData, pData[common_ancestor_cells, ])
+      new_pData_block <- ancestor_pData_block
+      new_pData_block$Lineage <- i
+      row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      
+      pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
+      pData_lineage_cells$Lineage <- i
+      weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
+      
+      weight_vec <- c(weight_vec, weight_vec_block)
+      
+      new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
+      pData_blocks[[i]] <- new_pData_block
+    }
+    pData <- do.call(rbind, pData_blocks)
+    exprs_data <- do.call(cbind, expr_blocks)
+  }
+  else if(progenitor_method == 'random_split') {
+    if(length(lineage_states) != 2)
+      stop('more than 2 lineage states are used!')
+
+    lineageA <- sample(progenitor_ind, round(length(progenitor_ind) / 2))
+    pData[lineageA, 'State'] <- lineage_states[1]
+    lineageB <- setdiff(progenitor_ind, lineageA)
+    pData[lineageB, 'State'] <- lineage_states[2]    
+  }
+  else if(progenitor_method == 'sequential_split') {
+    if(length(lineage_states) != 2)
+      stop('more than 2 lineage states are used!')
+
+    # progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
+
+    # lineageA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
+    # pData[progenitor_ind[lineageA], 'State'] <- lineage_states[1]
+    # lineageB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
+    # pData[progenitor_ind[lineageB], 'State'] <- lineage_states[2]    
+
+    progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
+
+    lineageA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[lineageA], 'State'] <- lineage_states[1]
+    lineageB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[lineageB], 'State'] <- lineage_states[2]   
+
+    zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
+    exprs_data <- cbind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
+    pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
+    row.names(pData)[nrow(pData)] <- 'duplicate_root'
+    pData[nrow(pData), 'State'] <- lineage_states[2]
+    weight_vec <- rep(1, nrow(pData))
+  }
+
+  if (!is.null(lineage_labels))
+    pData$Lineage <- as.factor(lineage_map[as.character(pData$State)])
+  else
+    pData$Lineage <- as.factor(pData$State)
+  
+  pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
+                        levels =levels(cds$State))
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   
@@ -227,7 +298,8 @@ buildLineageBranchCellDataSet <- function(cds,
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @param lineage_states  states corresponding to two branches 
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
@@ -235,6 +307,8 @@ buildLineageBranchCellDataSet <- function(cds,
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_labelsthe name for each lineage, for example, AT1 or AT2  
 #' @param gene_names gene names used to make the bifurcation plots for two genes. 
+#' @param exprs_thrsld_percentage For the gene under test, the percentage of cells expressed across all cells. Default is 0.05
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 #'
@@ -247,7 +321,9 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        pseudocount=0,
                        cores = 1, 
                        weighted = TRUE, 
-                       lineage_labels = NULL, ...) {
+                       lineage_labels = NULL, 
+                       exprs_thrsld_percentage = 0.05,
+                       verbose = F, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
@@ -267,7 +343,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          relative_expr = relative_expr, 
                                          weights = pData(cds_subset)$weight,
                                          pseudocount = pseudocount,
-                                         verbose=T)
+                                         exprs_thrsld_percentage = exprs_thrsld_percentage,
+                                         verbose=verbose, ...)
   
   return(branchTest_res)
 }
@@ -280,34 +357,32 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
 #' Calculate the area between TWO fitted lineage trajectories  
 #' 
 #' This function is used to calculate the ABC score based on the the nature spline curves fitted for each lineage. ABC score is used to 
-#' quantify the magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
+#' quantify the total magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
 #' The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
 #' potential major regulators for lineage bifurcation. 
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
-#' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
-#' @param branchTest a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results. 
-#' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)
+#' @param trajectory_states States corresponding to two branches 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param cores the number of cores to be used while testing each gene for differential expression
-#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param weighted a logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param verbose a logic flag to determine whether or not we should output detailed running information 
 #' @param min_expr the lower limit for the expressed gene
 #' @param integer_expression the logic flag to determine whether or not the integer numbers are used for calculating the ABCs. Default is False. 
 #' @param num number of points on the fitted lineage trajectories used for calculating the ABCs. Default is 5000. 
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @param ABC_method the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
+#' "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
+#' "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function  
+#' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 #' @export
 calABCs <- function(cds,
-                    trajectory_states = c(2, 3),
-                    branchTest = FALSE, 
-                    relative_expr = TRUE, 
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+                    trajectory_states = c(2, 3),
+                    relative_expr = TRUE, 
                     stretch = TRUE, 
                     pseudocount = 0, 
                     cores = 1, 
@@ -427,39 +502,43 @@ calABCs <- function(cds,
 #' used as a measure for the magnitude of divergence between two branching lineages. 
 #'
 #' @param cds CellDataSet for the experiment
-#' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
-#' @param lineage_states The states for two branching lineages
-#' @param cores Number of cores when fitting the spline curves
-#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
-#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
+#' @param trend_formula trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param trajectory_states states corresponding to two branches 
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
+#' @param stretch a logic flag to determine whether or not each lineage should be stretched
+#' @param pseudocount pseudo count added before fitting the spline curves 
+#' @param cores Number of cores when fitting the spline curves
+#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
 #' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
 #' @param label_by_short_name label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)
 #' @param useVST A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
 #' When VST is used, the difference between two lineages are used instead of the log-ratio.
 #' @param round_exprs A logic flag to determine whether or not the expression value should be rounded into integer
-#' @param pseudocount pseudo count added before fitting the spline curves 
 #' @param output_type A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected
+#' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
 #' @param file the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored
+#' @param return_all A logic flag to determine whether or not all the results from the analysis should be returned, this includes 
+#' a dataframe for the log fold change, normalized log fold change, raw divergence, normalized divergence, fitting curves for each lineage 
+#' @param verbose A logic flag to determine whether or not detailed running information should be returned 
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @export 
 #' 
 calILRs <- function (cds, 
-          trajectory_states = c(2, 3), 
-          lineage_labels = NULL, 
-          stretch = T, 
-          cores = 1, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
-          ILRs_limit = 3, 
+          trajectory_states = c(2, 3), 
           relative_expr = TRUE, 
+          stretch = T, 
+          pseudocount = 0, 
+          cores = 1, 
+          ILRs_limit = 3, 
           weighted = FALSE, 
           label_by_short_name = TRUE,
           useVST = FALSE, 
           round_exprs = FALSE, 
-          pseudocount = 0, 
           output_type = "all", 
+          lineage_labels = NULL, 
           file = NULL, 
           return_all = F, 
           verbose = FALSE, ...){
@@ -580,7 +659,9 @@ calILRs <- function (cds,
 #' @param detect_all a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point
 #' @param cds CellDataSet for the experiment
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param lineage_states The states for two branching lineages
+#' @param stretch a logic flag to determine whether or not each lineage should be stretched
 #' @param cores Number of cores when fitting the spline curves
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
 #' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
@@ -700,12 +781,14 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
+#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param pseudocount pseudo count added before fitting the spline curves 
-#' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param weighted A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
+#' @param q_thrsld The threshold for the qval 
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
+#' @param cores the number of cores to be used while testing each gene for differential expression
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models, as well as the time point where the gene starts to bifurcate between two branches
 #' @export
 #'
@@ -738,6 +821,62 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage"
   #make a newCellDataSet object with the smoothed data? 
 	if(verbose)
    message('pass branchTest')
+
+	# if(draw_branched_kinetics) {
+	# 	plot_genes_branched_pseudotime(cds, 
+	# 		lineage_states = lineage_states, 
+	# 		lineage_labels = lineage_labels,
+	# 		stretch = TRUE, 
+	# 		min_expr = NULL, 
+	# 		cell_size = 0.75,
+	# 		nrow = NULL, 
+	# 		ncol = 1, 
+	# 		panel_order = NULL, 
+	# 		color_by = "State",
+	# 		cell_color_by = "State",
+	# 		trajectory_color_by = "State", 
+	# 		trend_formula = fullModelFormulaStr, 
+	# 		reducedModelFormulaStr = reducedModelFormulaStr, 
+	# 		label_by_short_name = TRUE,
+	# 		weighted = TRUE, 
+	# 		add_ABC = FALSE, 
+	# 		add_pval = FALSE,
+	# 		normalize = TRUE,
+	# 		bifurcation_time = NULL, 
+	# 		#gene_pairs = NULL,
+	# 	...)
+	# }
+
+	# if(draw_branched_heatmap) {
+	# 	plot_genes_branched_heatmap(cds_subset, 
+	# 	  num_clusters = 6,
+	# 	  ABC_df = NULL, 
+	# 	  branchTest_df = NULL, 
+	# 	  lineage_labels = lineage_labels, 
+	# 	  stretch = T, 
+	# 	  scaling = T,
+	# 	  norm_method = c("vstExprs", "log"), 
+	# 	  use_fitting_curves = T, 
+	# 	  dist_method = NULL, 
+	# 	  hclust_method = "ward", 
+	# 	  heatmap_height = 3, 
+	# 	  heatmap_width = 4,
+	# 	  ABC_lowest_thrsd = 0, 
+	# 	  ABC_highest_thrsd = 2,
+	# 	  qval_lowest_thrsd = 1, 
+	# 	  qval_highest_thrsd = 5,
+	# 	  hmcols = NULL, 
+	# 	  Cell_type_color = c('#979797', '#F05662', '#7990C8'), 
+	# 	  trend_formula = '~sm.ns(Pseudotime, df=3) * Lineage',
+	# 	  pseudo_cnt = 0, 
+	# 	  add_annotation_row = NULL,
+	# 	  add_annotation_col = NULL,
+	# 	  show_rownames = F, 
+	# 	  cores = cores,
+	# 	  use_gene_short_name = F,
+	# 	  file_name = 'branched_heatmap.pdf')
+	# }
+
 # 
 #   ILRs_res <- calILRs(cds = cds, 
 #                       branch_point=branch_point,

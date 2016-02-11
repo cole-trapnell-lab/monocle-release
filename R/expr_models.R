@@ -226,9 +226,9 @@ residualMatrix <- function(models,  residual_type="response", cores = detectCore
 #'
 genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
                         relative_expr = T, pseudocount = 0, response_type="response", cores = 1) { 
-    
-    expressionFamily <- cds@expressionFamily
-
+  
+  expressionFamily <- cds@expressionFamily
+  
     if(cores > 1) {
       expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, new_data, fit_model_helper, responseMatrix, 
                                                               calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
@@ -272,7 +272,6 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
       }
 
 }
-
 #' Fit smooth spline curves and return the residuals matrix
 #'
 #' This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return

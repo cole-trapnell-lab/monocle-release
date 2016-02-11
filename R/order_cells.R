@@ -1041,11 +1041,11 @@ orderCells <- function(cds,
     message("Warning: argument 'reverse' is deprecated and will be removed in a future release")
   }
   
+  cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
     if (is.null(num_paths)){
       num_paths = 1
     }
-    
     adjusted_S <- t(cds@reducedDimS)
     
     dp <- as.matrix(dist(adjusted_S))
@@ -1070,7 +1070,12 @@ orderCells <- function(cds,
     pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
     pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
     #pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name 
     
+    minSpanningTree(cds) <- dp_mst
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
+
   } else if (cds@dim_reduce_type == "DDRTree"){
     if (is.null(num_paths) == FALSE){
       message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
@@ -1110,9 +1115,10 @@ orderCells <- function(cds,
     minSpanningTree(cds) <- old_mst
     reducedDimA(cds) <- old_A
     reducedDimW(cds) <- old_W
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } 
   
-  mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
   # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
   # for now
@@ -1130,6 +1136,7 @@ orderCells <- function(cds,
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
 #' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
+#' @param scaling a logic argument to determine whether or not we should scale the data before dimension reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
@@ -1146,159 +1153,147 @@ reduceDimension <- function(cds,
                             use_vst=NULL,
                             verbose=FALSE,
                             use_irlba=NULL,
+                            scaling = TRUE, 
                             ...){
-  
   FM <- exprs(cds)
-  
-  if (!is.null(use_irlba)){
-    message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
-  }
-  
-  if (is.null(use_vst) && cds@expressionFamily@vfamily == "negbinomial"){
-    use_vst = TRUE
-    pseudo_expr = 0
-  }
-  
-  if (cds@expressionFamily@vfamily == "negbinomial"){
-    if (is.null(use_vst)) 
-      use_vst = TRUE
-    if (is.null(pseudo_expr))
-      pseudo_expr = 0
-  } else {
-    if (is.null(use_vst)) 
-      use_vst = FALSE
-    if (is.null(pseudo_expr))
-      pseudo_expr = 1
-  }
-  
-  # If we aren't using VST, then normalize the expression values by size factor
-  if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial")
-  {
-    checkSizeFactors(cds)
-    size_factors <- sizeFactors(cds)
-    #print (size_factors)
-    FM <- Matrix::t(Matrix::t(FM) / size_factors)
-    #FM <- log2(FM)
-  }
-  
-  if (is.null(fData(cds)$use_for_ordering) == FALSE && nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0)
-    FM <- FM[fData(cds)$use_for_ordering,]
-  
-  if (cds@expressionFamily@vfamily == "binomialff"){
-    ncounts <- FM > 0
-    ncounts[ncounts != 0] <- 1
-    FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
-  }
-  
-  if (cds@expressionFamily@vfamily != "binomialff"){
-    FM <- FM + pseudo_expr
-  }
-  
-  FM <- FM[apply(FM, 1, sd) > 0,]
-  
-  if (cds@expressionFamily@vfamily != "binomialff"){
-    if (use_vst){
-      VST_FM <- vstExprs(cds, expr_matrix=FM, round_vals=FALSE)
-      if (is.null(VST_FM) == FALSE){
-        FM <- VST_FM
-      }else{
-        stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
-      }
-      #
-    }else{
-      FM <- log2(FM)
-    }
-  }
-  
-  # TODO: get rid of this if possible.
-  if (is.null(residualModelFormulaStr) == FALSE)
-  {
-    if (verbose)
-      message("Removing batch effects")
-    
-    #X.model_mat <- model.matrix(as.formula(residualModelFormulaStr), data=pData(cds))
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), data=pData(cds), drop.unused.levels=TRUE)
-    
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[,-1])
-    
-#     #FM <- log2(FM)
-#     FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
-    if (cds@expressionFamily@vfamily != "binomialff"){
-      if (use_vst == FALSE) {
-        FM <- 2^FM
-      }
-    }
-    
-  }
-  
-  #FM <- log2(FM)
-  if (verbose)
-    message("Reducing to independent components")
-  
-  FM <- Matrix::t(scale(Matrix::t(FM)))
+  if (is.null(use_irlba)) {
+      message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
 
-  FM <- FM[apply(FM, 1, sd) > 0,]
-  
-  if (nrow(FM) == 0){
-    stop("Error: all rows have standard deviation zero")
   }
   
-  if (method == "ICA"){
-    init_ICA <- ica_helper(Matrix::t(FM), max_components, use_irlba=use_irlba, ...)
-    
-    x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
-    W <- Matrix::t(init_ICA$W)
-    
-    weights <- W
-    
-    A <- Matrix::t(solve(weights) %*% Matrix::t(init_ICA$K))
-    
-    colnames(A) <- colnames(weights)
-    rownames(A) <- rownames(FM)
-    
-    S <- weights %*% x_pca
-    
-    rownames(S) <- colnames(weights)
-    colnames(S) <- colnames(FM) 
-    
-    reducedDimW(cds) <- as.matrix(W)
-    reducedDimA(cds) <- as.matrix(A)
-    reducedDimS(cds) <- as.matrix(S)
-    reducedDimK(cds) <- as.matrix(init_ICA$K)
-    
-    adjusted_S <- Matrix::t(reducedDimS(cds))
-    dp <- as.matrix(dist(adjusted_S))
-    cellPairwiseDistances(cds) <- dp
-    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-    dp_mst <- minimum.spanning.tree(gp)
-    minSpanningTree(cds) <- dp_mst
-    cds@dim_reduce_type <- "ICA"
-  } else if (method == "DDRTree"){
-    ddrtree_res <- DDRTree(FM, max_components, verbose=verbose, ...)
-    
-    colnames(ddrtree_res$Y) <- paste("Y_",1:ncol(ddrtree_res$Y), sep="") 
-    colnames(ddrtree_res$Z) <- colnames(FM) 
-    
-    reducedDimS(cds) <- ddrtree_res$Z
-    reducedDimK(cds) <- ddrtree_res$Y
-    
-    adjusted_K <- Matrix::t(reducedDimK(cds))
-    dp <- as.matrix(dist(adjusted_K))
-    cellPairwiseDistances(cds) <- dp
-    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-    dp_mst <- minimum.spanning.tree(gp)
-    minSpanningTree(cds) <- dp_mst
-    cds@dim_reduce_type <- "DDRTree"
-    
-    cds <- findNearestPointOnMST(cds)
-    
-  } else {
-    stop("Error: unrecognized dimensionality reduction method")
+  if (cds@expressionFamily@vfamily == "negbinomial") {
+      if (is.null(use_vst)) 
+          use_vst = TRUE
+      if (is.null(pseudo_expr)) 
+          pseudo_expr = 0
   }
+  else {
+      if (is.null(use_vst)) 
+          use_vst = FALSE
+      if (is.null(pseudo_expr)) 
+          pseudo_expr = 1
+  }
+ 
+ # If we aren't using VST, then normalize the expression values by size factor
+   if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial") {
+      checkSizeFactors(cds)
+      size_factors <- sizeFactors(cds)
+      FM <- Matrix::t(Matrix::t(FM)/size_factors)
+  }
+
+  if (is.null(fData(cds)$use_for_ordering) == FALSE && nrow(subset(fData(cds), 
+      use_for_ordering == TRUE)) > 0) 
+      FM <- FM[fData(cds)$use_for_ordering, ]
+
+  if (cds@expressionFamily@vfamily == "binomialff") {
+      ncounts <- FM > 0
+      ncounts[ncounts != 0] <- 1
+      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
+  }
+
+  if (cds@expressionFamily@vfamily != "binomialff") {
+      FM <- FM + pseudo_expr
+  }
+
+  FM <- FM[apply(FM, 1, sd) > 0, ]
   
+  if (cds@expressionFamily@vfamily != "binomialff") {
+      if (use_vst) {
+          VST_FM <- vstExprs(cds[row.names(subset(fData(cds), use_for_ordering == TRUE)),], round_vals = FALSE)
+          if (is.null(VST_FM) == FALSE) {
+              FM <- VST_FM
+          }
+          else {
+              stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
+          }
+      }
+      else {
+          FM <- log2(FM)
+      }
+  }
+  if (is.null(residualModelFormulaStr) == FALSE) {
+      if (verbose) 
+          message("Removing batch effects")
+      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+          data = pData(cds), drop.unused.levels = TRUE)
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+      if (cds@expressionFamily@vfamily != "binomialff") {
+          if (use_vst == FALSE) {
+              FM <- 2^FM
+          }
+      }
+  }
+  if (verbose) 
+      message("Reducing to independent components")
+  
+  if(scaling)
+    FM <- Matrix::t(scale(Matrix::t(FM)))
+  FM <- FM[apply(FM, 1, sd) > 0, ]
+  if (nrow(FM) == 0) {
+      stop("Error: all rows have standard deviation zero")
+  }
+  if (is.function(method)) {        
+      reducedDim <- method(FM, ...)
+      qplot(reducedDimW[1, ], reducedDimW[2, ])
+      colnames(reducedDim) <- colnames(FM)
+      reducedDimW(cds) <- as.matrix(reducedDim)
+      reducedDimA(cds) <- as.matrix(reducedDim)
+      reducedDimS(cds) <- as.matrix(reducedDim)
+      reducedDimK(cds) <- as.matrix(reducedDim)
+      dp <- as.matrix(dist(reducedDim))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "function_passed"
+  }
+  else if (method == "ICA") {
+      init_ICA <- ica_helper(Matrix::t(FM), max_components, 
+          use_irlba = use_irlba, ...)
+      x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
+      W <- Matrix::t(init_ICA$W)
+      weights <- W
+      A <- Matrix::t(solve(weights) %*% Matrix::t(init_ICA$K))
+      colnames(A) <- colnames(weights)
+      rownames(A) <- rownames(FM)
+      S <- weights %*% x_pca
+      rownames(S) <- colnames(weights)
+      colnames(S) <- colnames(FM)
+      reducedDimW(cds) <- as.matrix(W)
+      reducedDimA(cds) <- as.matrix(A)
+      reducedDimS(cds) <- as.matrix(S)
+      reducedDimK(cds) <- as.matrix(init_ICA$K)
+      adjusted_S <- Matrix::t(reducedDimS(cds))
+      dp <- as.matrix(dist(adjusted_S))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "ICA"
+  }
+  else if (method == "DDRTree") {
+      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
+          ...)
+      colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), 
+          sep = "")
+      colnames(ddrtree_res$Z) <- colnames(FM)
+      reducedDimS(cds) <- ddrtree_res$Z
+      reducedDimK(cds) <- ddrtree_res$Y
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "DDRTree"
+      cds <- findNearestPointOnMST(cds)
+  }
+  else {
+      stop("Error: unrecognized dimensionality reduction method")
+  }
   cds
 }
 
