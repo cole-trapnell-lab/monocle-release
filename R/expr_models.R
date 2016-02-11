@@ -178,7 +178,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
 #' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @export
-residualMatrix <- function(models,  residual_type="pearson", cores = detectCores()) {
+residualMatrix <- function(models,  residual_type="response", cores = detectCores()) {
   res_list <- mclapply(models, function(x) {
     if (is.null(x)) { NA } else {
         resid(x, type = residual_type)
@@ -288,12 +288,12 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
 #' @export
 #'
 genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
-                            relative_expr = T, pseudocount = 0, residual_type="pearson", cores = 1) { 
+                            relative_expr = T, pseudocount = 0, residual_type="response", cores = 1) { 
   
   expressionFamily <- cds@expressionFamily
   
   if(cores > 1) {
-    expression_curves <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, fit_model_helper, residualMatrix, 
+    expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, pseudocount, fit_model_helper, residualMatrix, 
                                                     calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
       environment(fit_model_helper) <- environment()
       environment(responseMatrix) <- environment()
@@ -303,14 +303,15 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
         expression_curve <- as.data.frame(matrix(rep(NA, nrow(pData(cds))), nrow = 1))
       else
         expression_curve <- as.data.frame(residualMatrix(list(model_fits), residual_type=residual_type))
-      
+      #colnames(expression_curve) <- row.names(pData(cds))
+      expression_curve
       #return(expression_curve)
     }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount,  
     fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
     calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
     )
-    express_curve_matrix <- do.call(rbind, expression_curve_matrix)
+    expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
     return(expression_curve_matrix)
   }
   else {
@@ -320,14 +321,16 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
       model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, weights = weights,
                                      relative_expr = relative_expr, pseudocount = pseudocount, disp_func = cds@dispFitInfo[['blind']]$disp_func)
       if(is.null(model_fits))
-        expression_curve <- matrix(rep(NA, nrow(pData(cds))), nrow = 1)
+        expression_curve <-  as.data.frame(matrix(rep(NA, nrow(pData(cds))), nrow = 1))
       else
-        expression_curve <- residualMatrix(list(model_fits), residual_type=residual_type)
-      
+        expression_curve <-  as.data.frame(residualMatrix(list(model_fits), residual_type=residual_type))
+      #colnames(expression_curve) <- row.names(pData(cds))
+      expression_curve
     }, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, pseudocount = pseudocount
     )
-    express_curve_matrix <- do.call(rbind, expression_curve_matrix)
+    expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
+    row.names(expression_curve_matrix) <- row.names(fData(cds))
     return(expression_curve_matrix)
   }
   
