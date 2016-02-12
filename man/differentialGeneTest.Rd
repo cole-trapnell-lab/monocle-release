@@ -6,7 +6,8 @@
 \usage{
 differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
   reducedModelFormulaStr = "~1", cores = 1, relative_expr = TRUE,
-  weights = NULL, pseudocount = 0, verbose = FALSE)
+  weights = NULL, pseudocount = 0, exprs_thrsld_percentage = NULL,
+  verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -15,9 +16,11 @@ differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 
 \item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{cores}{the number of cores to be used while testing each gene for differential expression}
+\item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
-\item{relative_expr}{Whether to transform expression into relative values}
+\item{relative_expr}{Whether to transform expression into relative values.}
+
+\item{exprs_thrsld_percentage}{For the gene under test, the percentage of cells expressed across all cells. Default is 0.05.}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 }

@@ -6,7 +6,7 @@
 \usage{
 genSmoothCurveResiduals(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
   weights = NULL, relative_expr = T, pseudocount = 0,
-  residual_type = "pearson", cores = 1)
+  residual_type = "response", cores = 1)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

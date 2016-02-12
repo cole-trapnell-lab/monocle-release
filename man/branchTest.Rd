@@ -8,7 +8,7 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
   stretch = TRUE, pseudocount = 0, cores = 1, weighted = TRUE,
-  lineage_labels = NULL, ...)
+  lineage_labels = NULL, exprs_thrsld_percentage = 0.05, verbose = F, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -17,7 +17,9 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{lineage_states}{ids for the immediate branch lineage which obtained from lineage construction based on MST}
+\item{lineage_states}{states corresponding to two branches}
+
+\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
 
@@ -28,6 +30,10 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
 \item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
+
+\item{exprs_thrsld_percentage}{For the gene under test, the percentage of cells expressed across all cells. Default is 0.05}
+
+\item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 
 \item{lineage_labelsthe}{name for each lineage, for example, AT1 or AT2}
 

@@ -14,8 +14,7 @@ plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df = NULL,
   Cell_type_color = c("#979797", "#F05662", "#7990C8"),
   trend_formula = "~sm.ns(Pseudotime, df=3) * Lineage", pseudo_cnt = 0,
   add_annotation_row = NULL, add_annotation_col = NULL, show_rownames = F,
-  cores = 1, use_gene_short_name = F, file_name = "branched_heatmap.pdf",
-  return_heatmap = FALSE)
+  cores = 1, use_gene_short_name = F, return_all = FALSE)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
@@ -51,6 +50,8 @@ plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df = NULL,
 \item{Cell_type_color}{The color for the progenitors and two lineages}
 
 \item{cores}{Number of cores to run this function}
+
+\item{return_all}{}
 }
 \value{
 A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),

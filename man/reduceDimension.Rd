@@ -6,7 +6,7 @@
 \usage{
 reduceDimension(cds, max_components = 2, method = c("DDRTree", "ICA"),
   pseudo_expr = NULL, residualModelFormulaStr = NULL, use_vst = NULL,
-  verbose = FALSE, use_irlba = NULL, ...)
+  verbose = FALSE, use_irlba = NULL, scaling = TRUE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -16,6 +16,8 @@ reduceDimension(cds, max_components = 2, method = c("DDRTree", "ICA"),
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
 \item{use_irlba}{Whether to use the IRLBA package for ICA reduction.}
+
+\item{scaling}{a logic argument to determine whether or not we should scale the data before dimension reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 

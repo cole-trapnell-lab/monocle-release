@@ -4,12 +4,18 @@
 \alias{buildLineageBranchCellDataSet}
 \title{Build a CellDataSet with appropriate duplication along two lineages}
 \usage{
-buildLineageBranchCellDataSet(cds, lineage_states = c(2, 3),
+buildLineageBranchCellDataSet(cds, progenitor_method = c("sequential_split",
+  "random_split", "duplicate"), lineage_states = c(2, 3),
   branch_point = NULL, lineage_labels = NULL, stretch = FALSE,
   weighted = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{progenitor_method}{The method to treat the progenitor cells, there are three options: sequential_split, random_split, duplicate. 
+They represent that the progenitors can be either splitted one by one (sequential_split) or randomly (random_split) or duplicate the 
+progenitors (duplicate). For random_split and sequential_split, the cells will be evenly split (when number of progenitors are odd, 
+there will be one more cell in one lineage)}
 
 \item{lineage_states}{The states for two branching lineages}
 

@@ -177,7 +177,6 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
 #' @param response_type the response desired, as accepted by VGAM's predict function
 #' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
-#' @export
 residualMatrix <- function(models,  residual_type="response", cores = detectCores()) {
   res_list <- mclapply(models, function(x) {
     if (is.null(x)) { NA } else {
@@ -284,7 +283,6 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
 #' @param response_type the response desired, as accepted by VGAM's predict function
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @return a data frame containing the data for the fitted spline curves.
-#' @export
 #'
 genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)", weights = NULL, 
                             relative_expr = T, pseudocount = 0, residual_type="response", cores = 1) { 
@@ -361,7 +359,7 @@ parametricDispersionFit <- function( means, disps )
     if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
       break
     iter <- iter + 1
-    print(coefs)
+    #print(coefs)
     if( iter > 10 ) {
       warning( "Dispersion fit did not converge." )
       break }

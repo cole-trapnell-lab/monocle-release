@@ -7,7 +7,8 @@
 plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
   nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State",
   trend_formula = "~ sm.ns(Pseudotime, df=3)", label_by_short_name = TRUE,
-  relative_expr = TRUE, method = "VGAM")
+  relative_expr = TRUE, method = "VGAM", vertical_jitter = NULL,
+  horizontal_jitter = NULL)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}

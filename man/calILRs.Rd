@@ -4,24 +4,29 @@
 \alias{calILRs}
 \title{Calculate the Instant Log Ratio between two branching lineages}
 \usage{
-calILRs(cds, trajectory_states = c(2, 3), lineage_labels = NULL,
-  stretch = T, cores = 1,
-  trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage", ILRs_limit = 3,
-  relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
-  useVST = FALSE, round_exprs = FALSE, pseudocount = 0,
-  output_type = "all", file = NULL, return_all = F, verbose = FALSE,
-  ...)
+calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+  trajectory_states = c(2, 3), relative_expr = TRUE, stretch = T,
+  pseudocount = 0, cores = 1, ILRs_limit = 3, weighted = FALSE,
+  label_by_short_name = TRUE, useVST = FALSE, round_exprs = FALSE,
+  output_type = "all", lineage_labels = NULL, file = NULL,
+  return_all = F, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
-\item{cores}{Number of cores when fitting the spline curves}
+\item{trend_formula}{trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
-
-\item{ILRs_limit}{the minimum Instant Log Ratio used to make the heatmap plot}
+\item{trajectory_states}{states corresponding to two branches}
 
 \item{relative_expr}{A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves}
+
+\item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
+
+\item{pseudocount}{pseudo count added before fitting the spline curves}
+
+\item{cores}{Number of cores when fitting the spline curves}
+
+\item{ILRs_limit}{the minimum Instant Log Ratio used to make the heatmap plot}
 
 \item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
 
@@ -32,15 +37,16 @@ When VST is used, the difference between two lineages are used instead of the lo
 
 \item{round_exprs}{A logic flag to determine whether or not the expression value should be rounded into integer}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
 \item{output_type}{A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected}
+
+\item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
 
 \item{file}{the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored}
 
-\item{Lineage}{The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)}
+\item{return_all}{A logic flag to determine whether or not all the results from the analysis should be returned, this includes 
+a dataframe for the log fold change, normalized log fold change, raw divergence, normalized divergence, fitting curves for each lineage}
 
-\item{lineage_states}{The states for two branching lineages}
+\item{verbose}{A logic flag to determine whether or not detailed running information should be returned}
 }
 \value{
 a ggplot2 plot object

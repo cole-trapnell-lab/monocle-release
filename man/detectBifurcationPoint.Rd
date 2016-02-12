@@ -24,7 +24,11 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
 
 \item{Lineage}{The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)}
 
+\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+
 \item{lineage_states}{The states for two branching lineages}
+
+\item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
 \item{cores}{Number of cores when fitting the spline curves}
 

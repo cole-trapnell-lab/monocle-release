@@ -4,9 +4,8 @@
 \alias{calABCs}
 \title{Calculate the area between TWO fitted lineage trajectories}
 \usage{
-calABCs(cds, trajectory_states = c(2, 3), branchTest = FALSE,
-  relative_expr = TRUE,
-  trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage", stretch = TRUE,
+calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+  trajectory_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
   pseudocount = 0, cores = 1, weighted = TRUE, verbose = F,
   min_expr = 0.5, integer_expression = FALSE, num = 5000,
   lineage_labels = NULL, ABC_method = c("integral"), ...)
@@ -14,11 +13,11 @@ calABCs(cds, trajectory_states = c(2, 3), branchTest = FALSE,
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
 
-\item{branchTest}{a logic flag to determine whether or not to perform the branchTest inside the function. Because of the long computations, we recommend to first perform the branchTest and then calculate the ABCs for the genes of interests. Otherwise the ABCs will be appended to the last column of branchTest results.}
+\item{trend_formula}{a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
+
+\item{trajectory_states}{States corresponding to two branches}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
-
-\item{trend_formula}{a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
@@ -26,7 +25,9 @@ calABCs(cds, trajectory_states = c(2, 3), branchTest = FALSE,
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
+\item{weighted}{a logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
+
+\item{verbose}{a logic flag to determine whether or not we should output detailed running information}
 
 \item{min_expr}{the lower limit for the expressed gene}
 
@@ -39,17 +40,13 @@ calABCs(cds, trajectory_states = c(2, 3), branchTest = FALSE,
 \item{ABC_method}{the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
 "global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
 "ILRs" is similar to calculate the Instant Log Ratio used in calILRs function}
-
-\item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
-
-\item{lineage_states}{ids for the immediate branch lineage which obtained from lineage construction based on MST (only two lineages are allowed for this function)}
 }
 \value{
-a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 }
 \description{
 This function is used to calculate the ABC score based on the the nature spline curves fitted for each lineage. ABC score is used to 
-quantify the magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
+quantify the total magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
 The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
 potential major regulators for lineage bifurcation.
 }

@@ -1194,8 +1194,6 @@ reduceDimension <- function(cds,
   if (cds@expressionFamily@vfamily != "binomialff") {
       FM <- FM + pseudo_expr
   }
-
-  FM <- FM[apply(FM, 1, sd) > 0, ]
   
   if (cds@expressionFamily@vfamily != "binomialff") {
       if (use_vst) {
@@ -1211,6 +1209,9 @@ reduceDimension <- function(cds,
           FM <- log2(FM)
       }
   }
+  
+  FM <- FM[apply(FM, 1, sd) > 0, ]
+  
   if (is.null(residualModelFormulaStr) == FALSE) {
       if (verbose) 
           message("Removing batch effects")

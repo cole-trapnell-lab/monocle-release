@@ -19,6 +19,8 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{lineage_states}{ids for the immediate branch lineage which obtained from lineage construction based on MST}
 
+\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
@@ -26,6 +28,8 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 \item{pseudocount}{pseudo count added before fitting the spline curves}
 
 \item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
+
+\item{q_thrsld}{The threshold for the qval}
 
 \item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
 
