@@ -204,11 +204,15 @@ buildLineageBranchCellDataSet <- function(cds,
       
       #pData <- rbind(pData, pData[common_ancestor_cells, ])
       new_pData_block <- ancestor_pData_block
-      new_pData_block$Lineage <- i
+      new_pData_block$Lineage <- lineage_states[i]
+      new_pData_block$State <- lineage_states[i]
+      
       row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
       
       pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
-      pData_lineage_cells$Lineage <- i
+      pData_lineage_cells$Lineage <- lineage_states[i]
+      pData_lineage_cells$State <- lineage_states[i]
+      
       weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
       
       weight_vec <- c(weight_vec, weight_vec_block)
@@ -309,7 +313,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        stretch = TRUE,
                        cores = 1, 
                        lineage_labels = NULL, 
-                       exprs_thrsld_percentage = 0.05,
+                       exprs_thrsld_percentage = NULL,
                        verbose = F, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
@@ -328,7 +332,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          cores = cores, 
                                          relative_expr = relative_expr, 
                                          exprs_thrsld_percentage = exprs_thrsld_percentage,
-                                         verbose=verbose, ...)
+                                         verbose=verbose)
   
   return(branchTest_res)
 }
@@ -716,21 +720,21 @@ detectBifurcationPoint <- function(str_log_df = NULL,
       
       inflection_point <- max(inflection_point_tmp[inflection_point_tmp < max_ind])
       
-      
-      if(any(abs(x) > ILRs_threshold) & return_cross_point == T)
+      if(return_cross_point == T) {
         return(inflection_point * sign(sum(x)))
-      else
-        return(Inf)
-      
-      rev_x <- rev(x[(inflection_point):max_ind])
-      if(any(which(abs(rev_x) >= ILRs_threshold))){
-        index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
-        index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
-      }
-      else if(detect_all & all(!is.na(rev_x))) {
-        index <-  min(which(abs(rev_x) == max(abs(rev_x)))) * sign(sum(rev_x))
       }
       
+      else if (return_cross_point == F & !is.null(ILRs_threshold) ) { 
+        rev_x <- rev(x[(inflection_point):max_ind])
+        if(any(which(abs(rev_x) >= ILRs_threshold))){
+          index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
+          index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
+        }
+        else if(detect_all & all(!is.na(rev_x))) {
+          index_tmp <-  max(which(abs(rev_x) == max(abs(rev_x)))) #the earliest time point when the bifurcation is largest 
+          index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x)) 
+        }
+        }
       index
     })
   }

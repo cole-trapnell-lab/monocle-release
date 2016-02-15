@@ -10,7 +10,7 @@ diff_test_helper <- function(x,
                              verbose=FALSE){
   if(is.null(exprs_thrsld_percentage) == FALSE) {
     if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
-      test_res <- data.frame(status = "no_test", family=NA, pval=1.0, qval=1.0)
+      test_res <- data.frame(status = "NO_TEST", family=NA, pval=1.0, qval=1.0)
       return(test_res)
     }
   }
@@ -74,7 +74,7 @@ diff_test_helper <- function(x,
     }else{
       backup_expression_family <- NULL
     }
-    if (is.null(backup_expression_family) == FALSE){
+    if (FALSE){ #is.null(backup_expression_family) == FALSE #remove the backup fitting
       test_res <- tryCatch({
       if (verbose){
         full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=FALSE)
