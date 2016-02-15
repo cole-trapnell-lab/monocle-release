@@ -390,7 +390,6 @@ We can plot the expression levels of these genes, all of which show significant 
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
-
 \section{Clustering genes by pseudotemporal expression pattern}
 
 A common question that arises when studying time-series gene expression studies is: ``which genes follow similar kinetic trends''?  Monocle can help you answer this question by grouping genes that have similar trends, so you can analyze these groups to see what they have in common.  Monocle provides a convenient way to visualize all pseudotime-dependent genes. The function
@@ -411,7 +410,6 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
                             cores = 1, 
                             show_rownames = T)
 @ %def
-
 
 \subsection{Multi-factorial differential expression analysis}
 

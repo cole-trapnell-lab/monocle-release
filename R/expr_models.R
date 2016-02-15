@@ -68,13 +68,13 @@ fit_model_helper <- function(x,
           }, 
           #warning = function(w) { FM_fit },
           error = function(e) { 
-            print (e);
+            #print (e);
             NULL
           })
           #print(test_res)
           test_res
         } else {
-          print(e); 
+          #print(e); 
           NULL
         }
   })
