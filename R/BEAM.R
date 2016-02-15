@@ -213,11 +213,15 @@ buildLineageBranchCellDataSet <- function(cds,
       
       #pData <- rbind(pData, pData[common_ancestor_cells, ])
       new_pData_block <- ancestor_pData_block
-      new_pData_block$Lineage <- i
+      new_pData_block$Lineage <- lineage_states[i]
+      new_pData_block$State <- lineage_states[i]
+      
       row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
       
       pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
-      pData_lineage_cells$Lineage <- i
+      pData_lineage_cells$Lineage <- lineage_states[i]
+      pData_lineage_cells$State <- lineage_states[i]
+      
       weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
       
       weight_vec <- c(weight_vec, weight_vec_block)
@@ -322,7 +326,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        cores = 1, 
                        weighted = TRUE, 
                        lineage_labels = NULL, 
-                       exprs_thrsld_percentage = 0.05,
+                       exprs_thrsld_percentage = NULL,
                        verbose = F, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
@@ -344,7 +348,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          weights = pData(cds_subset)$weight,
                                          pseudocount = pseudocount,
                                          exprs_thrsld_percentage = exprs_thrsld_percentage,
-                                         verbose=verbose, ...)
+                                         verbose=verbose)
   
   return(branchTest_res)
 }

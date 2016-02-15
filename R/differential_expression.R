@@ -78,7 +78,7 @@ diff_test_helper <- function(x,
     }else{
       backup_expression_family <- NULL
     }
-    if (is.null(backup_expression_family) == FALSE){
+    if (FALSE){ #is.null(backup_expression_family) == FALSE #remove the backup fitting
       test_res <- tryCatch({
       if (verbose){
         full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE)
