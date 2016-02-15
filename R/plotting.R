@@ -24,7 +24,6 @@ monocle_theme_opts <- function()
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_name_size the size of cell name labels
 #' @return a ggplot2 plot object
-#' @importFrom grid unit
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @export
@@ -278,6 +277,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @param plot_as_fraction whether to show the percent instead of the number of cells expressing each gene 
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param plot_limits A pair of number specifying the limits of the y axis. If NULL, scale to the range of the data.
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom plyr ddply
@@ -380,6 +380,8 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime 
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param vertical_jitter A value passed to ggplot to jitter the points in the vertical dimension. Prevents overplotting, and is particularly helpful for rounded transcript count data.
+#' @param horizontal_jitter A value passed to ggplot to jitter the points in the horizontal dimension. Prevents overplotting, and is particularly helpful for rounded transcript count data.
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom plyr ddply .
@@ -402,7 +404,6 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     trend_formula="~ sm.ns(Pseudotime, df=3)",
                                     label_by_short_name=TRUE,
                                     relative_expr=TRUE,
-                                    method = "VGAM",
                                     vertical_jitter=NULL,
                                     horizontal_jitter=NULL){
   
@@ -458,7 +459,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
 
     new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime)
     model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula,
-                        relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+                        relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
     cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
@@ -476,14 +477,9 @@ plot_genes_in_pseudotime <-function(cds_subset,
     else {
         q <- q + geom_point(size = I(cell_size), position=position_jitter(horizonal_jitter, vertical_jitter))
     }
-    if (method == "loess") {
-        q <- q + stat_smooth(aes(group = 1), color = I("black"),
-            method = "loess", se = F)
-    }
-    else if (method == "VGAM") {
-        q <- q + geom_line(aes(x = Pseudotime, y = expectation),
-            data = cds_exprs)
-    }
+
+    q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = cds_exprs)
+
     q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow = nrow,
         ncol = ncol, scales = "free_y")
     if (min_expr < 1) {
@@ -500,7 +496,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
     q
 }
 
-#' Plots the minimum spanning tree on cells.
+#' Plots kinetic clusters of genes.
 #'
 #' @param cds CellDataSet for the experiment
 #' @param clustering a clustering object produced by clusterCells
@@ -529,8 +525,8 @@ plot_clusters<-function(cds,
                         ncol=NULL, 
                         nrow=NULL, 
                         row_samples=NULL, 
-                        callout_ids=NULL,
-                        conf_int=0.68){
+                        callout_ids=NULL){
+  .Deprecated("plot_genes_heatmap")
   m <- as.data.frame(clustering$exprs)
   m$ids <- rownames(clustering$exprs)
   if (is.null(clustering$labels) == FALSE)
@@ -620,7 +616,6 @@ plot_clusters<-function(cds,
 #                                labCol=FALSE, 
 #                                labRow=TRUE, 
 #                                logMode=TRUE, 
-#                                pseudocount=0.1, 
 #                                use_vst=TRUE,
 #                                border=FALSE, 
 #                                heatscale=c(low='steelblue',mid='white',high='tomato'), 
@@ -818,53 +813,69 @@ plot_clusters<-function(cds,
 # }
 
 
-#' Plots a pseudotime-ordered, row-centered heatmap
-#' @export 
-plot_genes_heatmap <- function(cds, 
-                               trend_formula = '~sm.ns(Pseudotime, df=3)',
-                               rescaling='row', 
-                               clustering='row',
-                               hclust_method = "ward.D2", 
-                               num_clusters = 6,
-                               show_rownames = F, 
-                               logMode=TRUE, 
-                               pseudocount=0.1, 
-                               use_vst=TRUE,
-                               border=FALSE, 
-                               hmcols = NULL, 
-                               scaleMax=2, 
-                               scaleMin=-2, 
-                               return_heatmap=FALSE,
-                               relative_expr=TRUE, 
-                               cores=1,
-                               ...){
-  
-  ## the function can be be viewed as a two step process
-  ## 1. using the rehape package and other funcs the data is clustered, scaled, and reshaped
-  ## using simple options or by a user supplied function
-  ## 2. with the now resahped data the plot, the chosen labels and plot style are built
+plot_genes_heatmap <- function(...){
+  .Deprecated("plot_pseudotime_heatmap")
+  plot_pseudotime_heatmap(...)
+}
 
-  newdata <- data.frame(Pseudotime = seq(0, max(pData(cds)$Pseudotime),length.out = 100)) 
+#' Plots a pseudotime-ordered, row-centered heatmap
+#' 
+#' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
+#' @param num_clusters Number of clusters for the heatmap of branch genes
+#' @param lineage_labels The label for the lineages (first (second) lineage corresponding to state 2 (3))
+#' @param norm_method Either vstExprs or log, determine which normalization approach will be performed for the fitted gene expression values
+#' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)
+#' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
+#' @param heatmap_height Height of the saved heatmap
+#' @param heatmap_width Width of the saved heatmap
+#' @param hmcols The color scheme for drawing the heatmap
+#' @param cores Number of cores to run this function
+#' @param Cell_type_color The color for the progenitors and two lineages
+#' @param return_all 
+#' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
+#' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
+#' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
+#' @import pheatmap
+
+#' @export 
+plot_pseudotime_heatmap <- function(cds_subset, 
+                                    trend_formula = '~sm.ns(Pseudotime, df=3)',
+                                    rescaling='row', 
+                                    clustering='row',
+                                    hclust_method = "ward.D2", 
+                                    num_clusters = 6,
+                                    show_rownames = F, 
+                                    logMode=TRUE, 
+                                    pseudocount=0, 
+                                    use_vst=TRUE,
+                                    border=FALSE, 
+                                    hmcols = NULL, 
+                                    scaleMax=2, 
+                                    scaleMin=-2, 
+                                    return_heatmap=FALSE,
+                                    relative_expr=TRUE, 
+                                    cores=1,
+                                    ...){
   
-  m <- genSmoothCurves(cds, cores=cores, trend_formula = trend_formula,  
-                       relative_expr = T, pseudocount = 0, new_data = newdata)
+  newdata <- data.frame(Pseudotime = seq(0, max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
-  if (is.null(fData(cds)$gene_short_name) == FALSE){
-    feature_labels <- fData(cds)$gene_short_name
-    feature_labels[is.na(feature_labels)]  <- fData(cds)$f_id
+  m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
+                       relative_expr = T, new_data = newdata)
+  
+  if (is.null(fData(cds_subset)$gene_short_name) == FALSE){
+    feature_labels <- fData(cds_subset)$gene_short_name
+    feature_labels[is.na(feature_labels)]  <- fData(cds_subset)$f_id
     row.names(m) <- feature_labels
   }
   
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
-  if (use_vst && is.null(cds@dispFitInfo[["blind"]]$disp_func) == FALSE){
-    m = vstExprs(cds, expr_matrix=m)
+  if (use_vst && is.null(cds_subset@dispFitInfo[["blind"]]$disp_func) == FALSE){
+    m = vstExprs(cds_subset, expr_matrix=m)
   }else if(logMode){
     m = log10(m+pseudocount)
   }
-  
-  ## this is just reshaping into a ggplot format matrix and making a ggplot layer
   
   if(is.function(rescaling))
   { 
@@ -890,9 +901,6 @@ plot_genes_heatmap <- function(cds,
   
   heatmap_matrix <- m
   
-  #heatmap_matrix_ori <- heatmap_matrix
-  #heatmap_matrix <- heatmap_matrix[!is.na(heatmap_matrix[, 1]) & !is.na(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
-  
   row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
   row_dist[is.na(row_dist)] <- 1
   
@@ -901,41 +909,24 @@ plot_genes_heatmap <- function(cds,
     hmcols <- blue2green2red(length(bks) - 1)
   }
   
-  # prin  t(hmcols)
   ph <- pheatmap(heatmap_matrix, 
                  useRaster = T,
                  cluster_cols=FALSE, 
                  cluster_rows=TRUE, 
                  show_rownames=F, 
                  show_colnames=F, 
-                 #scale="row",
                  clustering_distance_rows=row_dist,
                  clustering_method = hclust_method,
                  cutree_rows=num_clusters,
                  silent=TRUE,
                  filename=NA,
                  breaks=bks,
-                 color=hmcols
-                 #color=hmcols#,
-                 # filename="expression_pseudotime_pheatmap.pdf",
-  )
-  #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
-  
+                 color=hmcols)
+
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
 
   colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
   
-  Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
-  names(Cluster_color) <- 1:length(unique(annotation_row$Cluster))
-  
-  annotation_colors=list('Cluster' = Cluster_color)
-  
-  #print(annotation_row)
-  # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
-  #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-  
-  #dev.off()
-  #pdf(file_name, height = heatmap_height, width = heatmap_width)
   ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
                      useRaster = T,
                      cluster_cols=FALSE, 
@@ -948,14 +939,12 @@ plot_genes_heatmap <- function(cds,
                      cutree_rows=num_clusters,
                      # cutree_cols = 2,
                      annotation_row=annotation_row,
-                     annotation_colors=annotation_colors,
                      treeheight_row = 20, 
                      breaks=bks,
                      fontsize = 6,
                      color=hmcols, 
                      silent=TRUE,
                      filename=NA
-                     # filename="expression_pseudotime_pheatmap2.pdf",
   )
   
   grid::grid.rect(gp=grid::gpar("fill", col=NA))
@@ -963,7 +952,6 @@ plot_genes_heatmap <- function(cds,
   if (return_heatmap){
     return(ph_res)
   }
-  
 }
 
 
@@ -989,8 +977,6 @@ plot_genes_heatmap <- function(cds,
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell 
 #' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param weighted  A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells
-#' @param add_ABC A logic flag to determine whether or not we should add the ABC score for each gene 
 #' @param relative_expr A logic flag to determine whether or not we should use the relative expression values
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -1022,26 +1008,12 @@ plot_genes_branched_pseudotime <- function (cds,
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
-                                            weighted = TRUE, 
-                                            add_ABC = FALSE, 
                                             add_pval = FALSE,
                                             normalize = TRUE,
                                             bifurcation_time = NULL, 
                                             #gene_pairs = NULL,
     ...)
 {
-    if (add_ABC) {
-        ABCs_df <- calABCs(cds, 
-                           trend_formula = trend_formula,
-                           lineage_states = lineage_states, 
-                           branch_point=branch_point,
-                           stretch = stretch,
-                           weighted = weighted, 
-                           min_expr = min_expr, 
-                           lineage_labels = lineage_labels,
-            ...)
-        fData(cds)[, "ABCs"] <- ABCs_df$ABCs
-    }
     if (add_pval) {
         pval_df <- branchTest(cds, 
                               lineage_states=lineage_states,
@@ -1055,10 +1027,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                                     lineage_states = lineage_states, 
                                                     branch_point=branch_point,
                                                     lineage_labels = lineage_labels, 
-                                                    method = method, 
-                                                    stretch = stretch,
-                                                    weighted = weighted, 
-                                                    ...)
+                                                    stretch = stretch)
     }
     else {
         cds_subset <- cds
@@ -1085,9 +1054,8 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     colnames(cds_exprs) <- c("f_id", "Cell", "expression")
     cds_pData <- pData(cds_subset)
-    if (add_ABC)
-        cds_fData <- ABCs_df
-    else cds_fData <- fData(cds_subset)
+
+    cds_fData <- fData(cds_subset)
     cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
     cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
     if (integer_expression) {
@@ -1116,13 +1084,13 @@ plot_genes_branched_pseudotime <- function (cds,
     new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Lineage = pData(cds_subset)$Lineage)
  
     full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, 
-                        relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+                        relative_expr = T, new_data = new_data)
     colnames(full_model_expectation) <- colnames(cds_subset)
     
     cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
     if(!is.null(reducedModelFormulaStr)){
         reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
-                            relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+                            relative_expr = T, new_data = new_data)
         colnames(reduced_model_expectation) <- colnames(cds_subset)
         cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
     }
@@ -1170,10 +1138,7 @@ plot_genes_branched_pseudotime <- function (cds,
     if (is.null(color_by) == FALSE) {
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
     }
-    if (add_ABC)
-        q <- q + scale_y_log10() + facet_wrap(~feature_label +
-            ABCs, nrow = nrow, ncol = ncol, scales = "free_y")
-    else if (add_pval)
+    if (add_pval)
         q <- q + scale_y_log10() + facet_wrap(~feature_label +
             pval, nrow = nrow, ncol = ncol, scales = "free_y")
     else q <- q + scale_y_log10() + facet_wrap(~feature_label,
@@ -1196,16 +1161,17 @@ plot_genes_branched_pseudotime <- function (cds,
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
-#' Plot the branch genes in pseduotime with separate lineage curves 
-#' @param cds CellDataSet for the experiment
-#' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
-#' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
-#' @param relative_expr Whether to transform expression into relative values
-#' @param min_expr The minimum level of expression to show in the plot
-#' @return a ggplot2 plot object
-#' @import ggplot2
-#' @importFrom reshape2 melt
-#' @export 
+
+# Not sure we're ready to release this one quite yet:
+# Plot the branch genes in pseduotime with separate lineage curves 
+# @param cds CellDataSet for the experiment
+# @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
+# @param colgenes Gene ids or short names to be arrayed on the horizontal axis
+# @param relative_expr Whether to transform expression into relative values
+# @param min_expr The minimum level of expression to show in the plot
+# @return a ggplot2 plot object
+# @import ggplot2
+# @importFrom reshape2 melt
 plot_coexpression_matrix <- function(cds, 
                                      rowgenes, 
                                      colgenes, 
@@ -1318,92 +1284,6 @@ plot_coexpression_matrix <- function(cds,
   q
 }
 
-#'  Create a heatmap to demonstrate the lineage divergence hierarchy for branching genes 
-#'
-#' @param cds CellDataSet for the experiment
-#' @param ILRs_df Matrix of Instant Log Ratio for the branching genes calculated using the calILRs function 
-#' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function 
-#' @param rownames_type The type of row names for the ILRs matrix (either 'gene_short_name' or 'ensemble_id')
-#' @param ABC_type The type of genes based on ABC score to be selected (either 'positive', 'negative' or 'all')
-#' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". 
-#' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
-#' @param ILRs_limit the minimum Instant Log Ratio used to make the heatmap plot
-#' @param cluster_num The minimum level of expression to show in the plot
-#' @return a heatmap plot from based on the pheatmap package
-#' @import pheatmap
-#' @export
-#'
-#'
-plot_ILRs_heatmap <- function (cds, 
-      ILRs_df, 
-      ABC_df, 
-      branching_pval_df, 
-      rownames_type = c('gene_short_name', 'ensemble_id'), 
-      ABC_type = c('positive', 'negative', 'all'),
-      dist_method = "euclidean", 
-      hclust_method = "ward", 
-      ILRs_limit = 3, 
-      cluster_num = 4, ...) {
-
-    #clean the ILR dataset (avoid failed fittign genes or genes don't have names and cannot be identified)
-    ILRs_df<- ILRs_df[!is.na(ILRs_df[, 1]), ]
-    ILRs_df <- ILRs_df[row.names(ILRs_df) != "-", ]
-
-    #limit ILR to certain range: 
-    ILRs_df[which(ILRs_df <= -ILRs_limit)] <- -ILRs_limit
-    ILRs_df[which(ILRs_df >= ILRs_limit)] <- ILRs_limit
-
-    if(rownames_type == 'rownames_type')
-      branch_gene_ABCs <- subset(ABC_df, gene_short_name %in% row.names(ILRs_df))
-    else if(rownames_type == 'ensemble_id')
-      branch_gene_ABCs <- ABC_df[row.names(ILRs_df), ]
-
-    #select genes for certain lineage based on the ABC score
-    if(ABC_type == 'positive')
-      ILRs_df <- ILRs_df[unique(as.character(subset(branch_gene_ABCs, 
-          ABCs > 0)[, "gene_short_name"])), ]
-    else if(ABC_type == 'negative')
-      ILRs_df <- ILRs_df[unique(as.character(subset(branch_gene_ABCs, 
-        ABCs < 0)[, "gene_short_name"])), ]
-    else if(ABC_type == 'all')
-       ILRs_df <- ILRs_df
-
-    ph <- pheatmap(ILRs_df, cluster_cols = FALSE, clustering_distance_rows = dist_method, 
-        clustering_method = hclust_method, 
-        ...)
-
-    #create annotations for each gene
-    annotation <- data.frame(class = as.factor(cutree(ph$tree_row, 
-        cluster_num)), row.names = names(cutree(ph$tree_row, cluster_num)))
-
-    #add also -log10(qval)
-    gene_names <- row.names(ILRs_df[ph$tree_row$order, ]) 
-    if(rownames_type == 'gene_short_name'){
-      ensemble_names <- row.names(subset(fData(cds), gene_short_name %in% gene_names))
-      #remove duplication: 
-      ensemble_names <- ensemble_names[!duplicated(fData(cds[ensemble_names, ])$gene_short_name)]
-
-      log_qval <- log10(branching_pval_df[ensemble_names, 'qval'])      
-    }
-    else{
-      log_qval <- log10(branching_pval_df[gene_names, 'qval'])
-    }
-    annotation$log_qval <- -log_qval
-    annotation[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation), 'ABCs']))
-
-    #rotate the plot so that maturation level is on the x-axis
-    pheatmap(t(ILRs_df[ph$tree_row$order, ]), 
-      cluster_cols = T, 
-      cluster_rows = F, 
-      show_rownames = F, 
-      show_colnames = F, 
-      border_color = NA, 
-      clustering_distance_cols = dist_method, 
-      clustering_method = hclust_method, 
-      annotation = annotation, 
-      annotation_legend = T, ...)
-}
-
 #The following code is swipped from colorRamps package which is used to make the pallette
 table.ramp <- function(n, mid = 0.5, sill = 0.5, base = 1, height = 1)
 {
@@ -1450,32 +1330,22 @@ blue2green2red <- matlab.like2
 #'
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
 #' @param num_clusters Number of clusters for the heatmap of branch genes
-#' @param ABC_df Matrix of Area Between Curves for the branching genes calculated using the calABCs function
-#' @param branchTest_df Matrix of branchTest result (normally only on the branching genes)
 #' @param lineage_labels The label for the lineages (first (second) lineage corresponding to state 2 (3))
-#' @param norm_method Either vstExprs or log, determine which normalization approach will be performed for the fitted gene expression values
+#' @param norm_method Either "vstExprs" or "log". Determine how to transform expression values prior to rendering
 #' @param dist_method The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)
 #' @param hclust_method The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"
-#' @param heatmap_height Height of the saved heatmap
-#' @param heatmap_width Width of the saved heatmap
-#' @param ABC_lowest_thrsd The minimum log10(abs(ABCs)) used to annotate the heatmap
-#' @param ABC_highest_thrsd The maximum log10(abs(ABCs)) used to annotate the heatmap
-#' @param qval_lowest_thrsd The minimum log10(qval) used to annotate the heatmap
-#' @param qval_highest_thrsd The maximum log10(qval) used to annotate the heatmap
 #' @param hmcols The color scheme for drawing the heatmap
 #' @param cores Number of cores to run this function
-#' @param Cell_type_color The color for the progenitors and two lineages
-#' @param return_all 
+#' @param Lineage_colors The color for the progenitors and two lineages
+#' @param return_heatmap Whether to return the pheatmap object to the user. 
+#' @param cores The number of cores to use when generating smoothing curves for rendering.
 #' @return A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
-#' Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
 #' @import pheatmap
 #' @export
 #'
 plot_genes_branched_heatmap <- function(cds_subset, 
   num_clusters = 6,
-  ABC_df = NULL, 
-  branchTest_df = NULL, 
   lineage_states=c(2,3),
   branch_point=NULL,
   lineage_labels = c("Cell fate 1", "Cell fate 2"), 
@@ -1485,28 +1355,21 @@ plot_genes_branched_heatmap <- function(cds_subset,
   use_fitting_curves = T, 
   dist_method = NULL, 
   hclust_method = "ward", 
-  heatmap_height = 3, 
-  heatmap_width = 4,
-  ABC_lowest_thrsd = 0, 
-  ABC_highest_thrsd = 2,
-  qval_lowest_thrsd = 1, 
-  qval_highest_thrsd = 5,
   hmcols = NULL, 
-  Cell_type_color = c('#979797', '#F05662', '#7990C8'), 
+  Lineage_colors = c('#979797', '#F05662', '#7990C8'), 
   trend_formula = '~sm.ns(Pseudotime, df=3) * Lineage',
-  pseudo_cnt = 0, 
   add_annotation_row = NULL,
   add_annotation_col = NULL,
   show_rownames = F, 
-  cores = 1,
   use_gene_short_name = F,
-  # file_name = 'branched_heatmap.pdf', 
-  return_all=FALSE) {
-    
+  return_heatmap=FALSE,
+  cores = 1) {
+  
     new_cds <- buildLineageBranchCellDataSet(cds_subset, 
                                              lineage_states=lineage_states, 
                                              branch_point=branch_point,
                                              stretch = stretch)
+    
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
 
     if(use_fitting_curves) {
@@ -1520,7 +1383,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
             length.out = 100), Lineage = as.factor(unique(as.character(pData(new_cds)$Lineage))[2]))
 
         LineageAB_exprs <- genSmoothCurves(new_cds[, ], cores=cores, trend_formula = trend_formula,  
-                    relative_expr = T, pseudocount = 0, new_data = rbind(newdataA, newdataB), weights = pData(new_cds)$weight)
+                    relative_expr = T, new_data = rbind(newdataA, newdataB))
 
         LineageA_exprs <- LineageAB_exprs[, 1:100]
         LineageB_exprs <- LineageAB_exprs[, 101:200]
@@ -1611,21 +1474,11 @@ plot_genes_branched_heatmap <- function(cds_subset,
     #save(heatmap_matrix, row_dist, num_clusters, hmcols, ph, branchTest_df, qval_lowest_thrsd, lineage_labels, LineageA_num, LineageP_num, LineageB_num, file = 'heatmap_matrix')
 
     annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
-    if(!is.null(branchTest_df)) {
-      annotation_row[, "-log 10(qval)"] <- - log10(branchTest_df[row.names(annotation_row), 'qval'])
-      annotation_row[which(annotation_row[, "-log 10(qval)"] < qval_lowest_thrsd), "-log 10(qval)"] <- qval_lowest_thrsd
-      annotation_row[which(annotation_row[, "-log 10(qval)"] > qval_highest_thrsd), "-log 10(qval)"] <- qval_highest_thrsd
-    }
+
     if(!is.null(add_annotation_row)) {
         annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
         annotation_row <- add_annotation_row 
         # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
-    }
-
-    if(!is.null(ABC_df)) {
-        annotation_row[, "log10(abs(ABCs))"] <- log10(abs(ABC_df[row.names(annotation_row), 'ABCs']))
-        annotation_row[which(annotation_row[, "log10(abs(ABCs))"] < ABC_lowest_thrsd), "log10(abs(ABCs))"] <- ABC_lowest_thrsd
-        annotation_row[which(annotation_row[, "log10(abs(ABCs))"] > ABC_highest_thrsd), "log10(abs(ABCs))"] <- ABC_highest_thrsd
     }
     
     colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
@@ -1639,12 +1492,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
         annotation_col <- cbind(annotation_col, add_annotation_col[fData(cds[row.names(annotation_col), ])$gene_short_name, 1])  
     }
 
-    Cluster_color <- brewer.pal(length(unique(annotation_row$Cluster)),"Set1")
-    names(Cluster_color) <- 1:length(unique(annotation_row$Cluster))
-    names(Cell_type_color) <- c("Progenitor", lineage_labels[1], lineage_labels[2])
+    names(Lineage_colors) <- c("Progenitor", lineage_labels[1], lineage_labels[2])
 
-    annotation_colors=list("Cell Type"=Cell_type_color, 
-                                'Cluster' = Cluster_color)
+    annotation_colors=list("Cell Type"=Lineage_colors)
 
     names(annotation_colors$`Cell Type`) = c('Progenitor', lineage_labels)
 
@@ -1653,12 +1503,6 @@ plot_genes_branched_heatmap <- function(cds_subset,
         row.names(annotation_row) <- fData(cds_subset)[row.names(annotation_row), 'gene_short_name']
     }
 
-    #print(annotation_row)
-    # pdf(paste(elife_directory, 'AT2_branch_gene_str_norm_div_df_heatmap_cole.pdf', sep = ''))#, height = 4, width = 3)
-    #save(heatmap_matrix, hmcols, annotation_row, annotation_col, annotation_colors, row_dist, hclust_method, num_clusters, col_gap_ind, file = 'heatmap_matrix')
-
-    #dev.off()
-    #pdf(file_name, height = heatmap_height, width = heatmap_width)
     ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
              useRaster = T,
              cluster_cols=FALSE, 
@@ -1685,7 +1529,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 
     grid::grid.rect(gp=grid::gpar("fill", col=NA))
     grid::grid.draw(ph_res$gtable)
-    if (return_all){
+    if (return_heatmap){
       return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, 
         heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col, 
         ph_res = ph_res))
@@ -1693,6 +1537,12 @@ plot_genes_branched_heatmap <- function(cds_subset,
 }
 
 #' Plots genes by mean vs. dispersion, highlighting those selected for ordering
+#' 
+#' Each gray point in the plot is a gene. The black dots are those that were included
+#' in the last call to setOrderingFilter. The red curve shows the mean-variance 
+#' model learning by estimateDispersions().
+#' 
+#' @param cds The CellDataSet to be used for the plot.
 #' @export
 plot_ordering_genes <- function(cds){
   disp_table <- dispersionTable(cds)

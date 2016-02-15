@@ -2,6 +2,7 @@
 #' @name CellDataSet-methods
 #' @docType methods
 #' @rdname CellDataSet-methods
+#' @param object The CellDataSet object
 setValidity( "CellDataSet", function( object ) {
 #   if( any( counts(object) < 0 ) )
 #     return( "the count data contains negative values" )
@@ -17,6 +18,8 @@ setMethod("sizeFactors", signature(object="CellDataSet"), function(object) {
 
 #' @rdname CellDataSet-methods
 #' @aliases CellDataSet,ANY,ANY-method
+#' @param object The CellDataSet object
+#' @param value A vector of size factors, with length equal to the cells in object
 setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric"), setSizeFactors <- function(object, value) {
   pData(object)$Size_Factor <- value
   validObject( object )
@@ -25,7 +28,8 @@ setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric")
 
 
 #' @rdname CellDataSet-methods
-#' @param A function applied to the geometric-mean-scaled expression values to derive the size factor.
+#' @param locfunc A function applied to the geometric-mean-scaled expression values to derive the size factor.
+#' @param ... Additional arguments to be passed to estimateSizeFactorsForMatrix
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateSizeFactors", 
           signature(object="CellDataSet"),
@@ -36,12 +40,16 @@ function( object, locfunc=median, ... )
 })
 
 #' @rdname CellDataSet-methods
+#' @param modelFormulaStr A model formula, passed as a string, specifying how to group the cells prior to estimated dispersion. 
+#' The default groups all cells together. 
 #' @param relative_expr Whether to transform expression into relative values
+#' @param cores The number of cores to use for computing dispersions
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
-function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, dispModelName="blind", ... )
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, ... )
 {
+  dispModelName="blind"
   stopifnot( is( object, "CellDataSet" ) )
   if( any( is.na( sizeFactors(object) ) ) )
     stop( "NAs found in size factors. Have you called 'estimateSizeFactors'?" )

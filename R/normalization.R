@@ -1,12 +1,12 @@
 
-#' Calculate the probability vector 
+# Calculate the probability vector 
 makeprobsvec<-function(p){
   phat<-p/sum(p)
   phat[is.na(phat)] = 0
   phat
 }
 
-#' Calculate the probability matrix for a relative abundance matrix
+# Calculate the probability matrix for a relative abundance matrix
 makeprobs<-function(a){
   colSums<-apply(a,2,sum)
   b<-Matrix::t(Matrix::t(a)/colSums)
@@ -14,7 +14,7 @@ makeprobs<-function(a){
   b
 }
 
-#' Calculate the Shannon entropy based on the probability vector
+# Calculate the Shannon entropy based on the probability vector
 shannon.entropy <- function(p) {
   if (min(p) < 0 || sum(p) <=0)
     return(Inf)
@@ -22,7 +22,7 @@ shannon.entropy <- function(p) {
   -sum( log10(p.norm)*p.norm)
 }
 
-#' Calculate the Jessen-Shannon distance for two probability distribution 
+# Calculate the Jessen-Shannon distance for two probability distribution 
 JSdistVec <- function (p, q) 
 {
   JSdiv <- shannon.entropy((p + q)/2) - (shannon.entropy(p) + 
@@ -33,7 +33,7 @@ JSdistVec <- function (p, q)
   JSdist
 }
 
-#' Recover the absolute transcript counts based on m,c and t estimate for a single cell (Used in the optimization function)
+# Recover the absolute transcript counts based on m,c and t estimate for a single cell (Used in the optimization function)
 opt_norm_t <- function(t, fpkm, m, c, expr_thresh = 0.1, pseudocnt = NULL, return_norm = FALSE) {
   a_matrix <- matrix(c(log10(t), 1, m,
                        -1), ncol = 2, nrow = 2, byrow = T)
@@ -84,7 +84,7 @@ dmode <- function(x, breaks="Sturges") {
   ( den$x[den$y==max(den$y)] )
 }
 
-#' Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
+# Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
 optim_mc_func_fix_c <- function (m, c, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),

@@ -17,12 +17,25 @@
 \S4method{estimateSizeFactors}{CellDataSet}(object, locfunc = median, ...)
 
 \S4method{estimateDispersions}{CellDataSet}(object, modelFormulaStr = "~ 1",
-  relative_expr = TRUE, cores = 1, dispModelName = "blind", ...)
+  relative_expr = TRUE, cores = 1, ...)
 }
 \arguments{
+\item{object}{The CellDataSet object}
+
+\item{value}{A vector of size factors, with length equal to the cells in object}
+
+\item{locfunc}{A function applied to the geometric-mean-scaled expression values to derive the size factor.}
+
+\item{...}{Additional arguments to be passed to estimateSizeFactorsForMatrix}
+
+\item{modelFormulaStr}{A model formula, passed as a string, specifying how to group the cells prior to estimated dispersion. 
+The default groups all cells together.}
+
 \item{relative_expr}{Whether to transform expression into relative values}
 
-\item{A}{function applied to the geometric-mean-scaled expression values to derive the size factor.}
+\item{cores}{The number of cores to use for computing dispersions}
+
+\item{object}{The CellDataSet object}
 }
 \description{
 Methods for the CellDataSet class

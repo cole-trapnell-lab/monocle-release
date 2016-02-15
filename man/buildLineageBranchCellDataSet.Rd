@@ -6,8 +6,7 @@
 \usage{
 buildLineageBranchCellDataSet(cds, progenitor_method = c("sequential_split",
   "random_split", "duplicate"), lineage_states = c(2, 3),
-  branch_point = NULL, lineage_labels = NULL, stretch = FALSE,
-  weighted = TRUE, ...)
+  branch_point = NULL, lineage_labels = NULL, stretch = FALSE)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -19,11 +18,11 @@ there will be one more cell in one lineage)}
 
 \item{lineage_states}{The states for two branching lineages}
 
+\item{branch_point}{The name of a branch point that specifies the lineages. Provide either this argument or lineage_states.}
+
 \item{lineage_labels}{The names for each branching lineage}
 
 \item{stretch}{A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not}
-
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
 }
 \value{
 a CellDataSet with the duplicated cells and stretched lineages

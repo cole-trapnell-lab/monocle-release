@@ -7,8 +7,8 @@
 branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
-  stretch = TRUE, pseudocount = 0, cores = 1, weighted = TRUE,
-  lineage_labels = NULL, exprs_thrsld_percentage = 0.05, verbose = F, ...)
+  stretch = TRUE, cores = 1, lineage_labels = NULL,
+  exprs_thrsld_percentage = 0.05, verbose = F, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -25,19 +25,15 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
+\item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
 
 \item{exprs_thrsld_percentage}{For the gene under test, the percentage of cells expressed across all cells. Default is 0.05}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 
-\item{lineage_labelsthe}{name for each lineage, for example, AT1 or AT2}
-
-\item{gene_names}{gene names used to make the bifurcation plots for two genes.}
+\item{...}{Additional arguments passed to differentialGeneTest}
 }
 \value{
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.

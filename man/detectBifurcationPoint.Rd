@@ -8,9 +8,8 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
   detect_all = T, cds = cds, Lineage = "Lineage", branch_point = NULL,
   lineage_states = c(2, 3), stretch = T, cores = detectCores(),
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
-  relative_expr = TRUE, weighted = FALSE, label_by_short_name = TRUE,
-  useVST = FALSE, round_exprs = FALSE, pseudocount = 0,
-  output_type = "all", return_cross_point = T,
+  relative_expr = TRUE, label_by_short_name = TRUE, useVST = FALSE,
+  round_exprs = FALSE, output_type = "all", return_cross_point = T,
   file = "bifurcation_heatmap", verbose = FALSE, ...)
 }
 \arguments{
@@ -38,8 +37,6 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
 
 \item{relative_expr}{A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves}
 
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
-
 \item{label_by_short_name}{label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)}
 
 \item{useVST}{A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
@@ -47,13 +44,15 @@ When VST is used, the difference between two lineages are used instead of the lo
 
 \item{round_exprs}{A logic flag to determine whether or not the expression value should be rounded into integer}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
 \item{output_type}{A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Lineage is set to "Lineage", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells}
 
 \item{return_cross_point}{A logic flag to determine whether or not only return the cross point}
 
 \item{file}{the name for storing the data. Since the calculation of the Instant Log Ratio is very time consuming, so by default the result will be stored}
+
+\item{verbose}{Whether to report verbose output}
+
+\item{...}{Additional arguments passed to calILRs}
 }
 \value{
 a vector containing the time for the bifurcation point with gene names for each value

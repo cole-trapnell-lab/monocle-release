@@ -7,8 +7,8 @@
 BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
-  stretch = TRUE, pseudocount = 0, weighted = T, q_thrsld = 0.05,
-  lineage_labels = NULL, cores = 1, verbose = FALSE, ...)
+  stretch = TRUE, q_thrsld = 0.05, lineage_labels = NULL,
+  verbose = FALSE, cores = 1, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -25,15 +25,15 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
-
 \item{q_thrsld}{The threshold for the qval}
 
-\item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
+\item{lineage_labels}{the name for each lineage, for example, "AT1" or "AT2"}
+
+\item{verbose}{Whether to generate verbose output}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
+
+\item{...}{additional arguments to be passed to differentialGeneTest}
 }
 \value{
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models, as well as the time point where the gene starts to bifurcate between two branches

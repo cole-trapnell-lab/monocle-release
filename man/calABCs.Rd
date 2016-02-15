@@ -6,9 +6,8 @@
 \usage{
 calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
   trajectory_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
-  pseudocount = 0, cores = 1, weighted = TRUE, verbose = F,
-  min_expr = 0.5, integer_expression = FALSE, num = 5000,
-  lineage_labels = NULL, ABC_method = c("integral"), ...)
+  cores = 1, verbose = F, min_expr = 0.5, integer_expression = FALSE,
+  num = 5000, lineage_labels = NULL, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -21,11 +20,7 @@ calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
-
-\item{weighted}{a logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
 
 \item{verbose}{a logic flag to determine whether or not we should output detailed running information}
 
@@ -37,9 +32,7 @@ calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
 
-\item{ABC_method}{the method used to calculate the ABC scores. Currently it only supports "integral". In future, it can be either one of "integral", "global_normalization", "local_normalization", "four_values", "ILRs".
-"global_normalization" or "local_normalization" are similar measures between normalized by the global maximum or current maximum. 
-"ILRs" is similar to calculate the Instant Log Ratio used in calILRs function}
+\item{...}{Additional arguments passed to buildLineageBranchCellDataSet}
 }
 \value{
 a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
