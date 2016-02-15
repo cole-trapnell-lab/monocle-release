@@ -962,6 +962,7 @@ plot_genes_branched_pseudotime <- function (cds,
  
     full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, 
                         relative_expr = T, pseudocount = 0, new_data = new_data, weights = pData(cds_subset)$weight)
+    save(full_model_expectation, file = '../full_model_expectation')
     colnames(full_model_expectation) <- colnames(cds_subset)
     
     cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])

@@ -746,21 +746,21 @@ detectBifurcationPoint <- function(str_log_df = NULL,
       
       inflection_point <- max(inflection_point_tmp[inflection_point_tmp < max_ind])
       
-      
-      if(any(abs(x) > ILRs_threshold) & return_cross_point == T)
+      if(return_cross_point == T) {
         return(inflection_point * sign(sum(x)))
-      else
-        return(Inf)
-      
-      rev_x <- rev(x[(inflection_point):max_ind])
-      if(any(which(abs(rev_x) >= ILRs_threshold))){
-        index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
-        index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
-      }
-      else if(detect_all & all(!is.na(rev_x))) {
-        index <-  min(which(abs(rev_x) == max(abs(rev_x)))) * sign(sum(rev_x))
       }
       
+      else if (return_cross_point == F & !is.null(ILRs_threshold) ) { 
+        rev_x <- rev(x[(inflection_point):max_ind])
+        if(any(which(abs(rev_x) >= ILRs_threshold))){
+          index_tmp <- max(which(abs(rev_x) > ILRs_threshold))
+          index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x))
+        }
+        else if(detect_all & all(!is.na(rev_x))) {
+          index_tmp <-  max(which(abs(rev_x) == max(abs(rev_x)))) #the earliest time point when the bifurcation is largest 
+          index <- (max_ind - index_tmp + 1 ) * sign(sum(rev_x)) 
+        }
+        }
       index
     })
   }
