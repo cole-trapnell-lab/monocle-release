@@ -1524,7 +1524,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
              fontsize = 6,
              color=hmcols, 
              silent=TRUE,
-             filename=NA
+             # filename=NA
              # filename="expression_pseudotime_pheatmap2.pdf",
              )
 
@@ -1532,7 +1532,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
     grid::grid.draw(ph_res$gtable)
     if (return_all){
       return(list(LineageA_exprs = LineageA_exprs, LineageB_exprs = LineageB_exprs, heatmap_matrix = heatmap_matrix, 
-        heatmap_matrix_ori = heatmap_matrix, ph = ph, annotation_row = annotation_row, annotation_col = annotation_col, 
+        heatmap_matrix_ori = heatmap_matrix_ori, ph = ph, col_gap_ind = col_gap_ind, row_dist = row_dist, hmcols = hmcols, 
+        annotation_colors = annotation_colors, annotation_row = annotation_row, annotation_col = annotation_col, 
         ph_res = ph_res))
     }
 }
