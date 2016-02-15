@@ -20,6 +20,8 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #'    \item{\code{expressionFamily}:}{Object of class \code{"vglmff"}, specifying the VGAM family function used for expression responses.}
 #'    \item{\code{lowerDetectionLimit}:}{A \code{"numeric"} value specifying the minimum expression level considered to be true expression.}
 #'    \item{\code{dispFitInfo}:}{An \code{environment} containing lists, one for each set of estimated dispersion values. See \code{\link{estimateDispersions}}}
+#'    \item{\code{dim_reduce_type}:}{A \code{"character"} A string encoding how this CellDataSet has been reduced in dimensionality}
+#'    \item{\code{auxOrderingData}:}{A \code{environment} Auxilliary data structures used by various steps in Monocle. Not to be accessed by users directly.}
 #'  }
 #'
 #' @name CellDataSet 
@@ -27,6 +29,7 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #' @aliases CellDataSet-class
 #' @exportClass CellDataSet
 #' @importFrom Biobase ExpressionSet
+#' @import BiocGenerics
 #' 
 setClass( "CellDataSet", 
           contains = "ExpressionSet",

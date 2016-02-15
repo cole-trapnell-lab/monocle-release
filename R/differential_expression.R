@@ -1,6 +1,4 @@
-#' Helper function for parallel differential expression testing
-#' 
-#' @param relative_expr Whether to transform expression into relative values
+# Helper function for parallel differential expression testing
 diff_test_helper <- function(x, 
                              fullModelFormulaStr, 
                              reducedModelFormulaStr, 
@@ -8,7 +6,6 @@ diff_test_helper <- function(x,
                              relative_expr,
                              weights,
                              disp_func=NULL,
-                             pseudocount=0,
                              exprs_thrsld_percentage = NULL, 
                              verbose=FALSE){
   if(is.null(exprs_thrsld_percentage) == FALSE) {
@@ -22,7 +19,6 @@ diff_test_helper <- function(x,
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
   
   x_orig <- x
-  x <- x + pseudocount
   
   disp_guess <- 0
   
@@ -51,11 +47,11 @@ diff_test_helper <- function(x,
   
   test_res <- tryCatch({
     if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights, checkwz=TRUE)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights, checkwz=TRUE)                         
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, checkwz=TRUE)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, checkwz=TRUE)                         
     }else{
-      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, weights=weights))
-      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, weights=weights))                    
+      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily))
+      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily))                    
     }
     #print(full_model_fit)
     #print(coef(reduced_model_fit))
@@ -63,7 +59,7 @@ diff_test_helper <- function(x,
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { 
-    print (e);
+    #print (e);
     # If we threw an exception, re-try with a simpler model.  Which one depends on
     # what the user has specified for expression family
     #print(disp_guess)
@@ -81,11 +77,11 @@ diff_test_helper <- function(x,
     if (is.null(backup_expression_family) == FALSE){
       test_res <- tryCatch({
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE)                         
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, checkwz=TRUE)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, checkwz=TRUE)                         
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, weights=weights, checkwz=TRUE))                    
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, checkwz=TRUE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, checkwz=TRUE))                    
       }
       #print(full_model_fit)
       #print(coef(reduced_model_fit))
@@ -93,7 +89,7 @@ diff_test_helper <- function(x,
       }, 
       #warning = function(w) { FM_fit },
       error = function(e) { 
-        print (e);
+        #print (e);
         data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
       })
       #print(test_res)
@@ -135,7 +131,7 @@ compareModels <- function(full_models, reduced_models){
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param relative_expr Whether to transform expression into relative values.
-#' @param exprs_thrsld_percentage For the gene under test, the percentage of cells expressed across all cells. Default is 0.05.
+#' @param exprs_thrsld_percentage Skip testing for genes expressed in fewer than this percentage of cells. Default is NULL, which excludes no genes from testing.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
@@ -144,8 +140,6 @@ differentialGeneTest <- function(cds,
                                  reducedModelFormulaStr="~1", 
                                  cores=1, 
                                  relative_expr=TRUE,
-                                 weights=NULL,
-                                 pseudocount=0,
                                  exprs_thrsld_percentage = NULL, 
                                  verbose=FALSE){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
@@ -162,9 +156,7 @@ differentialGeneTest <- function(cds,
                              reducedModelFormulaStr=reducedModelFormulaStr,
                              expressionFamily=cds@expressionFamily,
                              relative_expr=relative_expr,
-                             weights=weights,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                             pseudocount=pseudocount,
                              exprs_thrsld_percentage = exprs_thrsld_percentage, 
                              verbose=verbose)
     diff_test_res
@@ -174,9 +166,7 @@ differentialGeneTest <- function(cds,
                                 reducedModelFormulaStr=reducedModelFormulaStr, 
                                 expressionFamily=cds@expressionFamily, 
                                 relative_expr=relative_expr,
-                                weights=weights,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                                pseudocount=pseudocount,
                                 exprs_thrsld_percentage = exprs_thrsld_percentage, 
                                 verbose=verbose)
     diff_test_res

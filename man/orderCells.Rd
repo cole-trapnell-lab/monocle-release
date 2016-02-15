@@ -4,19 +4,17 @@
 \alias{orderCells}
 \title{Orders cells according to progress through a learned biological process.}
 \usage{
-orderCells(cds, root_state = NULL, num_paths = NULL, scale_pseudotime = F,
-  reverse = NULL)
+orderCells(cds, root_state = NULL, num_paths = NULL, reverse = NULL)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
+\item{root_state}{The state to use as the root of the trajectory. 
+You must already have called orderCells() once to use this argument.}
+
 \item{num_paths}{the number of end-point cell states to allow in the biological process.}
 
-\item{scale_pseudotime}{a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.}
-
 \item{reverse}{whether to reverse the beginning and end points of the learned biological process.}
-
-\item{root_cell}{the name of a cell to use as the root of the ordering tree.}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell

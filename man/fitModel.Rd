@@ -5,12 +5,14 @@
 \title{Fits a model for each gene in a CellDataSet object.}
 \usage{
 fitModel(cds, modelFormulaStr = "~sm.ns(Pseudotime, df=3)",
-  relative_expr = TRUE, pseudocount = 0, cores = 1)
+  relative_expr = TRUE, cores = 1)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{modelFormulaStr}{a formula string specifying the model to fit for the genes.}
+
+\item{relative_expr}{Whether to fit a model to relative or absolute expression. Only meaningful for count-based expression data. If TRUE, counts are normalized by Size_Factor prior to fitting.}
 
 \item{cores}{the number of processor cores to be used during fitting.}
 }
@@ -21,9 +23,8 @@ a list of VGAM model objects
 Fits a model for each gene in a CellDataSet object.
 }
 \details{
-This function fits a Tobit-family vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
-The default formula string speficies that the (log transformed) expression values follow a Tobit distribution with upper and lower bounds
-specificed by max_expr and min_expr, respectively. By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
+This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
+By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
 cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 }

@@ -96,7 +96,7 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
 # First create a CellDataSet from the relative expression levels
-HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),  
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
                        phenoData = pd, 
                        featureData = fd)
 
@@ -104,7 +104,7 @@ HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),
 rpc_matrix <- relative2abs(HSMM, cores = detectCores())
 
 # Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"), 
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
@@ -117,7 +117,7 @@ Note that since we are using RPC values, we have changed the value of \Robject{l
 Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
 <<estimate_size_and_dispersion, eval=TRUE >>=
 HSMM <- estimateSizeFactors(HSMM)
-HSMM <- estimateDispersions(HSMM, cores=6)
+HSMM <- estimateDispersions(HSMM, cores=detectCores())
 @ %
 We're now ready to start using the \Robject{HSMM} object in our analysis.
 
@@ -239,7 +239,7 @@ marker_genes <- row.names(subset(fData(HSMM_myo),
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
 <<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~Media", cores=2)
+                                      fullModelFormulaStr="~Media")
 
 # Select genes that are significant at an FDR < 10%
 sig_genes <- subset(diff_test_res, qval < 0.1)
@@ -300,7 +300,7 @@ HSMM_myo <- reduceDimension(HSMM_myo)
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
 
 <<order_cells, eval=TRUE>>=
-HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
 @ %def
 
 Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.
@@ -386,9 +386,28 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 
 We can plot the expression levels of these genes, all of which show significant changes as a function of differentiation, using the function \Rfunction{plot\_genes\_in\_pseudotime}. This function has a number of cosmetic options you can use to control the layout and appearance of your plot.
 
-<<plot_diff_res_pt, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<plot_diff_res_pt, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
+
+Monocle provides a convenient way to visualize all pseudotime-dependent genes. The function
+\Rfunction{plot\_pseudotime\_heatmap} takes a CellDataSet object (usually containing a only subset of significant genes)
+and generates smooth expression curves much like  \Rfunction{plot\_genes\_in\_pseudotime}. Then, it clusters these genes 
+and plots them using the \Rpackage{pheatmap} package.  This allows you to visualize modules of genes that
+co-vary across pseudotime.
+
+<<plot_diff_res_pt_heatmap, include=TRUE, eval=TRUE, fig.width = 5, fig.height = 4, fig.align="center", warning=FALSE>>=
+diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
+                                      fullModelFormulaStr="~sm.ns(Pseudotime)")
+
+sig_gene_names <- row.names(subset(diff_test_res, qval < 0.1))
+
+
+plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,], 
+                            num_clusters = 2, 
+                            cores = 1, 
+                            show_rownames = T)
+@ %def
 
 \subsection{Multi-factorial differential expression analysis}
 

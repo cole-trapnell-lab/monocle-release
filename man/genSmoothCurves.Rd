@@ -5,8 +5,7 @@
 \title{Fit smooth spline curves and return the response matrix}
 \usage{
 genSmoothCurves(cds, new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-  weights = NULL, relative_expr = T, pseudocount = 0,
-  response_type = "response", cores = 1)
+  relative_expr = T, response_type = "response", cores = 1)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -16,8 +15,6 @@ genSmoothCurves(cds, new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)",
 \item{trend_formula}{a formula string specifying the model formula used in fitting the spline curve for each gene/feature.}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
-
-\item{pseudocount}{pseudo count added before fitting the spline curves}
 
 \item{response_type}{the response desired, as accepted by VGAM's predict function}
 

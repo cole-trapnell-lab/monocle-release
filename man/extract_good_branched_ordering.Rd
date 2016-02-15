@@ -7,6 +7,17 @@
 extract_good_branched_ordering(orig_pq_tree, curr_node, dist_matrix,
   num_branches, reverse_main_path = FALSE)
 }
+\arguments{
+\item{orig_pq_tree}{The PQ object to use for ordering}
+
+\item{curr_node}{The node in the PQ tree to use as the start of ordering}
+
+\item{dist_matrix}{A symmetric matrix containing pairwise distances between cells}
+
+\item{num_branches}{The number of outcomes allowed in the trajectory.}
+
+\item{reverse_main_path}{Whether to reverse the direction of the trajectory}
+}
 \description{
 Extract a linear ordering of cells from a PQ tree
 }

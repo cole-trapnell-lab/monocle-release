@@ -6,10 +6,9 @@
 \usage{
 calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
   trajectory_states = c(2, 3), relative_expr = TRUE, stretch = T,
-  pseudocount = 0, cores = 1, ILRs_limit = 3, weighted = FALSE,
-  label_by_short_name = TRUE, useVST = FALSE, round_exprs = FALSE,
-  output_type = "all", lineage_labels = NULL, file = NULL,
-  return_all = F, verbose = FALSE, ...)
+  cores = 1, ILRs_limit = 3, label_by_short_name = TRUE, useVST = FALSE,
+  round_exprs = FALSE, output_type = "all", lineage_labels = NULL,
+  file = NULL, return_all = F, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -22,13 +21,9 @@ calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
-
 \item{cores}{Number of cores when fitting the spline curves}
 
 \item{ILRs_limit}{the minimum Instant Log Ratio used to make the heatmap plot}
-
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
 
 \item{label_by_short_name}{label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)}
 
@@ -46,7 +41,9 @@ When VST is used, the difference between two lineages are used instead of the lo
 \item{return_all}{A logic flag to determine whether or not all the results from the analysis should be returned, this includes 
 a dataframe for the log fold change, normalized log fold change, raw divergence, normalized divergence, fitting curves for each lineage}
 
-\item{verbose}{A logic flag to determine whether or not detailed running information should be returned}
+\item{verbose}{Whether or not detailed running information should be returned}
+
+\item{...}{Additional arguments passed to buildLineageBranchCellDataSet}
 }
 \value{
 a ggplot2 plot object

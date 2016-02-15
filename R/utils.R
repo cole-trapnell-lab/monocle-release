@@ -7,6 +7,7 @@
 #' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
 #' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
+#' @import VGAM
 #' @export
 #' @examples
 #' \dontrun{
@@ -80,17 +81,19 @@ splitCols <- function (x, ncl) {
   lapply(splitIndices(ncol(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
+#' @importFrom BiocGenerics clusterApply
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
-  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitRows(x, length(cl)), 
+  par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
                           fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
   names(par_res) <- row.names(x)
   par_res
 }
 
+#' @importFrom BiocGenerics clusterApply
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
-  par_res <- do.call(c, parallel::clusterApply(cl = cl, x = splitCols(x, length(cl)), 
+  par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
                           fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
   names(par_res) <- colnames(x)
   par_res
@@ -99,7 +102,8 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 
 #' Multicore esApply wrapper
 #'
-#' @importFrom parallel makeCluster stopCluster clusterCall parRapply parCapply
+#'  @importFrom parallel makeCluster stopCluster
+#' @importFrom BiocGenerics clusterCall parRapply parCapply
 #' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   parent <- environment(FUN)
@@ -112,17 +116,17 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   # Note: use outfile argument to makeCluster for debugging
   platform <- Sys.info()[['sysname']]
   if (platform == "Windows")
-    cl <- parallel::makeCluster(cores)
+    cl <- makeCluster(cores)
   if (platform %in% c("Linux", "Darwin")) 
-    cl <- parallel::makeCluster(cores)
+    cl <- makeCluster(cores)
   
   cleanup <- function(){
-    parallel::stopCluster(cl)
+    stopCluster(cl)
   }
   on.exit(cleanup)
   
   if (is.null(required_packages) == FALSE){
-    parallel::clusterCall(cl, function(pkgs) {
+    clusterCall(cl, function(pkgs) {
       for (req in pkgs) {
         library(req, character.only=TRUE)
       }
@@ -181,7 +185,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
                                   upper_negentropy_bound="99%", 
                                   expression_lower_thresh=0.1,
                                   expression_upper_thresh=Inf){
-  
+  .Deprecated("dispersionTable")
   log_expression <- NULL
   
   FM <- exprs(cds)
@@ -245,42 +249,23 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 }
 
 
-# TODO: we need to rename this function and its arguments.  What it actually
-# does is very confusing.
-####
-#' Filter genes outside of a given range of expression
-#'
-#' @export
-selectGenesInExpressionRange <- function(cds, 
-                                         min_expression_threshold = -Inf, 
-                                         max_expression_threshold = Inf, 
-                                         detectionLimit=-Inf, 
-                                         stat_fun=median, 
-                                         relative_expr=TRUE)
-{
-  gene_nz_median = apply(exprs(cds), 1, function(x) { x <- x[x > detectionLimit]; stat_fun(x)})
-  gene_nz_median<-esApply(cds,1,
-                          function(x) { 
-                            if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
-                              x <- x / Size_Factor
-                            }
-                            x <- x[x > detectionLimit]
-                            stat_fun(x)
-                          })
-  
-  #gene_nz_median
-  names(gene_nz_median[is.na(gene_nz_median) == FALSE & gene_nz_median > min_expression_threshold & gene_nz_median < max_expression_threshold ])
-}
-
-
-# TODO: we need to rename this function and its arguments.  What it actually
-# does is very confusing.
-####
-
-#' Compute a table of 
+#' Retrieve a table of values specifying the mean-variance relationship
+#' 
+#' Calling estimateDispersions computes a smooth function describing how variance
+#' in each gene's expression across cells varies according to the mean. This 
+#' function only works for CellDataSet objects containing count-based expression
+#' data, either transcripts or reads.
+#' 
+#' @param cds The CellDataSet from which to extract a dispersion table.
+#' @return A data frame containing the empirical mean expression, 
+#' empirical dispersion, and the value estimated by the dispersion model. 
 #'
 #' @export
 dispersionTable <- function(cds){
+  
+  if (is.null(cds@dispFitInfo[["blind"]]))
+    stop("Error: no dispersion model found. Please call estimateDispersions() before calling this function.")
+  
   disp_df<-data.frame(row.names=row.names(cds@dispFitInfo[["blind"]]$disp_table),
                       mean_expression=cds@dispFitInfo[["blind"]]$disp_table$mu, 
                       dispersion_fit=cds@dispFitInfo[["blind"]]$disp_func(cds@dispFitInfo[["blind"]]$disp_table$mu),
@@ -370,12 +355,10 @@ isSparseMatrix <- function(x){
 estimateSizeFactorsForSparseMatrix <- function(counts, 
                                                locfunc = median, 
                                                round_exprs=TRUE, 
-                                               pseudocount=0.0, 
                                                method="mean-geometric-mean-total"){
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
-  CM <- CM + pseudocount
   CM <- asSlamMatrix(CM)
   
   if (method == "weighted-median"){
@@ -422,12 +405,11 @@ estimateSizeFactorsForSparseMatrix <- function(counts,
   sfs   
 }
 
-estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total"){
+estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_exprs=TRUE, method="mean-geometric-mean-total"){
   
   CM <- counts
   if (round_exprs)
     CM <- round(CM)
-  CM <- CM + pseudocount
   if (method == "weighted-median"){
     log_medians <- apply(CM, 1, function(cell_expr) { 
       log(locfunc(cell_expr))
@@ -479,17 +461,15 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
 #' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
 #' @param locfunc The location function used to find the representive value 
 #' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
-#' @param pseudocount Pseudo count added to the expression data counts 
 #' @param method A character to specify the size factor calculation appraoches. It can be either "mean-geometric-mean-total" (default), 
 #' "weighted-median", "median-geometric-mean", "median", "mode", "geometric-mean-total". 
-#' @export
 #'
-estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=TRUE,  method="mean-geometric-mean-total")
 {
   if (isSparseMatrix(counts)){
-    estimateSizeFactorsForSparseMatrix(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+    estimateSizeFactorsForSparseMatrix(counts, locfunc = locfunc, round_exprs=round_exprs, method=method)
   }else{
-    estimateSizeFactorsForDenseMatrix(counts, locfunc = median, round_exprs=TRUE, pseudocount=0.0, method="mean-geometric-mean-total")
+    estimateSizeFactorsForDenseMatrix(counts, locfunc = locfunc, round_exprs=round_exprs,  method=method)
   }
   
 }
@@ -508,6 +488,7 @@ get_classic_muscle_markers <- function(){
 
 #' Build a CellDataSet from the HSMMSingleCell package
 #' 
+#' @import HSMMSingleCell
 #' @export
 load_HSMM <- function(){
   

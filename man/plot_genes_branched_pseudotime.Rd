@@ -11,8 +11,7 @@ plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
   trajectory_linetype_by = "Lineage",
   trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage",
   reducedModelFormulaStr = NULL, label_by_short_name = TRUE,
-  weighted = TRUE, add_ABC = FALSE, add_pval = FALSE, normalize = TRUE,
-  bifurcation_time = NULL, ...)
+  add_pval = FALSE, normalize = TRUE, bifurcation_time = NULL, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -40,10 +39,6 @@ plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
 \item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
 
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
-
-\item{weighted}{A logic flag to determine whether or not we should use the navie logLikelihood weight scheme for the duplicated progenitor cells}
-
-\item{add_ABC}{A logic flag to determine whether or not we should add the ABC score for each gene}
 
 \item{relative_expr}{A logic flag to determine whether or not we should use the relative expression values}
 }

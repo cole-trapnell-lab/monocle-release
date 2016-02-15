@@ -2,7 +2,6 @@
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object which an
-#' @export
 scale_pseudotime <- function(cds, verbose = F) {
   pd <- pData(cds)
   pd$Cell_name <- row.names(pd)
@@ -295,6 +294,8 @@ count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 
 
 #' Return an ordering for a P node in the PQ tree
+#' @param q_level_list A list of Q nodes in the PQ tree
+#' @param dist_matrix A symmetric matrix of pairwise distances between cells
 #' @importFrom combinat permn
 order_p_node <- function(q_level_list, dist_matrix)
 { 
@@ -492,6 +493,12 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 
 
 #' Extract a linear ordering of cells from a PQ tree
+#' 
+#' @param orig_pq_tree The PQ object to use for ordering
+#' @param curr_node The node in the PQ tree to use as the start of ordering
+#' @param dist_matrix A symmetric matrix containing pairwise distances between cells
+#' @param num_branches The number of outcomes allowed in the trajectory.
+#' @param reverse_main_path Whether to reverse the direction of the trajectory
 #' @importFrom plyr arrange
 extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
@@ -762,10 +769,7 @@ setOrderingFilter <- function(cds, ordering_genes){
   cds
 }
 
-#' Run the fastICA algorithm on a numeric matrix.
-#' @importFrom fastICA  ica.R.def ica.R.par
-#' @importFrom irlba irlba
-#' 
+# Run the fastICA algorithm on a numeric matrix.
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
@@ -1020,16 +1024,15 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 
 #' Orders cells according to progress through a learned biological process.
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param root_state The state to use as the root of the trajectory. 
+#' You must already have called orderCells() once to use this argument.
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
-#' @param root_cell the name of a cell to use as the root of the ordering tree.
-#' @param scale_pseudotime a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds, 
                        root_state=NULL, 
                        num_paths = NULL, 
-                       scale_pseudotime = F, 
                        reverse=NULL){
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
@@ -1122,9 +1125,9 @@ orderCells <- function(cds,
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
   # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
   # for now
-  if(scale_pseudotime) {
+  #if(scale_pseudotime) {
     #cds <- scale_pseudotime(cds)
-  }
+  #}
   
   cds
 }
@@ -1142,6 +1145,7 @@ orderCells <- function(cds,
 #' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
+#' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
 #' @export
@@ -1156,7 +1160,7 @@ reduceDimension <- function(cds,
                             scaling = TRUE, 
                             ...){
   FM <- exprs(cds)
-  if (is.null(use_irlba)) {
+  if (is.null(use_irlba) == FALSE) {
       message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
 
   }
@@ -1317,9 +1321,6 @@ findNearestPointOnMST <- function(cds){
   cds
 }
 
-                        
-#make the projection: 
-#' @export
 project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
@@ -1399,7 +1400,6 @@ projPointOnLine <- function(point, line){
 }
 
 #' Project point to line segment
-#' @export
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B 
   A <- df[, 1]

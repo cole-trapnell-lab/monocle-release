@@ -5,8 +5,7 @@
 \title{Fit smooth spline curves and return the residuals matrix}
 \usage{
 genSmoothCurveResiduals(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-  weights = NULL, relative_expr = T, pseudocount = 0,
-  residual_type = "response", cores = 1)
+  relative_expr = T, residual_type = "response", cores = 1)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -15,11 +14,9 @@ genSmoothCurveResiduals(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
 
-\item{pseudocount}{pseudo count added before fitting the spline curves}
+\item{residual_type}{the response desired, as accepted by VGAM's predict function}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
-
-\item{response_type}{the response desired, as accepted by VGAM's predict function}
 }
 \value{
 a data frame containing the data for the fitted spline curves.

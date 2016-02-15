@@ -7,6 +7,6 @@
 mcesApply(X, MARGIN, FUN, required_packages, cores = 1, ...)
 }
 \description{
-Multicore esApply wrapper
+@importFrom parallel makeCluster stopCluster
 }
 
