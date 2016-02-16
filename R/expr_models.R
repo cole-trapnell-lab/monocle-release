@@ -53,8 +53,8 @@ fit_model_helper <- function(x,
         #print(disp_guess)
         backup_expression_family <- NULL
         if (expressionFamily@vfamily == "negbinomial"){
-            disp_guess <- calulate_QP_dispersion_hint(disp_func, round(orig_x))
-            backup_expression_family <- poissonff(dispersion=disp_guess)
+            disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
+            backup_expression_family <- negbinomial(isize=1/disp_guess, parallel=TRUE, zero=NULL)
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
         }else if (expressionFamily@vfamily %in% c("binomialff")){
@@ -63,24 +63,24 @@ fit_model_helper <- function(x,
           backup_expression_family <- NULL
         }
         if (is.null(backup_expression_family) == FALSE){
-
+          #FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, trace=T, epsilon=1e-1, checkwz=F)
           test_res <- tryCatch({
           if (verbose){
-            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights)
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family,epsilon=1e-1, checkwz=F)
           }else{
-            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, weights=weights))
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=F))
           }
             FM_fit
           }, 
           #warning = function(w) { FM_fit },
           error = function(e) { 
-            print (e);
+            #print (e);
             NULL
           })
           #print(test_res)
           test_res
         } else {
-          print(e); 
+          #print(e); 
           NULL
         }
   })
