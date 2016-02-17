@@ -326,7 +326,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        cores = 1, 
                        weighted = TRUE, 
                        lineage_labels = NULL, 
-                       exprs_thrsld_percentage = NULL,
+                       exprs_thrsld_percentage = 0.05,
                        verbose = F, ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {

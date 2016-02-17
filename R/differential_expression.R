@@ -11,6 +11,8 @@ diff_test_helper <- function(x,
                              pseudocount=0,
                              exprs_thrsld_percentage = NULL, 
                              verbose=FALSE){
+  print(paste('current x is', paste(x, collapse  = ' ')))
+  
   if(is.null(exprs_thrsld_percentage) == FALSE) {
     if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
       test_res <- data.frame(status = "NO_TEST", family=NA, pval=1.0, qval=1.0)
@@ -81,11 +83,11 @@ diff_test_helper <- function(x,
     if (is.null(backup_expression_family) == FALSE){
       test_res <- tryCatch({
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=FALSE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=FALSE)                         
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=TRUE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=TRUE))                         
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=FALSE))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=FALSE))                    
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=TRUE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=TRUE))                    
       }
       #print(full_model_fit)
       #print(coef(reduced_model_fit))
