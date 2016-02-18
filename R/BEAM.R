@@ -326,8 +326,13 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        cores = 1, 
                        weighted = TRUE, 
                        lineage_labels = NULL, 
-                       exprs_thrsld_percentage = 0.05,
-                       verbose = F, ...) {
+                       exprs_thrsld_percentage = NULL,
+                       verbose = F,
+                      #  backup_method = c('nb1', 'nb2'), 
+                      #  use_epislon = F,
+                      # stepsize = NULL,
+
+                        ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
@@ -348,7 +353,14 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          weights = pData(cds_subset)$weight,
                                          pseudocount = pseudocount,
                                          exprs_thrsld_percentage = exprs_thrsld_percentage,
-                                         verbose=verbose)
+                                         verbose=verbose
+                       #                   ,
+
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon,
+                       # stepsize = stepsize
+
+                                         )
   
   return(branchTest_res)
 }

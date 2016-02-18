@@ -66,9 +66,9 @@ fit_model_helper <- function(x,
           #FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, trace=T, epsilon=1e-1, checkwz=F)
           test_res <- tryCatch({
           if (verbose){
-            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family,epsilon=1e-1, checkwz= TRUE)
+            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz= TRUE) #parallel=TRUE, zero=NULL
           }else{
-            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz = TRUE))
+            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz = TRUE))
           }
             FM_fit
           }, 
