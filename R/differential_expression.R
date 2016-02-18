@@ -66,7 +66,7 @@ diff_test_helper <- function(x,
     backup_expression_family <- NULL
     if (expressionFamily@vfamily == "negbinomial"){
         disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig), expr_selection_func = max)
-        backup_expression_family <- negbinomial(isize=1/disp_guess, parallel=TRUE, zero=NULL)
+        backup_expression_family <- negbinomial(isize=1/disp_guess)
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
       backup_expression_family <- NULL
     }else if (expressionFamily@vfamily %in% c("binomialff")){
@@ -74,14 +74,14 @@ diff_test_helper <- function(x,
     }else{
       backup_expression_family <- NULL
     }
-    if (FALSE){ #is.null(backup_expression_family) == FALSE #remove the backup fitting
+    if (is.null(backup_expression_family) == FALSE ){
       test_res <- tryCatch({
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=FALSE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=FALSE)                         
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, stepsize = 0.5, checkwz=TRUE)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, stepsize = 0.5,checkwz=TRUE)                         
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=FALSE))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=FALSE))                    
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, stepsize = 0.5,checkwz=TRUE))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, stepsize = 0.5, checkwz=TRUE))                    
       }
       #print(full_model_fit)
       #print(coef(reduced_model_fit))
