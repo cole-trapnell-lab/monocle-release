@@ -1419,10 +1419,11 @@ plot_genes_branched_heatmap <- function(cds_subset,
     heatmap_matrix <- cbind(LineageA_exprs[, (col_gap_ind - 1):1], LineageB_exprs)
     
     if(scaling) {
-        heatmap_matrix <- Matrix::t(scale(Matrix::t(heatmap_matrix)))
-        heatmap_matrix[heatmap_matrix > 3] <- 3
-        heatmap_matrix[heatmap_matrix < -3] <- -3     
+        heatmap_matrix <- Matrix::t(scale(Matrix::t(heatmap_matrix))) 
     }
+    
+    heatmap_matrix[heatmap_matrix > 3] <- 3
+    heatmap_matrix[heatmap_matrix < -3] <- -3    
 
     heatmap_matrix_ori <- heatmap_matrix
     heatmap_matrix <- heatmap_matrix[is.finite(heatmap_matrix[, 1]) & is.finite(heatmap_matrix[, col_gap_ind]), ] #remove the NA fitting failure genes for each lineage 
@@ -1430,7 +1431,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
     row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
     row_dist[is.na(row_dist)] <- 1
 
-    bks <- seq(-3.1,3.1, by=0.1)
+    exp_rng <- range(heatmap_matrix) #bks is based on the expression range
+    bks <- seq(exp_rng[1], exp_rng[2], by=0.1)
     if(is.null(hmcols)) {
         hmcols <- blue2green2red(length(bks) - 1)
     }

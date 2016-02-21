@@ -143,28 +143,30 @@ buildLineageBranchCellDataSet <- function(cds,
     weight_constant <- 1
   }
   
-  max_pseudotime <- -1
-  for (path_to_ancestor in paths_to_root){
-    max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime)  
-    if (max_pseudotime < max_pseudotime_on_path){
-      max_pseudotime <- max_pseudotime_on_path
+  if(stretch) {
+    max_pseudotime <- -1
+    for (path_to_ancestor in paths_to_root){
+      max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime)  
+      if (max_pseudotime < max_pseudotime_on_path){
+        max_pseudotime <- max_pseudotime_on_path
+      }
     }
-  }
-  
-  branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
-  #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
-  
-  for (path_to_ancestor in paths_to_root){
-    max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
-    path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
-    if (is.finite(path_scaling_factor)){
-      lineage_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
-      pData[lineage_cells,]$Pseudotime <- ((pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
+    
+    branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
+    #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
+    
+    for (path_to_ancestor in paths_to_root){
+      max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
+      path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
+      if (is.finite(path_scaling_factor)){
+        lineage_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
+        pData[lineage_cells,]$Pseudotime <- ((pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
+      }
     }
+    #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
+    
+    pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   }
-  #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
-  
-  pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   pData$original_cell_id <- row.names(pData)
   
   pData$original_cell_id <- row.names(pData)
