@@ -7,13 +7,8 @@ diff_test_helper <- function(x,
                              weights,
                              disp_func=NULL,
                              exprs_thrsld_percentage = NULL, 
-                             verbose=FALSE){
-  if(is.null(exprs_thrsld_percentage) == FALSE) {
-    if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
-      test_res <- data.frame(status = "NO_TEST", family=NA, pval=1.0, qval=1.0)
-      return(test_res)
-    }
-  }
+                             verbose=FALSE
+                             ){ 
   
   reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
@@ -59,14 +54,21 @@ diff_test_helper <- function(x,
   }, 
   #warning = function(w) { FM_fit },
   error = function(e) { 
-    #print (e);
+    if(verbose)
+      print (e);
+    if(is.null(exprs_thrsld_percentage) == FALSE) {
+      if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
+        test_res <- data.frame(status = "NO_TEST", family=NA, pval=1.0, qval=1.0)
+        return(test_res)
+      }
+    }
     # If we threw an exception, re-try with a simpler model.  Which one depends on
     # what the user has specified for expression family
     #print(disp_guess)
     backup_expression_family <- NULL
     if (expressionFamily@vfamily == "negbinomial"){
-        disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig), expr_selection_func = max)
-        backup_expression_family <- negbinomial(isize=1/disp_guess)
+        disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig), expr_selection_func = mean)
+        backup_expression_family <- negbinomial() #use NB-1 fitting
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
       backup_expression_family <- NULL
     }else if (expressionFamily@vfamily %in% c("binomialff")){
@@ -74,25 +76,28 @@ diff_test_helper <- function(x,
     }else{
       backup_expression_family <- NULL
     }
-    if (is.null(backup_expression_family) == FALSE ){
+
+    if (is.null(backup_expression_family) == FALSE){
       test_res <- tryCatch({
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, stepsize = 0.5, checkwz=TRUE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, stepsize = 0.5,checkwz=TRUE)                         
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=TRUE)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=TRUE)                         
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, stepsize = 0.5,checkwz=TRUE))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, stepsize = 0.5, checkwz=TRUE))                    
+            full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE)) #backup_expression_family
+            reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE))       #parallel=TRUE, zero=NULL 
       }
-      #print(full_model_fit)
+      #print(full_model_fit)  
       #print(coef(reduced_model_fit))
       compareModels(list(full_model_fit), list(reduced_model_fit))
       }, 
       #warning = function(w) { FM_fit },
       error = function(e) { 
-        #print (e);
+        if(verbose)
+          print (e);
         data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
       })
       #print(test_res)
+      test_res$family <- 'negbinomial_no_disp'
       test_res
     } else {
       data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
@@ -141,7 +146,8 @@ differentialGeneTest <- function(cds,
                                  cores=1, 
                                  relative_expr=TRUE,
                                  exprs_thrsld_percentage = NULL, 
-                                 verbose=FALSE){
+                                 verbose=FALSE
+                                 ){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
@@ -158,7 +164,12 @@ differentialGeneTest <- function(cds,
                              relative_expr=relative_expr,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                              exprs_thrsld_percentage = exprs_thrsld_percentage, 
-                             verbose=verbose)
+                             verbose=verbose
+                       #       ,
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon, 
+                       # stepsize = stepsize
+                             )
     diff_test_res
   }else{
     diff_test_res<-smartEsApply(cds,1,diff_test_helper, 
@@ -168,7 +179,13 @@ differentialGeneTest <- function(cds,
                                 relative_expr=relative_expr,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                                 exprs_thrsld_percentage = exprs_thrsld_percentage, 
-                                verbose=verbose)
+                                verbose=verbose
+                       #          ,
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon,
+                       # stepsize = stepsize
+
+                                )
     diff_test_res
   }
   

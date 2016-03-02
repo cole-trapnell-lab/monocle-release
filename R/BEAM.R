@@ -133,29 +133,38 @@ buildLineageBranchCellDataSet <- function(cds,
   Pseudotime <- pData(cds)$Pseudotime 
   
   pData <- pData(cds)
- 
-  max_pseudotime <- -1
-  for (path_to_ancestor in paths_to_root){
-    max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime)  
-    if (max_pseudotime < max_pseudotime_on_path){
-      max_pseudotime <- max_pseudotime_on_path
-    }
+
+  if (weighted) {
+    weight_constant <- 1/length(paths_to_root)
+    #weight_vec[common_ancestor_cells] <- weight_constant
+  } else {
+    weight_constant <- 1
   }
   
-  branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
-  #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
-  
-  for (path_to_ancestor in paths_to_root){
-    max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
-    path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
-    if (is.finite(path_scaling_factor)){
-      lineage_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
-      pData[lineage_cells,]$Pseudotime <- ((pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
+  if(stretch) {
+    max_pseudotime <- -1
+    for (path_to_ancestor in paths_to_root){
+      max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime)  
+      if (max_pseudotime < max_pseudotime_on_path){
+        max_pseudotime <- max_pseudotime_on_path
+      }
     }
+    
+    branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
+    #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
+    
+    for (path_to_ancestor in paths_to_root){
+      max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
+      path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
+      if (is.finite(path_scaling_factor)){
+        lineage_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
+        pData[lineage_cells,]$Pseudotime <- ((pData[lineage_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
+      }
+    }
+    #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
+    
+    pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   }
-  #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
-  
-  pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   pData$original_cell_id <- row.names(pData)
   
   pData$original_cell_id <- row.names(pData)
@@ -314,7 +323,12 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        cores = 1, 
                        lineage_labels = NULL, 
                        exprs_thrsld_percentage = NULL,
-                       verbose = F, ...) {
+                       verbose = F,
+                      #  backup_method = c('nb1', 'nb2'), 
+                      #  use_epislon = F,
+                      # stepsize = NULL,
+
+                        ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
@@ -332,7 +346,14 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                                          cores = cores, 
                                          relative_expr = relative_expr, 
                                          exprs_thrsld_percentage = exprs_thrsld_percentage,
-                                         verbose=verbose)
+                                         verbose=verbose
+                       #                   ,
+
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon,
+                       # stepsize = stepsize
+
+                                         )
   
   return(branchTest_res)
 }
