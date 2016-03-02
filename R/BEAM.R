@@ -134,13 +134,6 @@ buildLineageBranchCellDataSet <- function(cds,
   
   pData <- pData(cds)
 
-  if (weighted) {
-    weight_constant <- 1/length(paths_to_root)
-    #weight_vec[common_ancestor_cells] <- weight_constant
-  } else {
-    weight_constant <- 1
-  }
-  
   if(stretch) {
     max_pseudotime <- -1
     for (path_to_ancestor in paths_to_root){
