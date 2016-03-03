@@ -555,14 +555,14 @@ load_lung <- function(){
   # DDRTree based ordering:
   lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
   lung <- orderCells(lung)
-  E14_state = unique(subset(pData(lung), Time == "E14.5")$State)[1]
-  lung <- orderCells(lung, root_state=E14_state)
-  
-  # ICA based ordering
-  # lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1, method="ICA")
-  # lung <- orderCells(lung, num_paths=2)
-  # E14_state = unique(subset(pData(lung), Time == "E14.5")$State)[1]
-  # lung <- orderCells(lung, root_state=E14_state, num_paths=2)
-  
+  E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
+  if(E14_state != 1)
+    lung <- orderCells(lung, root_state=E14_state)
+
+  print(E14_state)
+
+  E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
+
+  print(E14_state)
   lung
 }

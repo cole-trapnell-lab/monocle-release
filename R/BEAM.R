@@ -13,8 +13,8 @@
 #'
 buildLineageBranchCellDataSet <- function(cds, 
                                           progenitor_method = c('sequential_split','random_split', 'duplicate'), 
-                                          lineage_states = c(2, 3), 
-                                          branch_point = NULL,
+                                          lineage_states = NULL, 
+                                          branch_point = 1,
                                           lineage_labels = NULL, 
                                           stretch = FALSE)
 {
@@ -22,8 +22,10 @@ buildLineageBranchCellDataSet <- function(cds,
   
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
-  
-  if (!is.null(lineage_labels)) {
+  if(!is.null(branch_point) & is.null(lineage_states)) 
+    stop('Please either specify the branch_point or lineage_states to select subset of cells')
+
+  if (!is.null(lineage_labels) & !is.null(lineage_states)) {
     if(length(lineage_labels) != length(lineage_states))
       stop("length of lineage_labels doesn't match with that of lineage_states")
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))
@@ -108,6 +110,9 @@ buildLineageBranchCellDataSet <- function(cds,
         paths_to_root[[length(paths_to_root) + 1]] <-  path_to_root
       }
     }
+    
+    leaf_cells <- setdiff(names(which(degree(pr_graph_cell_proj_mst, v = union(paths_to_root[[1]], paths_to_root[[2]]), mode = "all")==1, useNames = T)), root_cell)
+    lineage_states <- pData(cds)[leaf_cells, ]$State
   }
   all_cells_in_subset <- c()
   
@@ -309,8 +314,8 @@ buildLineageBranchCellDataSet <- function(cds,
 #'
 branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
                        reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-                       lineage_states = c(2, 3), 
-                       branch_point=NULL,
+                       lineage_states = NULL, 
+                       branch_point=1,
                        relative_expr = TRUE,
                        stretch = TRUE,
                        cores = 1, 
@@ -782,8 +787,8 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #'
 BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage", 
 					reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-					lineage_states = c(2, 3),
-					branch_point=NULL,
+					lineage_states = NULL,
+					branch_point=1,
 					relative_expr = TRUE, 
 					stretch = TRUE, 
 					q_thrsld = 0.05, 

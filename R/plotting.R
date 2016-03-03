@@ -1346,7 +1346,7 @@ blue2green2red <- matlab.like2
 #'
 plot_genes_branched_heatmap <- function(cds_subset, 
   num_clusters = 6,
-  lineage_states=c(2,3),
+  lineage_states=NULL,
   branch_point=NULL,
   lineage_labels = c("Cell fate 1", "Cell fate 2"), 
   stretch = T, 
@@ -1371,6 +1371,11 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                              stretch = stretch)
     
     new_cds@dispFitInfo <- cds_subset@dispFitInfo
+
+    if(is.null(lineage_states)) {
+      progenitor_state <- subset(pData(cds_subset), Pseudotime == 0)[, 'State']
+      lineage_states <- setdiff(pData(cds_subset)$State, progenitor_state)
+    }
 
     if(use_fitting_curves) {
         col_gap_ind <- 101

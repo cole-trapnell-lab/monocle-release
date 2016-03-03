@@ -1037,7 +1037,11 @@ orderCells <- function(cds,
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
-  
+  # reducedDimA, S, and K are not NULL in the cds
+  if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 0))) {
+    stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
+  }
+
   root_cell <- select_root_cell(cds, root_state, reverse)
   
   if (is.null(reverse) == FALSE){
@@ -1282,8 +1286,7 @@ reduceDimension <- function(cds,
   else if (method == "DDRTree") {
       ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
           ...)
-      colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), 
-          sep = "")
+      colnames(ddrtree_res$Y) <- colnames(FM); #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
