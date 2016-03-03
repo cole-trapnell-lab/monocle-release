@@ -22,7 +22,7 @@ buildLineageBranchCellDataSet <- function(cds,
   
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
-  if(!is.null(branch_point) & is.null(lineage_states)) 
+  if(is.null(branch_point) & is.null(lineage_states)) 
     stop('Please either specify the branch_point or lineage_states to select subset of cells')
 
   if (!is.null(lineage_labels) & !is.null(lineage_states)) {
