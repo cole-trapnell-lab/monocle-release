@@ -440,7 +440,7 @@ Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell
 <<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 lung <- load_lung()
 
-plot_spanning_tree(lung, color_by="State")
+plot_spanning_tree(lung, color_by="Time")
 
 @ %def 
 
