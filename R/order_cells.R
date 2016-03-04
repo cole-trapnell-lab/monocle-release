@@ -1032,7 +1032,7 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 #' @export
 orderCells <- function(cds, 
                        root_state=NULL, 
-                       num_paths = NULL, 
+                       num_paths = 2, 
                        reverse=NULL){
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")

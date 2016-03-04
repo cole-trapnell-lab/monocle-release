@@ -87,7 +87,11 @@ buildLineageBranchCellDataSet <- function(cds,
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_lineage
     }
   }else{
-    pr_graph_cell_proj_mst <- minSpanningTree(cds)
+    if(cds@dim_reduce_type == "DDRTree")
+      pr_graph_cell_proj_mst <- minSpanningTree(cds)
+    else
+      pr_graph_cell_proj_mst <- cds@auxOrderingData$ICA$cell_ordering_tree
+    
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_cell <- mst_branch_nodes[branch_point]
     mst_no_branch_point <- pr_graph_cell_proj_mst - V(pr_graph_cell_proj_mst)[branch_cell]
