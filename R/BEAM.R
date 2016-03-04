@@ -25,7 +25,7 @@ buildLineageBranchCellDataSet <- function(cds,
   if(is.null(branch_point) & is.null(lineage_states)) 
     stop('Please either specify the branch_point or lineage_states to select subset of cells')
 
-  if (!is.null(lineage_labels) & !is.null(lineage_states)) {
+  if (is.null(lineage_labels) & !is.null(lineage_states)) {
     if(length(lineage_labels) != length(lineage_states))
       stop("length of lineage_labels doesn't match with that of lineage_states")
     lineage_map <- setNames(lineage_labels, as.character(lineage_states))

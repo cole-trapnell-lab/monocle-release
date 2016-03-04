@@ -559,7 +559,5 @@ load_lung <- function(){
   if(E14_state != 1)
     lung <- orderCells(lung, root_state=E14_state)
 
-  E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
-
   lung
 }
