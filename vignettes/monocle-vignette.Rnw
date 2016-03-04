@@ -278,8 +278,6 @@ Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell
 lung <- load_lung()
 
 plot_spanning_tree(lung, color_by="Time")
-plot_spanning_tree(lung, color_by="State")
-
 @ %def 
 
 BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
