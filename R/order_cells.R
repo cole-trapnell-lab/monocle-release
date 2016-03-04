@@ -1,6 +1,6 @@
 #' Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @param ordering_geneds a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
   pd <- pData(cds)
@@ -1286,7 +1286,9 @@ reduceDimension <- function(cds,
   else if (method == "DDRTree") {
       ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
           ...)
-      # colnames(ddrtree_res$Y) <- colnames(FM); #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      if(ncol(ddrtree_res$Y) == ncol(cds))
+        colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y

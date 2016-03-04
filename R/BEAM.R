@@ -24,6 +24,8 @@ buildLineageBranchCellDataSet <- function(cds,
     stop('Please first order the cells in pseudotime using orderCells()')
   if(is.null(branch_point) & is.null(lineage_states)) 
     stop('Please either specify the branch_point or lineage_states to select subset of cells')
+  if(ncol(cds@reducedDimS) != ncol(cds))
+    stop('You probably used clusterCells function which should be used together with buildLineageBranchCellDataSet, try re-run reduceDimension without clustering cells again')
 
   if (is.null(lineage_labels) & !is.null(lineage_states)) {
     if(length(lineage_labels) != length(lineage_states))
