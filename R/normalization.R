@@ -284,6 +284,10 @@ relative2abs <- function(relative_cds,
   optim_num = 1) {
   relative_expr_matrix <- exprs(relative_cds)
 
+  parameters <- c(t_estimate, m, c, m_rng, c_rng, volume, dilution, detection_threshold, alpha_v, total_RNAs, weight, optim_num)
+  if(any(c(!is.finite(parameters), is.null(parameters))))
+    stop('Your input parameters should not contain either null or infinite numbers')
+
   if (detection_threshold < 0.01430512 | detection_threshold >
         7500) 
     stop("concentration detection limit should be between 0.01430512 and 7500")
