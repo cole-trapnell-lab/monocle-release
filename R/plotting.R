@@ -1354,7 +1354,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   norm_method = "vstExprs", 
   use_fitting_curves = T, 
   dist_method = NULL, 
-  hclust_method = "ward", 
+  hclust_method = "ward.D2", 
   hmcols = NULL, 
   Lineage_colors = c('#979797', '#F05662', '#7990C8'), 
   trend_formula = '~sm.ns(Pseudotime, df=3) * Lineage',
@@ -1455,7 +1455,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     row_dist[is.na(row_dist)] <- 1
 
     exp_rng <- range(heatmap_matrix) #bks is based on the expression range
-    bks <- seq(exp_rng[1], exp_rng[2], by=0.1)
+    bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, by=0.1)
     if(is.null(hmcols)) {
         hmcols <- blue2green2red(length(bks) - 1)
     }

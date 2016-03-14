@@ -331,7 +331,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                       #  backup_method = c('nb1', 'nb2'), 
                       #  use_epislon = F,
                       # stepsize = NULL,
-
+                      cell_id_list = NULL, 
                         ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
@@ -344,6 +344,12 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
   else
     cds_subset <- cds
   
+  if(is.null(cell_id_list) == F) {
+    if(row.names( subset(pData(cds), Pseudotime == 0) )  %in% cell_id_list) 
+      cell_id_list <- c(cell_id_list, 'duplicate_root')
+    cds_subset <- cds_subset[, cell_id_list]
+  }
+
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
