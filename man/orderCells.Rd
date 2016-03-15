@@ -4,7 +4,7 @@
 \alias{orderCells}
 \title{Orders cells according to progress through a learned biological process.}
 \usage{
-orderCells(cds, root_state = NULL, num_paths = NULL, reverse = NULL)
+orderCells(cds, root_state = NULL, num_paths = 2, reverse = NULL)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

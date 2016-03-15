@@ -4,7 +4,7 @@
 #' They represent that the progenitors can be either splitted one by one (sequential_split) or randomly (random_split) or duplicate the 
 #' progenitors (duplicate). For random_split and sequential_split, the cells will be evenly split (when number of progenitors are odd, 
 #' there will be one more cell in one lineage)
-#' @param branch_point The name of a branch point that specifies the lineages. Provide either this argument or lineage_states.
+#' @param branch_point The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".
 #' @param lineage_states The states for two branching lineages
 #' @param lineage_labels The names for each branching lineage
 #' @param stretch A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not 
@@ -16,7 +16,7 @@ buildLineageBranchCellDataSet <- function(cds,
                                           lineage_states = NULL, 
                                           branch_point = 1,
                                           lineage_labels = NULL, 
-                                          stretch = FALSE)
+                                          stretch = TRUE)
 {
   # TODO: check that lineages are on the same paths
   
@@ -307,12 +307,10 @@ buildLineageBranchCellDataSet <- function(cds,
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param lineage_states  states corresponding to two branches 
-#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
+#' @param branch_point The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
-#' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param lineage_labels the name for each lineage, for example, AT1 or AT2  
-#' @param exprs_thrsld_percentage For the gene under test, the percentage of cells expressed across all cells. Default is 0.05
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @param ... Additional arguments passed to differentialGeneTest
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
@@ -323,47 +321,28 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Li
                        lineage_states = NULL, 
                        branch_point=1,
                        relative_expr = TRUE,
-                       stretch = TRUE,
                        cores = 1, 
                        lineage_labels = NULL, 
-                       exprs_thrsld_percentage = NULL,
-                       verbose = F,
-                      #  backup_method = c('nb1', 'nb2'), 
-                      #  use_epislon = F,
-                      # stepsize = NULL,
-                      cell_id_list = NULL, 
-                        ...) {
+                       verbose = FALSE,
+                       ...) {
   
   if("Lineage" %in% all.vars(terms(as.formula(fullModelFormulaStr)))) {
     cds_subset <- buildLineageBranchCellDataSet(cds = cds, 
                                                 lineage_states = lineage_states,
                                                 branch_point=branch_point,
                                                 lineage_labels = lineage_labels,
-                                                stretch = stretch)
+                                                ...)
   }
   else
     cds_subset <- cds
   
-  if(is.null(cell_id_list) == F) {
-    if(row.names( subset(pData(cds), Pseudotime == 0) )  %in% cell_id_list) 
-      cell_id_list <- c(cell_id_list, 'duplicate_root')
-    cds_subset <- cds_subset[, cell_id_list]
-  }
-
   branchTest_res <- differentialGeneTest(cds_subset, 
                                          fullModelFormulaStr = fullModelFormulaStr, 
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         exprs_thrsld_percentage = exprs_thrsld_percentage,
-                                         verbose=verbose
-                       #                   ,
-
-                       # backup_method = backup_method, 
-                       # use_epislon = use_epislon,
-                       # stepsize = stepsize
-
-                                         )
+                                         verbose=verbose,
+                                         ...)
   
   return(branchTest_res)
 }
@@ -669,7 +648,7 @@ calILRs <- function (cds,
 #' @param detect_all a logic flag to determine whether or not genes without ILRs pass the threshold will still report a bifurcation point
 #' @param cds CellDataSet for the experiment
 #' @param Lineage The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)
-#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
+#' @param branch_point The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".
 #' @param lineage_states The states for two branching lineages
 #' @param stretch a logic flag to determine whether or not each lineage should be stretched
 #' @param cores Number of cores when fitting the spline curves
@@ -786,7 +765,7 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param lineage_states ids for the immediate branch lineage which obtained from lineage construction based on MST
-#' @param branch_point the id for the branch point choosed to select cell branches and progenitors 
+#' @param branch_point The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch  a logic flag to determine whether or not each lineage should be stretched
 #' @param q_thrsld The threshold for the qval 

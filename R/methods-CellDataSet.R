@@ -18,7 +18,6 @@ setMethod("sizeFactors", signature(object="CellDataSet"), function(object) {
 
 #' @rdname CellDataSet-methods
 #' @aliases CellDataSet,ANY,ANY-method
-#' @param object The CellDataSet object
 #' @param value A vector of size factors, with length equal to the cells in object
 setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric"), setSizeFactors <- function(object, value) {
   pData(object)$Size_Factor <- value

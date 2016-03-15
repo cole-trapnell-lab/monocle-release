@@ -6,7 +6,7 @@
 \usage{
 BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
+  lineage_states = NULL, branch_point = 1, relative_expr = TRUE,
   stretch = TRUE, q_thrsld = 0.05, lineage_labels = NULL,
   verbose = FALSE, cores = 1, ...)
 }
@@ -19,7 +19,7 @@ BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{lineage_states}{ids for the immediate branch lineage which obtained from lineage construction based on MST}
 
-\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
 

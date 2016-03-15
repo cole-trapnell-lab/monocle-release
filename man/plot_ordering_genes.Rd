@@ -6,7 +6,12 @@
 \usage{
 plot_ordering_genes(cds)
 }
+\arguments{
+\item{cds}{The CellDataSet to be used for the plot.}
+}
 \description{
-Plots genes by mean vs. dispersion, highlighting those selected for ordering
+Each gray point in the plot is a gene. The black dots are those that were included
+in the last call to setOrderingFilter. The red curve shows the mean-variance 
+model learning by estimateDispersions().
 }
 

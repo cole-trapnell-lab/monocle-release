@@ -6,9 +6,8 @@
 \usage{
 branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  lineage_states = c(2, 3), branch_point = NULL, relative_expr = TRUE,
-  stretch = TRUE, cores = 1, lineage_labels = NULL,
-  exprs_thrsld_percentage = 0.05, verbose = F, ...)
+  lineage_states = NULL, branch_point = 1, relative_expr = TRUE,
+  cores = 1, lineage_labels = NULL, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -19,17 +18,13 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{lineage_states}{states corresponding to two branches}
 
-\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
-
-\item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
 \item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
-
-\item{exprs_thrsld_percentage}{For the gene under test, the percentage of cells expressed across all cells. Default is 0.05}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 

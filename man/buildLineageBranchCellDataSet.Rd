@@ -5,8 +5,8 @@
 \title{Build a CellDataSet with appropriate duplication along two lineages}
 \usage{
 buildLineageBranchCellDataSet(cds, progenitor_method = c("sequential_split",
-  "random_split", "duplicate"), lineage_states = c(2, 3),
-  branch_point = NULL, lineage_labels = NULL, stretch = FALSE)
+  "random_split", "duplicate"), lineage_states = NULL, branch_point = 1,
+  lineage_labels = NULL, stretch = TRUE)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -18,7 +18,7 @@ there will be one more cell in one lineage)}
 
 \item{lineage_states}{The states for two branching lineages}
 
-\item{branch_point}{The name of a branch point that specifies the lineages. Provide either this argument or lineage_states.}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
 \item{lineage_labels}{The names for each branching lineage}
 

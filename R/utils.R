@@ -108,6 +108,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' @param X a CellDataSet object
 #' @param MARGIN The margin to apply to, either 1 for rows (samples) or 2 for columns (features)
 #' @param FUN Any function
+#' @param required_packages A list of packages FUN will need. Failing to provide packages needed by FUN will generate errors in worker threads.
 #' @param ... Additional parameters for FUN
 #' @param cores The number of cores to use for evaluation
 #' 

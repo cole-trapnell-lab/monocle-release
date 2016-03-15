@@ -6,7 +6,6 @@ diff_test_helper <- function(x,
                              relative_expr,
                              weights,
                              disp_func=NULL,
-                             exprs_thrsld_percentage = NULL, 
                              verbose=FALSE
                              ){ 
   
@@ -56,12 +55,7 @@ diff_test_helper <- function(x,
   error = function(e) { 
     if(verbose)
       print (e);
-    if(is.null(exprs_thrsld_percentage) == FALSE) {
-      if((sum(x > 0) / length(x)) < exprs_thrsld_percentage) {
-        test_res <- data.frame(status = "NO_TEST", family=NA, pval=1.0, qval=1.0)
-        return(test_res)
-      }
-    }
+
     # If we threw an exception, re-try with a simpler model.  Which one depends on
     # what the user has specified for expression family
     #print(disp_guess)
@@ -136,7 +130,6 @@ compareModels <- function(full_models, reduced_models){
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param relative_expr Whether to transform expression into relative values.
-#' @param exprs_thrsld_percentage Skip testing for genes expressed in fewer than this percentage of cells. Default is NULL, which excludes no genes from testing.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
@@ -145,7 +138,6 @@ differentialGeneTest <- function(cds,
                                  reducedModelFormulaStr="~1", 
                                  cores=1, 
                                  relative_expr=TRUE,
-                                 exprs_thrsld_percentage = NULL, 
                                  verbose=FALSE
                                  ){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
@@ -163,7 +155,6 @@ differentialGeneTest <- function(cds,
                              expressionFamily=cds@expressionFamily,
                              relative_expr=relative_expr,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                             exprs_thrsld_percentage = exprs_thrsld_percentage, 
                              verbose=verbose
                        #       ,
                        # backup_method = backup_method, 
@@ -178,7 +169,6 @@ differentialGeneTest <- function(cds,
                                 expressionFamily=cds@expressionFamily, 
                                 relative_expr=relative_expr,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                                exprs_thrsld_percentage = exprs_thrsld_percentage, 
                                 verbose=verbose
                        #          ,
                        # backup_method = backup_method, 

@@ -6,6 +6,13 @@
 \usage{
 pq_helper(mst, use_weights = TRUE, root_node = NULL)
 }
+\arguments{
+\item{mst}{The minimum spanning tree, as an igraph object.}
+
+\item{use_weights}{Whether to use edge weights when finding the diameter path of the tree.}
+
+\item{root_node}{The name of the root node to use for starting the path finding.}
+}
 \description{
 Recursively builds and returns a PQ tree for the MST
 }

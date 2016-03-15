@@ -1,6 +1,9 @@
-#' Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
+#' Scale pseudotime to be in the range from 0 to 100 
+#' 
+#' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param ordering_geneds a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @param verbose Whether to emit verbose output
 #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
   pd <- pData(cds)
@@ -89,6 +92,9 @@ get_next_node_id <- function()
 }
 
 #' Recursively builds and returns a PQ tree for the MST
+#' @param mst The minimum spanning tree, as an igraph object.
+#' @param use_weights Whether to use edge weights when finding the diameter path of the tree.
+#' @param root_node The name of the root node to use for starting the path finding. 
 #' @import igraph
 pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 {
@@ -1137,16 +1143,18 @@ orderCells <- function(cds,
 }
 
 #' Computes a projection of a CellDataSet object into a lower dimensional space
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
-#' @param use_irlba Whether to use the IRLBA package for ICA reduction.
+#' @param reduction_method A character string specifying the algorithm to use for dimensionality reduction.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
-#' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
-#' @param scaling a logic argument to determine whether or not we should scale the data before dimension reduction
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
+#' @param use_vst Whether to variance-stabilize the expression data before reduction.
+#' Defaults to TRUE if the expressionFamily of cds is negative binomial, FALSE otherwise. 
+#' Only works for negative binomial CellDataSets objects.
+#' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
-#' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
 #' @importFrom fastICA  ica.R.def ica.R.par
@@ -1155,18 +1163,15 @@ orderCells <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            method=c("DDRTree", "ICA"),
+                            reduction_method=c("DDRTree", "ICA"),
                             pseudo_expr=NULL, 
                             residualModelFormulaStr=NULL,
                             use_vst=NULL,
                             verbose=FALSE,
-                            use_irlba=NULL,
-                            scaling = TRUE, 
                             ...){
   FM <- exprs(cds)
   if (is.null(use_irlba) == FALSE) {
       message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
-
   }
   
   if (cds@expressionFamily@vfamily == "negbinomial") {
@@ -1237,10 +1242,10 @@ reduceDimension <- function(cds,
   }
   if (verbose) 
       message("Reducing to independent components")
-  
-  if(scaling)
-    FM <- Matrix::t(scale(Matrix::t(FM)))
+
+  FM <- Matrix::t(scale(Matrix::t(FM)))
   FM <- FM[apply(FM, 1, sd) > 0, ]
+  
   if (nrow(FM) == 0) {
       stop("Error: all rows have standard deviation zero")
   }
@@ -1404,7 +1409,7 @@ projPointOnLine <- function(point, line){
   return(point)
 }
 
-#' Project point to line segment
+# Project point to line segment
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B 
   A <- df[, 1]

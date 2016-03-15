@@ -239,7 +239,6 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' @param c the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).  
 #' @param m_rng the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1
 #' @param c_rng the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize. 
-#' @param detection_threshold the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.   
 #' @param ERCC_controls the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively. 
 #' @param ERCC_annotation the ERCC_annotation matrix from illumina USE GUIDE which will be ued for calculating the ERCC transcript copy number for performing the transformation. 
 #' @param volume the approximate volume of the lysis chamber (nanoliters). Default is 10
@@ -252,7 +251,8 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
 #' @param cores number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.
-#' @param verbose a logic flag to determine whether or not we should print all the optimization details 
+#' @param verbose a logical flag to determine whether or not we should print all the optimization details 
+#' @param optim_num The number of rounds of optimization to perform.
 #' @return an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE. 
 #' @export
 #' @importFrom plyr ddply

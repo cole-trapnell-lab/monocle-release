@@ -2,7 +2,7 @@
 % Please edit documentation in R/cluster_cells.R
 \name{clusterCells}
 \alias{clusterCells}
-\title{Cluster cells to nearest DDRTree center.}
+\title{Cluster cells into a specified number of groups.}
 \usage{
 clusterCells(cds, num_clusters = 2, num_reduced_dims = 10,
   residualModelFormulaStr = NULL, ddrtree_gamma = 100, verbose = F)
@@ -14,12 +14,21 @@ clusterCells(cds, num_clusters = 2, num_reduced_dims = 10,
 
 \item{num_reduced_dims}{number of dimensions to reduce the dataset to}
 
+\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
+
 \item{ddrtree_gamma}{gamma parameter for DDRTree}
+
+\item{verbose}{Verbose parameter for DDRTree}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 }
 \description{
-Cluster cells to nearest DDRTree center.
+Unsupervised clustering of cells is a common step in many single-cell expression
+workflows. In an experiment containing a mixture of cell types, each cluster might
+correspond to a different cell type. This method takes a CellDataSet as input
+along with a requested number of clusters, clusters them with an unsupervised 
+algorithm, and then returns the CellDataSet with the cluster assignments stored in
+the pData table.
 }
 

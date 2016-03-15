@@ -4,34 +4,33 @@
 \alias{reduceDimension}
 \title{Computes a projection of a CellDataSet object into a lower dimensional space}
 \usage{
-reduceDimension(cds, max_components = 2, method = c("DDRTree", "ICA"),
-  pseudo_expr = NULL, residualModelFormulaStr = NULL, use_vst = NULL,
-  verbose = FALSE, use_irlba = NULL, scaling = TRUE, ...)
+reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
+  "ICA"), pseudo_expr = NULL, residualModelFormulaStr = NULL,
+  use_vst = NULL, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{max_components}{the dimensionality of the reduced space}
 
+\item{reduction_method}{A character string specifying the algorithm to use for dimensionality reduction.}
+
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
-\item{use_irlba}{Whether to use the IRLBA package for ICA reduction.}
+\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
 
-\item{scaling}{a logic argument to determine whether or not we should scale the data before dimension reduction}
+\item{use_vst}{Whether to variance-stabilize the expression data before reduction.
+Defaults to TRUE if the expressionFamily of cds is negative binomial, FALSE otherwise. 
+Only works for negative binomial CellDataSets objects.}
+
+\item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
-
-\item{batch}{a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.}
-
-\item{covariates}{a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction}
 }
 \value{
 an updated CellDataSet object
 }
 \description{
 Computes a projection of a CellDataSet object into a lower dimensional space
-}
-\details{
-Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 }
 

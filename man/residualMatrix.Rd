@@ -9,9 +9,9 @@ residualMatrix(models, residual_type = "response", cores = detectCores())
 \arguments{
 \item{models}{a list of models, e.g. as returned by fitModels()}
 
-\item{cores}{number of cores used for calculation}
+\item{residual_type}{the response desired, as accepted by VGAM's predict function}
 
-\item{response_type}{the response desired, as accepted by VGAM's predict function}
+\item{cores}{number of cores used for calculation}
 }
 \value{
 a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.

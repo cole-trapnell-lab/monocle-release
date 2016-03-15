@@ -23,7 +23,7 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
 
 \item{Lineage}{The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)}
 
-\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
 \item{lineage_states}{The states for two branching lineages}
 

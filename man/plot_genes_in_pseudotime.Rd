@@ -7,8 +7,7 @@
 plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
   nrow = NULL, ncol = 1, panel_order = NULL, color_by = "State",
   trend_formula = "~ sm.ns(Pseudotime, df=3)", label_by_short_name = TRUE,
-  relative_expr = TRUE, method = "VGAM", vertical_jitter = NULL,
-  horizontal_jitter = NULL)
+  relative_expr = TRUE, vertical_jitter = NULL, horizontal_jitter = NULL)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}
@@ -30,6 +29,10 @@ plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 
 \item{relative_expr}{Whether to transform expression into relative values}
+
+\item{vertical_jitter}{A value passed to ggplot to jitter the points in the vertical dimension. Prevents overplotting, and is particularly helpful for rounded transcript count data.}
+
+\item{horizontal_jitter}{A value passed to ggplot to jitter the points in the horizontal dimension. Prevents overplotting, and is particularly helpful for rounded transcript count data.}
 }
 \value{
 a ggplot2 plot object

@@ -6,7 +6,7 @@
 \usage{
 differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
   reducedModelFormulaStr = "~1", cores = 1, relative_expr = TRUE,
-  exprs_thrsld_percentage = NULL, verbose = FALSE)
+  verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -18,8 +18,6 @@ differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
 \item{relative_expr}{Whether to transform expression into relative values.}
-
-\item{exprs_thrsld_percentage}{Skip testing for genes expressed in fewer than this percentage of cells. Default is NULL, which excludes no genes from testing.}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 }
