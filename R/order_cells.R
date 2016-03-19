@@ -1,6 +1,9 @@
-#' Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
+#' Scale pseudotime to be in the range from 0 to 100 
+#' 
+#' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param ordering_geneds a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @param verbose Whether to emit verbose output
 #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
   pd <- pData(cds)
@@ -89,6 +92,9 @@ get_next_node_id <- function()
 }
 
 #' Recursively builds and returns a PQ tree for the MST
+#' @param mst The minimum spanning tree, as an igraph object.
+#' @param use_weights Whether to use edge weights when finding the diameter path of the tree.
+#' @param root_node The name of the root node to use for starting the path finding. 
 #' @import igraph
 pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 {
@@ -1022,7 +1028,33 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
   return(root_cell)
 }
 
-#' Orders cells according to progress through a learned biological process.
+#' Orders cells according to pseudotime.
+#' 
+#' Learns a "trajectory" describing the biological process the cells are
+#' going through, and calculates where each cell falls within that trajectory. 
+#' Monocle learns trajectories in two steps. The first step is reducing the dimensionality
+#' of the data with \code{\link{reduceDimension}()}. The second is this function.
+#' function. This function takes as input a CellDataSet and returns it with 
+#' two new columns: \code{Pseudotime} and \code{State}, which together encode 
+#' where each cell maps to the trajectory. \code{orderCells()} optionally takes
+#' a "root" state, which you can use to specify the start of the trajectory. If 
+#' you don't provide a root state, one is selected arbitrarily.    
+#' 
+#' The \code{reduction_method} argument to \code{\link{reduceDimension}()} 
+#' determines which algorithm is used by \code{orderCells()} to learn the trajectory.
+#' If \code{reduction_method == "ICA"}, this function uses \emph{polygonal reconstruction}
+#' to learn the underlying trajectory. If \code{reduction_method == "DDRTree"}, 
+#' the trajectory is specified by the principal graph learned by the 
+#' \code{\link[DDRTree]{DDRTree}()} function.
+#' 
+#' Whichever algorithm you use, the trajectory will be composed of segments. 
+#' The cells from a segment will share the same value of \code{State}. One of
+#' these segments will be selected as the root of the trajectory arbitrarily. 
+#' The most distal cell on that segment will be chosen as the "first" cell in the
+#' trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will 
+#' then "walk" along the trajectory, and as it encounters additional cells, it
+#' will assign them increasingly large values of Pseudotime.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param root_state The state to use as the root of the trajectory. 
 #' You must already have called orderCells() once to use this argument.
@@ -1032,7 +1064,7 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 #' @export
 orderCells <- function(cds, 
                        root_state=NULL, 
-                       num_paths = 2, 
+                       num_paths = NULL, 
                        reverse=NULL){
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
@@ -1136,17 +1168,123 @@ orderCells <- function(cds,
   cds
 }
 
-#' Computes a projection of a CellDataSet object into a lower dimensional space
+# Helper function to normalize the expression data prior to dimensionality
+# reduction
+normalize_expr_data <- function(cds, 
+                                norm_method = c("vstExprs", "log", "none"), 
+                                pseudo_expr = NULL){
+  FM <- exprs(cds)
+  norm_method <- match.arg(norm_method)
+  if (cds@expressionFamily@vfamily == "negbinomial") {
+    
+    # If we're going to be using log, and the user hasn't given us a pseudocount
+    # set it to 1 by default.
+    if (is.null(pseudo_expr)){
+      if(norm_method == "log")
+        pseudo_expr = 1
+      else
+        pseudo_expr = 0
+    }
+    
+    checkSizeFactors(cds)
+    
+    if (norm_method == "vstExprs") {
+      VST_FM <- vstExprs(cds, round_vals = FALSE)
+      if (is.null(VST_FM) == FALSE) {
+        FM <- VST_FM
+      }
+      else {
+        stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
+      }
+    }else if (norm_method == "log") {
+      # If we are using log, normalize by size factor before log-transforming
+      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      FM <- FM + pseudo_expr
+      FM <- log2(FM)
+    }else if (norm_method == "none"){
+      # If we are using log, normalize by size factor before log-transforming
+      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      FM <- FM + pseudo_expr
+    }
+  }else if (cds@expressionFamily@vfamily == "binomialff") {
+    if (norm_method == "none"){
+      #If this is binomial data, transform expression values into TF-IDF scores.
+      ncounts <- FM > 0
+      ncounts[ncounts != 0] <- 1
+      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
+    }else{
+      stop("Error: the only normalization method supported with binomial data is 'none'")
+    }
+  }else if (cds@expressionFamily@vfamily == "Tobit") {
+    FM <- FM + pseudo_expr
+    if (norm_method == "none"){
+     
+    }else if (norm_method == "log"){
+      FM <- log2(FM)
+    }else{
+      stop("Error: the only normalization methods supported with Tobit-distributed (e.g. FPKM/TPM) data are 'log' (recommended) or 'none'")
+    }
+  }else if (cds@expressionFamily@vfamily == "gaussianff") {
+    if (norm_method == "none"){
+      FM <- FM + pseudo_expr
+    }else{
+      stop("Error: the only normalization method supported with gaussian data is 'none'")
+    }
+  }
+  return (FM)
+}
+
+#' Compute a projection of a CellDataSet object into a lower dimensional space
+#' 
+#' Monocle aims to learn how cells transition through a biological program of 
+#' gene expression changes in an experiment. Each cell can be viewed as a point 
+#' in a high-dimensional space, where each dimension describes the expression of 
+#' a different gene in the genome. Identifying the program of gene expression 
+#' changes is equivalent to learning a \emph{trajectory} that the cells follow
+#' through this space. However, the more dimensions there are in the analysis, 
+#' the harder the trajectory is to learn. Fortunately, many genes typically
+#' co-vary with one another, and so the dimensionality of the data can be
+#' reduced with a wide variety of different algorithms. Monocle provides two 
+#' different algorithms for dimensionality reduction via \code{reduceDimension}. 
+#' Both take a CellDataSet object and a number of dimensions allowed for the 
+#' reduced space. You can also provide a model formula indicating some variables
+#' (e.g. batch ID or other technical factors) to "subtract" from the data so it
+#' doesn't contribute to the trajectory. 
+#' 
+#' You can choose two different reduction algorithms: Independent Component 
+#' Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
+#' The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
+#' Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
+#' which was implemented in Monocle version 1. \code{\link[DDRTree]{DDRTree}} is a more recent manifold
+#' learning algorithm developed by Qi Mao and colleages. It is substantially more 
+#' powerful, accurate, and robust for single-cell trajectory analysis than ICA,
+#' and is now the default method. 
+#' 
+#' Often, experiments include cells from different batches or treatments. You can
+#' reduce the effects of these treatments by transforming the data with a linear
+#' model prior to dimensionality reduction. To do so, provide a model formula  
+#' through \code{residualModelFormulaStr}.
+#' 
+#' Prior to reducing the dimensionality of the data, it usually helps 
+#' to normalize it so that highly expressed or highly variable genes don't 
+#' dominate the computation. \code{reduceDimension()} automatically transforms
+#' the data in one of several ways depending on the \code{expressionFamily} of 
+#' the CellDataSet object. If the expressionFamily is \code{negbinomial}, the
+#' data are variance-stabilized. If the expressionFamily is \code{Tobit}, the data
+#' are adjusted by adding a pseudocount (of 1 by default) and then log-transformed. 
+#' If you don't want any transformation at all, set norm_method to "none" and 
+#' pseudo_expr to 0. This maybe useful for single-cell qPCR data, or data you've
+#' already transformed yourself in some way.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
-#' @param use_irlba Whether to use the IRLBA package for ICA reduction.
+#' @param reduction_method A character string specifying the algorithm to use for dimensionality reduction.
+#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
-#' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
-#' @param scaling a logic argument to determine whether or not we should scale the data before dimension reduction
+#' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
-#' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
 #' @importFrom fastICA  ica.R.def ica.R.par
@@ -1155,113 +1293,68 @@ orderCells <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            method=c("DDRTree", "ICA"),
-                            pseudo_expr=NULL, 
+                            reduction_method=c("DDRTree", "ICA"),
+                            norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
-                            use_vst=NULL,
+                            pseudo_expr=NULL, 
                             verbose=FALSE,
-                            use_irlba=NULL,
-                            scaling = TRUE, 
                             ...){
-  FM <- exprs(cds)
-  if (is.null(use_irlba) == FALSE) {
-      message("Warning: argument 'use_irlba' is deprecated and will be removed in a future release")
-
-  }
-  
-  if (cds@expressionFamily@vfamily == "negbinomial") {
-      if (is.null(use_vst)) 
-          use_vst = TRUE
-      if (is.null(pseudo_expr)) 
-          pseudo_expr = 0
-  }
-  else {
-      if (is.null(use_vst)) 
-          use_vst = FALSE
-      if (is.null(pseudo_expr)) 
-          pseudo_expr = 1
-  }
  
- # If we aren't using VST, then normalize the expression values by size factor
-   if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial") {
-      checkSizeFactors(cds)
-      size_factors <- sizeFactors(cds)
-      FM <- Matrix::t(Matrix::t(FM)/size_factors)
-  }
-
-  if (is.null(fData(cds)$use_for_ordering) == FALSE && nrow(subset(fData(cds), 
-      use_for_ordering == TRUE)) > 0) 
-      FM <- FM[fData(cds)$use_for_ordering, ]
-
-  if (cds@expressionFamily@vfamily == "binomialff") {
-      ncounts <- FM > 0
-      ncounts[ncounts != 0] <- 1
-      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
-  }
-
-  if (cds@expressionFamily@vfamily != "binomialff") {
-      FM <- FM + pseudo_expr
-  }
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  if (cds@expressionFamily@vfamily != "binomialff") {
-      if (use_vst) {
-          VST_FM <- vstExprs(cds[row.names(subset(fData(cds), use_for_ordering == TRUE)),], round_vals = FALSE)
-          if (is.null(VST_FM) == FALSE) {
-              FM <- VST_FM
-          }
-          else {
-              stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
-          }
-      }
-      else {
-          FM <- log2(FM)
-      }
+  # If the user has selected a subset of genes for use in ordering the cells
+  # via setOrderingFilter(), subset the expression matrix.
+  if (is.null(fData(cds)$use_for_ordering) == FALSE && 
+      nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
+    FM <- FM[fData(cds)$use_for_ordering, ]
   }
   
   FM <- FM[apply(FM, 1, sd) > 0, ]
   
   if (is.null(residualModelFormulaStr) == FALSE) {
-      if (verbose) 
-          message("Removing batch effects")
-      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
-          data = pData(cds), drop.unused.levels = TRUE)
-      fit <- limma::lmFit(FM, X.model_mat, ...)
-      beta <- fit$coefficients[, -1, drop = FALSE]
-      beta[is.na(beta)] <- 0
-      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      if (cds@expressionFamily@vfamily != "binomialff") {
-          if (use_vst == FALSE) {
-              FM <- 2^FM
-          }
-      }
+    if (verbose) 
+      message("Removing batch effects")
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                       data = pData(cds), drop.unused.levels = TRUE)
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    # if (cds@expressionFamily@vfamily != "binomialff") {
+    #   if (use_vst == FALSE) {
+    #     FM <- 2^FM
+    #   }
+    # }
   }
-  if (verbose) 
-      message("Reducing to independent components")
   
-  if(scaling)
-    FM <- Matrix::t(scale(Matrix::t(FM)))
+  FM <- Matrix::t(scale(Matrix::t(FM)))
   FM <- FM[apply(FM, 1, sd) > 0, ]
+  
   if (nrow(FM) == 0) {
-      stop("Error: all rows have standard deviation zero")
+    stop("Error: all rows have standard deviation zero")
   }
-  if (is.function(method)) {        
-      reducedDim <- method(FM, ...)
-      qplot(reducedDimW[1, ], reducedDimW[2, ])
-      colnames(reducedDim) <- colnames(FM)
-      reducedDimW(cds) <- as.matrix(reducedDim)
-      reducedDimA(cds) <- as.matrix(reducedDim)
-      reducedDimS(cds) <- as.matrix(reducedDim)
-      reducedDimK(cds) <- as.matrix(reducedDim)
-      dp <- as.matrix(dist(reducedDim))
-      cellPairwiseDistances(cds) <- dp
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
-      minSpanningTree(cds) <- dp_mst
-      cds@dim_reduce_type <- "function_passed"
+  if (is.function(reduction_method)) {        
+    reducedDim <- method(FM, ...)
+    qplot(reducedDimW[1, ], reducedDimW[2, ])
+    colnames(reducedDim) <- colnames(FM)
+    reducedDimW(cds) <- as.matrix(reducedDim)
+    reducedDimA(cds) <- as.matrix(reducedDim)
+    reducedDimS(cds) <- as.matrix(reducedDim)
+    reducedDimK(cds) <- as.matrix(reducedDim)
+    dp <- as.matrix(dist(reducedDim))
+    cellPairwiseDistances(cds) <- dp
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+    cds@dim_reduce_type <- "function_passed"
   }
-  else if (method == "ICA") {
+  else{
+    reduction_method <- match.arg(reduction_method)
+    if (reduction_method == "ICA") {
+      if (verbose) 
+        message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
-          use_irlba = use_irlba, ...)
+                             use_irlba = TRUE, ...)
       x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
       W <- Matrix::t(init_ICA$W)
       weights <- W
@@ -1282,13 +1375,15 @@ reduceDimension <- function(cds,
       dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "ICA"
-  }
-  else if (method == "DDRTree") {
+    }
+    else if (reduction_method == "DDRTree") {
+      if (verbose) 
+        message("Learning principal graph with DDRTree")
       ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
-          ...)
+                             ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-
+      
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
@@ -1300,9 +1395,10 @@ reduceDimension <- function(cds,
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
-  }
-  else {
+    }
+    else {
       stop("Error: unrecognized dimensionality reduction method")
+    }
   }
   cds
 }
@@ -1404,7 +1500,7 @@ projPointOnLine <- function(point, line){
   return(point)
 }
 
-#' Project point to line segment
+# Project point to line segment
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B 
   A <- df[, 1]

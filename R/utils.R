@@ -108,6 +108,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' @param X a CellDataSet object
 #' @param MARGIN The margin to apply to, either 1 for rows (samples) or 2 for columns (features)
 #' @param FUN Any function
+#' @param required_packages A list of packages FUN will need. Failing to provide packages needed by FUN will generate errors in worker threads.
 #' @param ... Additional parameters for FUN
 #' @param cores The number of cores to use for evaluation
 #' 
@@ -553,7 +554,7 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   
   # DDRTree based ordering:
-  lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
+  lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1)
   lung <- orderCells(lung)
   E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
   if(E14_state != 1)

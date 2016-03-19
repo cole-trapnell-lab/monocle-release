@@ -27,6 +27,8 @@ plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 
 \item{relative_expr}{Whether to transform expression into relative values}
+
+\item{plot_limits}{A pair of number specifying the limits of the y axis. If NULL, scale to the range of the data.}
 }
 \value{
 a ggplot2 plot object

@@ -34,8 +34,6 @@ The default groups all cells together.}
 \item{relative_expr}{Whether to transform expression into relative values}
 
 \item{cores}{The number of cores to use for computing dispersions}
-
-\item{object}{The CellDataSet object}
 }
 \description{
 Methods for the CellDataSet class

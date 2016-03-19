@@ -1,7 +1,12 @@
 Package: monocle
 Type: Package
+<<<<<<< HEAD
 Title: Analysis tools for single-cell expression experiments.
 Version: 1.99.0
+=======
+Title: Analysis tools for single-cell expression experiments
+Version: 2.0.0
+>>>>>>> origin/monocle2
 Date: 2013-11-19
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
@@ -15,15 +20,15 @@ Description: Monocle performs differential expression and time-series analysis
 License: Artistic-2.0
 Depends:
     R (>= 2.7.0),
+    Matrix,
     Biobase,
     ggplot2(>= 1.0.0),
     VGAM (>= 0.9-5),
-    Matrix,
     DDRTree,
 Imports:
     parallel,
-    BiocGenerics,
     igraph(>= 1.0.0),
+    BiocGenerics,
     HSMMSingleCell (>= 0.101.5),
     plyr,
     cluster,

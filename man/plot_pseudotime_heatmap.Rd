@@ -4,42 +4,48 @@
 \alias{plot_pseudotime_heatmap}
 \title{Plots a pseudotime-ordered, row-centered heatmap}
 \usage{
-plot_pseudotime_heatmap(cds_subset,
-  trend_formula = "~sm.ns(Pseudotime, df=3)", rescaling = "row",
-  clustering = "row", hclust_method = "ward.D2", num_clusters = 6,
-  show_rownames = F, logMode = TRUE, pseudocount = 0, use_vst = TRUE,
-  border = FALSE, hmcols = NULL, scaleMax = 2, scaleMin = -2,
-  return_heatmap = FALSE, relative_expr = TRUE, cores = 1, ...)
+plot_pseudotime_heatmap(cds_subset, cluster_rows = TRUE,
+  hclust_method = "ward.D2", num_clusters = 6, hmcols = NULL,
+  add_annotation_row = NULL, add_annotation_col = NULL,
+  show_rownames = FALSE, use_gene_short_name = TRUE,
+  norm_method = c("vstExprs", "log"), scale_max = 3, scale_min = -3,
+  trend_formula = "~sm.ns(Pseudotime, df=3)", return_heatmap = FALSE,
+  cores = 1)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
 
-\item{hclust_method}{The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"}
+\item{cluster_rows}{Whether to cluster the rows of the heatmap.}
+
+\item{hclust_method}{The method used by pheatmap to perform hirearchical clustering of the rows.}
 
 \item{num_clusters}{Number of clusters for the heatmap of branch genes}
 
-\item{hmcols}{The color scheme for drawing the heatmap}
+\item{hmcols}{The color scheme for drawing the heatmap.}
 
-\item{cores}{Number of cores to run this function}
+\item{add_annotation_row}{Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.}
 
-\item{lineage_labels}{The label for the lineages (first (second) lineage corresponding to state 2 (3))}
+\item{add_annotation_col}{Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.}
 
-\item{norm_method}{Either vstExprs or log, determine which normalization approach will be performed for the fitted gene expression values}
+\item{show_rownames}{Whether to show the names for each row in the table.}
 
-\item{dist_method}{The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)}
+\item{use_gene_short_name}{Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.}
 
-\item{heatmap_height}{Height of the saved heatmap}
+\item{norm_method}{Determines how to transform expression values prior to rendering}
 
-\item{heatmap_width}{Width of the saved heatmap}
+\item{scale_max}{The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.}
 
-\item{Cell_type_color}{The color for the progenitors and two lineages}
+\item{scale_min}{The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.}
 
-\item{return_all}{}
+\item{trend_formula}{A formula string specifying the model used in fitting the spline curve for each gene/feature.}
+
+\item{return_heatmap}{Whether to return the pheatmap object to the user.}
+
+\item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
 }
 \value{
-A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
-annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
-Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
+A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
+annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
 Plots a pseudotime-ordered, row-centered heatmap

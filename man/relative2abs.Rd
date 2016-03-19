@@ -38,7 +38,7 @@ based on isoform FPKM will give better results in general}
 
 \item{mixture_type}{the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1.}
 
-\item{detection_threshold}{the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.}
+\item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
 
 \item{alpha_v}{the hypothesized mode of transcript counts for each cell. Default is 1.}
 
@@ -46,14 +46,14 @@ based on isoform FPKM will give better results in general}
 
 \item{weight}{the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)}
 
-\item{verbose}{a logic flag to determine whether or not we should print all the optimization details}
+\item{verbose}{a logical flag to determine whether or not we should print all the optimization details}
 
 \item{return_all}{parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 in a list format}
 
 \item{cores}{number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.}
 
-\item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
+\item{optim_num}{The number of rounds of optimization to perform.}
 }
 \value{
 an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE.

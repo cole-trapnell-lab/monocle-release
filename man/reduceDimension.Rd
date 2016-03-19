@@ -2,36 +2,73 @@
 % Please edit documentation in R/order_cells.R
 \name{reduceDimension}
 \alias{reduceDimension}
-\title{Computes a projection of a CellDataSet object into a lower dimensional space}
+\title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
-reduceDimension(cds, max_components = 2, method = c("DDRTree", "ICA"),
-  pseudo_expr = NULL, residualModelFormulaStr = NULL, use_vst = NULL,
-  verbose = FALSE, use_irlba = NULL, scaling = TRUE, ...)
+reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
+  "ICA"), norm_method = c("vstExprs", "log", "none"),
+  residualModelFormulaStr = NULL, pseudo_expr = NULL, verbose = FALSE,
+  ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{max_components}{the dimensionality of the reduced space}
 
+\item{reduction_method}{A character string specifying the algorithm to use for dimensionality reduction.}
+
+\item{norm_method}{Determines how to transform expression values prior to reducing dimensionality}
+
+\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
+
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
-\item{use_irlba}{Whether to use the IRLBA package for ICA reduction.}
-
-\item{scaling}{a logic argument to determine whether or not we should scale the data before dimension reduction}
+\item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
-
-\item{batch}{a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.}
-
-\item{covariates}{a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction}
 }
 \value{
 an updated CellDataSet object
 }
 \description{
-Computes a projection of a CellDataSet object into a lower dimensional space
+Monocle aims to learn how cells transition through a biological program of 
+gene expression changes in an experiment. Each cell can be viewed as a point 
+in a high-dimensional space, where each dimension describes the expression of 
+a different gene in the genome. Identifying the program of gene expression 
+changes is equivalent to learning a \emph{trajectory} that the cells follow
+through this space. However, the more dimensions there are in the analysis, 
+the harder the trajectory is to learn. Fortunately, many genes typically
+co-vary with one another, and so the dimensionality of the data can be
+reduced with a wide variety of different algorithms. Monocle provides two 
+different algorithms for dimensionality reduction via \code{reduceDimension}. 
+Both take a CellDataSet object and a number of dimensions allowed for the 
+reduced space. You can also provide a model formula indicating some variables
+(e.g. batch ID or other technical factors) to "subtract" from the data so it
+doesn't contribute to the trajectory.
 }
 \details{
-Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
+You can choose two different reduction algorithms: Independent Component 
+Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
+The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
+Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
+which was implemented in Monocle version 1. \code{\link[DDRTree]{DDRTree}} is a more recent manifold
+learning algorithm developed by Qi Mao and colleages. It is substantially more 
+powerful, accurate, and robust for single-cell trajectory analysis than ICA,
+and is now the default method.
+
+Often, experiments include cells from different batches or treatments. You can
+reduce the effects of these treatments by transforming the data with a linear
+model prior to dimensionality reduction. To do so, provide a model formula  
+through \code{residualModelFormulaStr}.
+
+Prior to reducing the dimensionality of the data, it usually helps 
+to normalize it so that highly expressed or highly variable genes don't 
+dominate the computation. \code{reduceDimension()} automatically transforms
+the data in one of several ways depending on the \code{expressionFamily} of 
+the CellDataSet object. If the expressionFamily is \code{negbinomial}, the
+data are variance-stabilized. If the expressionFamily is \code{Tobit}, the data
+are adjusted by adding a pseudocount (of 1 by default) and then log-transformed. 
+If you don't want any transformation at all, set norm_method to "none" and 
+pseudo_expr to 0. This maybe useful for single-cell qPCR data, or data you've
+already transformed yourself in some way.
 }
 

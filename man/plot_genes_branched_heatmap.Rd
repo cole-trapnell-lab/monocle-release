@@ -2,46 +2,62 @@
 % Please edit documentation in R/plotting.R
 \name{plot_genes_branched_heatmap}
 \alias{plot_genes_branched_heatmap}
-\title{Create a heatmap to demonstrate the bifurcation of gene expression along two lineages}
+\title{Create a heatmap to demonstrate the bifurcation of gene expression along two branchs}
 \usage{
-plot_genes_branched_heatmap(cds_subset, num_clusters = 6,
-  lineage_states = c(2, 3), branch_point = NULL,
-  lineage_labels = c("Cell fate 1", "Cell fate 2"), stretch = T,
-  scaling = T, norm_method = "vstExprs", use_fitting_curves = T,
-  dist_method = NULL, hclust_method = "ward", hmcols = NULL,
-  Lineage_colors = c("#979797", "#F05662", "#7990C8"),
-  trend_formula = "~sm.ns(Pseudotime, df=3) * Lineage",
-  add_annotation_row = NULL, add_annotation_col = NULL, show_rownames = F,
-  use_gene_short_name = F, return_heatmap = FALSE, cores = 1)
+plot_genes_branched_heatmap(cds_subset, branch_point = 1,
+  branch_states = NULL, branch_labels = c("Cell fate 1", "Cell fate 2"),
+  cluster_rows = TRUE, hclust_method = "ward.D2", num_clusters = 6,
+  hmcols = NULL, branch_colors = c("#979797", "#F05662", "#7990C8"),
+  add_annotation_row = NULL, add_annotation_col = NULL,
+  show_rownames = FALSE, use_gene_short_name = TRUE, scale_max = 3,
+  scale_min = -3, norm_method = c("vstExprs", "log"),
+  trend_formula = "~sm.ns(Pseudotime, df=3) * Branch",
+  return_heatmap = FALSE, cores = 1)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
 
+\item{branch_point}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
+
+\item{branch_states}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
+
+\item{branch_labels}{The labels for the branchs.}
+
+\item{cluster_rows}{Whether to cluster the rows of the heatmap.}
+
+\item{hclust_method}{The method used by pheatmap to perform hirearchical clustering of the rows.}
+
 \item{num_clusters}{Number of clusters for the heatmap of branch genes}
 
-\item{lineage_labels}{The label for the lineages (first (second) lineage corresponding to state 2 (3))}
+\item{hmcols}{The color scheme for drawing the heatmap.}
 
-\item{norm_method}{Either "vstExprs" or "log". Determine how to transform expression values prior to rendering}
+\item{branch_colors}{The colors used in the annotation strip indicating the pre- and post-branch cells.}
 
-\item{dist_method}{The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)}
+\item{add_annotation_row}{Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.}
 
-\item{hclust_method}{The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"}
+\item{add_annotation_col}{Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.}
 
-\item{hmcols}{The color scheme for drawing the heatmap}
+\item{show_rownames}{Whether to show the names for each row in the table.}
 
-\item{Lineage_colors}{The color for the progenitors and two lineages}
+\item{use_gene_short_name}{Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.}
+
+\item{scale_max}{The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.}
+
+\item{scale_min}{The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.}
+
+\item{norm_method}{Determines how to transform expression values prior to rendering}
+
+\item{trend_formula}{A formula string specifying the model used in fitting the spline curve for each gene/feature.}
 
 \item{return_heatmap}{Whether to return the pheatmap object to the user.}
 
-\item{cores}{Number of cores to run this function}
-
-\item{cores}{The number of cores to use when generating smoothing curves for rendering.}
+\item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
 }
 \value{
-A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
+A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
-Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
+Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
 }
 

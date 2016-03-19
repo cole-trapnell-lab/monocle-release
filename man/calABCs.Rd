@@ -2,12 +2,12 @@
 % Please edit documentation in R/BEAM.R
 \name{calABCs}
 \alias{calABCs}
-\title{Calculate the area between TWO fitted lineage trajectories}
+\title{Compute the area between curves (ABC) for branch-dependent genes}
 \usage{
-calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
   trajectory_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
   cores = 1, verbose = F, min_expr = 0.5, integer_expression = FALSE,
-  num = 5000, lineage_labels = NULL, ...)
+  num = 5000, branch_labels = NULL, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -18,7 +18,7 @@ calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}
 
-\item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
+\item{stretch}{a logic flag to determine whether or not each branch should be stretched}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
@@ -28,19 +28,19 @@ calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{integer_expression}{the logic flag to determine whether or not the integer numbers are used for calculating the ABCs. Default is False.}
 
-\item{num}{number of points on the fitted lineage trajectories used for calculating the ABCs. Default is 5000.}
+\item{num}{number of points on the fitted branch trajectories used for calculating the ABCs. Default is 5000.}
 
-\item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
+\item{branch_labels}{the name for each branch, for example, AT1 or AT2}
 
-\item{...}{Additional arguments passed to buildLineageBranchCellDataSet}
+\item{...}{Additional arguments passed to buildBranchCellDataSet}
 }
 \value{
 a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 }
 \description{
-This function is used to calculate the ABC score based on the the nature spline curves fitted for each lineage. ABC score is used to 
-quantify the total magnitude of divergence between two lineages. By default, the ABC score is the area between two fitted spline curves. 
+This function is used to calculate the ABC score based on the the nature spline curves fitted for each branch. ABC score is used to 
+quantify the total magnitude of divergence between two branchs. By default, the ABC score is the area between two fitted spline curves. 
 The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
-potential major regulators for lineage bifurcation.
+potential major regulators for branch bifurcation.
 }
 

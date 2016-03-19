@@ -2,11 +2,11 @@
 % Please edit documentation in R/BEAM.R
 \name{detectBifurcationPoint}
 \alias{detectBifurcationPoint}
-\title{Detect the maturation time point where the gene expression starts to diverge}
+\title{Calculate divergence times for branch-dependent genes}
 \usage{
 detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
-  detect_all = T, cds = cds, Lineage = "Lineage", branch_point = NULL,
-  lineage_states = c(2, 3), stretch = T, cores = detectCores(),
+  detect_all = T, cds = cds, Branch = "Branch", branch_point = NULL,
+  branch_states = c(2, 3), stretch = T, cores = detectCores(),
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
   relative_expr = TRUE, label_by_short_name = TRUE, useVST = FALSE,
   round_exprs = FALSE, output_type = "all", return_cross_point = T,
@@ -21,13 +21,13 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
 
 \item{cds}{CellDataSet for the experiment}
 
-\item{Lineage}{The column in pData used for calculating the ILRs (If not equal to "Lineage", a warning will report)}
+\item{Branch}{The column in pData used for calculating the ILRs (If not equal to "Branch", a warning will report)}
 
-\item{branch_point}{the id for the branch point choosed to select cell branches and progenitors}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
-\item{lineage_states}{The states for two branching lineages}
+\item{branch_states}{The states for two branching branchs}
 
-\item{stretch}{a logic flag to determine whether or not each lineage should be stretched}
+\item{stretch}{a logic flag to determine whether or not each branch should be stretched}
 
 \item{cores}{Number of cores when fitting the spline curves}
 
@@ -40,11 +40,11 @@ detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
 \item{label_by_short_name}{label the rows of the returned matrix by gene_short_name (TRUE) or feature id (FALSE)}
 
 \item{useVST}{A logic flag to determine whether or not the Variance Stablization Transformation should be used to stablize the gene expression.
-When VST is used, the difference between two lineages are used instead of the log-ratio.}
+When VST is used, the difference between two branchs are used instead of the log-ratio.}
 
 \item{round_exprs}{A logic flag to determine whether or not the expression value should be rounded into integer}
 
-\item{output_type}{A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Lineage is set to "Lineage", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells}
+\item{output_type}{A character either of "all" or "after_bifurcation". If "after_bifurcation" is used, only the time points after the bifurcation point will be selected. Note that, if Branch is set to "Branch", we will only use "after_bifurcation" since we duplicated the progenitor cells and the bifurcation should only happen after the largest mature level from the progenitor cells}
 
 \item{return_cross_point}{A logic flag to determine whether or not only return the cross point}
 
@@ -58,8 +58,9 @@ When VST is used, the difference between two lineages are used instead of the lo
 a vector containing the time for the bifurcation point with gene names for each value
 }
 \description{
-This function is used to determine the bifurcation point for the gene expression between two distinct biological processes.
-For processes we can not distinguish between lineages (or phenotype groups, like knockout VS un-knockout), this function will 
-only detect bifurcation points after the inferenced bifurcatioin from the PQ-tree. The
+Branch-dependent genes may diverge at different points in pseudotime. \code{detectBifurcationPoint()}
+calculates these times. Although the branch times will be shaped by and distributed
+around the branch point in the trajectory, upstream regulators tend to branch
+earlier in pseudotime than their targets.
 }
 

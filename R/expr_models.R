@@ -166,7 +166,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
 #' 
 #' Generates a matrix of response values for a set of fitted models
 #' @param models a list of models, e.g. as returned by fitModels()
-#' @param response_type the response desired, as accepted by VGAM's predict function
+#' @param residual_type the response desired, as accepted by VGAM's predict function
 #' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 residualMatrix <- function(models,  residual_type="response", cores = detectCores()) {

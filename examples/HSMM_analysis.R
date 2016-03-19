@@ -28,7 +28,7 @@ ordering_genes <- intersect(ordering_genes, row.names(subset(fData(HSMM), biotyp
 HSMM <- setOrderingFilter(HSMM, ordering_genes)
 
 # Third: perform dimensionality reduction using ICA
-HSMM <- reduceDimension(HSMM, use_irlba=T)
+HSMM <- reduceDimension(HSMM, method="ICA")
 
 # Fourth: compute the minimum spanning tree in the reduced space and use it to order the cells.
 # Note that we're allowing a branch with two outcomes in the biological process

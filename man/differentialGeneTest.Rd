@@ -2,11 +2,11 @@
 % Please edit documentation in R/differential_expression.R
 \name{differentialGeneTest}
 \alias{differentialGeneTest}
-\title{Tests each gene for differential expression as a function of progress through a biological process, or according to other covariates as specified.}
+\title{Test genes for differential expression}
 \usage{
 differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
-  reducedModelFormulaStr = "~1", cores = 1, relative_expr = TRUE,
-  exprs_thrsld_percentage = NULL, verbose = FALSE)
+  reducedModelFormulaStr = "~1", relative_expr = TRUE, cores = 1,
+  verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -15,11 +15,9 @@ differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 
 \item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{cores}{the number of cores to be used while testing each gene for differential expression.}
-
 \item{relative_expr}{Whether to transform expression into relative values.}
 
-\item{exprs_thrsld_percentage}{Skip testing for genes expressed in fewer than this percentage of cells. Default is NULL, which excludes no genes from testing.}
+\item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 }
@@ -27,6 +25,13 @@ differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 }
 \description{
-Tests each gene for differential expression as a function of progress through a biological process, or according to other covariates as specified.
+Tests each gene for differential expression as a function of pseudotime 
+or according to other covariates as specified. \code{differentialGeneTest} is
+Monocle's main differential analysis routine. 
+It accepts a CellDataSet and two model formulae as input, which specify generalized
+lineage models as implemented by the \code{VGAM} package.
+}
+\seealso{
+\code{\link[VGAM]{vglm}}
 }
 

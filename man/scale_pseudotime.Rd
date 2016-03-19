@@ -2,19 +2,19 @@
 % Please edit documentation in R/order_cells.R
 \name{scale_pseudotime}
 \alias{scale_pseudotime}
-\title{Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)}
+\title{Scale pseudotime to be in the range from 0 to 100}
 \usage{
 scale_pseudotime(cds, verbose = F)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
-\item{ordering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
+\item{verbose}{Whether to emit verbose output}
 }
 \value{
 an updated CellDataSet object which an
 }
 \description{
-Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
+This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
 }
 

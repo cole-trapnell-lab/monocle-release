@@ -2,62 +2,58 @@
 % Please edit documentation in R/plotting.R
 \name{plot_genes_branched_pseudotime}
 \alias{plot_genes_branched_pseudotime}
-\title{Plot the branch genes in pseduotime with separate lineage curves.}
+\title{Plot the branch genes in pseduotime with separate branch curves.}
 \usage{
-plot_genes_branched_pseudotime(cds, lineage_states = c(2, 3),
-  branch_point = NULL, lineage_labels = NULL, method = "fitting",
-  stretch = TRUE, min_expr = NULL, cell_size = 0.75, nrow = NULL,
-  ncol = 1, panel_order = NULL, color_by = "State",
-  trajectory_linetype_by = "Lineage",
-  trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage",
+plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
+  branch_labels = NULL, method = "fitting", min_expr = NULL,
+  cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
+  color_by = "State", expression_curve_linetype_by = "Branch",
+  trend_formula = "~ sm.ns(Pseudotime, df=3) * Branch",
   reducedModelFormulaStr = NULL, label_by_short_name = TRUE,
-  add_pval = FALSE, normalize = TRUE, bifurcation_time = NULL, ...)
+  relative_expr = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
-\item{lineage_states}{The states for two branching lineages}
+\item{branch_states}{The states for two branching branchs}
 
-\item{lineage_labels}{The names for each branching lineage}
+\item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
+
+\item{branch_labels}{The names for each branching branch}
 
 \item{method}{The method to draw the curve for the gene expression branching pattern, either loess ('loess') or VGLM fitting ('fitting')}
 
-\item{stretch}{A logic flag to determine whether or not the pseudotime trajectory for each lineage should be stretched to the same range or not}
+\item{min_expr}{The minimum (untransformed) expression level to use in plotted the genes.}
 
-\item{min_expr}{the minimum (untransformed) expression level to use in plotted the genes.}
+\item{cell_size}{The size (in points) of each cell used in the plot}
 
-\item{cell_size}{the size (in points) of each cell used in the plot}
+\item{nrow}{Number of columns used to layout the faceted cluster panels}
 
-\item{nrow}{number of columns used to layout the faceted cluster panels}
+\item{ncol}{Number of columns used to layout the faceted cluster panels}
 
-\item{ncol}{number of columns used to layout the faceted cluster panels}
+\item{panel_order}{The a character vector of gene short names (or IDs, if that's what you're using), specifying order in which genes should be layed out (left-to-right, top-to-bottom)}
 
-\item{panel_order}{the order in which genes should be layed out (left-to-right, top-to-bottom)}
+\item{color_by}{The cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
 
-\item{color_by}{the cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
+\item{expression_curve_linetype_by}{The cell attribute (e.g. the column of pData(cds)) to be used for the linetype of each branch curve}
 
-\item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
+\item{trend_formula}{The model formula to be used for fitting the expression trend over pseudotime}
 
-\item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
+\item{reducedModelFormulaStr}{A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model}
 
-\item{relative_expr}{A logic flag to determine whether or not we should use the relative expression values}
+\item{label_by_short_name}{Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
+
+\item{relative_expr}{Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)}
+
+\item{...}{Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.}
 }
 \value{
 a ggplot2 plot object
 }
 \description{
-This plotting function is used to make the branching plots for a lineage dependent gene goes through the progenitor state
-and bifurcating into two distinct lineages (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
-bifurcation plot, we first duplicated the progenitor states and by default stretch each lineage into maturation level 0-100.  
-Then we fit two nature spline curves for each lineages using VGAM package.
-}
-\examples{
-\dontrun{
-full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
-expression_curve_matrix <- responseMatrix(full_model_fits)
-clusters <- clusterGenes(expression_curve_matrix, k=4)
-plot_clusters(HSMM_filtered[ordering_genes,], clusters)
-}
-
+This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
+and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
+bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  
+Then we fit two nature spline curves for each branchs using VGAM package.
 }
 
