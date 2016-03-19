@@ -2,9 +2,9 @@
 % Please edit documentation in R/order_cells.R
 \name{orderCells}
 \alias{orderCells}
-\title{Orders cells according to progress through a learned biological process.}
+\title{Orders cells according to pseudotime.}
 \usage{
-orderCells(cds, root_state = NULL, num_paths = 2, reverse = NULL)
+orderCells(cds, root_state = NULL, num_paths = NULL, reverse = NULL)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -20,6 +20,30 @@ You must already have called orderCells() once to use this argument.}
 an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 }
 \description{
-Orders cells according to progress through a learned biological process.
+Learns a "trajectory" describing the biological process the cells are
+going through, and calculates where each cell falls within that trajectory. 
+Monocle learns trajectories in two steps. The first step is reducing the dimensionality
+of the data with \code{\link{reduceDimension}()}. The second is this function.
+function. This function takes as input a CellDataSet and returns it with 
+two new columns: \code{Pseudotime} and \code{State}, which together encode 
+where each cell maps to the trajectory. \code{orderCells()} optionally takes
+a "root" state, which you can use to specify the start of the trajectory. If 
+you don't provide a root state, one is selected arbitrarily.
+}
+\details{
+The \code{reduction_method} argument to \code{\link{reduceDimension}()} 
+determines which algorithm is used by \code{orderCells()} to learn the trajectory.
+If \code{reduction_method == "ICA"}, this function uses \emph{polygonal reconstruction}
+to learn the underlying trajectory. If \code{reduction_method == "DDRTree"}, 
+the trajectory is specified by the principal graph learned by the 
+\code{\link[DDRTree]{DDRTree}()} function.
+
+Whichever algorithm you use, the trajectory will be composed of segments. 
+The cells from a segment will share the same value of \code{State}. One of
+these segments will be selected as the root of the trajectory arbitrarily. 
+The most distal cell on that segment will be chosen as the "first" cell in the
+trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will 
+then "walk" along the trajectory, and as it encounters additional cells, it
+will assign them increasingly large values of Pseudotime.
 }
 

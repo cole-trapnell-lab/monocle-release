@@ -124,20 +124,28 @@ compareModels <- function(full_models, reduced_models){
   test_res
 }
 
-#' Tests each gene for differential expression as a function of progress through a biological process, or according to other covariates as specified. 
+#' Test genes for differential expression
+#' 
+#' Tests each gene for differential expression as a function of pseudotime 
+#' or according to other covariates as specified. \code{differentialGeneTest} is
+#' Monocle's main differential analysis routine. 
+#' It accepts a CellDataSet and two model formulae as input, which specify generalized
+#' lineage models as implemented by the \code{VGAM} package. 
+#' 
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
 #' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param relative_expr Whether to transform expression into relative values.
+#' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @seealso \code{\link[VGAM]{vglm}}
 #' @export
 differentialGeneTest <- function(cds, 
                                  fullModelFormulaStr="~sm.ns(Pseudotime, df=3)",
                                  reducedModelFormulaStr="~1", 
-                                 cores=1, 
                                  relative_expr=TRUE,
+                                 cores=1, 
                                  verbose=FALSE
                                  ){
   if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){

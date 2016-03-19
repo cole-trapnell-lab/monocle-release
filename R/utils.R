@@ -554,7 +554,7 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   
   # DDRTree based ordering:
-  lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
+  lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1)
   lung <- orderCells(lung)
   E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
   if(E14_state != 1)

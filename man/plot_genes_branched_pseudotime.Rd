@@ -2,24 +2,24 @@
 % Please edit documentation in R/plotting.R
 \name{plot_genes_branched_pseudotime}
 \alias{plot_genes_branched_pseudotime}
-\title{Plot the branch genes in pseduotime with separate lineage curves.}
+\title{Plot the branch genes in pseduotime with separate branch curves.}
 \usage{
-plot_genes_branched_pseudotime(cds, lineage_states = NULL, branch_point = 1,
-  lineage_labels = NULL, method = "fitting", min_expr = NULL,
+plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
+  branch_labels = NULL, method = "fitting", min_expr = NULL,
   cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
-  color_by = "State", expression_curve_linetype_by = "Lineage",
-  trend_formula = "~ sm.ns(Pseudotime, df=3) * Lineage",
+  color_by = "State", expression_curve_linetype_by = "Branch",
+  trend_formula = "~ sm.ns(Pseudotime, df=3) * Branch",
   reducedModelFormulaStr = NULL, label_by_short_name = TRUE,
   relative_expr = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
-\item{lineage_states}{The states for two branching lineages}
+\item{branch_states}{The states for two branching branchs}
 
 \item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
-\item{lineage_labels}{The names for each branching lineage}
+\item{branch_labels}{The names for each branching branch}
 
 \item{method}{The method to draw the curve for the gene expression branching pattern, either loess ('loess') or VGLM fitting ('fitting')}
 
@@ -35,7 +35,7 @@ plot_genes_branched_pseudotime(cds, lineage_states = NULL, branch_point = 1,
 
 \item{color_by}{The cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
 
-\item{expression_curve_linetype_by}{The cell attribute (e.g. the column of pData(cds)) to be used for the linetype of each lineage curve}
+\item{expression_curve_linetype_by}{The cell attribute (e.g. the column of pData(cds)) to be used for the linetype of each branch curve}
 
 \item{trend_formula}{The model formula to be used for fitting the expression trend over pseudotime}
 
@@ -51,9 +51,9 @@ plot_genes_branched_pseudotime(cds, lineage_states = NULL, branch_point = 1,
 a ggplot2 plot object
 }
 \description{
-This plotting function is used to make the branching plots for a lineage dependent gene goes through the progenitor state
-and bifurcating into two distinct lineages (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
-bifurcation plot, we first duplicated the progenitor states and by default stretch each lineage into maturation level 0-100.  
-Then we fit two nature spline curves for each lineages using VGAM package.
+This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
+and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
+bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  
+Then we fit two nature spline curves for each branchs using VGAM package.
 }
 

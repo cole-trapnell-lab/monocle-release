@@ -2,12 +2,12 @@
 % Please edit documentation in R/BEAM.R
 \name{branchTest}
 \alias{branchTest}
-\title{Peform the branching test}
+\title{Test for branch-dependent expression}
 \usage{
-branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
+branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  lineage_states = NULL, branch_point = 1, relative_expr = TRUE,
-  cores = 1, lineage_labels = NULL, verbose = FALSE, ...)
+  branch_states = NULL, branch_point = 1, relative_expr = TRUE,
+  cores = 1, branch_labels = NULL, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -16,7 +16,7 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{lineage_states}{states corresponding to two branches}
+\item{branch_states}{states corresponding to two branches}
 
 \item{branch_point}{The ID of the branch point to analyze. Can only be used when reduceDimension is called with method = "DDRTree".}
 
@@ -24,7 +24,7 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression}
 
-\item{lineage_labels}{the name for each lineage, for example, AT1 or AT2}
+\item{branch_labels}{the name for each branch, for example, AT1 or AT2}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 
@@ -34,8 +34,10 @@ branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Lineage",
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 }
 \description{
-This function is used to perform the branching test to ask the question about whether or not the genes under tests are significant 
-lineage dependent genes. If stretch equal to TRUE, each lineage is firstly stretched into maturation level 0-100 and the progenitor 
-cells are duplicated and assigned to each lineage. This test can be used to detect lineage dependent genes.
+Testing for branch-dependent expression with \code{\link{BEAM}()} first
+involves constructing a CellDataSet that assigns each cell to a branch, and 
+then performing a likelihood ratio test to see if the branch assignments 
+significantly improves the fit over a null model that does not split the cells.
+\code{branchTest()} implements these two steps.
 }
 

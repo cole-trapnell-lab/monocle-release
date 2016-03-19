@@ -8,7 +8,7 @@ plot_pseudotime_heatmap(cds_subset, cluster_rows = TRUE,
   hclust_method = "ward.D2", num_clusters = 6, hmcols = NULL,
   add_annotation_row = NULL, add_annotation_col = NULL,
   show_rownames = FALSE, use_gene_short_name = TRUE,
-  norm_method = c("vstExprs", "log"), scale_max = 2, scale_min = -2,
+  norm_method = c("vstExprs", "log"), scale_max = 3, scale_min = -3,
   trend_formula = "~sm.ns(Pseudotime, df=3)", return_heatmap = FALSE,
   cores = 1)
 }
@@ -31,7 +31,7 @@ plot_pseudotime_heatmap(cds_subset, cluster_rows = TRUE,
 
 \item{use_gene_short_name}{Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.}
 
-\item{norm_method}{Either "vstExprs" or "log". Determine how to transform expression values prior to rendering}
+\item{norm_method}{Determines how to transform expression values prior to rendering}
 
 \item{scale_max}{The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.}
 
@@ -44,7 +44,7 @@ plot_pseudotime_heatmap(cds_subset, cluster_rows = TRUE,
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
 }
 \value{
-A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
+A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
