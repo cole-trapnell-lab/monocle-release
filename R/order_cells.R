@@ -1323,23 +1323,22 @@ reduceDimension <- function(cds,
       message("Removing batch effects")
     X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
                                        data = pData(cds), drop.unused.levels = TRUE)
-    
+
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
   }else{
     X.model_mat <- NULL
   }
   
-  FM <- Matrix::t(scale(Matrix::t(FM)))
+  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
+
   if (is.function(reduction_method)) {   
-    if (is.null(X.model_mat) == FALSE) {
-      fit <- limma::lmFit(FM, X.model_mat, ...)
-      beta <- fit$coefficients[, -1, drop = FALSE]
-      beta[is.na(beta)] <- 0
-      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-    }
     reducedDim <- method(FM, ...)
     qplot(reducedDimW[1, ], reducedDimW[2, ])
     colnames(reducedDim) <- colnames(FM)
@@ -1357,14 +1356,6 @@ reduceDimension <- function(cds,
   else{
     reduction_method <- match.arg(reduction_method)
     if (reduction_method == "ICA") {
-      # Remove batch effects from the raw data.
-      if (is.null(X.model_mat) == FALSE) {
-        fit <- limma::lmFit(FM, X.model_mat, ...)
-        beta <- fit$coefficients[, -1, drop = FALSE]
-        beta[is.na(beta)] <- 0
-        FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      }
-      
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
@@ -1401,9 +1392,9 @@ reduceDimension <- function(cds,
       
       if (verbose) 
         message("Learning principal graph with DDRTree")
-      
+
       # TODO: DDRTree should really work with sparse matrices.
-      ddrtree_res <- DDRTree(as.matrix(FM), max_components, verbose = verbose, 
+      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")

@@ -202,7 +202,7 @@ pData(HSMM)$CellType[cell_is_hsmm == FALSE] <-  "Fibroblast"
 HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]			
 @ %def
 
-Now that we have tagged the cells, it's easy to quantify the level of fibroblast ``contaminantation'' in the HSMM culture:
+Now that we have tagged the cells, it's easy to quantify the level of fibroblast ``contaminatation'' in the HSMM culture:
 
 <<cell_type_pie, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
