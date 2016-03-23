@@ -1174,6 +1174,14 @@ normalize_expr_data <- function(cds,
                                 norm_method = c("vstExprs", "log", "none"), 
                                 pseudo_expr = NULL){
   FM <- exprs(cds)
+  
+  # If the user has selected a subset of genes for use in ordering the cells
+  # via setOrderingFilter(), subset the expression matrix.
+  if (is.null(fData(cds)$use_for_ordering) == FALSE && 
+      nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
+    FM <- FM[fData(cds)$use_for_ordering, ]
+  }
+  
   norm_method <- match.arg(norm_method)
   if (cds@expressionFamily@vfamily == "negbinomial") {
     
@@ -1189,7 +1197,13 @@ normalize_expr_data <- function(cds,
     checkSizeFactors(cds)
     
     if (norm_method == "vstExprs") {
-      VST_FM <- vstExprs(cds, round_vals = FALSE)
+      if (is.null(fData(cds)$use_for_ordering) == FALSE && 
+          nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
+        VST_FM <- vstExprs(cds[fData(cds)$use_for_ordering,], round_vals = FALSE)
+      }else{
+        VST_FM <- vstExprs(cds, round_vals = FALSE)
+      }
+      
       if (is.null(VST_FM) == FALSE) {
         FM <- VST_FM
       }
@@ -1302,38 +1316,36 @@ reduceDimension <- function(cds,
  
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  # If the user has selected a subset of genes for use in ordering the cells
-  # via setOrderingFilter(), subset the expression matrix.
-  if (is.null(fData(cds)$use_for_ordering) == FALSE && 
-      nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
-    FM <- FM[fData(cds)$use_for_ordering, ]
-  }
-  
-  FM <- FM[apply(FM, 1, sd) > 0, ]
+  FM <- FM[unlist(sparseApply(FM, 1, sd)) > 0, ]
   
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose) 
       message("Removing batch effects")
     X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
                                        data = pData(cds), drop.unused.levels = TRUE)
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-    # if (cds@expressionFamily@vfamily != "binomialff") {
-    #   if (use_vst == FALSE) {
-    #     FM <- 2^FM
-    #   }
-    # }
+    # fit <- limma::lmFit(FM, X.model_mat, ...)
+    # beta <- fit$coefficients[, -1, drop = FALSE]
+    # beta[is.na(beta)] <- 0
+    # FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+
+  }else{
+    X.model_mat <- NULL
   }
   
   FM <- Matrix::t(scale(Matrix::t(FM)))
-  FM <- FM[apply(FM, 1, sd) > 0, ]
+  #FM <- FM[apply(FM, 1, sd) > 0, ]
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
-  if (is.function(reduction_method)) {        
+  if (is.function(reduction_method)) {    
+    if (is.null(X.model_mat) == FALSE) {
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    }
+    
     reducedDim <- method(FM, ...)
     qplot(reducedDimW[1, ], reducedDimW[2, ])
     colnames(reducedDim) <- colnames(FM)
@@ -1351,6 +1363,15 @@ reduceDimension <- function(cds,
   else{
     reduction_method <- match.arg(reduction_method)
     if (reduction_method == "ICA") {
+      
+      # Remove batch effects from the raw data.
+      if (is.null(X.model_mat) == FALSE) {
+        fit <- limma::lmFit(FM, X.model_mat, ...)
+        beta <- fit$coefficients[, -1, drop = FALSE]
+        beta[is.na(beta)] <- 0
+        FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+      }
+      
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
@@ -1379,7 +1400,15 @@ reduceDimension <- function(cds,
     else if (reduction_method == "DDRTree") {
       if (verbose) 
         message("Learning principal graph with DDRTree")
-      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
+      
+      # if (is.null(X.model_mat) == FALSE) {
+      #   fit <- limma::lmFit(FM, X.model_mat, ...)
+      #   beta <- fit$coefficients[, -1, drop = FALSE]
+      #   beta[is.na(beta)] <- 0
+      #   FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+      # }
+      
+      ddrtree_res <- DDRTree(FM, max_components, X.model_mat, verbose = verbose, 
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
