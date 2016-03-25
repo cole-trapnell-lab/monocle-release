@@ -41,11 +41,11 @@ diff_test_helper <- function(x,
   
   test_res <- tryCatch({
     if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, checkwz=TRUE)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, checkwz=TRUE)                         
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, epsilon=1e-1, checkwz=TRUE)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, epsilon=1e-1, checkwz=TRUE)                         
     }else{
-      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily))
-      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily))                    
+      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
     }
     #print(full_model_fit)
     #print(coef(reduced_model_fit))
@@ -77,8 +77,8 @@ diff_test_helper <- function(x,
         full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=TRUE)
         reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=TRUE)                         
       }else{
-            full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE)) #backup_expression_family
-            reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE))       #parallel=TRUE, zero=NULL 
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE)) #backup_expression_family
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE))       #parallel=TRUE, zero=NULL 
       }
       #print(full_model_fit)  
       #print(coef(reduced_model_fit))
