@@ -107,6 +107,7 @@ fitModel <- function(cds,
     f
   }else{
     f<-smartEsApply(cds,1,fit_model_helper, 
+                    convert_to_dense=TRUE,
                modelFormulaStr=modelFormulaStr, 
                expressionFamily=cds@expressionFamily,
                relative_expr=relative_expr,
@@ -254,6 +255,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             colnames(expression_curve) <- row.names(new_data)
             expression_curve
             }, 
+            convert_to_dense=TRUE,
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, new_data = new_data
             )
         expression_curve_matrix <- as.matrix(do.call(rbind, expression_curve_matrix))
@@ -314,6 +316,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
       #colnames(expression_curve) <- row.names(pData(cds))
       expression_curve
     }, 
+    convert_to_dense=TRUE,
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr
     )
     expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
@@ -486,8 +489,9 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
                           expressionFamily=cds@expressionFamily)
   }else{
       disp_table<-smartEsApply(cds,1,disp_calc_helper, 
-                          modelFormulaStr=modelFormulaStr, 
-                          expressionFamily=cds@expressionFamily)
+                               convert_to_dense=TRUE,
+                               modelFormulaStr=modelFormulaStr, 
+                               expressionFamily=cds@expressionFamily)
   }
   #message("fitting disersion curves")
   #print (disp_table)

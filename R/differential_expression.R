@@ -172,6 +172,7 @@ differentialGeneTest <- function(cds,
     diff_test_res
   }else{
     diff_test_res<-smartEsApply(cds,1,diff_test_helper, 
+                                convert_to_dense=TRUE,
                                 fullModelFormulaStr=fullModelFormulaStr,
                                 reducedModelFormulaStr=reducedModelFormulaStr, 
                                 expressionFamily=cds@expressionFamily, 

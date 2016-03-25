@@ -53,22 +53,29 @@ newCellDataSet <- function( cellData,
   cds
 }
 
-sparseApply <- function(Sp_X, MARGIN, FUN, ...){
-  if (MARGIN == 1){
-    res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
-      FUN(as.matrix(Sp_X[i,]), ...) 
-    }, FUN, ...)
-#     names(res) <- row.names(Sp_X)
-#     res <- do.call(c, res, quote = TRUE)
-#     names(res) <- row.names(Sp_X)
+sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
+  if (convert_to_dense){
+    if (MARGIN == 1){
+      res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
+        FUN(as.matrix(Sp_X[i,]), ...) 
+      }, FUN, ...)
+    }else{
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(as.matrix(Sp_X[,i]), ...) 
+      }, FUN, ...)
+    }
   }else{
-    res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
-      FUN(as.matrix(Sp_X[,i]), ...) 
-    }, FUN, ...)
-#     names(res) <- colnames(Sp_x)
-#     res <- do.call(c, res, quote = TRUE)
-#     names(res) <- colnames(Sp_X)
+    if (MARGIN == 1){
+      res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
+        FUN(Sp_X[i,], ...) 
+      }, FUN, ...)
+    }else{
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(Sp_X[,i], ...) 
+      }, FUN, ...)
+    }
   }
+
   return(res)
   
 }
@@ -85,7 +92,7 @@ splitCols <- function (x, ncl) {
 sparseParRApply <- function (cl, x, FUN, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, convert_to_dense=TRUE, ...), quote = TRUE)
   names(par_res) <- row.names(x)
   par_res
 }
@@ -94,7 +101,7 @@ sparseParRApply <- function (cl, x, FUN, ...)
 sparseParCApply <- function (cl = NULL, x, FUN, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, convert_to_dense=TRUE, ...), quote = TRUE)
   names(par_res) <- colnames(x)
   par_res
 }
@@ -153,7 +160,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
   res
 }
 
-smartEsApply <- function(X, MARGIN, FUN, ...) {
+smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
     parent <- emptyenv()
@@ -162,7 +169,7 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   environment(FUN) <- e1
   
   if (isSparseMatrix(exprs(X))){
-    res <- sparseApply(exprs(X), MARGIN, FUN, ...)
+    res <- sparseApply(exprs(X), MARGIN, FUN, convert_to_dense, ...)
   }else{
     res <- apply(exprs(X), MARGIN, FUN, ...)
   }
