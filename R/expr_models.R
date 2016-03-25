@@ -33,11 +33,11 @@ fit_model_helper <- function(x,
     tryCatch({
         if (verbose) {
             FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
-                family = expressionFamily)
+                family = expressionFamily, epsilon=1e-1)
         }
         else {
             FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
-                family = expressionFamily))
+                family = expressionFamily, epsilon=1e-1))
         }
         FM_fit
     }, error = function(e) {
