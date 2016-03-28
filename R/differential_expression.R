@@ -27,7 +27,7 @@ diff_test_helper <- function(x,
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something. 
-        expressionFamily <- negbinomial(isize=1/disp_guess)
+        expressionFamily <- negbinomial.size(size=1/disp_guess)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -41,8 +41,8 @@ diff_test_helper <- function(x,
   
   test_res <- tryCatch({
     if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=expressionFamily, epsilon=1e-1, checkwz=TRUE)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=expressionFamily, epsilon=1e-1, checkwz=TRUE)                         
+      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
     }else{
       full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
       reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
@@ -55,47 +55,7 @@ diff_test_helper <- function(x,
   error = function(e) { 
     if(verbose)
       print (e);
-
-    # If we threw an exception, re-try with a simpler model.  Which one depends on
-    # what the user has specified for expression family
-    #print(disp_guess)
-    backup_expression_family <- NULL
-    if (expressionFamily@vfamily == "negbinomial"){
-        disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig), expr_selection_func = mean)
-        backup_expression_family <- negbinomial() #use NB-1 fitting
-    }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-      backup_expression_family <- NULL
-    }else if (expressionFamily@vfamily %in% c("binomialff")){
-      backup_expression_family <- NULL
-    }else{
-      backup_expression_family <- NULL
-    }
-
-    if (is.null(backup_expression_family) == FALSE){
-      test_res <- tryCatch({
-      if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), family=backup_expression_family, epsilon=1e-1, checkwz=TRUE)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), family=backup_expression_family, epsilon=1e-1,checkwz=TRUE)                         
-      }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE)) #backup_expression_family
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), family=negbinomial(), epsilon = 1e-1, checkwz=TRUE))       #parallel=TRUE, zero=NULL 
-      }
-      #print(full_model_fit)  
-      #print(coef(reduced_model_fit))
-      compareModels(list(full_model_fit), list(reduced_model_fit))
-      }, 
-      #warning = function(w) { FM_fit },
-      error = function(e) { 
-        if(verbose)
-          print (e);
-        data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
-      })
-      #print(test_res)
-      test_res$family <- 'negbinomial_no_disp'
-      test_res
-    } else {
-      data.frame(status = "FAIL", family=NA, pval=1.0, qval=1.0)
-    }
+    data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
     #data.frame(status = "FAIL", pval=1.0) 
   }
   )

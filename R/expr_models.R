@@ -99,7 +99,7 @@ fitModel <- function(cds,
                      relative_expr=TRUE,
                      cores=1){
   if (cores > 1){
-    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "VGAM", "plyr", "Matrix"), cores=cores, 
+    f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr", "Matrix"), cores=cores, 
                  modelFormulaStr=modelFormulaStr, 
                  expressionFamily=cds@expressionFamily,
                  relative_expr=relative_expr,
@@ -234,7 +234,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             colnames(expression_curve) <- row.names(new_data)
             expression_curve
             #return(expression_curve)
-            }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+            }, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr"), cores=cores, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, new_data = new_data, 
             fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
             calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
@@ -295,7 +295,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
       #colnames(expression_curve) <- row.names(pData(cds))
       expression_curve
       #return(expression_curve)
-    }, required_packages=c("BiocGenerics", "VGAM", "plyr"), cores=cores, 
+    }, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr"), cores=cores, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr,
     fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
     calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
@@ -482,7 +482,6 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
 
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, cores)
 {
-  
   if (cores > 1){
       disp_table<-mcesApply(cds, 1, disp_calc_helper, c("BiocGenerics", "Biobase", "VGAM", "dplyr", "Matrix"), cores=cores, 
                           modelFormulaStr=modelFormulaStr, 

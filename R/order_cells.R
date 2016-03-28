@@ -1391,6 +1391,8 @@ reduceDimension <- function(cds,
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      else
+        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z

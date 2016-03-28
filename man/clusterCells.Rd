@@ -6,7 +6,8 @@
 \usage{
 clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
   frequency_thresh = 0.1, clustering_genes = NULL, num_reduced_dims = 10,
-  residualModelFormulaStr = NULL, ddrtree_gamma = 100, verbose = F)
+  residualModelFormulaStr = NULL, ddrtree_gamma = 100, cores = 1,
+  verbose = F)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

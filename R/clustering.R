@@ -54,6 +54,7 @@ clusterCells <- function(cds,
                          num_reduced_dims=10, 
                          residualModelFormulaStr=NULL,
                          ddrtree_gamma=100,
+                         cores=1,
                          verbose = F) {
   
   # disp_table <- dispersionTable(cds)
@@ -77,7 +78,7 @@ clusterCells <- function(cds,
   
   cds <- setOrderingFilter(cds, old_ordering_genes)
   
-  cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
+  cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, cores=cores, "Cluster")
   
   return(cds)
 }

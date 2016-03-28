@@ -128,7 +128,7 @@ It is often convenient to know how many express a particular gene, or how many g
 <<detect_genes, eval=TRUE>>=
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 print(head(fData(HSMM)))
-expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
 @ %def 
 
 The vector \Robject{expressed\_genes} now holds the identifiers for genes expressed in at least 50 cells of the data set. We will use this list later when we put the cells in order of biological progress. It is also sometimes convenient to exclude genes expressed in few if any cells from the \Rclass{CellDataSet} object so as not to waste CPU time analyzing them for differential expression.
@@ -183,6 +183,9 @@ ylab("Density")
 Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} or \emph{MEF2C} excludes the fibroblasts. In the block of code below we first grab the values of \emph{MYF5} and \emph{MEF2C} for each cell, and then set these as columns in the pData table for the HSMM object.  We don't have to do this, but it makes filtering a little more convenient. Next we create a vector that has a boolean flag for each cell: TRUE for a myoblast, false for a fibroblast. We then use that vector to creat a third column in the that specicies each cell's type. Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts.  
 
 <<identify_cell_type, fig.width = 3, fig.height = 2, fig.align="center", eval=TRUE>>=
+
+
+
 MEF2C_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MEF2C")),])
 MYF5_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MYF5")),])
 
@@ -215,12 +218,56 @@ Monocle also gives you some tools to cluster cells by type even if you don't
 have a good set of marker genes to distinguish them. The \Rfunction{clusterCells} groups cells by similarity in expression profiles. Cells of the same type should group together. Sometimes, however, it may be necessary to subtract the differences in expression between cells that arise due to other sources of variation in the experiment. In the muscle experment, the cells were collected on different days and cells at the beginning of the experiment were placed in different culture media. Monocle allows you to subtract these effects by specifying a model formula. 
 <<cluster_cells, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
 
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+MEF2C_id <- row.names(subset(fData(HSMM), gene_short_name == "MEF2C"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
+                               cth, 
+                               residualModelFormulaStr="~Media",
+                               cores=detectCores())
+
+HSMM <- clusterCells(HSMM,
+                     num_clusters=50, 
+                     num_reduced_dims=3,
+                     frequency_thresh=0.25,
+                     cell_type_hierarchy=cth,
+                     clustering_genes=row.names(subset(marker_diff, qval < 1e-3)),
+                     residualModelFormulaStr="~Media")
+HSMM <- classifyCells(HSMM, cth, 0.1)
+
+MEF2C_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MEF2C")),])
+MYF5_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MYF5")),])
+
+pData(HSMM)$MEF2C <- as.vector(MEF2C_expr)
+pData(HSMM)$MYF5 <- as.vector(MYF5_expr)
+
+MEF2C_thresh <- 5 #0.1
+MYF5_thresh <- 1 #0.1
+
+#cell_is_hsmm <- (pData(HSMM)$MEF2C > MEF2C_thresh | pData(HSMM)$MYF5 > MYF5_thresh) 
+cell_is_hsmm <- (pData(HSMM)$MEF2C > MEF2C_thresh | pData(HSMM)$MYF5 > MYF5_thresh) 
+
+names(cell_is_hsmm) <- row.names(pData(HSMM))
+pData(HSMM)$CellType <- "Myoblast"
+pData(HSMM)$CellType[cell_is_hsmm == FALSE] <-  "Fibroblast"
+
+#HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]	
+
+plot_spanning_tree(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
+
+
 disp_table <- dispersionTable(HSMM)
 clustering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
 HSMM <- setOrderingFilter(HSMM, clustering_genes)
 
 HSMM <- clusterCells(HSMM, residualModelFormulaStr="~num_genes_expressed + Media", num_clusters=2)
 plot_spanning_tree(HSMM, color_by="CellType")
+
 @ %def
 
 Note that the clusters correspond quite well to the assignments we made based on expression of the muscle markers MEF2C and MYF5.
@@ -433,7 +480,7 @@ diff_test_res <- differentialGeneTest(cds_subset,
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 plot_genes_jitter(cds_subset, 
                   grouping="Hours", color_by="CellType", plot_trend=TRUE) + 
-  facet_wrap( ~ feature_label, scales="free_y")
+facet_wrap( ~ feature_label, scales="free_y")
 @ %def 
 
 \section{BEAM}

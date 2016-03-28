@@ -85,23 +85,23 @@ splitRows <- function (x, ncl) {
 }
 
 splitCols <- function (x, ncl) {
-  lapply(splitIndices(ncol(x), ncl), function(i) x[i, , drop = FALSE])
+  lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
 #' @importFrom BiocGenerics clusterApply
-sparseParRApply <- function (cl, x, FUN, ...) 
+sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 1L, FUN = FUN, convert_to_dense=TRUE, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, convert_to_dense=convert_to_dense, ...), quote = TRUE)
   names(par_res) <- row.names(x)
   par_res
 }
 
 #' @importFrom BiocGenerics clusterApply
-sparseParCApply <- function (cl = NULL, x, FUN, ...) 
+sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 2L, FUN = FUN, convert_to_dense=TRUE, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, convert_to_dense=convert_to_dense, ...), quote = TRUE)
   names(par_res) <- colnames(x)
   par_res
 }
@@ -123,7 +123,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom BiocGenerics clusterCall parRapply parCapply
 #' @export
-mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
+mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
     parent <- emptyenv()
@@ -150,11 +150,12 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
       }
     }, required_packages)
   }
-  
+  #clusterExport(cl, ls(e1), e1)
+  #force(exprs(X))
   if (MARGIN == 1){
-    res <- sparseParRApply(cl, exprs(X), FUN, ...)
+    res <- sparseParRApply(cl, exprs(X), FUN, convert_to_dense, ...)
   }else{
-    res <- sparseParCApply(cl, exprs(X), FUN, ...)
+    res <- sparseParCApply(cl, exprs(X), FUN, convert_to_dense, ...)
   }
   
   res

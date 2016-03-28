@@ -4,7 +4,7 @@
 \alias{classifyCells}
 \title{Classify cells according to a set of markers}
 \usage{
-classifyCells(cds, cth, frequency_thresh, ...)
+classifyCells(cds, cth, frequency_thresh, cores = 1, ...)
 }
 \description{
 Classify cells according to a set of markers

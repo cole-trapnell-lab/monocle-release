@@ -740,7 +740,9 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 	                       branch_point=branch_point,
 	                       relative_expr = relative_expr,
 	                       cores = cores, 
-	                       branch_labels = branch_labels, ...)
+	                       branch_labels = branch_labels, 
+	                       verbose=verbose, 
+	                       ...)
 	cmbn_df <- branchTest_res[, 1:4] 
 
   #make a newCellDataSet object with the smoothed data? 
