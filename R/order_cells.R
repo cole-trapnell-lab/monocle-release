@@ -1442,8 +1442,8 @@ findNearestPointOnMST <- function(cds){
   
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
-  closest_vertex_df <- as.matrix(closest_vertex)
-  row.names(closest_vertex_df) <- names(closest_vertex)
+  closest_vertex_df <- as.matrix(closest_vertex) #index on Z 
+  row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
 
   cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
@@ -1469,7 +1469,7 @@ project2MST <- function(cds, Projection_Method){
     P <- Y[, closest_vertex]
   }
   else{
-    P <- matrix(rep(0, length(Z)), nrow = nrow(Z))
+    P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
     for(i in 1:length(closest_vertex)) {
       neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ]) 
       projection <- NULL
@@ -1478,7 +1478,7 @@ project2MST <- function(cds, Projection_Method){
       
       for(neighbor in neighbors) {
         if(closest_vertex_names[i] %in% tip_leaves) {
-          tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #update the tip cells? 
+          tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #always perform orthogonal projection to the line
         }
         else {
           tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])
@@ -1491,6 +1491,7 @@ project2MST <- function(cds, Projection_Method){
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
     }
   }
+    # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
 
   colnames(P) <- colnames(Z)
   
