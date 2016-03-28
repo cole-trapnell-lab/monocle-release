@@ -1407,7 +1407,8 @@ reduceDimension <- function(cds,
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      
+      else 
+        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
@@ -1441,8 +1442,10 @@ findNearestPointOnMST <- function(cds){
   
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
-  
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- as.matrix(closest_vertex)
+  closest_vertex_df <- as.matrix(closest_vertex)
+  row.names(closest_vertex_df) <- names(closest_vertex)
+
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
 }
 
@@ -1456,6 +1459,10 @@ project2MST <- function(cds, Projection_Method){
 
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
+  closest_vertex_df <- as.matrix(closest_vertex)
+  row.names(closest_vertex_df) <- row.names(closest_vertex)
+  #closest_vertex_names <- as.vector(closest_vertex)
+  
   tip_leaves <- names(which(degree(dp_mst) == 1))
   
   if(!is.function(Projection_Method)) {
@@ -1501,7 +1508,7 @@ project2MST <- function(cds, Projection_Method){
   
   cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
   cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- as.matrix(closest_vertex)
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
 
   cds
 }

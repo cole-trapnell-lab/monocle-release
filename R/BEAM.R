@@ -123,8 +123,17 @@ buildBranchCellDataSet <- function(cds,
       }
     }
     
-    leaf_cells <- setdiff(names(which(degree(pr_graph_cell_proj_mst, v = union(paths_to_root[[1]], paths_to_root[[2]]), mode = "all")==1, useNames = T)), root_cell)
-    branch_states <- pData(cds)[leaf_cells, ]$State
+    if(length(V(pr_graph_cell_proj_mst)) == ncol(cds)){ 
+      leaf_cells <- setdiff(names(which(degree(pr_graph_cell_proj_mst, v = union(paths_to_root[[1]], paths_to_root[[2]]), mode = "all")==1, useNames = T)), root_cell)
+      branch_states <- pData(cds)[leaf_cells, ]$State
+    }
+    else { #ncenter used
+      leaf_cells_tmp <- setdiff(names(which(degree(pr_graph_cell_proj_mst, v = closest_vertex[union(paths_to_root[[1]], paths_to_root[[2]]), ], mode = "all")==1, useNames = T)), root_cell)
+      leaf_cells <- names(closest_vertex[colnames(cds@reducedDimK)[closest_vertex] %in% leaf_cells_tmp, ])
+      branch_states_tmp <- pData(cds)[leaf_cells, ]$State
+      state_freq <- table(branch_states_tmp) 
+      branch_states <- branch_states_tmp[which(state_freq !=0)]
+    }
   }
   all_cells_in_subset <- c()
   
@@ -144,6 +153,7 @@ buildBranchCellDataSet <- function(cds,
     }
   }
   
+  #when n-center used, this creates problems
   cds <- cds[, row.names(pData(cds[,all_cells_in_subset]))] #or just union(ancestor_cells, branch_cells)
   
   #State <- pData(cds)$State 
