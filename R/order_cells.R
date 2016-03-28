@@ -1478,7 +1478,7 @@ project2MST <- function(cds, Projection_Method){
       
       for(neighbor in neighbors) {
         if(closest_vertex_names[i] %in% tip_leaves) {
-          tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #always perform orthogonal projection to the line
+          tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #projPointOnLine: always perform orthogonal projection to the line
         }
         else {
           tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])
@@ -1497,10 +1497,11 @@ project2MST <- function(cds, Projection_Method){
   
   #reducedDimK(cds) <- P
   dp <- as.matrix(dist(t(P)))
+  #dp <- as.matrix(dist(t(reducedDimS(cds))))
   
   min_dist = min(dp[dp!=0])
   #dp[dp == 0] <- min_dist
-  dp <- dp + min_dist
+  dp <- dp + min_dist #to avoid exact Pseudotime for a lot cells 
   diag(dp) <- 0
   
   cellPairwiseDistances(cds) <- dp
@@ -1508,7 +1509,7 @@ project2MST <- function(cds, Projection_Method){
   dp_mst <- minimum.spanning.tree(gp)
   
   cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output 
   cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
 
   cds
@@ -1552,7 +1553,9 @@ project_point_to_line_segment <- function(p, df){
     # Consider the line extending the segment, parameterized as A + t (B - A)
     # We find projection of point p onto the line. 
     # It falls where t = [(p-A) . (B-A)] / |B-A|^2
+    # t <- max(0, min(1, sum(Ap * AB) / AB_squared))
     t <- sum(Ap * AB) / AB_squared
+    
     if (t < 0.0) {
       # "Before" A on the line, just return A
       q <- A
