@@ -4,8 +4,8 @@
 \alias{markerDiffTable}
 \title{Test genes for cell type-dependent expression}
 \usage{
-markerDiffTable(cds, cth, residualModelFormulaStr = "~1", verbose = FALSE,
-  cores = 1)
+markerDiffTable(cds, cth, residualModelFormulaStr = "~1", balanced = TRUE,
+  verbose = FALSE, cores = 1)
 }
 \arguments{
 \item{cds}{A CellDataSet object containing cells to classify}

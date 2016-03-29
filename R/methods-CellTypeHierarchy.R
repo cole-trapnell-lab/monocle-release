@@ -119,13 +119,36 @@ classifyCells <- function(cds, cth, frequency_thresh, cores=1, ...) {
 #' @param cores The number of cores to use when testing
 #' @return A table of differential expression test results
 #' @importFrom stringr str_replace_all
+#' @importFrom dplyr sample_n
 #' @export 
-markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", verbose=FALSE, cores=1) {
+markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=TRUE, verbose=FALSE, cores=1) {
   
   if (verbose)
     message("Classifying cells according to markers")
   cds <- classifyCells(cds, cth, 0.05, cores=cores)
   cds <- cds[,pData(cds)$CellType %in% c("Unknown", "Ambiguous") == FALSE]
+  
+  if (balanced){
+    cell_type_counts <- table(pData(cds)$CellType)
+    cell_type_counts <- cell_type_counts[cell_type_counts > 0]
+    least_frequent_type <- which(cell_type_counts == min(cell_type_counts))
+    least_frequent_type <- names(cell_type_counts)[least_frequent_type]
+    n_cells <- cell_type_counts[least_frequent_type]
+    
+    message(paste("Least frequent cell type is '", least_frequent_type, "', randomly selecting ", n_cells, " cells for marker identification test", sep=""))
+    selected_cells <- c()
+
+    for (cell_type in names(cell_type_counts)){
+      cell_type_sample <- sample_n(add_rownames(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
+      selected_cells <- c(selected_cells, cell_type_sample)
+    }
+    
+    cds <- cds[,selected_cells]
+    # if(is.null(max_cells) == FALSE && max_cells < ncol(cds)) 
+    #   selected_cells <- sample(ncol(cds), max_cells)
+    # else
+    #   selected_cells <- colnames(cds)
+  }
   
   fullModelFormulaStr <- paste("CellType")
   fullModelFormulaStr <- paste("~", fullModelFormulaStr,sep = "")
@@ -133,16 +156,11 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", verbose=FAL
     residual_terms <- str_replace_all(residualModelFormulaStr, "~", "")
     fullModelFormulaStr <- paste(fullModelFormulaStr, residual_terms, sep = "+")
   }
-  
-  # if(is.null(max_cells) == FALSE && max_cells < ncol(cds)) 
-  #   selected_cells <- sample(ncol(cds), max_cells)
-  # else
-  #   selected_cells <- colnames(cds)
-  
+
   if (verbose)
     message("Testing for marker-dependent expression")
   
-  marker_diff <- differentialGeneTest(cds,#[,selected_cells], 
+  marker_diff <- differentialGeneTest(cds, 
                                       fullModelFormulaStr=fullModelFormulaStr,
                                       reducedModelFormulaStr=residualModelFormulaStr,
                                       verbose=T,

@@ -51,34 +51,37 @@ clusterCells <- function(cds,
                          cell_type_hierarchy=NULL,
                          frequency_thresh=0.10,
                          clustering_genes=NULL,
-                         num_reduced_dims=10, 
+                         max_components=10, 
                          residualModelFormulaStr=NULL,
-                         ddrtree_gamma=100,
+                         param.gamma=100,
                          cores=1,
                          verbose = F) {
   
   # disp_table <- dispersionTable(cds)
   # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
   # cds <- setOrderingFilter(cds, ordering_genes)
-  old_ordering_genes <- row.names(subset(fData(cds), use_for_ordering)) 
+  if (is.null(fData(cds)$use_for_ordering) == FALSE)
+    old_ordering_genes <- row.names(subset(fData(cds), use_for_ordering)) 
+  else
+    old_ordering_genes <- NULL
   
-  if (is.null(clustering_genes)) 
+  if (is.null(clustering_genes) == FALSE) 
     cds <- setOrderingFilter(cds, clustering_genes)
   
   cds <- reduceDimension(cds, 
-                         max_components=num_reduced_dims, 
+                         max_components=max_components, 
                          residualModelFormulaStr=residualModelFormulaStr,
                          reduction_method = "DDRTree",
-                         pseudo_expr=0, 
                          verbose=verbose,
-                         maxIter=20,
-                         param.gamma=ddrtree_gamma,
+                         param.gamma=param.gamma,
                          ncenter=num_clusters)
   pData(cds)$Cluster <- as.factor(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex)
   
-  cds <- setOrderingFilter(cds, old_ordering_genes)
+  if (is.null(old_ordering_genes) == FALSE)
+    cds <- setOrderingFilter(cds, old_ordering_genes)
   
-  cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, cores=cores, "Cluster")
+  if (is.null(cell_type_hierarchy) == FALSE)
+    cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, cores=cores, "Cluster")
   
   return(cds)
 }
