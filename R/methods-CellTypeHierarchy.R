@@ -1,6 +1,7 @@
 cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
+  print (unique(pData(cds_subset)$Cluster))
   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
     
     child_cell_class_func <- V(cth@classificationTree) [ child ]$classify_func[[1]]
@@ -11,11 +12,12 @@ cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
     
     names(type_res) <- row.names(pData(cds_subset))
 
-    if (sum(type_res) / length(type_res) > frequency_thresh){
+    if ((sum(type_res) / length(type_res)) > frequency_thresh){
       next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
     }
+    print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
   }
-  
+  print (next_nodes)
   if (length(next_nodes) == 1){
     CellType <- cth_classifier_cds(cds_subset, cth, next_nodes[1], frequency_thresh)
   }else if(length(next_nodes) == 0){
@@ -109,6 +111,51 @@ classifyCells <- function(cds, cth, frequency_thresh, cores=1, ...) {
   pData(cds) <- pData(cds)[,-1]
   cds
 }   
+
+#' Calculate each gene's specificity for each cell type 
+#' @export
+calculateMarkerSpecificity <- function(cds, cth){
+  markerSpecificityHelper <- function(cds, cth){
+    averageExpression <- Matrix::rowMeans(exprs(cds))
+    averageExpression <- unlist(averageExpression)
+    averageExpression[is.na(averageExpression)] <- 0
+    #names(averageExpression) <- row.names(fData(cds))
+    return (data.frame(gene_id = row.names(fData(cds)), expr_val=averageExpression))
+  }
+  progress_opts <- options()$dplyr.show_progress
+  options(dplyr.show_progress = T)
+  
+  cds <- cds[,row.names(subset(pData(cds), CellType %in% c("Unknown", "Ambiguous") == FALSE))]
+  cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", "CellType"), "CellType") 
+  class_df <- as.data.frame(cds_pdata %>% do(markerSpecificityHelper(cds[,.$rowname], cth)))
+  class_df <- dcast(class_df, CellType ~ gene_id, value.var = "expr_val")
+  row.names(class_df) <- class_df$CellType
+  class_df <- class_df[,-1]
+  class_df <- t(as.matrix(class_df))
+  
+  marker_specificities <- lapply(1:ncol(class_df), function(cell_type_i){
+    perfect_specificity <- rep(0.0, ncol(class_df))
+    perfect_specificity[cell_type_i] <- 1.0
+    apply(class_df, 1, function(x) { 
+      if (sum(x) > 0) 1 - JSdistVec(makeprobsvec(x), perfect_specificity)
+      else 0
+    })
+  })
+  marker_specificities <- t(do.call(rbind, marker_specificities))
+  colnames(marker_specificities) <- colnames(class_df)
+  marker_specificities <- melt(marker_specificities)
+  colnames(marker_specificities) <- c("gene_id", "CellType", "specificity")
+  return (marker_specificities)
+}
+
+#' Select the most cell type specific markers
+#' @importFrom dplyr top_n
+#' @export
+selectTopMarkers <- function(marker_specificities, num_markers = 10){
+  as.data.frame(marker_specificities %>%
+    group_by_("CellType") %>%
+    top_n(n = num_markers, wt = specificity))
+}
 
 #' Test genes for cell type-dependent expression
 #' 

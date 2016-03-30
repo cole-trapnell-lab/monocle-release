@@ -5,8 +5,8 @@
 \title{Cluster cells into a specified number of groups.}
 \usage{
 clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
-  frequency_thresh = 0.1, clustering_genes = NULL, num_reduced_dims = 10,
-  residualModelFormulaStr = NULL, ddrtree_gamma = 100, cores = 1,
+  frequency_thresh = 0.1, clustering_genes = NULL, max_components = 10,
+  residualModelFormulaStr = NULL, param.gamma = 100, cores = 1,
   verbose = F)
 }
 \arguments{
@@ -14,13 +14,13 @@ clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
 
 \item{num_clusters}{number of desired cell clusters}
 
-\item{num_reduced_dims}{number of dimensions to reduce the dataset to}
-
 \item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
 
-\item{ddrtree_gamma}{gamma parameter for DDRTree}
-
 \item{verbose}{Verbose parameter for DDRTree}
+
+\item{num_reduced_dims}{number of dimensions to reduce the dataset to}
+
+\item{ddrtree_gamma}{gamma parameter for DDRTree}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
