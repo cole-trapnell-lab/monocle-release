@@ -4,8 +4,7 @@
 \alias{mcesApply}
 \title{Multicore apply-like function for CellDataSet}
 \usage{
-mcesApply(X, MARGIN, FUN, required_packages, cores = 1,
-  convert_to_dense = TRUE, ...)
+mcesApply(X, MARGIN, FUN, required_packages, cores = 1, ...)
 }
 \arguments{
 \item{X}{a CellDataSet object}
