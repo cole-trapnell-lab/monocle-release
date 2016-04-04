@@ -55,7 +55,8 @@ clusterCells <- function(cds,
                          residualModelFormulaStr=NULL,
                          param.gamma=100,
                          cores=1,
-                         verbose = F) {
+                         verbose = F, 
+                         ...) {
   
   # disp_table <- dispersionTable(cds)
   # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
@@ -74,7 +75,8 @@ clusterCells <- function(cds,
                          reduction_method = "DDRTree",
                          verbose=verbose,
                          param.gamma=param.gamma,
-                         ncenter=num_clusters)
+                         ncenter=num_clusters, 
+                         ...)
   pData(cds)$Cluster <- as.factor(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex)
   
   if (is.null(old_ordering_genes) == FALSE)

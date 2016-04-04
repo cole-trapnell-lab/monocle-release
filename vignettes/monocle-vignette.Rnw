@@ -2,6 +2,7 @@
 % \VignetteEngine{knitr::knitr}
 % \VignetteDepends{} 
 % \VignettePackage{monocle}
+
 \documentclass[10pt,oneside]{article}
 
 \newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
@@ -59,7 +60,7 @@ Monocle computationally reconstructs the transcriptional transitions undergone b
 
 \section{Single-cell expression data in Monocle}
 
-The \Rpackage{monocle} package takes a matrix of expression values, which are typically for genes (as opposed to splice variants), as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle assumes that gene expression values are log-normally distributed, as is typical in RNA-Seq experiments. Monocle does not normalize these expression values to control for library size, depth of sequencing, or other sources of technical variability - whichever program that you use to calculate expression values should do that.  Monocle is \emph{not} meant to be used with raw counts, and doing so could produce nonsense results.   
+The \Rpackage{monocle} package takes a matrix of expression values, which are typically for genes (as opposed to splice variants), as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments).  Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. We recommend working with FPKM or TPM values instead of raw read counts.   
 
 \subsection{The CellDataSet class}
 
