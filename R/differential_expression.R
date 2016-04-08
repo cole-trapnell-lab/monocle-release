@@ -16,7 +16,7 @@ diff_test_helper <- function(x,
   
   disp_guess <- 0
   
-  if (expressionFamily@vfamily %in% "negbinomial"){
+  if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (relative_expr == TRUE)
     {
       x <- x / Size_Factor
@@ -27,7 +27,10 @@ diff_test_helper <- function(x,
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something. 
-        expressionFamily <- negbinomial(isize=1/disp_guess)
+        if (expressionFamily@vfamily == "negbinomial")
+          expressionFamily <- negbinomial(isize=1/disp_guess)
+        else
+          expressionFamily <- negbinomial.size(size=1/disp_guess)
       }
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -108,7 +111,7 @@ differentialGeneTest <- function(cds,
                                  cores=1, 
                                  verbose=FALSE
                                  ){
-  if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
+  if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }

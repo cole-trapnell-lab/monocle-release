@@ -189,7 +189,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
                               label_by_short_name=TRUE,
                               relative_expr=TRUE){
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -305,7 +305,7 @@ plot_genes_positive_cells <- function(cds_subset,
   
   percent <- NULL
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -410,7 +410,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     vertical_jitter=NULL,
                                     horizontal_jitter=NULL){
   
-    if (cds_subset@expressionFamily@vfamily == "negbinomial") {
+    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
     }
     else {
@@ -635,7 +635,7 @@ plot_clusters<-function(cds,
 #   ## 2. with the now resahped data the plot, the chosen labels and plot style are built
 #   FM <- exprs(cds)
 #   
-#   if (cds@expressionFamily@vfamily == "negbinomial"){
+#   if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
 #     integer_expression <- TRUE
 #   }else{
 #     integer_expression <- FALSE
@@ -1023,8 +1023,7 @@ plot_genes_branched_pseudotime <- function (cds,
         cds_subset <- cds
         pData(cds_subset)$Branch <- pData(cds_subset)$State
     }
-    if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
-        "negbinomial", "poissonff", "quasipoissonff")) {
+    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
     }
     else {
@@ -1193,7 +1192,7 @@ plot_coexpression_matrix <- function(cds,
   
   cds_subset <- cds[union(row_gene_ids, col_gene_ids),]
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE

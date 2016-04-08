@@ -1183,7 +1183,7 @@ normalize_expr_data <- function(cds,
   }
   
   norm_method <- match.arg(norm_method)
-  if (cds@expressionFamily@vfamily == "negbinomial") {
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
     
     # If we're going to be using log, and the user hasn't given us a pseudocount
     # set it to 1 by default.
@@ -1283,7 +1283,7 @@ normalize_expr_data <- function(cds,
 #' to normalize it so that highly expressed or highly variable genes don't 
 #' dominate the computation. \code{reduceDimension()} automatically transforms
 #' the data in one of several ways depending on the \code{expressionFamily} of 
-#' the CellDataSet object. If the expressionFamily is \code{negbinomial}, the
+#' the CellDataSet object. If the expressionFamily is \code{negbinomial} or \code{negbinomial.size}, the
 #' data are variance-stabilized. If the expressionFamily is \code{Tobit}, the data
 #' are adjusted by adding a pseudocount (of 1 by default) and then log-transformed. 
 #' If you don't want any transformation at all, set norm_method to "none" and 

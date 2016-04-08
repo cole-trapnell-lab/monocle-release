@@ -208,7 +208,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   log_expression <- NULL
   
   FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily == "negbinomial")
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
