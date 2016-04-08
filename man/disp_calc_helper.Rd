@@ -4,14 +4,10 @@
 \alias{disp_calc_helper}
 \title{Helper function for parallel dispersion modeling}
 \usage{
-disp_calc_helper(x, modelFormulaStr, expressionFamily)
+disp_calc_helper(cds, expressionFamily)
 }
 \arguments{
 \item{x}{A numeric vector of expression values}
-
-\item{modelFormulaStr}{A character vector specifying how to group the expression values prior to dispersion calculations}
-
-\item{expressionFamily}{A character vector corresponding to a VGAM expression family function}
 }
 \description{
 Helper function for parallel dispersion modeling

@@ -2,6 +2,7 @@
 % \VignetteEngine{knitr::knitr}
 % \VignetteDepends{} 
 % \VignettePackage{monocle}
+
 \documentclass[10pt,oneside]{article}
 
 \newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
@@ -59,7 +60,7 @@ Monocle computationally reconstructs the transcriptional transitions undergone b
 
 \section{Single-cell expression data in Monocle}
 
-The \Rpackage{monocle} package takes a matrix of expression values, which are typically for genes (as opposed to splice variants), as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle assumes that gene expression values are log-normally distributed, as is typical in RNA-Seq experiments. Monocle does not normalize these expression values to control for library size, depth of sequencing, or other sources of technical variability - whichever program that you use to calculate expression values should do that.  Monocle is \emph{not} meant to be used with raw counts, and doing so could produce nonsense results.   
+The \Rpackage{monocle} package takes a matrix of expression values, which are typically for genes (as opposed to splice variants), as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments).  Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. We recommend working with FPKM or TPM values instead of raw read counts.   
 
 \subsection{The CellDataSet class}
 
@@ -128,7 +129,7 @@ It is often convenient to know how many express a particular gene, or how many g
 <<detect_genes, eval=TRUE>>=
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 print(head(fData(HSMM)))
-expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
 @ %def 
 
 The vector \Robject{expressed\_genes} now holds the identifiers for genes expressed in at least 50 cells of the data set. We will use this list later when we put the cells in order of biological progress. It is also sometimes convenient to exclude genes expressed in few if any cells from the \Rclass{CellDataSet} object so as not to waste CPU time analyzing them for differential expression.
@@ -180,50 +181,140 @@ ylab("Density")
 
 \section{Identifying cells of interest}
 
-Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} or \emph{MEF2C} excludes the fibroblasts. In the block of code below we first grab the values of \emph{MYF5} and \emph{MEF2C} for each cell, and then set these as columns in the pData table for the HSMM object.  We don't have to do this, but it makes filtering a little more convenient. Next we create a vector that has a boolean flag for each cell: TRUE for a myoblast, false for a fibroblast. We then use that vector to creat a third column in the that specicies each cell's type. Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts.  
+Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} excludes the fibroblasts. Likewise, fibroblasts express high levels of \emph{ANPEP} (CD13), while myoblasts tend to express few if any transcripts of this gene. 
 
-<<identify_cell_type, fig.width = 3, fig.height = 2, fig.align="center", eval=TRUE>>=
-MEF2C_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MEF2C")),])
-MYF5_expr <- exprs(HSMM[row.names(subset(fData(HSMM), gene_short_name == "MYF5")),])
+Monocle provides a simple system for tagging cells based on the expression of marker genes of your choosing. You simply provide a set of functions that Monocle can use to annotate each cell. For example, you could provide a function for each of several cell types. These functions accept as input the expression data for each cell, and return TRUE to tell Monocle that a cell meets the criteria defined by the function. So you could have one function that returns TRUE for cells that express myoblast-specific genes, another function for fibroblast-specific genes, etc. Here's an example of such a set of ``gating'' functions:
 
-pData(HSMM)$MEF2C <- as.vector(MEF2C_expr)
-pData(HSMM)$MYF5 <- as.vector(MYF5_expr)
+<<setup_gates, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
 
-MEF2C_thresh <- 5 #0.1
-MYF5_thresh <- 1 #0.1
-
-#cell_is_hsmm <- (pData(HSMM)$MEF2C > MEF2C_thresh | pData(HSMM)$MYF5 > MYF5_thresh) 
-cell_is_hsmm <- (pData(HSMM)$MEF2C > MEF2C_thresh | pData(HSMM)$MYF5 > MYF5_thresh) 
-
-names(cell_is_hsmm) <- row.names(pData(HSMM))
-pData(HSMM)$CellType <- "Myoblast"
-pData(HSMM)$CellType[cell_is_hsmm == FALSE] <-  "Fibroblast"
-
-HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]			
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
 @ %def
 
-Now that we have tagged the cells, it's easy to quantify the level of fibroblast ``contaminatation'' in the HSMM culture:
+The functions are organized into a small data structure called a \Robject{CellTypeHierarchy}, that Monocle uses to classify the cells. You first initialize a new CellTypeHierarchy object, then register your gating functions within it. Once the data strucure is set up, you can use it to classify all the cells in the experiment:
 
-<<cell_type_pie, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<count_cells_unsup, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- classifyCells(HSMM, cth, 0.1)
+@ %def
+
+The function \Rfunction{classifyCells} applies each gating function to each cell, classifies the cells according to the gating functions, and returns the \Robject{CellDataSet} with a new column, \Robject{CellType} in its \Robject{pData} table. We can now count how many cells of each type there are in the experiment.
+
+<<count_cells_unsup_readout, fig.width = 5, fig.height = 5, fig.align="center", eval=TRUE>>=
+table(pData(HSMM)$CellType)
+
 pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
  geom_bar(width = 1)
 pie + coord_polar(theta = "y") + 
   theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 @ %def
 
-Monocle also gives you some tools to cluster cells by type even if you don't 
-have a good set of marker genes to distinguish them. The \Rfunction{clusterCells} groups cells by similarity in expression profiles. Cells of the same type should group together. Sometimes, however, it may be necessary to subtract the differences in expression between cells that arise due to other sources of variation in the experiment. In the muscle experment, the cells were collected on different days and cells at the beginning of the experiment were placed in different culture media. Monocle allows you to subtract these effects by specifying a model formula. 
-<<cluster_cells, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
+Note that many cells are marked ``Unknown''. This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments. A cell might express a few \emph{MYF5} mRNAs, but we weren't lucky enough to capture one of them. When a cell doesn't meet any of the criteria specified in your classification functions, it's marked ``Unknown''. If it meets multiple functions' criteria, it's marked ``Ambiguous''. You could just exclude such cells, but you'd be throwing out a lot of your data. In this case, we'd lose more than half of the cells!
 
+Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithms, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
+
+The first step is to decide which genes to use in clustering the cells. We could use all genes, but we'd be including a lot of genes that are not expressed at a high enough level to provide meaningful signal. Including them would just add noise to the system. We can filter genes based on average expression level, and we can additionally select genes that are unusually variable across cells. These genes tend to be highly informative about cell state.
+
+<<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
 disp_table <- dispersionTable(HSMM)
-clustering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
-HSMM <- setOrderingFilter(HSMM, clustering_genes)
-
-HSMM <- clusterCells(HSMM, residualModelFormulaStr="~num_genes_expressed + Media", num_clusters=2)
-plot_spanning_tree(HSMM, color_by="CellType")
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 1 & dispersion_empirical >= 1 * dispersion_fit)
+HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+plot_ordering_genes(HSMM)
 @ %def
 
-Note that the clusters correspond quite well to the assignments we made based on expression of the muscle markers MEF2C and MYF5.
+The \Rfunction{setOrderingFilter} function marks genes that will be used for clustering in subsequent calls to \Rfunction{clusterCells}, although we will be able to provide other lists of genes if we want. \Rfunction{plot\_ordering\_genes} shows how variability (dispersion) in a gene's expression depends on the average expression across cells. The red line shows Monocle's expectation of the dispersion based on this relationship. The genes we marked for use in clustering are shown as black dots, while the others are shown as grey dots.
+
+Now we're ready to try clustering the cells:
+
+<<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- clusterCells(HSMM, num_clusters=2)
+
+plot_spanning_tree(HSMM, 1, 2, color="CellType")
+@ %def
+
+As you can see, the cells fall into two different clusters. The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. Unfortunately, the cells don't cluster by type. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions. 
+
+Moroever, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
+
+<<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+plot_spanning_tree(HSMM, 1, 2, color="Media")
+@ %def
+
+Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
+
+<<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media", num_clusters=2)
+
+plot_spanning_tree(HSMM, 1, 2, color="Media")
+@ %def
+
+Now the culture media appears to play less of a role in the clustering. Another common \emph{technical} source of variation is the efficiency of the library construction reaction (particularly the cDNA synthesis steps). When library prep goes particularly well for a cell, we'll recover more mRNA and detect more genes from it.  We can control for this effect and the media effect at the same time by expanding the residual model:
+
+<<cluster_cells_unsup_control_for_media_and_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media + num_genes_expressed", num_clusters=2)
+plot_spanning_tree(HSMM, 1, 2, color="num_genes_expressed")
+@ %def
+
+Now that we've accounted for some unwanted sources of variation, we're ready to take another crack at classifying the cells by unsupervised clustering:
+
+<<cluster_cells_unsup_plot_by_cell_type, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+plot_spanning_tree(HSMM, 1, 2, color="CellType")
+@ %def
+
+Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both. However, we still see some cells of both types in each cluster. This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering. To help rule out the latter, let's try running \Rfunction{clusterCells} in its semi-supervised mode.  
+
+First, we'll select a different set of genes to use for clustering the cells. Before we just picked genes that were highly expressed and highly variable. Now, we'll pick genes that \emph{co-vary} with our markers. In a sense, we'll be building a large list of genes to use as markers, so that even if a cell doesn't have \emph{MYF5}, it might be recognizable as a myoblast based on other genes.
+
+<<cluster_cells_diff_table, eval=TRUE>>=
+marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
+                               cth, 
+                               residualModelFormulaStr="~Media",
+                               cores=detectCores())
+@ %def
+The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering:  
+
+<<cluster_cells_semisup_pick_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
+HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
+plot_ordering_genes(HSMM)
+@ %def
+
+Note that we've got a smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
+
+<<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- clusterCells(HSMM,
+                     num_clusters=2, 
+                     clustering_genes=semisup_clustering_genes,
+                     residualModelFormulaStr="~Media + num_genes_expressed")
+plot_spanning_tree(HSMM, 1, 2, color="CellType")
+@ %def
+
+Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
+
+<<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+HSMM <- clusterCells(HSMM,
+                     num_clusters=2, 
+                     frequency_thresh=0.1,
+                     cell_type_hierarchy=cth,
+                     clustering_genes=row.names(subset(marker_diff, qval < 0.05)),
+                     residualModelFormulaStr="~Media + num_genes_expressed")
+plot_spanning_tree(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
+@ %def
+As you can see, the clusters are highly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
+
+<<count_cells_semisup_pie, fig.width = 5, fig.height = 5, fig.align="center", eval=TRUE>>=
+pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
+ geom_bar(width = 1)
+pie + coord_polar(theta = "y") + 
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+@ %def
+
+Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts. 
+<<select_myoblasts, eval=TRUE>>=
+HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]			
+@ %def
 
 \section{Basic differential expression analysis}
 
@@ -287,7 +378,7 @@ Finally, we can select genes that vary a lot across the population of cells. The
 
 <<select_ordering_genes, eval=TRUE>>=
 disp_table <- dispersionTable(HSMM_myo)
-ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
+ordering_genes <- subset(disp_table, dispersion_empirical >= 2 * dispersion_fit)$gene_id
 @ %def
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
@@ -433,7 +524,7 @@ diff_test_res <- differentialGeneTest(cds_subset,
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 plot_genes_jitter(cds_subset, 
                   grouping="Hours", color_by="CellType", plot_trend=TRUE) + 
-  facet_wrap( ~ feature_label, scales="free_y")
+facet_wrap( ~ feature_label, scales="free_y")
 @ %def 
 
 \section{BEAM}

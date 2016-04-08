@@ -59,13 +59,15 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, ... )
   # Remove results from previous fits
   object@dispFitInfo = new.env( hash=TRUE )
   
-  if (isSparseMatrix(exprs(object))){
-    sp_mat <- asSlamMatrix(exprs(object))
-    nzGenes <- rowapply_simple_triplet_matrix(sp_mat, function(x) { sum(round(as.vector(x)))}) > object@lowerDetectionLimit #when lowerDetectionLimit = 0.1, it generates errors
-  }else{
-    nzGenes <- apply(exprs(object), 1, function(x) { sum(round(as.vector(x)))}) > object@lowerDetectionLimit #when lowerDetectionLimit = 0.1, it generates errors
-    
-  }
+  # if (isSparseMatrix(exprs(object))){
+  #   sp_mat <- asSlamMatrix(exprs(object))
+  #   nzGenes <- rowapply_simple_triplet_matrix(sp_mat, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) })
+  # }else{
+  #   nzGenes <- apply(exprs(object), 1, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) 
+  #   
+  # }
+  nzGenes <- smartEsApply(object, 1, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) }, convert_to_dense=TRUE)
+  nzGenes <- names(nzGenes[nzGenes > 0])
   
   dfi <- estimateDispersionsForCellDataSet(object[nzGenes,], 
                                            modelFormulaStr, 

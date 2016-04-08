@@ -30,10 +30,10 @@ buildBranchCellDataSet <- function(cds,
     stop('Please first order the cells in pseudotime using orderCells()')
   if(is.null(branch_point) & is.null(branch_states)) 
     stop('Please either specify the branch_point or branch_states to select subset of cells')
-  if(ncol(cds@reducedDimS) != ncol(cds))
-    stop('You probably used clusterCells function which should be used together with buildBranchCellDataSet, try re-run reduceDimension without clustering cells again')
+  #if(ncol(cds@reducedDimS) != ncol(cds))
+  #  stop('You probably used clusterCells function which should be used together with buildBranchCellDataSet, try re-run reduceDimension without clustering cells again')
   
-  if (is.null(branch_labels) & !is.null(branch_states)) {
+  if (!is.null(branch_labels) & !is.null(branch_states)) {
     if(length(branch_labels) != length(branch_states))
       stop("length of branch_labels doesn't match with that of branch_states")
     branch_map <- setNames(branch_labels, as.character(branch_states))
@@ -62,7 +62,7 @@ buildBranchCellDataSet <- function(cds,
   root_cell <- names(which(degree(pr_graph_cell_proj_mst, v = root_cell_point_in_Y, mode = "all")==1, useNames = T))[1]
   
   paths_to_root <- list()
-  if (is.null(branch_point)){
+  if (is.null(branch_states) == FALSE){
     
     # If the user didn't specify a branch point,
     # let's walk back from the branch states
@@ -105,6 +105,7 @@ buildBranchCellDataSet <- function(cds,
     path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst, branch_cell, root_cell)
     path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
     
+    #post_branch_cells <- c()
     for (backbone_nei in V(pr_graph_cell_proj_mst)[suppressWarnings(nei(branch_cell))]$name){
       descendents <- bfs(mst_no_branch_point, V(mst_no_branch_point)[backbone_nei], unreachable=FALSE)
       descendents <- descendents$order[!is.na(descendents$order)]
@@ -119,14 +120,20 @@ buildBranchCellDataSet <- function(cds,
           path_to_root <- path_to_root
         }
         
-        paths_to_root[[length(paths_to_root) + 1]] <-  path_to_root
+        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+        #branch_state <- unique(pData(cds)[backbone_nei, ]$State)[1]
+        paths_to_root[[backbone_nei]] <- path_to_root
+        #post_branch_cells <- c(post_branch_cells, backbone_nei)
       }
     }
-    
-    leaf_cells <- setdiff(names(which(degree(pr_graph_cell_proj_mst, v = union(paths_to_root[[1]], paths_to_root[[2]]), mode = "all")==1, useNames = T)), root_cell)
-    branch_states <- pData(cds)[leaf_cells, ]$State
   }
   all_cells_in_subset <- c()
+  
+  if (is.null(branch_labels) == FALSE){
+    if (length(branch_labels) != 2)
+      stop("Error: branch_labels must have exactly two entries")
+    names(paths_to_root) <- branch_labels
+  }
   
   for (path_to_ancestor in paths_to_root){
     if (length(path_to_ancestor) == 0){
@@ -136,13 +143,12 @@ buildBranchCellDataSet <- function(cds,
   }
   all_cells_in_subset <- unique(all_cells_in_subset)
   
-  # FIXME: This is a slow, terrible way of doing things.
   common_ancestor_cells <- intersect(paths_to_root[[1]], paths_to_root[[2]])
-  if (length(paths_to_root) > 2){
-    for (i in seq(3,length(paths_to_root))){
-      common_ancestor_cells <- intersect(intersect(paths_to_root[i], paths_to_root[i-1]), common_ancestor_cells)
-    }
-  }
+  # if (length(paths_to_root) > 2){
+  #   for (i in seq(3,length(paths_to_root))){
+  #     common_ancestor_cells <- intersect(intersect(paths_to_root[i], paths_to_root[i-1]), common_ancestor_cells)
+  #   }
+  # }
   
   cds <- cds[, row.names(pData(cds[,all_cells_in_subset]))] #or just union(ancestor_cells, branch_cells)
   
@@ -178,11 +184,13 @@ buildBranchCellDataSet <- function(cds,
   pData$original_cell_id <- row.names(pData)
   
   pData$original_cell_id <- row.names(pData)
-  pData[common_ancestor_cells, "State"] <- branch_states[1] #set progenitors to the branch 1
   
-  if(length(branch_states) != 2)
+  if(length(paths_to_root) != 2)
     stop('more than 2 branch states are used!')
   
+  pData[common_ancestor_cells, "Branch"] <- names(paths_to_root)[1] #set progenitors to the branch 1
+  
+
   # progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
   
   # branchA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
@@ -192,23 +200,34 @@ buildBranchCellDataSet <- function(cds,
   
   progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
   
-  branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchA], 'State'] <- branch_states[1]
-  branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchB], 'State'] <- branch_states[2]   
+  pData$Branch <- names(paths_to_root)[1]
   
+  branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
+  pData[common_ancestor_cells[branchA], 'Branch'] <- names(paths_to_root)[1]
+  branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
+  pData[common_ancestor_cells[branchB], 'Branch'] <- names(paths_to_root)[2]   
+  
+  # Duplicate the root cell to make sure both regression start at pseudotime zero:
   zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
   exprs_data <- cbind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
   pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
   row.names(pData)[nrow(pData)] <- 'duplicate_root'
-  pData[nrow(pData), 'State'] <- branch_states[2]
+  pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
+  
   weight_vec <- rep(1, nrow(pData))
   
+  for (i in 1:length(paths_to_root)){
+    path_to_ancestor <- paths_to_root[[i]]
+    branch_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
+    pData[branch_cells,]$Branch <- names(paths_to_root)[i]
+  }
   
-  if (!is.null(branch_labels))
-    pData$Branch <- as.factor(branch_map[as.character(pData$State)])
-  else
-    pData$Branch <- as.factor(pData$State)
+  # if (!is.null(branch_labels))
+  #   pData$Branch <- as.factor(branch_map[as.character(pData$State)])
+  # else
+  #   pData$Branch <- as.factor(pData$State)
+  
+  pData$Branch <- as.factor(pData$Branch)
   
   pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
                         levels =levels(cds$State))
@@ -740,7 +759,9 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 	                       branch_point=branch_point,
 	                       relative_expr = relative_expr,
 	                       cores = cores, 
-	                       branch_labels = branch_labels, ...)
+	                       branch_labels = branch_labels, 
+	                       verbose=verbose, 
+	                       ...)
 	cmbn_df <- branchTest_res[, 1:4] 
 
   #make a newCellDataSet object with the smoothed data? 

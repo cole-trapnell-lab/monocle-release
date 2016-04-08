@@ -1316,7 +1316,7 @@ reduceDimension <- function(cds,
  
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  FM <- FM[unlist(sparseApply(FM, 1, sd)) > 0, ]
+  FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
   
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose) 
@@ -1382,13 +1382,6 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "ICA"
     }
     else if (reduction_method == "DDRTree") {
-      # Remove batch effects from the raw data.
-      if (is.null(X.model_mat) == FALSE) {
-        fit <- limma::lmFit(FM, X.model_mat, ...)
-        beta <- fit$coefficients[, -1, drop = FALSE]
-        beta[is.na(beta)] <- 0
-        FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      }
       
       if (verbose) 
         message("Learning principal graph with DDRTree")
@@ -1398,6 +1391,8 @@ reduceDimension <- function(cds,
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      else
+        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
