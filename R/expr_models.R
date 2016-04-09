@@ -336,7 +336,7 @@ parametricDispersionFit <- function( means, disps )
   iter <- 0
   while(TRUE) {
     residuals <- disps / ( coefs[1] + coefs[2] / means )
-    good <- which( (residuals > 1e-4) & (residuals < 10000) )
+    good <- which( (residuals > 1e-3) & (residuals < 10000) )
     fit <- glm( disps[good] ~ I(1/means[good]),
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
@@ -433,8 +433,13 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
 
 #' @param x A numeric vector of expression values
 #' @importFrom dplyr distinct
-disp_calc_helper <- function(cds, expressionFamily){
-  res <- smartEsApply(cds, 1, function(x) {
+disp_calc_helper <- function(cds, expressionFamily, min_cells_detected){
+  
+  rounded <- round(exprs(cds))
+  nzGenes <- Matrix::rowSums(rounded > cds@lowerDetectionLimit)
+  nzGenes <- names(nzGenes[nzGenes > min_cells_detected])
+  
+  res <- smartEsApply(cds[nzGenes,], 1, function(x) {
   disp <- NULL
   f_expression <- x
 
@@ -447,13 +452,32 @@ disp_calc_helper <- function(cds, expressionFamily){
     f_expression <- log10(x)
   }
   
+  xim <- mean( 1/Size_Factor )
+  # disp_bootstram_samples <- unlist(lapply(1:10, function(i) { 
+  #   xs <- sample(f_expression, ceiling(length(f_expression) * 0.8), replace=T)
+  #   # For NB: Var(Y)=mu*(1+mu/k)
+  #   f_expression_var <- var(xs)
+  #   f_expression_mean <- mean(xs)
+  #   
+  #   disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean 
+  #   if (f_expression_mean != 0)
+  #     disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
+  #   else
+  #     disp_guess_meth_moments <- 0
+  #   disp_guess_meth_moments
+  # }))
+
+  f_expression_mean <- mean(f_expression)
+  
     # For NB: Var(Y)=mu*(1+mu/k)
     f_expression_var <- var(f_expression)
-    f_expression_mean <- mean(f_expression)
-    
-    disp_guess_meth_moments <- f_expression_var - f_expression_mean 
-    disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
-    
+
+    disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean
+    if (f_expression_mean != 0)
+      disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k
+    else
+      disp_guess_meth_moments <- 0
+  
     if (f_expression_mean == 0){
       disp_vals <- data.frame(mu=NA, disp=NA)
     } else {
@@ -464,13 +488,13 @@ disp_calc_helper <- function(cds, expressionFamily){
   disp_vals
   }, convert_to_dense=TRUE)
   res <- do.call(rbind.data.frame, res)
-  res <- cbind(gene_id=row.names(fData(cds)), res)
+  res <- cbind(gene_id=row.names(fData(cds[nzGenes,])), res)
   res
 }
 
 #' Helper function to estimate dispersions
 #' @importFrom stringr str_split str_trim
-estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, cores)
+estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, cores)
 {
   
   # if (cores > 1){
@@ -490,10 +514,10 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   options(dplyr.show_progress = T)
   if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
-    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily)))
+    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
   }else{
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname")) 
-    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily)))
+    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
     #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
   }
   options(dplyr.show_progress = progress_opts)
@@ -529,7 +553,8 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_
     disp_guess_meth_moments <- f_expression_var - f_expression_mean 
     disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
     
-    return (max(disp_guess_fit, disp_guess_meth_moments))
+    #return (max(disp_guess_fit, disp_guess_meth_moments))
+    return (disp_guess_fit)
   }
   return (NULL)
 }

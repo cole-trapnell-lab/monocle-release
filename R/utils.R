@@ -56,8 +56,9 @@ newCellDataSet <- function( cellData,
 sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
   if (convert_to_dense){
     if (MARGIN == 1){
-      res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
-        FUN(as.matrix(Sp_X[i,]), ...) 
+      Sp_X <- Matrix::t(Sp_X)
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(as.matrix(Sp_X[,i]), ...) 
       }, FUN, ...)
     }else{
       res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
@@ -66,8 +67,9 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
     }
   }else{
     if (MARGIN == 1){
-      res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
-        FUN(Sp_X[i,], ...) 
+      Sp_X <- Matrix::t(Sp_X)
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(Sp_X[,i], ...) 
       }, FUN, ...)
     }else{
       res <- lapply(colnames(Sp_X), function(i, FUN, ...) {

@@ -46,7 +46,7 @@ function( object, locfunc=median, ... )
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
-function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, ... )
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, min_cells_detected=1, ... )
 {
   dispModelName="blind"
   stopifnot( is( object, "CellDataSet" ) )
@@ -66,12 +66,11 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, ... )
   #   nzGenes <- apply(exprs(object), 1, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) 
   #   
   # }
-  nzGenes <- smartEsApply(object, 1, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) }, convert_to_dense=TRUE)
-  nzGenes <- names(nzGenes[nzGenes > 0])
-  
-  dfi <- estimateDispersionsForCellDataSet(object[nzGenes,], 
+
+  dfi <- estimateDispersionsForCellDataSet(object, 
                                            modelFormulaStr, 
                                            relative_expr, 
+                                           min_cells_detected,
                                            cores)
   object@dispFitInfo[[dispModelName]] <- dfi
   

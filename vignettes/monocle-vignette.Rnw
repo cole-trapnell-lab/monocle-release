@@ -109,7 +109,7 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
                        phenoData = pd, 
                        featureData = fd,
                        lowerDetectionLimit=1,
-                       expressionFamily=negbinomial())
+                       expressionFamily=negbinomial.size())
 
 @ %def
 
@@ -118,7 +118,7 @@ Note that since we are using RPC values, we have changed the value of \Robject{l
 Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
 <<estimate_size_and_dispersion, eval=TRUE >>=
 HSMM <- estimateSizeFactors(HSMM)
-HSMM <- estimateDispersions(HSMM, cores=detectCores())
+HSMM <- estimateDispersions(HSMM)
 @ %
 We're now ready to start using the \Robject{HSMM} object in our analysis.
 
