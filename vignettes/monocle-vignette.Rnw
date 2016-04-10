@@ -313,7 +313,8 @@ pie + coord_polar(theta = "y") +
 
 Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts. 
 <<select_myoblasts, eval=TRUE>>=
-HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]			
+HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]	
+HSMM_myo <- estimateDispersions(HSMM_myo)
 @ %def
 
 \section{Basic differential expression analysis}
@@ -378,7 +379,7 @@ Finally, we can select genes that vary a lot across the population of cells. The
 
 <<select_ordering_genes, eval=TRUE>>=
 disp_table <- dispersionTable(HSMM_myo)
-ordering_genes <- subset(disp_table, dispersion_empirical >= 2 * dispersion_fit)$gene_id
+ordering_genes <- subset(disp_table, mean_expression >= 1 & dispersion_empirical >= 2 * dispersion_fit)$gene_id
 @ %def
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
@@ -390,13 +391,13 @@ plot_ordering_genes(HSMM_myo)
 
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
 <<reduce_dimension, eval=TRUE>>=
-HSMM_myo <- reduceDimension(HSMM_myo)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 @ %def
 
 Now that the space is reduced, it's time to order the cells.  The call below has two important optional arguments.  The first \Robject{num\_paths} allows Monocle to assign cells to one of several alternative fates. In this case, we know the cells are transitioning along a single path, so by setting \Robject{num\_paths}$=1$, we allow only one cell fate. However, if we were dealing with a stem cell population that is differentiating and making fate decisions, we might allow for multiple outcomes. For example, we might be watching embryonic stem cells differentiate into ectoderm, mesoderm, and endoderm, and thus would set \Robject{num\_paths}$=3$.  The second important argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
 
 <<order_cells, eval=TRUE>>=
-HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
 @ %def
 
 Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.

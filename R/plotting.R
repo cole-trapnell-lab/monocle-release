@@ -1534,7 +1534,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 plot_ordering_genes <- function(cds){
   disp_table <- dispersionTable(cds)
 
-  ordering_genes <- row.names(subset(fData(cds), use_for_ordering))
+  ordering_genes <- row.names(subset(fData(cds), use_for_ordering == TRUE))
   
   g <- qplot(mean_expression, dispersion_empirical, data=disp_table, log="xy", color=I("darkgrey")) + 
     geom_line(aes(y=dispersion_fit), color="red") 

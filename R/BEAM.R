@@ -90,6 +90,7 @@ buildBranchCellDataSet <- function(cds,
       }else if (cds@dim_reduce_type == "ICA"){
         ancestor_cells_for_branch <- path_to_ancestor
       }
+      ancestor_cells_for_branch <- intersect(ancestor_cells_for_branch, colnames(cds))
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_branch
     }
   }else{
@@ -122,6 +123,8 @@ buildBranchCellDataSet <- function(cds,
         
         closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
         #branch_state <- unique(pData(cds)[backbone_nei, ]$State)[1]
+        
+        path_to_root <- intersect(path_to_root, colnames(cds))
         paths_to_root[[backbone_nei]] <- path_to_root
         #post_branch_cells <- c(post_branch_cells, backbone_nei)
       }
