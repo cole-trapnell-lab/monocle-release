@@ -330,14 +330,14 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
-parametricDispersionFit <- function( means, disps )
+parametricDispersionFit <- function( disp_table )
 {
   coefs <- c( 1e-6, 1 )
   iter <- 0
   while(TRUE) {
-    residuals <- disps / ( coefs[1] + coefs[2] / means )
-    good <- which( (residuals > 1e-3) & (residuals < 10000) )
-    fit <- glm( disps[good] ~ I(1/means[good]),
+    residuals <- disp_table$disp / ( coefs[1] + coefs[2] / disp_table$mu )
+    good <- disp_table[which( (residuals > 1e-3) & (residuals < 10000) ),]
+    fit <- glm( disp ~ I(1/mu), data=good,
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
@@ -357,7 +357,8 @@ parametricDispersionFit <- function( means, disps )
     #print(coefs)
     if( iter > 10 ) {
       warning( "Dispersion fit did not converge." )
-      break }
+      break 
+    }
   }
   
   if( !all( coefs > 0 ) ){
@@ -365,12 +366,12 @@ parametricDispersionFit <- function( means, disps )
     stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
   }
   
-  names( coefs ) <- c( "asymptDisp", "extraPois" )
-  ans <- function( q )
-    
-    coefs[1] + coefs[2] / q
+  #names( coefs ) <- c( "asymptDisp", "extraPois" )
+  #ans <- function( q )
+  #  coefs[1] + coefs[2] / q
   #ans
-  coefs
+  #coefs
+  fit
 }
 
 # parametricDispersionFit <- function( means, disps )
@@ -494,7 +495,7 @@ disp_calc_helper <- function(cds, expressionFamily, min_cells_detected){
 
 #' Helper function to estimate dispersions
 #' @importFrom stringr str_split str_trim
-estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, cores)
+estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores)
 {
   
   # if (cores > 1){
@@ -529,8 +530,21 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
     stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
   #disp_table <- do.call(rbind.data.frame, disp_table)
   disp_table <- subset(disp_table, is.na(mu) == FALSE)
-  coefs <- parametricDispersionFit(disp_table$mu, disp_table$disp)
+  fit <- parametricDispersionFit(disp_table)
   
+  #removeOutliers = TRUE
+  if (removeOutliers){
+    CD <- cooks.distance(fit)
+    #cooksCutoff <- qf(.99, 2, ncol(cds) - 2)
+    cooksCutoff <- 4/nrow(disp_table)
+    #print (head(CD[CD > cooksCutoff]))
+    #print (head(names(CD[CD > cooksCutoff])))
+    message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
+    outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
+    fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
+  }
+  
+  coefs <- coefficients(fit)
   names( coefs ) <- c( "asymptDisp", "extraPois" )
   ans <- function( q )
     coefs[1] + coefs[2] / q

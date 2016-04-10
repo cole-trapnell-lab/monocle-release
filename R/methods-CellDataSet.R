@@ -46,7 +46,7 @@ function( object, locfunc=median, ... )
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
-function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, min_cells_detected=1, ... )
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, min_cells_detected=1, removeOutliers=TRUE, ... )
 {
   dispModelName="blind"
   stopifnot( is( object, "CellDataSet" ) )
@@ -71,6 +71,7 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, min_cells_d
                                            modelFormulaStr, 
                                            relative_expr, 
                                            min_cells_detected,
+                                           removeOutliers,
                                            cores)
   object@dispFitInfo[[dispModelName]] <- dfi
   

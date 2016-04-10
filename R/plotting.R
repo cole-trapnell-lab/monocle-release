@@ -1540,7 +1540,7 @@ plot_ordering_genes <- function(cds){
     geom_line(aes(y=dispersion_fit), color="red") 
   if (length(ordering_genes) > 0){
     g <- g + geom_point(aes(mean_expression, dispersion_empirical), 
-                        data=disp_table[ordering_genes,], color="black")
+                        data=subset(disp_table, gene_id %in% ordering_genes), color="black")
   }
   g <- g + monocle_theme_opts()
   g

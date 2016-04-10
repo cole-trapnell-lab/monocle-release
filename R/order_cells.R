@@ -1076,10 +1076,6 @@ orderCells <- function(cds,
 
   root_cell <- select_root_cell(cds, root_state, reverse)
   
-  if (is.null(reverse) == FALSE){
-    message("Warning: argument 'reverse' is deprecated and will be removed in a future release")
-  }
-  
   cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
     if (is.null(num_paths)){
