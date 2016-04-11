@@ -5,7 +5,7 @@
 
 \documentclass[10pt,oneside]{article}
 
-\newcommand{\thetitle}{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq experiments}
+\newcommand{\thetitle}{Monocle: Cell counting, differential expression, and trajectory analysis for single-cell RNA-Seq experiments}
 
 %\usepackage[pdftitle={\thetitle},pdfauthor={Wolfgang Huber}]{whbiocvignette}
 \usepackage{whbiocvignette}
@@ -24,7 +24,7 @@ Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
 
 \begin{document}
 
-<<include=FALSE, eval=TRUE>>=
+<<package_loads, include=FALSE, eval=TRUE>>=
 library(Biobase)
 library(knitr)
 library(reshape2)
@@ -52,13 +52,13 @@ data(HSMM_sample_sheet)
 
 \section{Introduction}
 
-The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. It was developed to analyze single cell RNA-seq data, but can also be used with qPCR measurements. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
+The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. Monocle 2 includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
 
 As cells differentiate, they undergo a process of transcriptional re-configuration, with some genes being silenced and others newly activated. While many studies have compared cells at different stages of differentiation, examining intermediate states has proven difficult, for two reasons.  First, it is often not clear from cellular morphology or established markers what intermediate states exist between, for example, a precursor cell type and its terminally differentiated progeny.  Moreover, two cells might transit through a different sequence of intermediate stages and ultimately converge on the same end state.  Second, even cells in a genetically and epigenetically clonal population might progress through differentiation at different rates \emph{in vitro}, depending on positioning and level of contacts with neighboring cells. Looking at average behavior in a group of cells is thus not necessarily faithful to the process through which an individual cell transits.
 
 Monocle computationally reconstructs the transcriptional transitions undergone by differentiating cells.  It orders a mixed, unsynchronized population of cells according to progress through the learned process of differentiation. Because the population may actually differentiate into multiple separate lineages, Monocle allows the process to branch, and can assign each cell to the correct sub-lineage. It subsequently identifies genes which distinguish different states, and genes that are differentially regulated through time. Finally, it performs clustering on all genes, to classify them according to kinetic trends. The algorithm is inspired by and and extends one proposed by Magwene et al to time-order microarray samples \cite{Magwene:2003kq}. Monocle differs from previous work in three ways. First, single-cell RNA-Seq data differ from microarray measurements in many ways, and so Monocle must take special care to model them appropriately at several steps in the algorithm. Secondly, the earlier algorithm assumes that samples progress along a single trajectory through expression space.  However, during cell differentiation, multiple lineages might arise from a single progenitor.  Monocle can find these lineage branches and correctly place cells upon them. Finally, Monocle also performs differential expression analysis and clustering on the ordered cells to help a user identify key events in the biological process of interest.
 
-\section{Single-cell expression data in Monocle}
+\section{Getting started with Monocle}
 
 The \Rpackage{monocle} package takes a matrix of expression values, which are typically for genes (as opposed to splice variants), as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments).  Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. We recommend working with FPKM or TPM values instead of raw read counts.   
 
@@ -92,6 +92,8 @@ HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData 
 
 This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. However, if you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC). RPC values are often easier to analyze than FPKM values, because have better statistical tools to model them. In fact, it's possible to convert FPKM values to RPC values even if there were no spike-in standards included in the experiment. You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
 
+\subsection{Converting relative expression values into mRNA counts}
+
 <<build_cell_data_Set_RPC, eval=TRUE>>=
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
@@ -120,9 +122,12 @@ Finally, we'll also call two functions that pre-calculate some information about
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
 @ %
+
+\subsection{Choosing a distribution for expression data}
+
 We're now ready to start using the \Robject{HSMM} object in our analysis.
 
-\section{Quality control of single cell RNA-Seq experiments}
+\subsection{Filtering low-quality cells}
 The first step in any single-cell RNA-Seq analysis is identifying poor-quality libraries from further analysis. Most single-cell workflows will include at least some libraries made from dead cells or empty wells in a plate. It's also crucial to remove doublets: libraries that were made from two or more cells accidentally. These cells can disrupt downstream steps like pseudotime ordering or clustering. This section walks through typical quality control steps that should be performed as part of all analyses with Monocle.
 
 It is often convenient to know how many express a particular gene, or how many genes are expressed by a given cell. Monocle provides a simple function to compute those statistics: 
@@ -179,7 +184,7 @@ xlab("Standardized log(FPKM)") +
 ylab("Density")
 @ %def
 
-\section{Identifying cells of interest}
+\section{Classifying and counting cells of different types}
 
 Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} excludes the fibroblasts. Likewise, fibroblasts express high levels of \emph{ANPEP} (CD13), while myoblasts tend to express few if any transcripts of this gene. 
 
@@ -317,46 +322,11 @@ HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]
 HSMM_myo <- estimateDispersions(HSMM_myo)
 @ %def
 
-\section{Basic differential expression analysis}
-
-Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the \Robject{phenoData} table of each \Robject{CellDataSet}.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
-
-Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from \cite{TRAPNELL_CACCHIARELLI}, which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities: 
-<<select_genes, eval=TRUE>>=
-marker_genes <- row.names(subset(fData(HSMM_myo), 
-                                 gene_short_name %in% c("MEF2C", "MEF2D", "MYF5", 
-                                                        "ANPEP", "PDGFRA","MYOG", 
-                                                        "TPM1",  "TPM2",  "MYH2", 
-                                                        "MYH3",  "NCAM1", "TNNT1", 
-                                                        "TNNT2", "TNNC1", "CDK1", 
-                                                        "CDK2",  "CCNB1", "CCNB2", 
-                                                        "CCND1", "CCNA1", "ID1")))
-@ %def
-
-In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
-<<basic_diff, eval=TRUE>>=
-diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~Media")
-
-# Select genes that are significant at an FDR < 10%
-sig_genes <- subset(diff_test_res, qval < 0.1)
-
-sig_genes[,c("gene_short_name", "pval", "qval")]
-@ %def
-
-So 16 of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
-
-<<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
-MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo), 
-                                 gene_short_name %in% c("MYOG", "CCNB2"))),]
-plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
-@ %def
-
-Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on \Rfunction{plot\_genes\_jitter} for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the \Rpackage{ggplot2}.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the \Rpackage{ggplot2} book\cite{Wickham} for more details.
-
 \section{Ordering cells by progress in ``pseudotime''}
 
 In many biological processes, cells do not progress in perfect synchrony.  In single-cell expression studies of processes such as cell differentiation, captured cells might be widely distributed in terms of progress.  That is, in a population of cells captured at exactly the same time, some cells might be far along, while others might not yet even have begun the process.  Monocle can informatically put the cells ``in order'' of how far they have progressed through the process you're studying.  Monocle may even be able to find where cells diverge, with groups of cells proceeding down distinct paths.  In this section, we will put a set of differentiating myoblasts in order of progress through myogenesis. 
+
+\subsection{Unsupervised ordering}
 
 First, we must decide which genes we will use to define a cell's progress through myogenesis. Monocle orders cells by examining the pattern of expression of these genes across the cell population.  Monocle looks for genes that vary in ``interesting'' ways (that is aren't just noisy), and uses these to structure the data. We ultimately want a set of genes that increase (or decrease) in expression as a function of progress through the process we're studying. 
 
@@ -417,7 +387,76 @@ cds_subset <- HSMM_filtered[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
-\section{Advanced differential expression analysis}
+\subsection{Semi-supervised ordering with known marker genes}
+
+<<semi_sup_ordering, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+
+CCNB2_id <- row.names(subset(fData(HSMM), gene_short_name == "CCNB2"))
+MYH3_id <- row.names(subset(fData(HSMM), gene_short_name == "MYH3"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Cycling myoblast", classify_func=function(x) {x[CCNB2_id,] >= 1})
+cth <- addCellType(cth, "Myotube", classify_func=function(x) {x[MYH3_id,] >=1})
+
+marker_diff <- markerDiffTable(HSMM_myo[expressed_genes,], 
+                               cth, 
+                               cores=detectCores())
+
+semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
+plot_ordering_genes(HSMM_myo)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
+HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+plot_spanning_tree(HSMM_myo, color_by="Hours")
+
+HSMM_filtered <- HSMM_myo[expressed_genes,]
+
+my_genes <- row.names(subset(fData(HSMM_filtered), 
+                             gene_short_name %in% c("CDK1", "MEF2C", "MYOG"))) 
+
+cds_subset <- HSMM_filtered[my_genes,]
+plot_genes_in_pseudotime(cds_subset, color_by="Hours")
+@ %def 
+
+\section{Differential expression analysis}
+
+Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the \Robject{phenoData} table of each \Robject{CellDataSet}.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
+
+\subsection{Basic differential analysis}
+
+Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from \cite{TRAPNELL_CACCHIARELLI}, which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities: 
+<<select_genes, eval=TRUE>>=
+marker_genes <- row.names(subset(fData(HSMM_myo), 
+                                 gene_short_name %in% c("MEF2C", "MEF2D", "MYF5", 
+                                                        "ANPEP", "PDGFRA","MYOG", 
+                                                        "TPM1",  "TPM2",  "MYH2", 
+                                                        "MYH3",  "NCAM1", "TNNT1", 
+                                                        "TNNT2", "TNNC1", "CDK1", 
+                                                        "CDK2",  "CCNB1", "CCNB2", 
+                                                        "CCND1", "CCNA1", "ID1")))
+@ %def
+
+In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
+<<basic_diff, eval=TRUE>>=
+diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
+                                      fullModelFormulaStr="~Media")
+
+# Select genes that are significant at an FDR < 10%
+sig_genes <- subset(diff_test_res, qval < 0.1)
+
+sig_genes[,c("gene_short_name", "pval", "qval")]
+@ %def
+
+So 16 of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
+
+<<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
+MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo), 
+                                 gene_short_name %in% c("MYOG", "CCNB2"))),]
+plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
+@ %def
+
+Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on \Rfunction{plot\_genes\_jitter} for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the \Rpackage{ggplot2}.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the \Rpackage{ggplot2} book\cite{Wickham} for more details.
+
 
 In this section, we'll explore how to use Monocle to find genes that are differentially expressed according to several different criteria. First, we'll look at how to use our previous classification of the cells by type to find genes that distinguish fibroblasts and myoblasts. Second, we'll look at how to find genes that are differentially expressed as a function of pseudotime, such as those that become activated or repressed during differentiation.  Finally, you'll see how to perform multi-factorial differential analysis, which can help subtract the effects of confounding variables in your experiment.  
 
@@ -487,7 +526,7 @@ We can plot the expression levels of these genes, all of which show significant 
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
-\section{Clustering genes by pseudotemporal expression pattern}
+\subsection{Clustering genes by pseudotemporal expression pattern}
 
 A common question that arises when studying time-series gene expression studies is: ``which genes follow similar kinetic trends''?  Monocle can help you answer this question by grouping genes that have similar trends, so you can analyze these groups to see what they have in common.  Monocle provides a convenient way to visualize all pseudotime-dependent genes. The function
 \Rfunction{plot\_pseudotime\_heatmap} takes a CellDataSet object (usually containing a only subset of significant genes)
@@ -528,7 +567,7 @@ plot_genes_jitter(cds_subset,
 facet_wrap( ~ feature_label, scales="free_y")
 @ %def 
 
-\section{BEAM}
+\section{Analyzing branches in single-cell trajectories}
 
 Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
 
@@ -570,7 +609,11 @@ plot_genes_branched_pseudotime(lung[1:5,], branch_point=1, color_by="Time", ncol
 
 The \Rfunction{plot\_clusters} function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.  The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red.
 
-%\section{Using Monocle with qPCR data}
+\section{Tips and tricks}
+
+\section{Theory behind Monocle}
+
+\section{Using Monocle with other data types}
 
 \section{Citation}
 If you use Monocle to analyze your experiments, please cite:

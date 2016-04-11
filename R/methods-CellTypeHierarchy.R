@@ -317,7 +317,7 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @importFrom stringr str_replace_all
 #' @importFrom dplyr sample_n
 #' @export 
-markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=TRUE, verbose=FALSE, cores=1) {
+markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, verbose=FALSE, cores=1) {
   
   if (verbose)
     message("Classifying cells according to markers")

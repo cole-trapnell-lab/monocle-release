@@ -44,7 +44,7 @@ fit_model_helper <- function(x,
         }
         FM_fit
     }, error = function(e) {
-        #print (e);
+        print (e);
         # If we threw an exception, re-try with a simpler model.  Which one depends on
         # what the user has specified for expression family
         #print(disp_guess)

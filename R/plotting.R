@@ -871,12 +871,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
                        relative_expr = T, new_data = newdata)
   
-  if (is.null(fData(cds_subset)$gene_short_name) == FALSE){
-    feature_labels <- fData(cds_subset)$gene_short_name
-    feature_labels[is.na(feature_labels)]  <- fData(cds_subset)$f_id
-    row.names(m) <- feature_labels
-  }
-  
+
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
@@ -924,6 +919,28 @@ plot_pseudotime_heatmap <- function(cds_subset,
 
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
 
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds_subset)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
+    }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
+    }
+  }
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
+  }
+  
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
+  
+  
   colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
   
   ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
@@ -1376,8 +1393,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         cores = 1) {
   
   new_cds <- buildBranchCellDataSet(cds_subset, 
-                                           branch_states=branch_states, 
-                                           branch_point=branch_point)
+                                    branch_states=branch_states, 
+                                    branch_point=branch_point)
   
   new_cds@dispFitInfo <- cds_subset@dispFitInfo
   
@@ -1396,7 +1413,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                           length.out = 100), Branch = as.factor(unique(as.character(pData(new_cds)$Branch))[2]))
   
   BranchAB_exprs <- genSmoothCurves(new_cds[, ], cores=cores, trend_formula = trend_formula,  
-                                     relative_expr = T, new_data = rbind(newdataA, newdataB))
+                                    relative_expr = T, new_data = rbind(newdataA, newdataB))
   
   BranchA_exprs <- BranchAB_exprs[, 1:100]
   BranchB_exprs <- BranchAB_exprs[, 101:200]
@@ -1484,13 +1501,26 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   names(annotation_colors$`Cell Type`) = c('Pre-branch', branch_labels)
   
-  # FIXME: this is bad practice. The gene_short_names might not be unique, so this could fail.
-  # We need to do what the other plotting routines do: create a vector of character labels, using 
-  # short names first, and then replacing any that are NA with their corresponding row.names of fData 
-  if(use_gene_short_name == T) { #use_gene_short_name
-    row.names(heatmap_matrix) <- fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name']
-    row.names(annotation_row) <- fData(cds_subset)[row.names(annotation_row), 'gene_short_name']
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds_subset)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
+    }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
+    }
   }
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
+  }
+  
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
   
   ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
                      useRaster = T,
