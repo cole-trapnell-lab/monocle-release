@@ -546,7 +546,7 @@ load_lung <- function(){
   fd <- new("AnnotatedDataFrame", data = lung_feature_data)
 
   # Now, make a new CellDataSet using the RNA counts
-  lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"), 
+  lung <- newCellDataSet(lung_exprs_data, 
                          phenoData = pd, 
                          featureData = fd,
                          lowerDetectionLimit=1,

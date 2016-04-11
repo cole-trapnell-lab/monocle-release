@@ -33,11 +33,11 @@ monocle_theme_opts <- function()
 #' @examples
 #' \dontrun{
 #' data(HSMM)
-#' plot_spanning_tree(HSMM)
-#' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-#' plot_spanning_tree(HSMM, markers="MYH3")
+#' plot_cell_trajectory(HSMM)
+#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_cell_trajectory(HSMM, markers="MYH3")
 #' }
-plot_spanning_tree <- function(cds, 
+plot_cell_trajectory <- function(cds, 
                                x=1, 
                                y=2, 
                                color_by="State", 
@@ -157,6 +157,64 @@ plot_spanning_tree <- function(cds,
   g
 }
 
+#' @rdname package-deprecated
+#' @title Plots the minimum spanning tree on cells.
+#'
+#' This function is deprecated.
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
+#' @param show_backbone whether to show the diameter path of the MST used to order the cells
+#' @param backbone_color the color used to render the backbone.
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
+#' @param cell_name_size the size of cell name labels
+#' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+#' @seealso plot_cell_trajectory
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_cell_trajectory(HSMM)
+#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_cell_trajectory(HSMM, markers="MYH3")
+#' }
+plot_spanning_tree <- function(cds, 
+                                 x=1, 
+                                 y=2, 
+                                 color_by="State", 
+                                 show_tree=TRUE, 
+                                 show_backbone=TRUE, 
+                                 backbone_color="black", 
+                                 markers=NULL, 
+                                 show_cell_names=FALSE, 
+                                 cell_size=1.5,
+                                 cell_link_size=0.75,
+                                 cell_name_size=2,
+                                 show_branch_points=TRUE){
+  .Deprecated("plot_cell_trajectory") #include a package argument, too
+  plot_cell_trajectory(cds=cds, 
+                       x=x, 
+                       y=y, 
+                       color_by=color_by, 
+                       show_tree=show_tree, 
+                       show_backbone=show_backbone, 
+                       backbone_color=backbone_color, 
+                       markers=markers, 
+                       show_cell_names=show_cell_names, 
+                       cell_size=cell_size,
+                       cell_link_size=cell_link_size,
+                       cell_name_size=cell_name_size,
+                       show_branch_points=show_branch_points)
+}
 
 
 #' Plots expression for one or more genes as a jittered, grouped points
