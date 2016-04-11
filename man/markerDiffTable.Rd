@@ -4,7 +4,7 @@
 \alias{markerDiffTable}
 \title{Test genes for cell type-dependent expression}
 \usage{
-markerDiffTable(cds, cth, residualModelFormulaStr = "~1", balanced = TRUE,
+markerDiffTable(cds, cth, residualModelFormulaStr = "~1", balanced = FALSE,
   verbose = FALSE, cores = 1)
 }
 \arguments{

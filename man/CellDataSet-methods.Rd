@@ -17,7 +17,8 @@
 \S4method{estimateSizeFactors}{CellDataSet}(object, locfunc = median, ...)
 
 \S4method{estimateDispersions}{CellDataSet}(object, modelFormulaStr = "~ 1",
-  relative_expr = TRUE, cores = 1, ...)
+  relative_expr = TRUE, cores = 1, min_cells_detected = 1,
+  removeOutliers = TRUE, ...)
 }
 \arguments{
 \item{object}{The CellDataSet object}

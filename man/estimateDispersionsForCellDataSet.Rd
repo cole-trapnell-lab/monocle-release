@@ -4,7 +4,8 @@
 \alias{estimateDispersionsForCellDataSet}
 \title{Helper function to estimate dispersions}
 \usage{
-estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr, cores)
+estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
+  min_cells_detected, removeOutliers, cores)
 }
 \description{
 Helper function to estimate dispersions
