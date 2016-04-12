@@ -35,21 +35,32 @@ diff_test_helper <- function(x,
     }
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     f_expression <- x
-  }else if (expressionFamily@vfamily %in% c("binomialff")){
-    f_expression <- x
-    f_expression[f_expression > 1] <- 1
+  }else if (expressionFamily@vfamily %in% c("binomialff", "betabinomial", "betabinomialff")){
+    f_expression <- x/Size_Factor
+    #f_expression[f_expression > 1] <- 1
   }else{
     f_expression <- log10(x)
   }
   
   test_res <- tryCatch({
-    if (verbose){
-      full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
-      reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
+    if (expressionFamily@vfamily %in% c("binomialff", "betabinomial", "betabinomialff")){
+      if (verbose){
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
+      }else{
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+      }
     }else{
-      full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
-      reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+      if (verbose){
+        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
+      }else{
+        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+      }
     }
+
     #print(full_model_fit)
     #print(coef(reduced_model_fit))
     compareModels(list(full_model_fit), list(reduced_model_fit))
@@ -78,7 +89,10 @@ compareModels <- function(full_models, reduced_models){
     if (is.null(x) == FALSE && is.null(y) == FALSE) {
       lrt <- VGAM::lrtest(x,y) 
       pval=lrt@Body["Pr(>Chisq)"][2,]
-      data.frame(status = "OK", family=x@family@vfamily, pval=pval)
+      family = x@family@vfamily
+      if (length(family) > 1)
+        family = family[1]
+      data.frame(status = "OK", family=family, pval=pval)
     } else { data.frame(status = "FAIL", family=NA, pval=1.0) } 
   } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
   

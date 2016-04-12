@@ -27,7 +27,7 @@ fit_model_helper <- function(x,
             }
         }
     }
-    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")) {
+    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff", "betabinomial", "betabinomialff")) {
         f_expression <- x
     }
     else {
@@ -54,7 +54,7 @@ fit_model_helper <- function(x,
             backup_expression_family <- negbinomial()
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
-        }else if (expressionFamily@vfamily %in% c("binomialff")){
+        }else if (expressionFamily@vfamily %in% c("binomialff", "betabinomial", "betabinomialff")){
           backup_expression_family <- NULL
         }else{
           backup_expression_family <- NULL
@@ -330,19 +330,20 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
-parametricDispersionFit <- function( disp_table )
+parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
 {
-  coefs <- c( 1e-6, 1 )
+  coefs <- initial_coefs
   iter <- 0
   while(TRUE) {
     residuals <- disp_table$disp / ( coefs[1] + coefs[2] / disp_table$mu )
-    good <- disp_table[which( (residuals > 1e-3) & (residuals < 10000) ),]
+    good <- disp_table[which( (residuals > initial_coefs[1]) & (residuals < 10000) ),]
+    #good <- disp_table
     fit <- glm( disp ~ I(1/mu), data=good,
                 family=Gamma(link="identity"), start=coefs )
     oldcoefs <- coefs
     coefs <- coefficients(fit)
-    if (coefs[1] < 1e-6){
-      coefs[1] <- 1e-6
+    if (coefs[1] < initial_coefs[1]){
+      coefs[1] <- initial_coefs[1]
     }
     if (coefs[2] < 0){
       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
@@ -351,7 +352,7 @@ parametricDispersionFit <- function( disp_table )
     #       #print(data.frame(means,disps))
     #       stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
     #     }
-    if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+    if( sum( log( coefs / oldcoefs )^2 ) < initial_coefs[1] )
       break
     iter <- iter + 1
     #print(coefs)
@@ -431,10 +432,9 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
 
 
 #' Helper function for parallel dispersion modeling
-
 #' @param x A numeric vector of expression values
 #' @importFrom dplyr distinct
-disp_calc_helper <- function(cds, expressionFamily, min_cells_detected){
+disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   
   rounded <- round(exprs(cds))
   nzGenes <- Matrix::rowSums(rounded > cds@lowerDetectionLimit)
@@ -454,19 +454,6 @@ disp_calc_helper <- function(cds, expressionFamily, min_cells_detected){
   }
   
   xim <- mean( 1/Size_Factor )
-  # disp_bootstram_samples <- unlist(lapply(1:10, function(i) { 
-  #   xs <- sample(f_expression, ceiling(length(f_expression) * 0.8), replace=T)
-  #   # For NB: Var(Y)=mu*(1+mu/k)
-  #   f_expression_var <- var(xs)
-  #   f_expression_mean <- mean(xs)
-  #   
-  #   disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean 
-  #   if (f_expression_mean != 0)
-  #     disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k 
-  #   else
-  #     disp_guess_meth_moments <- 0
-  #   disp_guess_meth_moments
-  # }))
 
   f_expression_mean <- mean(f_expression)
   
@@ -493,6 +480,38 @@ disp_calc_helper <- function(cds, expressionFamily, min_cells_detected){
   res
 }
 
+#' Helper function for parallel dispersion modeling
+#' @param x A numeric vector of expression values
+#' @importFrom dplyr distinct
+disp_calc_helper_BB <- function(cds, expressionFamily, min_cells_detected){
+  
+  nzGenes <- Matrix::rowSums(exprs(cds) > 0)
+  nzGenes <- names(nzGenes[nzGenes > min_cells_detected])
+  
+  x <- t(t(exprs(cds[nzGenes,])) / pData(cds[nzGenes,])$Size_Factor)
+  m1 <- Matrix::rowMeans(x)
+  m2 <- Matrix::rowMeans(x^2)
+  n <- qlcMatrix::rowMax(x)
+  n[n < 1] <- 1
+  #n <- max(1, n)
+  
+  denom <- n * ((m2/m1) - m1 - 1) + m1
+  alpha_hat <- (n*m1 - m2) / denom
+  beta_hat <- (n - m1)*(n - (m2/m1)) / denom
+  
+  mu = alpha_hat/(alpha_hat + beta_hat)
+  rho = 1/(1 + alpha_hat + beta_hat)
+  
+  res <- data.frame(mu=mu, disp=rho)
+  res[res$mu == 0]$mu = NA
+  res[res$mu == 0]$disp = NA
+  res <- cbind(gene_id=row.names(fData(cds[nzGenes,])), res)
+  res <- subset(res, disp < 1e5)
+
+  res
+}
+
+
 #' Helper function to estimate dispersions
 #' @importFrom stringr str_split str_trim
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores)
@@ -508,47 +527,84 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   #                              modelFormulaStr=modelFormulaStr, 
   #                              expressionFamily=cds@expressionFamily)
   # }
-
+  
   model_terms <- unlist(lapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
   model_terms <- model_terms[model_terms != ""]
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = T)
-  if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
-    cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
-    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-  }else{
-    cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname")) 
-    disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-    #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
+  
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+    if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
+      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
+      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
+    }else{
+      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname")) 
+      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
+      #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
+    }
+    
+    #message("fitting disersion curves")
+    #print (disp_table)
+    if(!is.list(disp_table))
+      stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
+    #disp_table <- do.call(rbind.data.frame, disp_table)
+    disp_table <- subset(disp_table, is.na(mu) == FALSE)
+    fit <- parametricDispersionFit(disp_table)
+    
+    #removeOutliers = TRUE
+    if (removeOutliers){
+      CD <- cooks.distance(fit)
+      #cooksCutoff <- qf(.99, 2, ncol(cds) - 2)
+      cooksCutoff <- 4/nrow(disp_table)
+      #print (head(CD[CD > cooksCutoff]))
+      #print (head(names(CD[CD > cooksCutoff])))
+      message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
+      outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
+      fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
+    }
+    
+    coefs <- coefficients(fit)
+    names( coefs ) <- c( "asymptDisp", "extraPois" )
+    ans <- function( q )
+      coefs[1] + coefs[2] / q
+    attr( ans, "coefficients" ) <- coefs
+    
+  }else if (cds@expressionFamily@vfamily %in% c("betabinomial")){
+    if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
+      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
+      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_BB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
+    }else{
+      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname")) 
+      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_BB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
+      #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
+    }
+    
+    #message("fitting disersion curves")
+    #print (disp_table)
+    if(!is.list(disp_table))
+      stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
+    #disp_table <- do.call(rbind.data.frame, disp_table)
+    disp_table <- subset(disp_table, is.na(mu) == FALSE)
+    fit <- parametricDispersionFit(disp_table, c(1e-10, 1))
+    
+    #removeOutliers = TRUE
+    if (removeOutliers){
+      CD <- cooks.distance(fit)
+      #cooksCutoff <- qf(.99, 2, ncol(cds) - 2)
+      cooksCutoff <- 4/nrow(disp_table)
+      #print (head(CD[CD > cooksCutoff]))
+      #print (head(names(CD[CD > cooksCutoff])))
+      message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
+      outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
+      fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,], c(1e-10, 1))
+    }
+    
+    coefs <- coefficients(fit)
+    names( coefs ) <- c( "asymptDisp", "extraPois" )
+    ans <- function( q )
+      coefs[1] + coefs[2] / q
+    attr( ans, "coefficients" ) <- coefs
   }
-  options(dplyr.show_progress = progress_opts)
-  
-  
-  #message("fitting disersion curves")
-  #print (disp_table)
-  if(!is.list(disp_table))
-    stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
-  #disp_table <- do.call(rbind.data.frame, disp_table)
-  disp_table <- subset(disp_table, is.na(mu) == FALSE)
-  fit <- parametricDispersionFit(disp_table)
-  
-  #removeOutliers = TRUE
-  if (removeOutliers){
-    CD <- cooks.distance(fit)
-    #cooksCutoff <- qf(.99, 2, ncol(cds) - 2)
-    cooksCutoff <- 4/nrow(disp_table)
-    #print (head(CD[CD > cooksCutoff]))
-    #print (head(names(CD[CD > cooksCutoff])))
-    message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
-    outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
-    fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
-  }
-  
-  coefs <- coefficients(fit)
-  names( coefs ) <- c( "asymptDisp", "extraPois" )
-  ans <- function( q )
-    coefs[1] + coefs[2] / q
-  attr( ans, "coefficients" ) <- coefs
   
   res <- list(disp_table = disp_table, disp_func = ans)
   return(res)
