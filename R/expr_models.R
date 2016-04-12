@@ -440,42 +440,30 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   nzGenes <- Matrix::rowSums(rounded > cds@lowerDetectionLimit)
   nzGenes <- names(nzGenes[nzGenes > min_cells_detected])
   
-  res <- smartEsApply(cds[nzGenes,], 1, function(x) {
-  disp <- NULL
-  f_expression <- x
+  x <- t(t(rounded[nzGenes,]) / pData(cds[nzGenes,])$Size_Factor)
+  
+  xim <- mean(1/ pData(cds[nzGenes,])$Size_Factor)
 
-  if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-    x <- x / Size_Factor
-    f_expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
-    f_expression <- x
+  if (isSparseMatrix(exprs(cds))){
+    f_expression_mean <- as(Matrix::rowMeans(x), "sparseVector")
   }else{
-    f_expression <- log10(x)
+    f_expression_mean <- Matrix::rowMeans(x)
   }
   
-  xim <- mean( 1/Size_Factor )
-
-  f_expression_mean <- mean(f_expression)
   
     # For NB: Var(Y)=mu*(1+mu/k)
-    f_expression_var <- var(f_expression)
+  f_expression_var <- Matrix::rowMeans((x - f_expression_mean)^2)
 
-    disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean
-    if (f_expression_mean != 0)
-      disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k
-    else
-      disp_guess_meth_moments <- 0
+  disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean
+    
+  disp_guess_meth_moments <- disp_guess_meth_moments / (f_expression_mean^2) #fix the calculation of k
   
-    if (f_expression_mean == 0){
-      disp_vals <- data.frame(mu=NA, disp=NA)
-    } else {
-      disp_vals <- data.frame(mu=f_expression_mean, disp=disp_guess_meth_moments)
-    }
- 
-  disp_vals$disp[disp_vals$disp < 0] <- 0
-  disp_vals
-  }, convert_to_dense=TRUE)
-  res <- do.call(rbind.data.frame, res)
+
+  res <- data.frame(mu=as.vector(f_expression_mean), disp=as.vector(disp_guess_meth_moments))
+  res[res$mu == 0]$mu = NA
+  res[res$mu == 0]$disp = NA  
+  res$disp[res$disp < 0] <- 0
+
   res <- cbind(gene_id=row.names(fData(cds[nzGenes,])), res)
   res
 }
