@@ -155,9 +155,9 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   #clusterExport(cl, ls(e1), e1)
   #force(exprs(X))
   if (MARGIN == 1){
-    res <- sparseParRApply(cl, exprs(X), FUN, convert_to_dense, ...)
+    suppressWarnings(res <- sparseParRApply(cl, exprs(X), FUN, convert_to_dense, ...))
   }else{
-    res <- sparseParCApply(cl, exprs(X), FUN, convert_to_dense, ...)
+    suppressWarnings(res <- sparseParCApply(cl, exprs(X), FUN, convert_to_dense, ...))
   }
   
   res

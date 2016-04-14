@@ -52,13 +52,15 @@ data(HSMM_sample_sheet)
 
 \section{Introduction}
 
-The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. Monocle 2 includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
+The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. 
 
+\texfbf{Monocle 2} includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
+\newline
 Monocle can help you perform three main types of analysis:
 \begin{enumerate}
-\item Classifying and counting cells. Single-cell RNA-Seq experiments allow you to discover new (possibly) rare subtypes of cells. Monocle helps you identify them.
-\item Constructing single-cell trajectories. In development, disease, and throughout life, cells transition from one state to another. Monocle helps you discover these transitions.
-\item Differential expression analysis. Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
+\item \textbf{Classifying and counting cells.} Single-cell RNA-Seq experiments allow you to discover new (possibly) rare subtypes of cells. Monocle helps you identify them.
+\item \textbf{Constructing single-cell trajectories.} In development, disease, and throughout life, cells transition from one state to another. Monocle helps you discover these transitions.
+\item \textbf{Differential expression analysis.} Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
 \end{enumerate}
 
 Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
@@ -247,6 +249,7 @@ qplot(value, geom="density", data=melted_dens_df) +  stat_function(fun = dnorm, 
 
 Single cell experiments are often performed on complex mixtures of multiple cell types. Dissociated tissue samples might contain two, three, or even many different cells types. In such cases, it's often nice to classify cells based on type using known markers. In the myoblast experiment, the culture contains fibroblasts that came from the original muscle biopsy used to establish the primary cell culture.  Myoblasts express some key genes that fibroblasts don't. Selecting only the genes that express, for example, sufficiently high levels of \emph{MYF5} excludes the fibroblasts. Likewise, fibroblasts express high levels of \emph{ANPEP} (CD13), while myoblasts tend to express few if any transcripts of this gene. 
 
+\subsection{Classifying cells with CellTypeHierarchy}
 Monocle provides a simple system for tagging cells based on the expression of marker genes of your choosing. You simply provide a set of functions that Monocle can use to annotate each cell. For example, you could provide a function for each of several cell types. These functions accept as input the expression data for each cell, and return TRUE to tell Monocle that a cell meets the criteria defined by the function. So you could have one function that returns TRUE for cells that express myoblast-specific genes, another function for fibroblast-specific genes, etc. Here's an example of such a set of ``gating'' functions:
 
 <<setup_gates, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
@@ -277,6 +280,7 @@ pie + coord_polar(theta = "y") +
 
 Note that many cells are marked ``Unknown''. This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments. A cell might express a few \emph{MYF5} mRNAs, but we weren't lucky enough to capture one of them. When a cell doesn't meet any of the criteria specified in your classification functions, it's marked ``Unknown''. If it meets multiple functions' criteria, it's marked ``Ambiguous''. You could just exclude such cells, but you'd be throwing out a lot of your data. In this case, we'd lose more than half of the cells!
 
+\subsection{Unsupervised cell clustering}
 Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithms, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
 
 The first step is to decide which genes to use in clustering the cells. We could use all genes, but we'd be including a lot of genes that are not expressed at a high enough level to provide meaningful signal. Including them would just add noise to the system. We can filter genes based on average expression level, and we can additionally select genes that are unusually variable across cells. These genes tend to be highly informative about cell state.
@@ -329,6 +333,8 @@ plot_cell_trajectory(HSMM, 1, 2, color="CellType")
 
 Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both. However, we still see some cells of both types in each cluster. This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering. To help rule out the latter, let's try running \Rfunction{clusterCells} in its semi-supervised mode.  
 
+\subsection{Semi-supervised cell clustering with known marker genes}
+
 First, we'll select a different set of genes to use for clustering the cells. Before we just picked genes that were highly expressed and highly variable. Now, we'll pick genes that \emph{co-vary} with our markers. In a sense, we'll be building a large list of genes to use as markers, so that even if a cell doesn't have \emph{MYF5}, it might be recognizable as a myoblast based on other genes.
 
 <<cluster_cells_diff_table, eval=TRUE>>=
@@ -337,10 +343,18 @@ marker_diff <- markerDiffTable(HSMM[expressed_genes,],
                                residualModelFormulaStr="~Media",
                                cores=detectCores())
 @ %def
-The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering:  
+The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
+<<cluster_cells_semisup_show_marker_spec, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
+candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
+marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
+head(selectTopMarkers(marker_spec, 3))
+@ %def
+The last line above shows the top three marker genes for myoblasts and fibroblasts. The "specificity" score is calculated using the metric described in Cabili et al \cite{CABILI} and can range from zero to one. The closer it is to one, the more restricted it is to the cell type in question. You can use this feature to define new markers for known cell types, or pick out genes you can use in purifying newly discovered cell types. This can be highly valuable for downstream follow up experiments.
+
+To cluster the cells, we'll choose the top ten markers for each of these cell types:
 <<cluster_cells_semisup_pick_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 10)$gene_id)
 HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
 plot_ordering_genes(HSMM)
 @ %def
@@ -354,6 +368,8 @@ HSMM <- clusterCells(HSMM,
                      residualModelFormulaStr="~Media + num_genes_expressed")
 plot_cell_trajectory(HSMM, 1, 2, color="CellType")
 @ %def
+
+\subsection{Imputing cell type}
 
 Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
 
@@ -462,26 +478,41 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 
 \subsection{Semi-supervised ordering with known marker genes}
 
-<<semi_sup_ordering, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will often fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's ``semi-supervised'' ordering mode can help you focus on the aspects of the process you're interested in.
 
+Ordering your cells in a semi-supervised manner is very simple. You first define genes that mark progress using the \Robject{CellTypeHierchy} system, very similar to how we used it for cell type classification. Then, you use it to select ordering genes that co-vary with these markers. Finally, you order the cell based on these genes just as we do in unsupervised ordering. So the only difference between unsupervised and semi-supervised ordering is in which genes we use for ordering.
+
+As we saw before, myoblasts begin differnentation by exiting the cell cycle and then proceed through a sequence of regulatory events that leads to expression of some key muscle-specific proteins needed for contraction. We can mark cycling cells with cyclin B2 (\emph{CCNB2}) and recognize myotubes as those cells expressed high levels of myosin heavy chain 3 (\emph{MYH3}).
+<<semi_sup_ordering_myoblast_cth, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 CCNB2_id <- row.names(subset(fData(HSMM), gene_short_name == "CCNB2"))
 MYH3_id <- row.names(subset(fData(HSMM), gene_short_name == "MYH3"))
 
 cth <- newCellTypeHierarchy()
 cth <- addCellType(cth, "Cycling myoblast", classify_func=function(x) {x[CCNB2_id,] >= 1})
 cth <- addCellType(cth, "Myotube", classify_func=function(x) {x[MYH3_id,] >=1})
+@ %def 
 
+Now we select the set of genes that co-vary (in either direction) with these two ``bellweather'' genes:
+<<semi_sup_ordering_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 marker_diff <- markerDiffTable(HSMM_myo[expressed_genes,], 
                                cth, 
                                cores=detectCores())
-
 semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+length(semisup_clustering_genes)
+@ %def
+
+Using the XXX genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
+<<semi_sup_ordering_trajectory, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
+@ %def
 
+And we can see that kinetics of notable genes we examined before are largely the same.
+
+<<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_filtered <- HSMM_myo[expressed_genes,]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
@@ -669,26 +700,27 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
                             cores = 1, 
                             use_gene_short_name = T, 
                             show_rownames = T)
-
-plot_genes_branched_pseudotime(lung[row.names(subset(fData(lung), gene_short_name %in% c("Ccnd1", "Cdk1"))),], branch_point=1, color_by="Time")
-
 @ %def 
 
-We can plot a few of these genes using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one.
+We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. Note that \emph{Cdk1}, a cell cycle genes is 
 
-<<lung_beam_branched_pseudotime, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3, fig.align="center", warning=FALSE>>=
-plot_genes_branched_pseudotime(lung[1:5,], branch_point=1, color_by="Time", ncol=2)
+<<lung_beam_branched_pseudotime, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Cdk1", "Sftpb", "Pdpn")))
+plot_genes_branched_pseudotime(lung[lung_genes,], 
+                               branch_point=1, 
+                               color_by="Time", 
+                               ncol=1)
 @ %def 
 
 The \Rfunction{plot\_clusters} function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.  The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red.
 
-\section{Tips and tricks}
+%\section{Tips and tricks}
 
 \section{Theory behind Monocle}\label{theory}
 
-\section{Using Monocle with other data types}
+$\section{Using Monocle with other data types}
 
-\section{Citation}\ref{theory}
+\section{Citation}\ref{citations}
 If you use Monocle to analyze your experiments, please cite:
 <<citation, eval=TRUE>>=
 citation("monocle")
@@ -696,7 +728,11 @@ citation("monocle")
 
 \section{Acknowledgements}
 
-Monocle was built by Cole Trapnell and Davide Cacchiarelli, with substantial design input John Rinn and Tarjei Mikkelsen. We are grateful to Sharif Bordbar, Chris Zhu, Amy Wagers and the Broad RNAi platform for technical assistance, and Magali Soumillon for helpful discussions. Cole Trapnell is a Damon Runyon Postdoctoral Fellow. Davide Cacchiarelli is a Human Frontier Science Program Fellow. Cacchiarelli and Mikkelsen were supported by the Harvard Stem Cell Institute. John Rinn is the Alvin and Esta Star Associate Professor. This work was supported by NIH grants 1DP2OD00667, P01GM099117, and P50HG006193-01. This work was also supported in part by the Single Cell Genomics initiative, a collaboration between the Broad Institute and Fluidigm Inc. This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for \Rpackage{DESeq}, by Simon Anders and Wolfgang Huber.
+Monocle was originally built by Cole Trapnell and Davide Cacchiarelli, with substantial design input John Rinn and Tarjei Mikkelsen. We are grateful to Sharif Bordbar, Chris Zhu, Amy Wagers and the Broad RNAi platform for technical assistance, and Magali Soumillon for helpful discussions. Cole Trapnell is a Damon Runyon Postdoctoral Fellow. Davide Cacchiarelli is a Human Frontier Science Program Fellow. Cacchiarelli and Mikkelsen were supported by the Harvard Stem Cell Institute. John Rinn is the Alvin and Esta Star Associate Professor. This work was supported by NIH grants 1DP2OD00667, P01GM099117, and P50HG006193-01. This work was also supported in part by the Single Cell Genomics initiative, a collaboration between the Broad Institute and Fluidigm Inc.
+
+Monocle 2 was developed by Cole Trapnell's lab. Significant portions were written by Xiaojie Qiu. The work was supported by NIH grant 1DP2HD088158 as well as an Alfred P. Sloan Foundation Research Fellowship.
+
+This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for \Rpackage{DESeq}, by Simon Anders and Wolfgang Huber.
 
 \section{Session Info}
 <<sessi>>=

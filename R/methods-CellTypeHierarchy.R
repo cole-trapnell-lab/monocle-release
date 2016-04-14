@@ -15,9 +15,9 @@ cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
     if ((sum(type_res) / length(type_res)) > frequency_thresh){
       next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
     }
-    print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
+    #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
   }
-  print (next_nodes)
+  
   if (length(next_nodes) == 1){
     CellType <- cth_classifier_cds(cds_subset, cth, next_nodes[1], frequency_thresh)
   }else if(length(next_nodes) == 0){
