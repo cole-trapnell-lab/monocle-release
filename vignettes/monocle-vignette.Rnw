@@ -702,10 +702,10 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
                             show_rownames = T)
 @ %def 
 
-We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. Note that \emph{Cdk1}, a cell cycle genes is 
+We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} (both known markers of fate in this system), using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. We also show \emph{Ccnd2}, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. 
 
 <<lung_beam_branched_pseudotime, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Cdk1", "Sftpb", "Pdpn")))
+lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
 plot_genes_branched_pseudotime(lung[lung_genes,], 
                                branch_point=1, 
                                color_by="Time", 
