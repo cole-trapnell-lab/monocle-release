@@ -372,7 +372,7 @@ parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
   #  coefs[1] + coefs[2] / q
   #ans
   #coefs
-  fit
+  list(fit, coefs)
 }
 
 # parametricDispersionFit <- function( means, disps )
@@ -521,6 +521,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = T)
   
+  # FIXME: this needs refactoring, badly.
   if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
       cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
@@ -537,8 +538,9 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
     #disp_table <- do.call(rbind.data.frame, disp_table)
     disp_table <- subset(disp_table, is.na(mu) == FALSE)
-    fit <- parametricDispersionFit(disp_table)
-    
+    res <- parametricDispersionFit(disp_table)
+    fit <- res[[1]]
+    coefs <- res[[2]]
     #removeOutliers = TRUE
     if (removeOutliers){
       CD <- cooks.distance(fit)
@@ -548,10 +550,10 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       #print (head(names(CD[CD > cooksCutoff])))
       message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
       outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
-      fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
+      res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
+      fit <- res[[1]]
+      coefs <- res[[2]]
     }
-    
-    coefs <- coefficients(fit)
     names( coefs ) <- c( "asymptDisp", "extraPois" )
     ans <- function( q )
       coefs[1] + coefs[2] / q
@@ -573,8 +575,9 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
     #disp_table <- do.call(rbind.data.frame, disp_table)
     disp_table <- subset(disp_table, is.na(mu) == FALSE)
-    fit <- parametricDispersionFit(disp_table, c(1e-10, 1))
-    
+    res <- parametricDispersionFit(disp_table, c(1e-10, 1))
+    fit <- res[[1]]
+    coefs <- res[[2]]
     #removeOutliers = TRUE
     if (removeOutliers){
       CD <- cooks.distance(fit)
@@ -584,10 +587,11 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       #print (head(names(CD[CD > cooksCutoff])))
       message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
       outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
-      fit <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,], c(1e-10, 1))
+      res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,], c(1e-10, 1))
+      fit <- res[[1]]
+      coefs <- res[[2]]
     }
     
-    coefs <- coefficients(fit)
     names( coefs ) <- c( "asymptDisp", "extraPois" )
     ans <- function( q )
       coefs[1] + coefs[2] / q

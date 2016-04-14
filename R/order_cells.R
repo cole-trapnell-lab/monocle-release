@@ -1312,7 +1312,10 @@ reduceDimension <- function(cds,
  
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  xm <- Matrix::rowMeans(FM)
+  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  FM <- FM[xsd > 0,]
   
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose) 
