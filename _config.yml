@@ -1,12 +1,13 @@
 title:            Monocle
-description:      Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments.
+description:      Differential expression and time-series analysis for single-cell RNA-Seq.
 #logo:             monocle-logo.png
 disqus_shortname:
 # search:           true
 # Change url to your domain. Leave localhost server or blank when working locally.
 # You don't need to specify the protocol if you want it available on http and https. Example: //localhost:4000
 # url:              http://cole-trapnell-lab.github.io
-url:              http://cole-trapnell-lab.github.io/monocle-release
+#url:              http://cole-trapnell-lab.github.io/monocle-release
+url:		   http://localhost:4000
 # Owner/author information
 owner:
   name:           Cole Trapnell
@@ -35,6 +36,8 @@ bing_verify:
 links:
   - title: News
     url: /news/
+  - title: Features
+    url: /features/
   - title: Docs
     url: /docs/
   - title: Getting started

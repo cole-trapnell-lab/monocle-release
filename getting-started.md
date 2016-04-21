@@ -33,6 +33,23 @@ To ensure that Monocle was installed correctly, start a new R session and type:
 > library(monocle)
 {% endhighlight %}
 
+###Installing Monocle 2
+Monocle 2 is currently available through GitHub. Once it works through Bioconductor's development-to-release cycle, which takes 6 months, it will become available via the steps above. To install it through GitHub, enter the following commands at the R console:
+
+{% highlight R %}
+> install.packages("devtools")
+> devtools::install_github("cole-trapnell-lab/monocle-release@monocle2")
+{% endhighlight %}
+
+Monocle 2 has a number of new dependencies that Monocle 1 didn't. You may see errors when you try the above command. You can install the packages in the error message by typing (for example):
+
+{% highlight R %}
+> biocLite(c("DDRTree", "pheatmap"))
+{% endhighlight %}
+
+If you install Monocle 2, make sure to have a look at the new [vignette](/docs/index.html) and [reference manual](/docs/index.html), as many things have changed.
+
+
 ##Computing expression values for single cells
 
 To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use [RSEM](http://deweylab.biostat.wisc.edu/rsem/), [eXpress](http://bio.math.berkeley.edu/eXpress/), [Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/), or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression [here](http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html).
