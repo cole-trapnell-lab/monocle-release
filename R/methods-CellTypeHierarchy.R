@@ -180,7 +180,6 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @name CTHfuncs
 #' @rdname CTHFuncs
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
-#' @param cores An integer specifying the number of cores to use for the computation.
 #' @importFrom dplyr add_rownames select_ do group_by_ inner_join
 #' @export 
 #' @examples
@@ -221,7 +220,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' mix <- classifyCells(mix, Cluster, 0.05)
 #' }
 #' 
-classifyCells <- function(cds, cth, frequency_thresh=NULL, cores=1, ...) {
+classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
   if (length(list(...)) > 0){
@@ -321,7 +320,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
   
   if (verbose)
     message("Classifying cells according to markers")
-  cds <- classifyCells(cds, cth, 0.05, cores=cores)
+  cds <- classifyCells(cds, cth, 0.05)
   cds <- cds[,pData(cds)$CellType %in% c("Unknown", "Ambiguous") == FALSE]
   
   if (balanced){
