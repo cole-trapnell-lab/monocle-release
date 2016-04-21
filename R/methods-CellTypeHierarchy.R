@@ -80,7 +80,6 @@ classifyCellsHelperCell <- function(cds, cth){
   return(CellType)
 }
 
-#' @rdname CTHFuncs
 #' @title Classify cells according to a set of markers
 #' @description CellTypeHierarchy objects are Monocle's mechanism for
 #'   classifying cells into types based on known markers. To classify the cells
@@ -139,13 +138,6 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
 #'    
-#' @param cth The CellTypeHierarchy object 
-#' @param cell_type_name The name of the new cell type. Can't already exist in
-#'   cth
-#' @param classify_func A function that returns true when a cell is of the new
-#'   type
-#' @param parent_cell_typ_name If this cell type is a subtype of another,
-#'   provide its name here
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
@@ -162,7 +154,14 @@ newCellTypeHierarchy <- function()
   return(cth)
 }
 
-#' @rdname CTHFuncs
+#' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
+#' @param cth The CellTypeHierarchy object 
+#' @param cell_type_name The name of the new cell type. Can't already exist in
+#'   cth
+#' @param classify_func A function that returns true when a cell is of the new
+#'   type
+#' @param parent_cell_type_name If this cell type is a subtype of another,
+#'   provide its name here
 #' @export
 addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_name="root") 
 {
@@ -177,8 +176,9 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
   return (cth)
 }
 
-#' @name CTHfuncs
-#' @rdname CTHFuncs
+#' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
+#' @param cds The CelllDataSet you want to classify
+#' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
 #' @importFrom dplyr add_rownames select_ do group_by_ inner_join
 #' @export 
@@ -249,7 +249,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
   cds
 }   
 
-#' Calculate each gene's specificity for each cell type 
+#' @describeIn newCellTypeHierarchy Calculate each gene's specificity for each cell type 
 #' 
 #' Computes the Jensen-Shannon distance between the distribution of a gene's 
 #' expression across cells and a hypothetical gene that is perfectly restricted
@@ -258,6 +258,8 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
+#' @param cds The CellDataSet containing the genes you want to calculate specificity for
+#' @param cth The CellTypeHierarchy defining the cell types
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,
 #' returns a dataframe with N x k rows. Each row contains a gene and a specifity
 #' score for one of the types.
@@ -297,9 +299,20 @@ calculateMarkerSpecificity <- function(cds, cth){
 }
 
 #' Select the most cell type specific markers
+#' 
+#' This is a handy wrapper function around dplyr's top_n function to extract
+#' the most specific genes for each cell type. Convenient, for example, for 
+#' selecting a balanced set of genes to be used in semi-supervised clustering 
+#' or ordering.
+#' 
+#' @param marker_specificities The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}
+#' @num_markers The number of markers to include in the results for each cell type
+#' @return A data frame of specificity results
 #' @importFrom dplyr top_n
+#' @sealso
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
+  
   as.data.frame(marker_specificities %>%
     group_by_("CellType") %>%
     top_n(n = num_markers, wt = specificity))
@@ -311,6 +324,8 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @param cth The CellTypeHierarchy object to use for classification
 #' @param residualModelFormulaStr A model formula string specify effects you
 #' want to exclude when testing for cell type dependent expression
+#' @param balanced Whether to downsample the cells so that there's an equal number of each type prior to performing the test
+#' @param verbose Whether to emit verbose output during the the search for cell-type dependent genes
 #' @param cores The number of cores to use when testing
 #' @return A table of differential expression test results
 #' @importFrom stringr str_replace_all

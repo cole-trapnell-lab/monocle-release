@@ -90,6 +90,7 @@ fit_model_helper <- function(x,
 #' @param relative_expr Whether to fit a model to relative or absolute expression. Only meaningful for count-based expression data. If TRUE, counts are normalized by Size_Factor prior to fitting.
 #' @param cores the number of processor cores to be used during fitting.
 #' @return a list of VGAM model objects
+#' @importFrom qlcMatrix rowMax
 #' @export
 #' @details
 #' 
@@ -430,10 +431,6 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
   vst( ncounts )
 }
 
-
-#' Helper function for parallel dispersion modeling
-#' @param x A numeric vector of expression values
-#' @importFrom dplyr distinct
 disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   
   rounded <- round(exprs(cds))
@@ -468,9 +465,6 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   res
 }
 
-#' Helper function for parallel dispersion modeling
-#' @param x A numeric vector of expression values
-#' @importFrom dplyr distinct
 disp_calc_helper_BB <- function(cds, expressionFamily, min_cells_detected){
   
   nzGenes <- Matrix::rowSums(exprs(cds) > 0)
