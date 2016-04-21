@@ -6,21 +6,24 @@
 \usage{
 clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
   frequency_thresh = 0.1, clustering_genes = NULL, max_components = 10,
-  residualModelFormulaStr = NULL, param.gamma = 100, cores = 1,
-  verbose = F, ...)
+  residualModelFormulaStr = NULL, param.gamma = 100, verbose = F, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{num_clusters}{number of desired cell clusters}
 
+\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
+
+\item{max_components}{number of dimensions to project the data into via \code{\link{reduceDimensions}()}}
+
 \item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
+
+\item{param.gamma}{gamma parameter for DDRTree}
 
 \item{verbose}{Verbose parameter for DDRTree}
 
-\item{num_reduced_dims}{number of dimensions to reduce the dataset to}
-
-\item{ddrtree_gamma}{gamma parameter for DDRTree}
+\item{...}{Additional arguments passed to \code{\link{reduceDimension}()}}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
