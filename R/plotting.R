@@ -5,9 +5,7 @@ utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin
 monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
-    theme(panel.border = element_blank()) +
-    theme(axis.line.x = element_line(size=0.25, color="black")) +
-    theme(axis.line.y = element_line(size=0.25, color="black")) +
+    theme(panel.border = element_blank(), axis.line = element_line()) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
     theme(panel.background = element_rect(fill='white'))
@@ -148,9 +146,10 @@ plot_cell_trajectory <- function(cds,
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
-    monocle_theme_opts() + 
-    xlab(paste("Component", x)) + 
-    ylab(paste("Component", y)) +
+    theme(panel.border = element_blank(), axis.line = element_line()) +
+    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
+    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
+    ylab("Component 1") + xlab("Component 2") +
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +

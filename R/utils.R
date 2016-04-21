@@ -118,7 +118,6 @@ sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...)
 #' @param MARGIN The margin to apply to, either 1 for rows (samples) or 2 for columns (features)
 #' @param FUN Any function
 #' @param required_packages A list of packages FUN will need. Failing to provide packages needed by FUN will generate errors in worker threads.
-#' @param convert_to_dense Whether to force conversion a sparse matrix to a dense one before calling FUN
 #' @param ... Additional parameters for FUN
 #' @param cores The number of cores to use for evaluation
 #' 

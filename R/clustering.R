@@ -40,12 +40,10 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param num_clusters number of desired cell clusters
-#' @param max_components number of dimensions to project the data into via \code{\link{reduceDimensions}()}
-#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
+#' @param num_reduced_dims number of dimensions to reduce the dataset to
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
-#' @param param.gamma gamma parameter for DDRTree
+#' @param ddrtree_gamma gamma parameter for DDRTree
 #' @param verbose Verbose parameter for DDRTree
-#' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @export
 clusterCells <- function(cds, 
@@ -56,6 +54,7 @@ clusterCells <- function(cds,
                          max_components=10, 
                          residualModelFormulaStr=NULL,
                          param.gamma=100,
+                         cores=1,
                          verbose = F, 
                          ...) {
   
@@ -84,7 +83,7 @@ clusterCells <- function(cds,
     cds <- setOrderingFilter(cds, old_ordering_genes)
   
   if (is.null(cell_type_hierarchy) == FALSE)
-    cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
+    cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, cores=cores, "Cluster")
   
   return(cds)
 }
