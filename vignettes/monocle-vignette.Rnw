@@ -30,7 +30,7 @@ library(knitr)
 library(reshape2)
 library(ggplot2)
 
-knitr::opts_chunk$set(autodep=TRUE, cache=FALSE)
+knitr::opts_chunk$set(autodep=TRUE, cache=FALSE, warning=FALSE)
 set.seed(0)
 @ %def
 
@@ -54,11 +54,11 @@ data(HSMM_sample_sheet)
 
 The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. 
 
-\texfbf{Monocle 2} includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
+\textbf{Monocle 2} includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
 \newline
 Monocle can help you perform three main types of analysis:
 \begin{enumerate}
-\item \textbf{Classifying and counting cells.} Single-cell RNA-Seq experiments allow you to discover new (possibly) rare subtypes of cells. Monocle helps you identify them.
+\item \textbf{Classifying and counting cells.} Single-cell RNA-Seq experiments allow you to discover new (and possibly rare) subtypes of cells. Monocle helps you identify them.
 \item \textbf{Constructing single-cell trajectories.} In development, disease, and throughout life, cells transition from one state to another. Monocle helps you discover these transitions.
 \item \textbf{Differential expression analysis.} Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
 \end{enumerate}
@@ -430,7 +430,8 @@ Ideally, we'd like to use as little prior knowledge of the biology of the system
 
 <<ordering_not_run, eval=FALSE>>=
 #not run
-diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,], fullModelFormulaStr="~Media")
+diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,], 
+                                      fullModelFormulaStr="~Media")
 ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 @ %def
 
@@ -438,7 +439,9 @@ Choosing genes based on differential analysis of time points is often highly eff
 
 <<select_ordering_genes, eval=TRUE>>=
 disp_table <- dispersionTable(HSMM_myo)
-ordering_genes <- subset(disp_table, mean_expression >= 1 & dispersion_empirical >= 2 * dispersion_fit)$gene_id
+ordering_genes <- subset(disp_table, 
+                         mean_expression >= 1 & 
+                         dispersion_empirical >= 2 * dispersion_fit)$gene_id
 @ %def
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
@@ -728,7 +731,9 @@ Because Monocle 2 is so much better at finding branches, it also includes some a
 
 This section is yet to be written.
 
-$\section{Using Monocle with other data types}
+\section{Using Monocle with other data types}
+
+This section is yet to be written.
 
 \section{Citation}\ref{citations}
 If you use Monocle to analyze your experiments, please cite:
