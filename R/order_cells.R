@@ -998,8 +998,9 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
     
     #root_cell = names(diameter)[tip_leaves %in% names(diameter)]
     root_cell_candidates <- root_cell_candidates[names(diameter),]
-    if (root_state == 1){
-      root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
+    if (is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell) == FALSE &&
+        pData(cds)[cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell,]$State == root_state){
+        root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
     }else{
       root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
     }
