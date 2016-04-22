@@ -31,7 +31,7 @@ Here, you'll find a detailed user guide and an API reference manual for Monocle.
         <div markdown="0"><a href="http://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf" class="btn">Manual (PDF)</a></div>
     </div>
     <div id="right_col" align="center">
-        <div markdown="0"><a href="/downloads/monocle-vignette.pdf" class="btn">Vignette (PDF)</a></div>
+        <div markdown="0"><a href="{{site.url}}/downloads/monocle-vignette.pdf" class="btn">Vignette (PDF)</a></div>
     </div>
 </div>
 
