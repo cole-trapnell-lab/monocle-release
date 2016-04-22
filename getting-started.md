@@ -47,7 +47,7 @@ Monocle 2 has a number of new dependencies that Monocle 1 didn't. You may see er
 > biocLite(c("DDRTree", "pheatmap"))
 {% endhighlight %}
 
-If you install Monocle 2, make sure to have a look at the new [vignette](/docs/index.html) and [reference manual](/docs/index.html), as many things have changed.
+If you install Monocle 2, make sure to have a look at the new [vignette]({site.url}/docs/) and [reference manual]({site.url}/docs/index.html), as many things have changed.
 
 
 ##Computing expression values for single cells
