@@ -172,7 +172,7 @@ data(HSMM_sample_sheet)
                         phenoData = pd, 
                         featureData = fd,
                         lowerDetectionLimit=1,
-                        expressionFamily=negbinomial.size())
+                        expressionFamily=negbinomial())
  
  @ %def
  

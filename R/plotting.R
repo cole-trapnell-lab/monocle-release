@@ -5,7 +5,9 @@ utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin
 monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
+    theme(panel.border = element_blank()) +
+    theme(axis.line.x = element_line(size=0.25, color="black")) +
+    theme(axis.line.y = element_line(size=0.25, color="black")) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
     theme(panel.background = element_rect(fill='white'))
@@ -146,10 +148,9 @@ plot_cell_trajectory <- function(cds,
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
-    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
-    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
-    ylab("Component 1") + xlab("Component 2") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
@@ -523,7 +524,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
@@ -536,7 +537,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
     else {
-        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizonal_jitter, vertical_jitter))
+        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
 
     q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = cds_exprs)

@@ -264,7 +264,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
 #' returns a dataframe with N x k rows. Each row contains a gene and a specifity
 #' score for one of the types.
 #' @export
-calculateMarkerSpecificity <- function(cds, cth){
+calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
   markerSpecificityHelper <- function(cds, cth){
     averageExpression <- Matrix::rowMeans(exprs(cds))
     averageExpression <- unlist(averageExpression)
@@ -331,12 +331,16 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @importFrom stringr str_replace_all
 #' @importFrom dplyr sample_n
 #' @export 
-markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, verbose=FALSE, cores=1) {
+markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
   
   if (verbose)
     message("Classifying cells according to markers")
-  cds <- classifyCells(cds, cth, 0.05)
-  cds <- cds[,pData(cds)$CellType %in% c("Unknown", "Ambiguous") == FALSE]
+  if (reclassify_cells)
+    cds <- classifyCells(cds, cth, 0.05)
+  if (remove_ambig)
+    cds <- cds[,pData(cds)$CellType %in% c("Ambiguous") == FALSE]
+  if (remove_unknown)
+    cds <- cds[,pData(cds)$CellType %in% c("Unknown") == FALSE]
   
   if (balanced){
     cell_type_counts <- table(pData(cds)$CellType)
