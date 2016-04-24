@@ -497,6 +497,9 @@ plot_genes_in_pseudotime <-function(cds_subset,
     cds_fData <- fData(cds_subset)
     cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
     cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+    #cds_exprs$f_id <- as.character(cds_exprs$f_id)
+    #cds_exprs$Cell <- as.character(cds_exprs$Cell)
+    
     if (integer_expression) {
         cds_exprs$adjusted_expression <- cds_exprs$expression
     }
@@ -524,7 +527,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
@@ -977,7 +980,15 @@ plot_pseudotime_heatmap <- function(cds_subset,
                  color=hmcols)
 
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
-
+ 
+  if(!is.null(add_annotation_row)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
+  
+  
   if (use_gene_short_name == TRUE) {
     if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
       feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
