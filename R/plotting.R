@@ -5,7 +5,9 @@ utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin
 monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
+    theme(panel.border = element_blank()) +
+    theme(axis.line.x = element_line(size=0.25, color="black")) +
+    theme(axis.line.y = element_line(size=0.25, color="black")) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
     theme(panel.background = element_rect(fill='white'))
@@ -146,10 +148,9 @@ plot_cell_trajectory <- function(cds,
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
-    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
-    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
-    ylab("Component 1") + xlab("Component 2") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
@@ -496,6 +497,9 @@ plot_genes_in_pseudotime <-function(cds_subset,
     cds_fData <- fData(cds_subset)
     cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
     cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+    #cds_exprs$f_id <- as.character(cds_exprs$f_id)
+    #cds_exprs$Cell <- as.character(cds_exprs$Cell)
+    
     if (integer_expression) {
         cds_exprs$adjusted_expression <- cds_exprs$expression
     }
@@ -976,7 +980,15 @@ plot_pseudotime_heatmap <- function(cds_subset,
                  color=hmcols)
 
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
-
+ 
+  if(!is.null(add_annotation_row)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
+  
+  
   if (use_gene_short_name == TRUE) {
     if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
       feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])

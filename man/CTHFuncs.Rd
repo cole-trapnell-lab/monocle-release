@@ -12,7 +12,7 @@ newCellTypeHierarchy()
 addCellType(cth, cell_type_name, classify_func,
   parent_cell_type_name = "root")
 
-classifyCells(cds, cth, frequency_thresh = NULL, cores = 1, ...)
+classifyCells(cds, cth, frequency_thresh = NULL, ...)
 }
 \arguments{
 \item{cth}{The CellTypeHierarchy object}
@@ -24,8 +24,6 @@ cth}
 type}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
-
-\item{cores}{An integer specifying the number of cores to use for the computation.}
 
 \item{parent_cell_typ_name}{If this cell type is a subtype of another,
 provide its name here}

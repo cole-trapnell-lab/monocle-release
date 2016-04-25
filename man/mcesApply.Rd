@@ -18,6 +18,8 @@ mcesApply(X, MARGIN, FUN, required_packages, cores = 1,
 
 \item{cores}{The number of cores to use for evaluation}
 
+\item{convert_to_dense}{Whether to force conversion a sparse matrix to a dense one before calling FUN}
+
 \item{...}{Additional parameters for FUN}
 }
 \value{
