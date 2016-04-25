@@ -523,7 +523,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
@@ -536,7 +536,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
     else {
-        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizonal_jitter, vertical_jitter))
+        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
 
     q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = cds_exprs)
