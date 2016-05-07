@@ -528,7 +528,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
