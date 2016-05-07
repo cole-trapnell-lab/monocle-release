@@ -10,7 +10,8 @@ monocle_theme_opts <- function()
     theme(axis.line.y = element_line(size=0.25, color="black")) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
-    theme(panel.background = element_rect(fill='white'))
+    theme(panel.background = element_rect(fill='white')) +
+    theme(legend.key=element_blank())
 }
 
 #' Plots the minimum spanning tree on cells.
@@ -1299,7 +1300,7 @@ plot_coexpression_matrix <- function(cds,
     if (round_expr){
       cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
     } else {
-      cds_exprs <- reshape2::melt(cds_exprs)
+      cds_exprs <- reshape2::melt(as.matrix(cds_exprs))
     }
       
   }else{

@@ -6,7 +6,16 @@
 \usage{
 selectTopMarkers(marker_specificities, num_markers = 10)
 }
+\arguments{
+\item{marker_specificities}{The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}}
+}
+\value{
+A data frame of specificity results
+}
 \description{
-Select the most cell type specific markers
+This is a handy wrapper function around dplyr's top_n function to extract
+the most specific genes for each cell type. Convenient, for example, for 
+selecting a balanced set of genes to be used in semi-supervised clustering 
+or ordering.
 }
 

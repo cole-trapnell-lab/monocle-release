@@ -5,6 +5,7 @@
 \title{Test genes for cell type-dependent expression}
 \usage{
 markerDiffTable(cds, cth, residualModelFormulaStr = "~1", balanced = FALSE,
+  reclassify_cells = TRUE, remove_ambig = TRUE, remove_unknown = TRUE,
   verbose = FALSE, cores = 1)
 }
 \arguments{
@@ -14,6 +15,10 @@ markerDiffTable(cds, cth, residualModelFormulaStr = "~1", balanced = FALSE,
 
 \item{residualModelFormulaStr}{A model formula string specify effects you
 want to exclude when testing for cell type dependent expression}
+
+\item{balanced}{Whether to downsample the cells so that there's an equal number of each type prior to performing the test}
+
+\item{verbose}{Whether to emit verbose output during the the search for cell-type dependent genes}
 
 \item{cores}{The number of cores to use when testing}
 }

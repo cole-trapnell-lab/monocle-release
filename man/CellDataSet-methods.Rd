@@ -18,7 +18,7 @@
 
 \S4method{estimateDispersions}{CellDataSet}(object, modelFormulaStr = "~ 1",
   relative_expr = TRUE, min_cells_detected = 1, remove_outliers = TRUE,
-  cores = 1)
+  cores = 1, ...)
 }
 \arguments{
 \item{object}{The CellDataSet object}
