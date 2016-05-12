@@ -85,7 +85,7 @@ dmode <- function(x, breaks="Sturges") {
 }
 
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
-optim_mc_func_fix_c <- function (kb_slope, kb_intercept, t_estimate = estimate_t(TPM_isoform_count_cds),
+optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(50000, ncol(relative_expr_matrix)),
           cores = 1, weight_mode=0.33, weight_relative_expr=0.33, weight_total_rna=0.33, verbose = F,  ...) {
@@ -94,8 +94,14 @@ optim_mc_func_fix_c <- function (kb_slope, kb_intercept, t_estimate = estimate_t
   if(is.null(spike_df$log_numMolecule))
     spike_df$log_numMolecules <- log10(spike_df$numMolecules)
   
-  kb_slope_val <- kb_slope
-  kb_intercept_val <- kb_intercept
+  if(is.null(kb_intercept)) {
+    kb_slope_val <- kb_slope_intercept[1]
+    kb_intercept_val <- kb_slope_intercept[2]
+  }
+  else {
+    kb_slope_val <- kb_slope_intercept[1]
+    kb_intercept_val <- kb_intercept 
+  }
   
   cell_num <- ncol(relative_expr_matrix)
   names(t_estimate) <- colnames(relative_expr_matrix)
@@ -179,7 +185,7 @@ optim_mc_func_fix_c <- function (kb_slope, kb_intercept, t_estimate = estimate_t
   #   res <- log10(dmode_rmse_weight_total + 1)
   
   if(verbose){
-    message('current m, c values are ', paste(kb_slope, kb_intercept, sep = ', '))
+    message('current m, c values are ', paste(kb_slope_val, kb_intercept_val, sep = ', '))
     message('total_rna_obj is ', total_rna_obj)
     message('mode_obj is ', mode_obj)
     message('relative_expr_obj is ', relative_expr_obj)
@@ -502,12 +508,8 @@ relative2abs <- function(relative_cds,
                     weight_relative_expr=weight_relative_expr, 
                     weight_total_rna=weight_total_rna,
                     method = c("L-BFGS-B"), 
-                    # lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
-                    # upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
-                    lower = c(rep(as.vector(t_estimate_subset) -
-                      0, 0), kb_slope_rng[1], kb_intercept_rng[1]),
-                    upper = c(rep(as.vector(t_estimate_subset) +
-                      0, 0), kb_slope_rng[2], kb_intercept_rng[2]),
+                    lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
+                    upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
                     control = list(factr = 1e+12,
                       pgtol = 0.001, trace = 1, ndeps = c(0.001,
                         0.001)), hessian = FALSE)
@@ -530,15 +532,10 @@ relative2abs <- function(relative_cds,
                     pseudocnt = 0.01, relative_expr_matrix = relative_expr_matrix_subsets,
                     split_relative_expr_matrix = split_relative_exprs,
                     method = c("Brent"), 
-                    lower = c(#rep(as.vector(t_estimate_subset) -
-                    #  0, 0), 
-                      kb_slope_rng[1]), 
-                  upper = c(#rep(as.vector(t_estimate_subset) +
-                      #0, 0), 
-                      kb_slope_rng[2]
-                      
-                      ), control = list(#factr = 1e+12, pgtol = 0.001,
-                       trace = 1, ndeps = c(0.001)),
+                    lower = c(kb_slope_rng[1]), 
+                    upper = c(kb_slope_rng[2]), 
+                    control = list(factr = 1e+12, pgtol = 0.001,
+                       trace = 1),
                   hessian = FALSE)
               }
               if (verbose)
