@@ -457,7 +457,7 @@ relative2abs <- function(relative_cds,
       }
       
       if (is.null(kb_slope_rng)){
-        kb_slope_rng = c(0.8 * kb_slope, 1.2 * kb_slope)
+        kb_slope_rng = c(1.2 * kb_slope, 0.8 * kb_slope) #note that m is a negative value
       }
       
       if (is.null(kb_intercept_rng)){
