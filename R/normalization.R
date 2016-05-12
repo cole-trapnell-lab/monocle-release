@@ -167,7 +167,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
-  total_rna_obj <- mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)) #use geometric mean to avoid outlier cells
+  total_rna_obj <- exp(mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2))) #use geometric mean to avoid outlier cells
   mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
   relative_expr_obj <- gm_dist_divergence
   
@@ -185,7 +185,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   #   res <- log10(dmode_rmse_weight_total + 1)
   
   if(verbose){
-    message('current m, c values are ', paste(kb_slope_val, kb_intercept_val, sep = ', '))
+    message('current message, c values are ', paste(kb_slope_val, kb_intercept_val, sep = ', '))
     message('total_rna_obj is ', total_rna_obj)
     message('mode_obj is ', mode_obj)
     message('relative_expr_obj is ', relative_expr_obj)
@@ -506,9 +506,9 @@ relative2abs <- function(relative_cds,
                     method = c("L-BFGS-B"), 
                     lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
                     upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
-                    control = list(factr = 1e+12,
-                      pgtol = 0.001, trace = 1, ndeps = c(0.001,
-                        0.001)), hessian = FALSE)
+                    control = list(factr = 1e+12, abstol = 0.01,
+                      pgtol = 0.001, trace = 1, ndeps = c(0.01,
+                        0.01)), hessian = FALSE)
               }
               else {
                   if (verbose){
@@ -530,7 +530,7 @@ relative2abs <- function(relative_cds,
                     method = c("Brent"), 
                     lower = c(kb_slope_rng[1]), 
                     upper = c(kb_slope_rng[2]), 
-                    control = list(factr = 1e+12, pgtol = 0.001, ndeps = c(0.001), trace = 1),
+                    control = list(factr = 1e+12, pgtol = 0.001, ndeps = c(0.01), trace = 1), abstol = 0.01,
                   hessian = FALSE)
               }
               if (verbose)
