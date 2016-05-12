@@ -245,7 +245,7 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' Make an educated guess on the spike-based slope regression parameters
 #' @importFrom plyr ldply
 #' @importFrom MASS rlm
-calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcripts, trials=100){
+calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcripts, reads, trials=100){
   kb_df <- ldply (seq(0,trials, by=1), function(i){
     #print (i)
     
@@ -254,7 +254,7 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
     asympt_proportions <- hypothetical_ladder / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
-    trial_reads <- rmultinom(1, 1e6, asympt_proportions)
+    trial_reads <- rmultinom(1, reads, asympt_proportions)
     trial_tpm <- 1e6 * trial_reads / sum(trial_reads)
     
     #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
@@ -280,12 +280,15 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1]))
 }
 
-calibrate_mode <- function(tpm_distribution, total_mRNA, capture_rate, trials=100){
+calibrate_mode <- function(tpm_distribution, total_mRNA, capture_rate, reads, trials=100){
   mode_df <- ldply (seq(0,trials, by=1), function(i){
     proportions <- tpm_distribution / sum(tpm_distribution)
     
     hypothetical_endo <- rmultinom(1, (total_mRNA * capture_rate), proportions)
-    hypothetical_mode <- 10^dmode(log10(hypothetical_endo[hypothetical_endo > 0]))
+    hypothetical_proportions <- hypothetical_endo / sum(hypothetical_endo)
+    hypothetical_library <- rmultinom(1, reads, hypothetical_proportions)
+    
+    hypothetical_mode <- 10^dmode(log10(hypothetical_endo[hypothetical_library > 0]))
     data.frame(hypothetical_mode=hypothetical_mode)
   })
   return(mean(mode_df$hypothetical_mode))
@@ -353,6 +356,7 @@ relative2abs <- function(relative_cds,
   detection_threshold = 800, 
   expected_mRNA_mode = NULL, 
   expected_total_mRNAs = 500000, 
+  reads_per_cell = 1e6,
   expected_capture_rate = 0.1,
   weight_mode=0.33, 
   weight_relative_expr=0.33, 
@@ -455,6 +459,7 @@ relative2abs <- function(relative_cds,
                                       expected_capture_rate, 
                                       ladder_df$numMolecules, 
                                       sum(ladder_df$numMolecules), 
+                                      reads_per_cell,
                                       trials=100) 
         kb_slope <- calibrated_mc[["m"]]
 
@@ -481,7 +486,8 @@ relative2abs <- function(relative_cds,
             calibrated_modes <- lapply(split_relative_exprs, 
                                       calibrate_mode, 
                                       expected_total_mRNAs, 
-                                      expected_capture_rate)
+                                      expected_capture_rate,
+                                      reads_per_cell)
             calibrated_modes <- as.vector(unlist(calibrated_modes))
             expected_mRNA_mode <- calibrated_modes
           }
@@ -511,8 +517,9 @@ relative2abs <- function(relative_cds,
                     lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
                     upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
                     control = list(factr = 1e+12,
-                      pgtol = 0.001, trace = 1, ndeps = c(0.001,
-                        0.001)), hessian = FALSE)
+                      pgtol = 0.1, trace = 1, ndeps = c(0.001,
+                        0.001),
+                      reltol=1e-1), hessian = FALSE)
               }
               else {
                   if (verbose){
@@ -534,7 +541,7 @@ relative2abs <- function(relative_cds,
                     method = c("Brent"), 
                     lower = c(kb_slope_rng[1]), 
                     upper = c(kb_slope_rng[2]), 
-                    control = list(factr = 1e+12, pgtol = 0.001,
+                    control = list(factr = 1e+12, pgtol = 0.1, reltol=1e-1,
                        trace = 1),
                   hessian = FALSE)
               }
