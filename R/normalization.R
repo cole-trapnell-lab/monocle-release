@@ -167,7 +167,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
-  total_rna_obj <- mean(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)
+  total_rna_obj <- mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)) #use geometric mean to avoid outlier cells
   mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
   relative_expr_obj <- gm_dist_divergence
   
@@ -390,9 +390,7 @@ relative2abs <- function(relative_cds,
       spike_df$numMolecules <- spike_df[, mixture_name] * 
         (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
            10^(23))
-      spike_df$rounded_numMolecules <- round(spike_df[, 
-                                                      mixture_name] * (volume * 10^(-3) * 1/dilution * 
-                                                                         10^(-18) * 6.02214129 * 10^(23)))
+      spike_df$rounded_numMolecules <- round(spike_df$numMolecules)
       if (is.null(valid_ids)) 
         spike_df <- subset(spike_df, FPKM >= 1e-10)
       else {
@@ -448,9 +446,7 @@ relative2abs <- function(relative_cds,
         ladder_df$numMolecules <- ladder_df[, mixture_name] * 
           (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
              10^(23))
-        ladder_df$rounded_numMolecules <- round(ladder_df[, 
-                                                        mixture_name] * (volume * 10^(-3) * 1/dilution * 
-                                                                           10^(-18) * 6.02214129 * 10^(23)))
+        ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
         calibrated_mc <- calibrate_mc(expected_total_mRNAs, 
                                       expected_capture_rate, 
                                       ladder_df$numMolecules, 
@@ -463,11 +459,11 @@ relative2abs <- function(relative_cds,
       }
       
       if (is.null(kb_slope_rng)){
-        kb_slope_rng = c(1.2 * kb_slope, 0.8 * kb_slope) #note that m is a negative value
+        kb_slope_rng = c(2 * kb_slope, 0.2 * kb_slope) #note that m is a negative value
       }
       
       if (is.null(kb_intercept_rng)){
-        kb_intercept_rng = c(0.8 * kb_intercept, 1.2 * kb_intercept)
+        kb_intercept_rng = c(0.2 * kb_intercept, 2 * kb_intercept)
       }
       
       pd <- pData(relative_cds)
@@ -534,8 +530,7 @@ relative2abs <- function(relative_cds,
                     method = c("Brent"), 
                     lower = c(kb_slope_rng[1]), 
                     upper = c(kb_slope_rng[2]), 
-                    control = list(factr = 1e+12, pgtol = 0.001,
-                       trace = 1),
+                    control = list(factr = 1e+12, pgtol = 0.001, ndeps = c(0.001), trace = 1),
                   hessian = FALSE)
               }
               if (verbose)
