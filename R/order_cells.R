@@ -998,8 +998,9 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
     
     #root_cell = names(diameter)[tip_leaves %in% names(diameter)]
     root_cell_candidates <- root_cell_candidates[names(diameter),]
-    if (root_state == 1){
-      root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
+    if (is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell) == FALSE &&
+        pData(cds)[cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell,]$State == root_state){
+        root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
     }else{
       root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
     }
@@ -1075,10 +1076,6 @@ orderCells <- function(cds,
   }
 
   root_cell <- select_root_cell(cds, root_state, reverse)
-  
-  if (is.null(reverse) == FALSE){
-    message("Warning: argument 'reverse' is deprecated and will be removed in a future release")
-  }
   
   cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
@@ -1183,7 +1180,7 @@ normalize_expr_data <- function(cds,
   }
   
   norm_method <- match.arg(norm_method)
-  if (cds@expressionFamily@vfamily == "negbinomial") {
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
     
     # If we're going to be using log, and the user hasn't given us a pseudocount
     # set it to 1 by default.
@@ -1283,7 +1280,7 @@ normalize_expr_data <- function(cds,
 #' to normalize it so that highly expressed or highly variable genes don't 
 #' dominate the computation. \code{reduceDimension()} automatically transforms
 #' the data in one of several ways depending on the \code{expressionFamily} of 
-#' the CellDataSet object. If the expressionFamily is \code{negbinomial}, the
+#' the CellDataSet object. If the expressionFamily is \code{negbinomial} or \code{negbinomial.size}, the
 #' data are variance-stabilized. If the expressionFamily is \code{Tobit}, the data
 #' are adjusted by adding a pseudocount (of 1 by default) and then log-transformed. 
 #' If you don't want any transformation at all, set norm_method to "none" and 
@@ -1316,30 +1313,32 @@ reduceDimension <- function(cds,
  
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  FM <- FM[unlist(sparseApply(FM, 1, sd)) > 0, ]
+  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  xm <- Matrix::rowMeans(FM)
+  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  FM <- FM[xsd > 0,]
   
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose) 
       message("Removing batch effects")
     X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
                                        data = pData(cds), drop.unused.levels = TRUE)
-    
+
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
   }else{
     X.model_mat <- NULL
   }
   
-  FM <- Matrix::t(scale(Matrix::t(FM)))
+  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
+
   if (is.function(reduction_method)) {   
-    if (is.null(X.model_mat) == FALSE) {
-      fit <- limma::lmFit(FM, X.model_mat, ...)
-      beta <- fit$coefficients[, -1, drop = FALSE]
-      beta[is.na(beta)] <- 0
-      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-    }
     reducedDim <- method(FM, ...)
     qplot(reducedDimW[1, ], reducedDimW[2, ])
     colnames(reducedDim) <- colnames(FM)
@@ -1357,14 +1356,6 @@ reduceDimension <- function(cds,
   else{
     reduction_method <- match.arg(reduction_method)
     if (reduction_method == "ICA") {
-      # Remove batch effects from the raw data.
-      if (is.null(X.model_mat) == FALSE) {
-        fit <- limma::lmFit(FM, X.model_mat, ...)
-        beta <- fit$coefficients[, -1, drop = FALSE]
-        beta[is.na(beta)] <- 0
-        FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      }
-      
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
@@ -1391,24 +1382,18 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "ICA"
     }
     else if (reduction_method == "DDRTree") {
-      # Remove batch effects from the raw data.
-      if (is.null(X.model_mat) == FALSE) {
-        fit <- limma::lmFit(FM, X.model_mat, ...)
-        beta <- fit$coefficients[, -1, drop = FALSE]
-        beta[is.na(beta)] <- 0
-        FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      }
       
       if (verbose) 
         message("Learning principal graph with DDRTree")
-      
+
       # TODO: DDRTree should really work with sparse matrices.
-      ddrtree_res <- DDRTree(as.matrix(FM), max_components, verbose = verbose, 
+      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
                              ...)
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      else 
+      else
         colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      
       colnames(ddrtree_res$Z) <- colnames(FM)
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y

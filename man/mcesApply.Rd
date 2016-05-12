@@ -4,7 +4,8 @@
 \alias{mcesApply}
 \title{Multicore apply-like function for CellDataSet}
 \usage{
-mcesApply(X, MARGIN, FUN, required_packages, cores = 1, ...)
+mcesApply(X, MARGIN, FUN, required_packages, cores = 1,
+  convert_to_dense = TRUE, ...)
 }
 \arguments{
 \item{X}{a CellDataSet object}
@@ -16,6 +17,8 @@ mcesApply(X, MARGIN, FUN, required_packages, cores = 1, ...)
 \item{required_packages}{A list of packages FUN will need. Failing to provide packages needed by FUN will generate errors in worker threads.}
 
 \item{cores}{The number of cores to use for evaluation}
+
+\item{convert_to_dense}{Whether to force conversion a sparse matrix to a dense one before calling FUN}
 
 \item{...}{Additional parameters for FUN}
 }

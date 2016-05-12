@@ -17,7 +17,8 @@
 \S4method{estimateSizeFactors}{CellDataSet}(object, locfunc = median, ...)
 
 \S4method{estimateDispersions}{CellDataSet}(object, modelFormulaStr = "~ 1",
-  relative_expr = TRUE, cores = 1, ...)
+  relative_expr = TRUE, min_cells_detected = 1, remove_outliers = TRUE,
+  cores = 1, ...)
 }
 \arguments{
 \item{object}{The CellDataSet object}
@@ -32,6 +33,10 @@
 The default groups all cells together.}
 
 \item{relative_expr}{Whether to transform expression into relative values}
+
+\item{min_cells_detected}{Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation}
+
+\item{remove_outliers}{Whether to remove outliers (using Cook's distance) when estimating dispersions}
 
 \item{cores}{The number of cores to use for computing dispersions}
 }

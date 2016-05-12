@@ -53,22 +53,31 @@ newCellDataSet <- function( cellData,
   cds
 }
 
-sparseApply <- function(Sp_X, MARGIN, FUN, ...){
-  if (MARGIN == 1){
-    res <- lapply(row.names(Sp_X), function(i, FUN, ...) {
-      FUN(as.matrix(Sp_X[i,]), ...) 
-    }, FUN, ...)
-#     names(res) <- row.names(Sp_X)
-#     res <- do.call(c, res, quote = TRUE)
-#     names(res) <- row.names(Sp_X)
+sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
+  if (convert_to_dense){
+    if (MARGIN == 1){
+      Sp_X <- Matrix::t(Sp_X)
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(as.matrix(Sp_X[,i]), ...) 
+      }, FUN, ...)
+    }else{
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(as.matrix(Sp_X[,i]), ...) 
+      }, FUN, ...)
+    }
   }else{
-    res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
-      FUN(as.matrix(Sp_X[,i]), ...) 
-    }, FUN, ...)
-#     names(res) <- colnames(Sp_x)
-#     res <- do.call(c, res, quote = TRUE)
-#     names(res) <- colnames(Sp_X)
+    if (MARGIN == 1){
+      Sp_X <- Matrix::t(Sp_X)
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(Sp_X[,i], ...) 
+      }, FUN, ...)
+    }else{
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+        FUN(Sp_X[,i], ...) 
+      }, FUN, ...)
+    }
   }
+
   return(res)
   
 }
@@ -78,23 +87,23 @@ splitRows <- function (x, ncl) {
 }
 
 splitCols <- function (x, ncl) {
-  lapply(splitIndices(ncol(x), ncl), function(i) x[i, , drop = FALSE])
+  lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
 #' @importFrom BiocGenerics clusterApply
-sparseParRApply <- function (cl, x, FUN, ...) 
+sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 1L, FUN = FUN, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 1L, FUN = FUN, convert_to_dense=convert_to_dense, ...), quote = TRUE)
   names(par_res) <- row.names(x)
   par_res
 }
 
 #' @importFrom BiocGenerics clusterApply
-sparseParCApply <- function (cl = NULL, x, FUN, ...) 
+sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
-                          fun = sparseApply, MARGIN = 2L, FUN = FUN, ...), quote = TRUE)
+                          fun = sparseApply, MARGIN = 2L, FUN = FUN, convert_to_dense=convert_to_dense, ...), quote = TRUE)
   names(par_res) <- colnames(x)
   par_res
 }
@@ -109,6 +118,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' @param MARGIN The margin to apply to, either 1 for rows (samples) or 2 for columns (features)
 #' @param FUN Any function
 #' @param required_packages A list of packages FUN will need. Failing to provide packages needed by FUN will generate errors in worker threads.
+#' @param convert_to_dense Whether to force conversion a sparse matrix to a dense one before calling FUN
 #' @param ... Additional parameters for FUN
 #' @param cores The number of cores to use for evaluation
 #' 
@@ -116,7 +126,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, ...)
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom BiocGenerics clusterCall parRapply parCapply
 #' @export
-mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
+mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
     parent <- emptyenv()
@@ -143,17 +153,18 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, ...) {
       }
     }, required_packages)
   }
-  
+  #clusterExport(cl, ls(e1), e1)
+  #force(exprs(X))
   if (MARGIN == 1){
-    res <- sparseParRApply(cl, exprs(X), FUN, ...)
+    suppressWarnings(res <- sparseParRApply(cl, exprs(X), FUN, convert_to_dense, ...))
   }else{
-    res <- sparseParCApply(cl, exprs(X), FUN, ...)
+    suppressWarnings(res <- sparseParCApply(cl, exprs(X), FUN, convert_to_dense, ...))
   }
   
   res
 }
 
-smartEsApply <- function(X, MARGIN, FUN, ...) {
+smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
     parent <- emptyenv()
@@ -162,7 +173,7 @@ smartEsApply <- function(X, MARGIN, FUN, ...) {
   environment(FUN) <- e1
   
   if (isSparseMatrix(exprs(X))){
-    res <- sparseApply(exprs(X), MARGIN, FUN, ...)
+    res <- sparseApply(exprs(X), MARGIN, FUN, convert_to_dense, ...)
   }else{
     res <- apply(exprs(X), MARGIN, FUN, ...)
   }
@@ -200,7 +211,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   log_expression <- NULL
   
   FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily == "negbinomial")
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
@@ -277,7 +288,7 @@ dispersionTable <- function(cds){
   if (is.null(cds@dispFitInfo[["blind"]]))
     stop("Error: no dispersion model found. Please call estimateDispersions() before calling this function.")
   
-  disp_df<-data.frame(row.names=row.names(cds@dispFitInfo[["blind"]]$disp_table),
+  disp_df<-data.frame(gene_id=cds@dispFitInfo[["blind"]]$disp_table$gene_id,
                       mean_expression=cds@dispFitInfo[["blind"]]$disp_table$mu, 
                       dispersion_fit=cds@dispFitInfo[["blind"]]$disp_func(cds@dispFitInfo[["blind"]]$disp_table$mu),
                       dispersion_empirical=cds@dispFitInfo[["blind"]]$disp_table$disp)
@@ -536,7 +547,7 @@ load_lung <- function(){
   fd <- new("AnnotatedDataFrame", data = lung_feature_data)
 
   # Now, make a new CellDataSet using the RNA counts
-  lung <- newCellDataSet(as(lung_exprs_data, "sparseMatrix"), 
+  lung <- newCellDataSet(lung_exprs_data, 
                          phenoData = pd, 
                          featureData = fd,
                          lowerDetectionLimit=1,

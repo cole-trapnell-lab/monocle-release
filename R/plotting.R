@@ -5,10 +5,13 @@ utils::globalVariables(c("Pseudotime", "value", "ids", "prin_graph_dim_1", "prin
 monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
+    theme(panel.border = element_blank()) +
+    theme(axis.line.x = element_line(size=0.25, color="black")) +
+    theme(axis.line.y = element_line(size=0.25, color="black")) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
-    theme(panel.background = element_rect(fill='white'))
+    theme(panel.background = element_rect(fill='white')) +
+    theme(legend.key=element_blank())
 }
 
 #' Plots the minimum spanning tree on cells.
@@ -33,11 +36,11 @@ monocle_theme_opts <- function()
 #' @examples
 #' \dontrun{
 #' data(HSMM)
-#' plot_spanning_tree(HSMM)
-#' plot_spanning_tree(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-#' plot_spanning_tree(HSMM, markers="MYH3")
+#' plot_cell_trajectory(HSMM)
+#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_cell_trajectory(HSMM, markers="MYH3")
 #' }
-plot_spanning_tree <- function(cds, 
+plot_cell_trajectory <- function(cds, 
                                x=1, 
                                y=2, 
                                color_by="State", 
@@ -146,10 +149,9 @@ plot_spanning_tree <- function(cds,
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
-    theme(panel.border = element_blank(), axis.line = element_line()) +
-    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
-    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
-    ylab("Component 1") + xlab("Component 2") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
@@ -157,6 +159,64 @@ plot_spanning_tree <- function(cds,
   g
 }
 
+#' @rdname package-deprecated
+#' @title Plots the minimum spanning tree on cells.
+#'
+#' This function is deprecated.
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
+#' @param show_backbone whether to show the diameter path of the MST used to order the cells
+#' @param backbone_color the color used to render the backbone.
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
+#' @param cell_name_size the size of cell name labels
+#' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+#' @seealso plot_cell_trajectory
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_cell_trajectory(HSMM)
+#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_cell_trajectory(HSMM, markers="MYH3")
+#' }
+plot_spanning_tree <- function(cds, 
+                                 x=1, 
+                                 y=2, 
+                                 color_by="State", 
+                                 show_tree=TRUE, 
+                                 show_backbone=TRUE, 
+                                 backbone_color="black", 
+                                 markers=NULL, 
+                                 show_cell_names=FALSE, 
+                                 cell_size=1.5,
+                                 cell_link_size=0.75,
+                                 cell_name_size=2,
+                                 show_branch_points=TRUE){
+  .Deprecated("plot_cell_trajectory") #include a package argument, too
+  plot_cell_trajectory(cds=cds, 
+                       x=x, 
+                       y=y, 
+                       color_by=color_by, 
+                       show_tree=show_tree, 
+                       show_backbone=show_backbone, 
+                       backbone_color=backbone_color, 
+                       markers=markers, 
+                       show_cell_names=show_cell_names, 
+                       cell_size=cell_size,
+                       cell_link_size=cell_link_size,
+                       cell_name_size=cell_name_size,
+                       show_branch_points=show_branch_points)
+}
 
 
 #' Plots expression for one or more genes as a jittered, grouped points
@@ -189,7 +249,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
                               label_by_short_name=TRUE,
                               relative_expr=TRUE){
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -305,7 +365,7 @@ plot_genes_positive_cells <- function(cds_subset,
   
   percent <- NULL
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -410,7 +470,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     vertical_jitter=NULL,
                                     horizontal_jitter=NULL){
   
-    if (cds_subset@expressionFamily@vfamily == "negbinomial") {
+    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
     }
     else {
@@ -438,6 +498,9 @@ plot_genes_in_pseudotime <-function(cds_subset,
     cds_fData <- fData(cds_subset)
     cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
     cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+    #cds_exprs$f_id <- as.character(cds_exprs$f_id)
+    #cds_exprs$Cell <- as.character(cds_exprs$Cell)
+    
     if (integer_expression) {
         cds_exprs$adjusted_expression <- cds_exprs$expression
     }
@@ -465,7 +528,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
 
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x[2], x[1]])
+    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
@@ -478,7 +541,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
         q <- q + geom_point(aes_string(color = color_by), size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
     else {
-        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizonal_jitter, vertical_jitter))
+        q <- q + geom_point(size = I(cell_size), position=position_jitter(horizontal_jitter, vertical_jitter))
     }
 
     q <- q + geom_line(aes(x = Pseudotime, y = expectation), data = cds_exprs)
@@ -635,7 +698,7 @@ plot_clusters<-function(cds,
 #   ## 2. with the now resahped data the plot, the chosen labels and plot style are built
 #   FM <- exprs(cds)
 #   
-#   if (cds@expressionFamily@vfamily == "negbinomial"){
+#   if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
 #     integer_expression <- TRUE
 #   }else{
 #     integer_expression <- FALSE
@@ -871,12 +934,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
                        relative_expr = T, new_data = newdata)
   
-  if (is.null(fData(cds_subset)$gene_short_name) == FALSE){
-    feature_labels <- fData(cds_subset)$gene_short_name
-    feature_labels[is.na(feature_labels)]  <- fData(cds_subset)$f_id
-    row.names(m) <- feature_labels
-  }
-  
+
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
@@ -923,7 +981,37 @@ plot_pseudotime_heatmap <- function(cds_subset,
                  color=hmcols)
 
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
-
+ 
+  if(!is.null(add_annotation_row)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
+  
+  
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds_subset)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
+    }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
+    }
+  }
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
+  }
+  
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
+  
+  
   colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
   
   ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
@@ -1023,8 +1111,7 @@ plot_genes_branched_pseudotime <- function (cds,
         cds_subset <- cds
         pData(cds_subset)$Branch <- pData(cds_subset)$State
     }
-    if (cds_subset@expressionFamily@vfamily %in% c("zanegbinomialff",
-        "negbinomial", "poissonff", "quasipoissonff")) {
+    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
     }
     else {
@@ -1193,7 +1280,7 @@ plot_coexpression_matrix <- function(cds,
   
   cds_subset <- cds[union(row_gene_ids, col_gene_ids),]
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -1213,7 +1300,7 @@ plot_coexpression_matrix <- function(cds,
     if (round_expr){
       cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
     } else {
-      cds_exprs <- reshape2::melt(cds_exprs)
+      cds_exprs <- reshape2::melt(as.matrix(cds_exprs))
     }
       
   }else{
@@ -1377,8 +1464,8 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         cores = 1) {
   
   new_cds <- buildBranchCellDataSet(cds_subset, 
-                                           branch_states=branch_states, 
-                                           branch_point=branch_point)
+                                    branch_states=branch_states, 
+                                    branch_point=branch_point)
   
   new_cds@dispFitInfo <- cds_subset@dispFitInfo
   
@@ -1397,7 +1484,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                           length.out = 100), Branch = as.factor(unique(as.character(pData(new_cds)$Branch))[2]))
   
   BranchAB_exprs <- genSmoothCurves(new_cds[, ], cores=cores, trend_formula = trend_formula,  
-                                     relative_expr = T, new_data = rbind(newdataA, newdataB))
+                                    relative_expr = T, new_data = rbind(newdataA, newdataB))
   
   BranchA_exprs <- BranchAB_exprs[, 1:100]
   BranchB_exprs <- BranchAB_exprs[, 101:200]
@@ -1485,13 +1572,26 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   names(annotation_colors$`Cell Type`) = c('Pre-branch', branch_labels)
   
-  # FIXME: this is bad practice. The gene_short_names might not be unique, so this could fail.
-  # We need to do what the other plotting routines do: create a vector of character labels, using 
-  # short names first, and then replacing any that are NA with their corresponding row.names of fData 
-  if(use_gene_short_name == T) { #use_gene_short_name
-    row.names(heatmap_matrix) <- fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name']
-    row.names(annotation_row) <- fData(cds_subset)[row.names(annotation_row), 'gene_short_name']
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds_subset)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
+    }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
+    }
   }
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
+  }
+  
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
   
   ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
                      useRaster = T,
@@ -1535,13 +1635,13 @@ plot_genes_branched_heatmap <- function(cds_subset,
 plot_ordering_genes <- function(cds){
   disp_table <- dispersionTable(cds)
 
-  ordering_genes <- row.names(subset(fData(cds), use_for_ordering))
+  ordering_genes <- row.names(subset(fData(cds), use_for_ordering == TRUE))
   
   g <- qplot(mean_expression, dispersion_empirical, data=disp_table, log="xy", color=I("darkgrey")) + 
     geom_line(aes(y=dispersion_fit), color="red") 
   if (length(ordering_genes) > 0){
     g <- g + geom_point(aes(mean_expression, dispersion_empirical), 
-                        data=disp_table[ordering_genes,], color="black")
+                        data=subset(disp_table, gene_id %in% ordering_genes), color="black")
   }
   g <- g + monocle_theme_opts()
   g
