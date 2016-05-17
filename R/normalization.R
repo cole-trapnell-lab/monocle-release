@@ -317,7 +317,7 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
 
   mode_df <- ldply (seq(0,trials, by=1), function(i){
     # print((total_ladder_transcripts * capture_rate))
-    hypothetical_ladder <- rmultinom(1, (total_ladder_transcripts * capture_rate), (ladder / sum(ladder)))
+    hypothetical_ladder <- rmultinom(1, round(total_ladder_transcripts * capture_rate), (ladder / sum(ladder)))
     
     # message('hypothetical_ladder is: ')
     # print(hypothetical_ladder)
@@ -325,7 +325,7 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     tpm_distribution <- tpm_distribution * total_mRNA / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
-    trial_reads <- rmultinom(1, reads, asympt_proportions)
+    trial_reads <- rmultinom(1, round(reads), asympt_proportions)
     trial_tpm <- 1e6 * trial_reads / sum(trial_reads)
     
     #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
@@ -542,33 +542,33 @@ relative2abs <- function(relative_cds,
           split_relative_exprs <- split(as.matrix(relative_expr_matrix_subsets), col(relative_expr_matrix_subsets, as.factor = T))
           
           if (is.null(expected_mRNA_mode)){
-            # calibrated_modes <- lapply(split_relative_exprs, 
-            #                           calibrate_mode, 
-            #                           expected_total_mRNAs, 
-            #                           expected_capture_rate,
-            #                           reads_per_cell)
-            # print(split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs)
+            calibrated_modes <- lapply(split_relative_exprs,
+                                      calibrate_mode,
+                                      expected_total_mRNAs,
+                                      expected_capture_rate,
+                                      reads_per_cell)
+            #print(split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs)
 
-            #calibrate the mode by groups: 
-            if(length(expected_total_mRNAs) == 1)
-              expected_total_mRNAs <- rep(expected_total_mRNAs, length(split_relative_exprs))
-            if(length(expected_capture_rate) == 1)
-              expected_capture_rate <- rep(expected_capture_rate, length(split_relative_exprs))
-            if(length(reads_per_cell) == 1)
-              reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
+            # #calibrate the mode by groups: 
+            # if(length(expected_total_mRNAs) == 1)
+            #   expected_total_mRNAs <- rep(expected_total_mRNAs, length(split_relative_exprs))
+            # if(length(expected_capture_rate) == 1)
+            #   expected_capture_rate <- rep(expected_capture_rate, length(split_relative_exprs))
+            # if(length(reads_per_cell) == 1)
+            #   reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
 
             # save(file = 'recovery_algorithm_calibrated_mode.RData', 
             #   split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs, expected_capture_rate)
 
-            calibrated_modes <- lapply(1:length(split_relative_exprs), 
-                           calibrate_mode_new, 
-                           tpm_distribution = split_relative_exprs, 
-                           ladder = spike_df$numMolecules, 
-                           total_ladder_transcripts = sum(spike_df$numMolecules),
-                           total_mRNA = expected_total_mRNAs, 
-                           capture_rate = expected_capture_rate,
-                           reads = reads_per_cell)
-
+            # calibrated_modes <- lapply(1:length(split_relative_exprs), 
+            #                calibrate_mode, 
+            #                tpm_distribution = split_relative_exprs, 
+            #                ladder = spike_df$numMolecules, 
+            #                total_ladder_transcripts = sum(spike_df$numMolecules),
+            #                total_mRNA = expected_total_mRNAs, 
+            #                capture_rate = expected_capture_rate,
+            #                reads = reads_per_cell)
+            # 
             calibrated_modes <- as.vector(unlist(calibrated_modes))
             expected_mRNA_mode <- ceiling(calibrated_modes)
 
