@@ -49,12 +49,16 @@ opt_norm_t <- function(t, fpkm, mRNAs_for_mode, kb_slope, kb_intercept, expr_thr
   
   if(return_norm) return(abs_cnt)
   
+  selected <- abs_cnt[abs_cnt > expr_thresh & is.na(abs_cnt) == FALSE]
+  if (length(selected) == 0) 
+    return (0);
+  
   if(!is.null(pseudocnt)){
-    10^dmode(log10(abs_cnt[fpkm > expr_thresh] + pseudocnt)) #keep the original scale
+    10^dmode(log10(selected + pseudocnt)) #keep the original scale
     #k * dmode(log10(fpkm[fpkm > expr_thresh])) + b
   }
   else
-    10^dmode(log10(abs_cnt[abs_cnt > expr_thresh]))
+    10^dmode(log10(selected))
 }
 
 #linear transform by kb
@@ -65,7 +69,11 @@ opt_norm_kb <- function(relative_expr, kb) {
   tmp <- k * log10(relative_expr) + b
   abs_cnt <- 10^tmp
   
-  10^dmode(log10(abs_cnt[abs_cnt > 0]))
+  selected <- abs_cnt[abs_cnt > 0 & is.na(abs_cnt) == FALSE]
+  if (length(selected) == 0) 
+    return (0);
+  
+  10^dmode(log10(selected))
 }
 
 #use the deconvoluated linear regression parameters to normalize the log_relative_expr
@@ -127,12 +135,12 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   cell_dmode <- tryCatch({
     if(cores > 1){
-      cell_dmode <- mcmapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, mc.cores = cores)
-      adj_est_std_cds <- mcmapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, return_norm = T, mc.cores = cores)
+      cell_dmode <- unlist(mcmapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, mc.cores = cores))
+      adj_est_std_cds <- unlist(mcmapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, return_norm = T, mc.cores = cores))
     }
     else {
-      cell_dmode <- mapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01)
-      adj_est_std_cds <- mapply(opt_norm_t, split_t, split_relative_expr_matrix,  alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, return_norm = T)
+      cell_dmode <- unlist(mapply(opt_norm_t, split_t, split_relative_expr_matrix, alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01))
+      adj_est_std_cds <- unlist(mapply(opt_norm_t, split_t, split_relative_expr_matrix,  alpha, kb_slope = kb_slope_val, kb_intercept = kb_intercept_val, pseudocnt = 0.01, return_norm = T))
     }
     cell_dmode},
     error = function(e) {print(e); NA}
@@ -168,7 +176,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
-  total_rna_obj <- mean(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)
+  total_rna_obj <- exp(mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2))) #use geometric mean to avoid outlier cells
   mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
   relative_expr_obj <- gm_dist_divergence
   
@@ -190,14 +198,14 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
     message('total_rna_obj is ', total_rna_obj)
     message('mode_obj is ', mode_obj)
     message('relative_expr_obj is ', relative_expr_obj)
-    message('modes are:')
-    print (cell_dmode)
-    message('target modes are:')
-    print (alpha)
-    message('mode delta is:')
-    print (cell_dmode - alpha)
-    message('total RNA delta is:')
-    print (sum_total_cells_rna -  total_RNAs)
+    message('mean modes are:')
+    print (mean(cell_dmode))
+    message('mean target modes are:')
+    print (mean(alpha))
+    message('mean mode delta is:')
+    print (mean(cell_dmode - alpha))
+    message('mean total RNA delta is:')
+    print (mean(sum_total_cells_rna -  total_RNAs))
   }
   #   return(list(m = m_val, c = c_val, dmode_rmse_weight_total = dmode_rmse_weight_total, gm_dist_divergence = gm_dist_divergence, dist_divergence_round = dist_divergence_round,
   #               cell_dmode = cell_dmode, t_k_b_solution = t_k_b_solution, sum_total_cells_rna = sum_total_cells_rna, optim_res = res))
@@ -239,7 +247,7 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
   
   #apply each column
-  apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))) #best coverage estimate}
+  unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh])))) #best coverage estimate}
 }
 
 
@@ -349,6 +357,7 @@ relative2abs <- function(relative_cds,
   kb_intercept = NULL,
   kb_slope_rng = NULL,
   kb_intercept_rng = NULL,
+  use_fixed_intercept=TRUE,
   ERCC_controls = NULL, 
   ERCC_annotation = NULL, 
   volume = 10, 
@@ -395,9 +404,7 @@ relative2abs <- function(relative_cds,
       spike_df$numMolecules <- spike_df[, mixture_name] * 
         (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
            10^(23))
-      spike_df$rounded_numMolecules <- round(spike_df[, 
-                                                      mixture_name] * (volume * 10^(-3) * 1/dilution * 
-                                                                         10^(-18) * 6.02214129 * 10^(23)))
+      spike_df$rounded_numMolecules <- round(spike_df$numMolecules)
       if (is.null(valid_ids)) 
         spike_df <- subset(spike_df, FPKM >= 1e-10)
       else {
@@ -448,16 +455,12 @@ relative2abs <- function(relative_cds,
       
       names(t_estimate) <- colnames(relative_expr_matrix)
       
-      user_provided_kb_intercept = kb_intercept
-      
       if(is.null(kb_slope) || is.null(kb_intercept)){
         ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
         ladder_df$numMolecules <- ladder_df[, mixture_name] * 
           (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
              10^(23))
-        ladder_df$rounded_numMolecules <- round(ladder_df[, 
-                                                        mixture_name] * (volume * 10^(-3) * 1/dilution * 
-                                                                           10^(-18) * 6.02214129 * 10^(23)))
+        ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
         calibrated_mc <- calibrate_mc(expected_total_mRNAs, 
                                       expected_capture_rate, 
                                       ladder_df$numMolecules, 
@@ -471,11 +474,11 @@ relative2abs <- function(relative_cds,
       }
       
       if (is.null(kb_slope_rng)){
-        kb_slope_rng = c(1.2 * kb_slope, 0.8 * kb_slope) #note that m is a negative value
+        kb_slope_rng = c(2 * kb_slope, 0.2 * kb_slope) #note that m is a negative value
       }
       
       if (is.null(kb_intercept_rng)){
-        kb_intercept_rng = c(0.8 * kb_intercept, 1.2 * kb_intercept)
+        kb_intercept_rng = c(0.2 * kb_intercept, 2 * kb_intercept)
       }
       
       pd <- pData(relative_cds)
@@ -504,7 +507,7 @@ relative2abs <- function(relative_cds,
                   "..."))
              # only optimize both m and c if the user provided us with a value for c
              # otherwise just use the fixed c, which is easy to calibrate correctly
-              if (is.null(user_provided_kb_intercept) == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2]) {
+              if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2]) {
                   if (verbose)
                     message("optimization m and c values (NOTE that c range should not be huge)")
                   optim_para <- optim(par = c(kb_slope=kb_slope, kb_intercept=kb_intercept), optim_mc_func_fix_c,
@@ -520,11 +523,10 @@ relative2abs <- function(relative_cds,
                     weight_total_rna=weight_total_rna,
                     method = c("L-BFGS-B"), 
                     lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
-                    upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
-                    control = list(factr = 1e+12,
-                      pgtol = 0.1, trace = 1, ndeps = c(0.001,
-                        0.001),
-                      factr=1e14), hessian = FALSE)
+                    upper = c(kb_slope_rng[2], kb_intercept_rng[2]),
+                    control = list(factr = 1e+12, abstol = 0.01,
+                      pgtol = 0.001, trace = 1, ndeps = c(0.01,
+                        0.01)), hessian = FALSE)
               }
               else {
                   if (verbose){
@@ -546,14 +548,13 @@ relative2abs <- function(relative_cds,
                     method = c("Brent"), 
                     lower = c(kb_slope_rng[1]), 
                     upper = c(kb_slope_rng[2]), 
-                    control = list(factr = 1e+12, pgtol = 0.1, reltol=1e-1,
-                       trace = 1),
+                    control = list(factr = 1e+12, pgtol = 0.001, ndeps = c(0.01), trace = 1), abstol = 0.01,
                   hessian = FALSE)
               }
               if (verbose)
                   message("optimization is done!")
               kb_slope <- optim_para$par[1]
-              if (kb_intercept_rng[1] != kb_intercept_rng[2])
+              if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2])
                 kb_intercept <- optim_para$par[2]
               
               if (verbose){
