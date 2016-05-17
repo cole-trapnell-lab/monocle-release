@@ -176,7 +176,10 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
-  total_rna_obj <- exp(mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2))) #use geometric mean to avoid outlier cells
+  sum_total_cells_rna_finite <- sum_total_cells_rna[is.finite(sum_total_cells_rna)]
+  total_RNAs_finite <- total_RNAs[is.finite(sum_total_cells_rna)]
+  
+  total_rna_obj <- exp(mean(log(((sum_total_cells_rna_finite -  total_RNAs_finite)/total_RNAs_finite)^2))) #use geometric mean to avoid outlier cells
   mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
   relative_expr_obj <- gm_dist_divergence
   
@@ -205,7 +208,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
     message('mean mode delta is:')
     print (mean(cell_dmode - alpha))
     message('mean total RNA delta is:')
-    print (mean(sum_total_cells_rna -  total_RNAs))
+    print (mean(sum_total_cells_rna_finite -  total_RNAs_finite))
   }
   #   return(list(m = m_val, c = c_val, dmode_rmse_weight_total = dmode_rmse_weight_total, gm_dist_divergence = gm_dist_divergence, dist_divergence_round = dist_divergence_round,
   #               cell_dmode = cell_dmode, t_k_b_solution = t_k_b_solution, sum_total_cells_rna = sum_total_cells_rna, optim_res = res))
@@ -335,17 +338,19 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
                             hypothetical_ladder=hypothetical_ladder)
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
     
-    ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
-    # print (summary(ladder_reg))
-    b <- coefficients(ladder_reg)[1]
-    k <- coefficients(ladder_reg)[2]
-    # print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
-    # data.frame(k=k,b=b)
+    tryCatch({
+      ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+      # print (summary(ladder_reg))
+      b <- coefficients(ladder_reg)[1]
+      k <- coefficients(ladder_reg)[2]
+      # print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
+      # data.frame(k=k,b=b)
     
-    #change the mode here: 
-    hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-    #print(10^(k * hypothetical_mode + b))
-    data.frame(hypothetical_mode=10^(k * hypothetical_mode + b))
+      #change the mode here: 
+      hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
+      #print(10^(k * hypothetical_mode + b))
+      data.frame(hypothetical_mode=10^(k * hypothetical_mode + b))
+      }, error = function(e) NULL)
 
   })
   return(data.frame(mean_hypotetical_mode = mean(mode_df$hypothetical_mode)))
@@ -567,8 +572,10 @@ relative2abs <- function(relative_cds,
             calibrated_modes <- as.vector(unlist(calibrated_modes))
             expected_mRNA_mode <- ceiling(calibrated_modes)
 
-            if(verbose)
-              message('the calibrated modes are: ', expected_mRNA_mode)
+            if(verbose){
+              message('the calibrated modes are: ')
+              print (expected_mRNA_mode)
+            }
           }
           
           t_estimate_subset <- t_estimate[colnames(relative_expr_matrix_subsets)]
@@ -688,7 +695,7 @@ relative2abs <- function(relative_cds,
         if(!(is.null(expected_mRNA_mode)))
           calibrated_modes <- NULL
         return(list(norm_cds = norm_cds, kb_slope = kb_slope_vec, kb_intercept = kb_intercept_vec, k_b_solution = k_b_solution, 
-          calibrated_mc = calibrated_mc, calibrated_modes = calibrated_modes))
+          calibrated_mc = calibrated_mc))
     }
     norm_cds
   }
