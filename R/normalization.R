@@ -168,7 +168,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
   total_rna_obj <- exp(mean(log(((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2))) #use geometric mean to avoid outlier cells
-  mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
+  mode_obj <- mean(((cell_dmode - alpha)/alpha)^2) #exp(mean(log(((cell_dmode - alpha)/alpha)^2)))
   relative_expr_obj <- gm_dist_divergence
   
   res <- weight_mode * mode_obj + weight_relative_expr * relative_expr_obj + weight_total_rna * total_rna_obj
@@ -299,7 +299,7 @@ calibrate_mode <- function(tpm_distribution, total_mRNA, capture_rate, reads, tr
 }
 
 calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
-  tpm_distribution <- tpm_distribution[[ind]]
+  tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
   capture_rate <- capture_rate[ind]
   reads <- reads[ind]
@@ -311,7 +311,7 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     # message('hypothetical_ladder is: ')
     # print(hypothetical_ladder)
     asympt_proportions <- hypothetical_ladder / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
-    tpm_distribution <- tpm_distribution * total_mRNA / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
+    tpm_distribution <-  tpm_distribution * total_mRNA / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
     trial_reads <- rmultinom(1, reads, asympt_proportions)
@@ -319,15 +319,29 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     
     #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
     #hypothetical_ladder_tpm <- 1e6 * hypothetical_ladder / ((total_ladder_transcripts + total_mRNA) * capture_rate)
-    hypothetical_ladder_tpm <- trial_tpm[1:length(hypothetical_ladder)]
+    d <- trial_tpm[1:length(hypothetical_ladder)]
     # message('hypothetical_ladder_tpm is')
     # print(hypothetical_ladder_tpm)
     
-    ladder_df <- data.frame(hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
+    ladder_df <- data.frame(asympt_proportions_tpm=asympt_proportions * 10e6,
+                            hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
                             hypothetical_ladder=hypothetical_ladder)
-    ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
+    # ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
+    ladder_df <- subset(ladder_df, asympt_proportions > 0 & hypothetical_ladder > 0)
     
-    ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+    ladder_reg <- tryCatch({
+        ladder_reg <-  rlm (log10(hypothetical_ladder) ~ log10(asympt_proportions), data=ladder_df)
+#        ladder_reg <-  rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+
+        ladder_reg
+      }, error = function(e) {
+        print(e)
+        NULL
+      })
+
+    if(is.null(ladder_reg))
+      return(data.frame(hypothetical_mode=NULL))
+
     # print (summary(ladder_reg))
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
@@ -335,8 +349,15 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     # data.frame(k=k,b=b)
     
     #change the mode here: 
+    dmode <- function(x, breaks="Sturges") {
+      if(length(x) < 2)
+        return(0)
+      den <- density(x, kernel=c("gaussian"))
+      ( den$x[den$y==max(den$y)] )
+    }
+
     hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-    print(10^(k * hypothetical_mode + b))
+    print(as.numeric(10^(k * hypothetical_mode + b)))
     data.frame(hypothetical_mode=10^(k * hypothetical_mode + b))
 
   })
@@ -556,7 +577,8 @@ relative2abs <- function(relative_cds,
                            reads = reads_per_cell)
 
             calibrated_modes <- as.vector(unlist(calibrated_modes))
-            expected_mRNA_mode <- ceiling(calibrated_modes)
+            # expected_mRNA_mode <- ceiling(calibrated_modes)
+            expected_mRNA_mode <- calibrated_modes
 
             if(verbose)
               message('the calibrated modes are: ', expected_mRNA_mode)
