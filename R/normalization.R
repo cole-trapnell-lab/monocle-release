@@ -180,7 +180,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   total_RNAs_finite <- total_RNAs[is.finite(sum_total_cells_rna)]
   
   total_rna_obj <- exp(mean(log(((sum_total_cells_rna_finite -  total_RNAs_finite)/total_RNAs_finite)^2))) #use geometric mean to avoid outlier cells
-  mode_obj <- mean(((cell_dmode - alpha)/alpha)^2)
+  mode_obj <- mean(((cell_dmode[is.infinite(cell_dmode)] - alpha[is.infinite(cell_dmode)])/alpha[is.infinite(cell_dmode)])^2)
   relative_expr_obj <- gm_dist_divergence
   
   res <- weight_mode * mode_obj + weight_relative_expr * relative_expr_obj + weight_total_rna * total_rna_obj
@@ -198,10 +198,14 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   if(verbose){
     message('current m, c values are ', paste(kb_slope_val, kb_intercept_val, sep = ', '))
-    message('total_rna_obj is ', total_rna_obj)
+    message('objective is:')
+    print(res)
+
+    message('\n\ntotal_rna_obj is ', total_rna_obj)
     message('mode_obj is ', mode_obj)
     message('relative_expr_obj is ', relative_expr_obj)
-    message('mean modes are:')
+
+    message('\n\nmean modes are:')
     print (mean(cell_dmode))
     message('mean target modes are:')
     print (mean(alpha))
@@ -209,6 +213,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
     print (mean(cell_dmode - alpha))
     message('mean total RNA delta is:')
     print (mean(sum_total_cells_rna_finite -  total_RNAs_finite))
+
   }
   #   return(list(m = m_val, c = c_val, dmode_rmse_weight_total = dmode_rmse_weight_total, gm_dist_divergence = gm_dist_divergence, dist_divergence_round = dist_divergence_round,
   #               cell_dmode = cell_dmode, t_k_b_solution = t_k_b_solution, sum_total_cells_rna = sum_total_cells_rna, optim_res = res))
@@ -278,10 +283,13 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
     #print (hypothetical_ladder_tpm)
     
     ladder_df <- data.frame(hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
-                            hypothetical_ladder=hypothetical_ladder)
-    ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
+                            hypothetical_ladder=hypothetical_ladder,
+                            ladder = ladder)
+    # ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
+    ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
-    ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+    # ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+    ladder_reg <- rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
     #print (summary(ladder_reg))
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
@@ -309,8 +317,8 @@ calibrate_mode <- function(tpm_distribution, total_mRNA, capture_rate, reads, tr
   return(mean(mode_df$hypothetical_mode))
 }
 
-calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
-  tpm_distribution <- tpm_distribution[[ind]]
+calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=10){
+  tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
   capture_rate <- capture_rate[ind]
   reads <- reads[ind]
@@ -322,7 +330,6 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     # message('hypothetical_ladder is: ')
     # print(hypothetical_ladder)
     asympt_proportions <- hypothetical_ladder / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
-    tpm_distribution <- tpm_distribution * total_mRNA / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
     trial_reads <- rmultinom(1, round(reads), asympt_proportions)
@@ -331,27 +338,39 @@ calibrate_mode_new <- function(ind, tpm_distribution, ladder, total_ladder_trans
     #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
     #hypothetical_ladder_tpm <- 1e6 * hypothetical_ladder / ((total_ladder_transcripts + total_mRNA) * capture_rate)
     hypothetical_ladder_tpm <- trial_tpm[1:length(hypothetical_ladder)]
+    tpm_distribution <-  tpm_distribution * trial_reads[length(hypothetical_ladder) + 1] / sum(trial_reads) #put the tpm for the spike-in and the endogenous RNA at the same space
     # message('hypothetical_ladder_tpm is')
     # print(hypothetical_ladder_tpm)
     
-    ladder_df <- data.frame(hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
-                            hypothetical_ladder=hypothetical_ladder)
-    ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
+    ladder_df <- data.frame(asympt_proportions_tpm=asympt_proportions[1:length(hypothetical_ladder)] * 10e6,
+                            hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
+                            hypothetical_ladder=hypothetical_ladder,
+                            ladder = ladder)
+    ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
+    # ladder_df <- subset(ladder_df, asympt_proportions_tpm > 0 & hypothetical_ladder > 0)
     
-    tryCatch({
-      ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
-      # print (summary(ladder_reg))
-      b <- coefficients(ladder_reg)[1]
-      k <- coefficients(ladder_reg)[2]
-      # print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
-      # data.frame(k=k,b=b)
-    
-      #change the mode here: 
-      hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-      #print(10^(k * hypothetical_mode + b))
-      data.frame(hypothetical_mode=10^(k * hypothetical_mode + b))
-      }, error = function(e) NULL)
+    ladder_reg <- tryCatch({
+        # ladder_reg <-  rlm (log10(hypothetical_ladder) ~ log10(asympt_proportions_tpm), data=ladder_df)
+       ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
 
+        ladder_reg
+      }, error = function(e) {
+        print(e)
+        NULL
+      })
+
+    if(is.null(ladder_reg))
+      return(data.frame(hypothetical_mode=NULL))
+
+    # print (summary(ladder_reg))
+    b <- coefficients(ladder_reg)[1]
+    k <- coefficients(ladder_reg)[2]
+    # print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
+    # data.frame(k=k,b=b)
+
+    hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
+    print(as.numeric(10^(k * hypothetical_mode + b)))
+    data.frame(hypothetical_mode=10^(k * hypothetical_mode + b))
   })
   return(data.frame(mean_hypotetical_mode = mean(mode_df$hypothetical_mode)))
 }
@@ -570,7 +589,8 @@ relative2abs <- function(relative_cds,
             #                reads = reads_per_cell)
             # 
             calibrated_modes <- as.vector(unlist(calibrated_modes))
-            expected_mRNA_mode <- ceiling(calibrated_modes)
+            # expected_mRNA_mode <- ceiling(calibrated_modes)
+            expected_mRNA_mode <- calibrated_modes
 
             if(verbose){
               message('the calibrated modes are: ')
@@ -695,7 +715,7 @@ relative2abs <- function(relative_cds,
         if(!(is.null(expected_mRNA_mode)))
           calibrated_modes <- NULL
         return(list(norm_cds = norm_cds, kb_slope = kb_slope_vec, kb_intercept = kb_intercept_vec, k_b_solution = k_b_solution, 
-          calibrated_mc = calibrated_mc))
+          calibrated_mc = calibrated_mc, calibrated_modes = calibrated_modes))
     }
     norm_cds
   }
