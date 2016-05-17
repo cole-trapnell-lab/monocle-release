@@ -80,6 +80,7 @@ norm_kb <- function(kb, exprs_cds) {
 
 #use gaussian kernel to calculate the mode of transcript counts
 dmode <- function(x, breaks="Sturges") {
+  if (length(x) < 2) return (0);
   den <- density(x, kernel=c("gaussian"))
   ( den$x[den$y==max(den$y)] )
 }
@@ -447,6 +448,8 @@ relative2abs <- function(relative_cds,
       
       names(t_estimate) <- colnames(relative_expr_matrix)
       
+      user_provided_kb_intercept = kb_intercept
+      
       if(is.null(kb_slope) || is.null(kb_intercept)){
         ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
         ladder_df$numMolecules <- ladder_df[, mixture_name] * 
@@ -499,7 +502,9 @@ relative2abs <- function(relative_cds,
               if (verbose)
                   message(paste("optimization cycle", optim_iter,
                   "..."))
-              if (kb_intercept_rng[1] != kb_intercept_rng[2]) {
+             # only optimize both m and c if the user provided us with a value for c
+             # otherwise just use the fixed c, which is easy to calibrate correctly
+              if (is.null(user_provided_kb_intercept) == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2]) {
                   if (verbose)
                     message("optimization m and c values (NOTE that c range should not be huge)")
                   optim_para <- optim(par = c(kb_slope=kb_slope, kb_intercept=kb_intercept), optim_mc_func_fix_c,
@@ -519,7 +524,7 @@ relative2abs <- function(relative_cds,
                     control = list(factr = 1e+12,
                       pgtol = 0.1, trace = 1, ndeps = c(0.001,
                         0.001),
-                      reltol=1e-1), hessian = FALSE)
+                      factr=1e14), hessian = FALSE)
               }
               else {
                   if (verbose){
