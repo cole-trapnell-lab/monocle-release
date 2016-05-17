@@ -543,8 +543,8 @@ relative2abs <- function(relative_cds,
             if(length(reads_per_cell) == 1)
               reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
 
-            save(file = 'recovery_algorithm_calibrated_mode.RData', 
-              split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs, expected_capture_rate)
+            # save(file = 'recovery_algorithm_calibrated_mode.RData', 
+            #   split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs, expected_capture_rate)
 
             calibrated_modes <- lapply(1:length(split_relative_exprs), 
                            calibrate_mode_new, 
