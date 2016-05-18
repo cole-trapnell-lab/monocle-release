@@ -61,7 +61,6 @@ opt_norm_t <- function(t, fpkm, mRNAs_for_mode, kb_slope, kb_intercept, expr_thr
   
   if(!is.null(pseudocnt)){
     10^dmode(log10(selected + pseudocnt)) #keep the original scale
-    #k * dmode(log10(fpkm[fpkm > expr_thresh])) + b
   }
   else
     10^dmode(log10(selected))
@@ -102,8 +101,8 @@ dmode <- function(x, breaks="Sturges") {
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
 optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
-          alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(500000, ncol(relative_expr_matrix)),
-          cores = 1, weight_mode=0.33, weight_relative_expr=0.33, weight_total_rna=0.33, verbose = F,  ...) {
+          alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
+          cores = 1, weight_mode=0.17, weight_relative_expr=0.50, weight_total_rna=0.33, verbose = F,  ...) {
   data('spike_df') #add the spikein dataset
 
   if(is.null(spike_df$log_numMolecule))
@@ -155,60 +154,34 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   if(any(is.na(cell_dmode)))
     return(NA)
   
-  #adj_est_std_cds <- mapply(opt_norm_t, split_t, split_fpkm, m = m_val, c = c_val, return_norm = T)
   sum_total_cells_rna <- colSums(adj_est_std_cds)
   
-  #minimization function:
-  #8.
-  #dmode_rmse_weight_total <- mean(weight*((cell_dmode - alpha)/alpha)^2 + (1 - weight)*((sum_total_cells_rna -  total_RNAs)/total_RNAs)^2)
-  #add the JS distance measure:
-  # print(t_k_b_solution)
-  # save(file = './debug_optim_mc_func_fix_c', relative_expr_matrix, adj_est_std_cds, t_k_b_solution, total_rna_df, kb_intercept_val)
-  #remove the b so that the relative and absolute counts at log scale will have perfect jsd
-  # relative_expr_matrix <- log10(relative_expr_matrix)
-  # adj_est_std_cds <- log10(adj_est_std_cds) - matrix(rep(as.numeric(t_k_b_solution$b), each = nrow(adj_est_std_cds)), nrow = nrow(adj_est_std_cds))
-
-  # split_relative_expr_matrix <- split(Matrix::t(adj_est_std_cds), 1:ncol(adj_est_std_cds))
-  # round_split_relative_expr_matrix <- split(Matrix::t(round(adj_est_std_cds)), 1:ncol(adj_est_std_cds))
-  
-  # valid_ind <- relative_expr_matrix > 0 & adj_est_std_cds > 0 
+  #Jenn-Shannon divergence:
   p_df <- makeprobs(relative_expr_matrix) #relative expression
   p_list <- split(Matrix::t(p_df), 1:ncol(p_df))
-  # q_df_round <- makeprobs(round(adj_est_std_cds)) #round
   q_df <- makeprobs(adj_est_std_cds) #no rounding
   q_list <- split(Matrix::t(q_df), 1:ncol(q_df))
-  # q_list_round <- split(Matrix::t(q_df_round), 1:ncol(q_df_round))
   
   dist_divergence <- mcmapply(function(x, y) {
     JSdistVec(x, y)
   }, p_list, q_list, mc.cores = cores)
   
-  # dist_divergence_round <- mcmapply(function(x, y) {
-  #   JSdistVec(x, y)
-  # }, p_list, q_list_round, mc.cores = cores)
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
   
+  #total RNA MSE
   sum_total_cells_rna_finite <- sum_total_cells_rna[is.finite(sum_total_cells_rna)]
   total_RNAs_finite <- total_RNAs[is.finite(sum_total_cells_rna)]
-  
   total_rna_obj <- exp(mean(log(((sum_total_cells_rna_finite -  total_RNAs_finite)/total_RNAs_finite)^2))) #use geometric mean to avoid outlier cells
+
+  #mode MSE
   mode_obj <- exp(mean(log(((cell_dmode[is.finite(cell_dmode)] - alpha[is.finite(cell_dmode)])/alpha[is.finite(cell_dmode)])^2)))
+
   relative_expr_obj <- gm_dist_divergence * 10 #give more weight on this
   
+  #objective
   res <- weight_mode * mode_obj + weight_relative_expr * relative_expr_obj + weight_total_rna * total_rna_obj
-  
-  # if(add_kl_divergence)
-  #   res <- 0.25 * log10(dmode_rmse_weight_total + 1) + 0.75 * gm_dist_divergence
-  # else
-  #   res <- log10(dmode_rmse_weight_total + 1)
-  # 
-  # #use the algorithm:
-  # if(add_kl_divergence)
-  #   res <- (weight * (mean(((cell_dmode - alpha)/alpha)^2) - 0)) + (1 - weight) * (gm_dist_divergence - 0.0) + dmode_rmse_weight_total
-  # else
-  #   res <- log10(dmode_rmse_weight_total + 1)
-  
+   
   if(verbose){
     message('current m, c values are ', paste(kb_slope_val, kb_intercept_val, sep = ', '))
     message('objective is:')
@@ -234,7 +207,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   if(is.finite(res))
     return(res)
   else
-    return(1e10 * runif(1))
+    return(1e10 * runif(1)) #Census should not run this part since non-finite values are removed 
 }
 
 #' Find the most commonly occuring relative expression value in each cell
@@ -265,8 +238,6 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
 #'}
 
 estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
-  #peak finder (using mixture Gauissan model for the FPKM distribution fitting, choose the minial peaker as default)
-  
   #apply each column
   unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh])))) #best coverage estimate}
 }
@@ -281,39 +252,28 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
   if(length(total_mRNA) > 1) total_mRNA <- 10^dmode(log10(total_mRNA))
 
   kb_df <- ldply (seq(0,trials, by=1), function(i){
-    #print (i)
     
     hypothetical_ladder <- rmultinom(1, (total_ladder_transcripts * capture_rate), (ladder / sum(ladder)))
-    #print (hypothetical_ladder)
     asympt_proportions <- hypothetical_ladder / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
     trial_reads <- rmultinom(1, reads, asympt_proportions)
     trial_tpm <- 1e6 * trial_reads / sum(trial_reads)
     
-    #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
-    #hypothetical_ladder_tpm <- 1e6 * hypothetical_ladder / ((total_ladder_transcripts + total_mRNA) * capture_rate)
     hypothetical_ladder_tpm <- trial_tpm[1:length(hypothetical_ladder)]
-    #print (hypothetical_ladder_tpm)
     
     ladder_df <- data.frame(hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
                             hypothetical_ladder=hypothetical_ladder,
                             ladder = ladder)
-    # ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & hypothetical_ladder > 0)
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
-    # ladder_reg <- rlm (log10(hypothetical_ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
     ladder_reg <- rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
-    #print (summary(ladder_reg))
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
-    #print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
     data.frame(k=k,b=b)
   })
-  #print (kb_df)
   
   kb_reg <- rlm (b ~ k, data=kb_df)
-  #print (summary(kb_reg))
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1], kb_df = kb_df))
 }
 
@@ -338,33 +298,24 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
   reads <- reads[ind]
 
   mode_df <- ldply (seq(0,trials, by=1), function(i){
-    # print((total_ladder_transcripts * capture_rate))
     hypothetical_ladder <- rmultinom(1, (total_ladder_transcripts * capture_rate), (ladder / sum(ladder)))
     
-    # message('hypothetical_ladder is: ')
-    # print(hypothetical_ladder)
     asympt_proportions <- hypothetical_ladder / (sum(hypothetical_ladder) + (total_mRNA * capture_rate))
     asympt_proportions <- c(asympt_proportions, 1 - sum(asympt_proportions))
     
     trial_reads <- rmultinom(1, reads, asympt_proportions)
     trial_tpm <- 1e6 * trial_reads / sum(trial_reads)
     
-    #hypothetical_ladder <- hypothetical_ladder[hypothetical_ladder > 0]
-    #hypothetical_ladder_tpm <- 1e6 * hypothetical_ladder / ((total_ladder_transcripts + total_mRNA) * capture_rate)
     hypothetical_ladder_tpm <- trial_tpm[1:length(hypothetical_ladder)]
     tpm_distribution <-  tpm_distribution * trial_reads[length(hypothetical_ladder) + 1] / sum(trial_reads) #put the tpm for the spike-in and the endogenous RNA at the same space
-    # message('hypothetical_ladder_tpm is')
-    # print(hypothetical_ladder_tpm)
     
     ladder_df <- data.frame(asympt_proportions_tpm=asympt_proportions[1:length(hypothetical_ladder)] * 10e6,
                             hypothetical_ladder_tpm=hypothetical_ladder_tpm, 
                             hypothetical_ladder=hypothetical_ladder,
                             ladder = ladder)
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
-    # ladder_df <- subset(ladder_df, asympt_proportions_tpm > 0 & hypothetical_ladder > 0)
     
     ladder_reg <- tryCatch({
-        # ladder_reg <-  rlm (log10(hypothetical_ladder) ~ log10(asympt_proportions_tpm), data=ladder_df)
        ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
 
         ladder_reg
@@ -376,14 +327,10 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
     if(is.null(ladder_reg))
       return(data.frame(hypothetical_mode=NULL))
 
-    # print (summary(ladder_reg))
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
-    # print (qplot(hypothetical_ladder_tpm, hypothetical_ladder, log="xy") + geom_abline(slope=k, intercept=b))
-    # data.frame(k=k,b=b)
 
     hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-    # print(as.numeric(10^(k * hypothetical_mode + b)))
     data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b)
   })
   return(data.frame(mean_hypotetical_mode = mean(mode_df$hypothetical_mode), 
@@ -418,7 +365,7 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
 #' @param mixture_type the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1. 
 #' @param detection_threshold the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration. 
 #' @param alpha_v the hypothesized mode of transcript counts for each cell. Default is 1. 
-#' @param total_RNAs the guess of total transcript counts in a single cell. Default is 50000. 
+#' @param total_RNAs the guess of total transcript counts in a single cell. Default is 150000. 
 #' @param weight the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
@@ -453,7 +400,7 @@ relative2abs <- function(relative_cds,
   mixture_type = 1,
   detection_threshold = 800, 
   expected_mRNA_mode = NULL, 
-  expected_total_mRNAs = 500000, 
+  expected_total_mRNAs = 150000, 
   reads_per_cell = 1e6,
   expected_capture_rate = 0.1,
   weight_mode=0.17, 
@@ -542,104 +489,76 @@ relative2abs <- function(relative_cds,
       formula_all_variables <- all.vars(as.formula(modelFormulaStr))
       
       names(t_estimate) <- colnames(relative_expr_matrix)
-      
-      if(is.null(kb_slope) || is.null(kb_intercept)){
-        ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
-        ladder_df$numMolecules <- ladder_df[, mixture_name] * 
-          (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
-             10^(23))
-        ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
-        # calibrated_mc <- calibrate_mc(expected_total_mRNAs, 
-        #                               expected_capture_rate, #assume a single m/c value for now
-        #                               ladder_df$numMolecules, 
-        #                               sum(ladder_df$numMolecules), 
-        #                               reads_per_cell,
-        #                               trials=100) 
-
-        #calibrate the mode by groups: 
-        split_relative_exprs <- split(as.matrix(relative_expr_matrix), col(relative_expr_matrix, as.factor = T))
+          
+      pd <- pData(relative_cds)
+      pd$Cell = row.names(pd) #use pData instead of the merged data.frame
+      norm_cds_list <- plyr::dlply(pd, c(formula_all_variables), function(x){
+        relative_expr_matrix_subsets <- relative_expr_matrix[, x$Cell]
+        
+        split_relative_exprs <- split(as.matrix(relative_expr_matrix_subsets), col(relative_expr_matrix_subsets, as.factor = T))
+ 
+        #calibrate the mode/mc by groups: 
         if(length(expected_total_mRNAs) == 1)
           expected_total_mRNAs <- rep(expected_total_mRNAs, length(split_relative_exprs))
         if(length(expected_capture_rate) == 1)
           expected_capture_rate <- rep(expected_capture_rate, length(split_relative_exprs))
         if(length(reads_per_cell) == 1)
           reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
+        calibrated_modes_df <- NULL
 
-        # save(file = 'recovery_algorithm_calibrated_mode.RData', 
-        #   split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs, expected_capture_rate)
+        if(is.null(kb_slope) || is.null(kb_intercept)){
+          ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
+          ladder_df$numMolecules <- ladder_df[, mixture_name] * 
+            (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
+               10^(23))
+          ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
 
-        calibrated_modes <- lapply(1:length(split_relative_exprs), 
-                       calibrate_mode, 
-                       tpm_distribution = split_relative_exprs, 
-                       ladder = spike_df$numMolecules, 
-                       total_ladder_transcripts = sum(spike_df$numMolecules),
-                       total_mRNA = expected_total_mRNAs, 
-                       capture_rate = expected_capture_rate,
-                       reads = reads_per_cell)
+          calibrated_modes <- lapply(1:length(split_relative_exprs), 
+                         calibrate_mode, 
+                         tpm_distribution = split_relative_exprs, 
+                         ladder = spike_df$numMolecules, 
+                         total_ladder_transcripts = sum(spike_df$numMolecules),
+                         total_mRNA = expected_total_mRNAs, 
+                         capture_rate = expected_capture_rate,
+                         reads = reads_per_cell)
 
-        calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
-        # expected_mRNA_mode <- ceiling(calibrated_modes)
-        mc_rlm <- rlm(b ~ k, data = calibrated_modes_df)
+          calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+          # expected_mRNA_mode <- ceiling(calibrated_modes)
+          mc_rlm <- rlm(b ~ k, data = calibrated_modes_df)
 
-        # kb_slope <- calibrated_mc[["m"]]
-        kb_slope <- coef(mc_rlm)[2]
+          kb_slope <- coef(mc_rlm)[2]
 
-        if(is.null(kb_intercept))
-          # kb_intercept <- calibrated_mc[["c"]]
-          kb_intercept <- coef(mc_rlm)[1]
-      }
+          if(is.null(kb_intercept))
+            kb_intercept <- coef(mc_rlm)[1]
+        }
       
-      if (is.null(kb_slope_rng)){
-        if(kb_slope > 0)
-          kb_slope_rng = c(0.2 * kb_slope, 2 * kb_slope) #note that m is a negative value
-        else 
-          kb_slope_rng = c(2 * kb_slope, 0.2 * kb_slope) 
-      }
-      
-      if (is.null(kb_intercept_rng)){
-        if(kb_intercept > 0)
-          kb_intercept_rng = c(0.75 * kb_intercept, 1.25 * kb_intercept)
-        else
-          kb_intercept_rng = c(1.25 * kb_intercept, 0.75 * kb_intercept)
-      }
-      
-      pd <- pData(relative_cds)
-      pd$Cell = row.names(pd) #use pData instead of the merged data.frame
-      norm_cds_list <- plyr::dlply(pd, c(formula_all_variables), function(x){
-          relative_expr_matrix_subsets <- relative_expr_matrix[, x$Cell]
-          
-          split_relative_exprs <- split(as.matrix(relative_expr_matrix_subsets), col(relative_expr_matrix_subsets, as.factor = T))
-          
-          if (is.null(expected_mRNA_mode)){
-            # calibrated_modes <- lapply(split_relative_exprs, 
-            #                           calibrate_mode, 
-            #                           expected_total_mRNAs, 
-            #                           expected_capture_rate,
-            #                           reads_per_cell)
-            # print(split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs)
+        if (is.null(kb_slope_rng)){
+          if(kb_slope > 0)
+            kb_slope_rng = c(0.2 * kb_slope, 2 * kb_slope) #note that m is a negative value
+          else 
+            kb_slope_rng = c(2 * kb_slope, 0.2 * kb_slope) 
+        }
+        
+        if (is.null(kb_intercept_rng)){
+          if(kb_intercept > 0)
+            kb_intercept_rng = c(0.75 * kb_intercept, 1.25 * kb_intercept)
+          else
+            kb_intercept_rng = c(1.25 * kb_intercept, 0.75 * kb_intercept)
+        }
 
-            #calibrate the mode by groups: 
-            if(length(expected_total_mRNAs) == 1)
-              expected_total_mRNAs <- rep(expected_total_mRNAs, length(split_relative_exprs))
-            if(length(expected_capture_rate) == 1)
-              expected_capture_rate <- rep(expected_capture_rate, length(split_relative_exprs))
-            if(length(reads_per_cell) == 1)
-              reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
+        if (is.null(expected_mRNA_mode)){
+            if(is.null(calibrated_modes_df)) {
+              calibrated_modes <- lapply(1:length(split_relative_exprs), 
+                             calibrate_mode, 
+                             tpm_distribution = split_relative_exprs, 
+                             ladder = spike_df$numMolecules, 
+                             total_ladder_transcripts = sum(spike_df$numMolecules),
+                             total_mRNA = expected_total_mRNAs, 
+                             capture_rate = expected_capture_rate,
+                             reads = reads_per_cell)
+              calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+            }
 
-            # save(file = 'recovery_algorithm_calibrated_mode.RData', 
-            #   split_relative_exprs, spike_df, total_mRNA, capture_rate, reads, expected_total_mRNAs, expected_capture_rate)
-
-            calibrated_modes <- lapply(1:length(split_relative_exprs), 
-                           calibrate_mode, 
-                           tpm_distribution = split_relative_exprs, 
-                           ladder = spike_df$numMolecules, 
-                           total_ladder_transcripts = sum(spike_df$numMolecules),
-                           total_mRNA = expected_total_mRNAs, 
-                           capture_rate = expected_capture_rate,
-                           reads = reads_per_cell)
-
-            calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
-            # expected_mRNA_mode <- ceiling(calibrated_modes)
             expected_mRNA_mode <- calibrated_modes_df$mean_hypotetical_mode
 
             if(verbose){
