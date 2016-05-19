@@ -331,11 +331,20 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
     k <- coefficients(ladder_reg)[2]
 
     hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-    data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b)
+    # data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b)
+    df <- data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b, 
+      ladder = ladder, hypothetical_ladder_tpm = hypothetical_ladder_tpm)
+    df
   })
-  return(data.frame(mean_hypotetical_mode = mean(mode_df$hypothetical_mode), 
-    k = mean(mode_df$k), b = mean(mode_df$b)
-    ))
+
+  ladder_df <- subset(mode_df, hypothetical_ladder_tpm > 0 & ladder > 0)
+#   print(ladder_df)
+  ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+  b <- coefficients(ladder_reg)[1]
+  k <- coefficients(ladder_reg)[2]
+
+  return(data.frame(mean_hypotetical_mode = dmode(mode_df$hypothetical_mode), 
+    avg_k = dmode(mode_df$k), avg_b = dmode(mode_df$b), k = k, b = b))
 }
 
 
@@ -546,6 +555,15 @@ relative2abs <- function(relative_cds,
             kb_intercept_rng = c(1.25 * kb_intercept, 0.75 * kb_intercept)
         }
 
+        if(verbose){
+          message('the m/c values are: ')
+          print (paste(kb_slope, kb_intercept, sep = ', '))
+          message('the range for m is: ')
+          print (kb_slope_rng)          
+          message('the range for c is: ')
+          print (kb_intercept_rng)
+        }
+        
         if (is.null(expected_mRNA_mode)){
             if(is.null(calibrated_modes_df)) {
               calibrated_modes <- lapply(1:length(split_relative_exprs), 
@@ -640,6 +658,7 @@ relative2abs <- function(relative_cds,
                   t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
               if (verbose)
                   message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
+              save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
               k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
                 function(x) {
                     a_matrix <- matrix(c(log10(x[, "t_estimate"]),
