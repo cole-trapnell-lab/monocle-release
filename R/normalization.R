@@ -277,20 +277,6 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1], kb_df = kb_df))
 }
 
-# calibrate_mode <- function(tpm_distribution, total_mRNA, capture_rate, reads, trials=100){
-#   mode_df <- ldply (seq(0,trials, by=1), function(i){
-#     proportions <- tpm_distribution / sum(tpm_distribution)
-    
-#     hypothetical_endo <- rmultinom(1, (total_mRNA * capture_rate), proportions)
-#     hypothetical_proportions <- hypothetical_endo / sum(hypothetical_endo)
-#     hypothetical_library <- rmultinom(1, reads, hypothetical_proportions)
-    
-#     hypothetical_mode <- 10^dmode(log10(hypothetical_endo[hypothetical_library > 0]))
-#     data.frame(hypothetical_mode=hypothetical_mode)
-#   })
-#   return(mean(mode_df$hypothetical_mode))
-# }
-
 calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
   tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
@@ -325,26 +311,27 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
       })
 
     if(is.null(ladder_reg))
-      return(data.frame(hypothetical_mode=NULL))
+      return(data.frame(hypothetical_mode=NULL, k = NULL, b = NULL, 
+      ladder = NULL, hypothetical_mode = NULL))
 
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
 
-    hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
-    # data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b)
-    df <- data.frame(hypothetical_mode=10^(k * hypothetical_mode + b), k = k, b = b, 
-      ladder = ladder, hypothetical_ladder_tpm = hypothetical_ladder_tpm)
+    fpkm_hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
+
+    df <- data.frame(hypothetical_mode=10^(k * fpkm_hypothetical_mode + b), 
+      hypothetical_ladder_tpm = hypothetical_ladder_tpm, ladder = ladder 
+      )
     df
   })
 
   ladder_df <- subset(mode_df, hypothetical_ladder_tpm > 0 & ladder > 0)
-#   print(ladder_df)
   ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
   b <- coefficients(ladder_reg)[1]
   k <- coefficients(ladder_reg)[2]
 
   return(data.frame(mean_hypotetical_mode = dmode(mode_df$hypothetical_mode), 
-    avg_k = dmode(mode_df$k), avg_b = dmode(mode_df$b), k = k, b = b))
+    k = k, b = b))
 }
 
 
@@ -411,7 +398,7 @@ relative2abs <- function(relative_cds,
   expected_mRNA_mode = NULL, 
   expected_total_mRNAs = 150000, 
   reads_per_cell = 1e6,
-  expected_capture_rate = 0.1,
+  expected_capture_rate = 0.25,
   weight_mode=0.17, 
   weight_relative_expr=0.33, 
   weight_total_rna=0.5,
