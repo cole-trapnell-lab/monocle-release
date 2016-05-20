@@ -500,6 +500,8 @@ relative2abs <- function(relative_cds,
           expected_capture_rate <- rep(expected_capture_rate, length(split_relative_exprs))
         if(length(reads_per_cell) == 1)
           reads_per_cell <- rep(reads_per_cell, length(split_relative_exprs))
+
+        calibrated_mc <- NULL 
         calibrated_modes_df <- NULL
 
         if(is.null(kb_slope) || is.null(kb_intercept)){
@@ -520,12 +522,12 @@ relative2abs <- function(relative_cds,
 
           calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
           # expected_mRNA_mode <- ceiling(calibrated_modes)
-          mc_rlm <- rlm(b ~ k, data = calibrated_modes_df)
+          calibrated_mc <- coef(rlm(b ~ k, data = calibrated_modes_df))
 
-          kb_slope <- coef(mc_rlm)[2]
+          kb_slope <- calibrated_mc[2]
 
           if(is.null(kb_intercept))
-            kb_intercept <- coef(mc_rlm)[1]
+            kb_intercept <- calibrated_mc[1]
         }
       
         if (is.null(kb_slope_rng)){
@@ -570,132 +572,147 @@ relative2abs <- function(relative_cds,
               message('the calibrated modes are: ')
               print (expected_mRNA_mode)
             }
-          }
+        }
           
-          t_estimate_subset <- t_estimate[colnames(relative_expr_matrix_subsets)]
-          if (verbose)
-            message("optimizating mc values...")
-          for (optim_iter in 1:optim_num) {
-              if (verbose)
-                  message(paste("optimization cycle", optim_iter,
-                  "..."))
-             # only optimize both m and c if the user provided us with a value for c
-             # otherwise just use the fixed c, which is easy to calibrate correctly
-              if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2]) {
-                  if (verbose)
-                    message("optimization m and c values (NOTE that c range should not be huge)")
-                 if(length(expected_total_mRNAs) == 1)
-                  expected_total_mRNAs <- rep(expected_total_mRNAs, nrow(relative_expr_matrix))
+        t_estimate_subset <- t_estimate[colnames(relative_expr_matrix_subsets)]
+        if (verbose)
+          message("optimizating mc values...")
+        for (optim_iter in 1:optim_num) {
+            if (verbose)
+                message(paste("optimization cycle", optim_iter,
+                "..."))
+           # only optimize both m and c if the user provided us with a value for c
+           # otherwise just use the fixed c, which is easy to calibrate correctly
+            if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2]) {
+                if (verbose)
+                  message("optimization m and c values (NOTE that c range should not be huge)")
+               if(length(expected_total_mRNAs) == 1)
+                expected_total_mRNAs <- rep(expected_total_mRNAs, nrow(relative_expr_matrix))
 
-                  optim_para <- optim(par = c(kb_slope=kb_slope, kb_intercept=kb_intercept), optim_mc_func_fix_c,
-                    gr = NULL, t_estimate = t_estimate_subset,
-                    verbose = verbose, 
-                    alpha = expected_mRNA_mode, 
-                    total_RNAs = expected_total_mRNAs * expected_capture_rate, # * expected_capture_rate
-                    cores = cores, pseudocnt = 0.01,
-                    relative_expr_matrix = relative_expr_matrix_subsets,
-                    split_relative_expr_matrix = split_relative_exprs,
-                    weight_mode=weight_mode, 
-                    weight_relative_expr=weight_relative_expr, 
-                    weight_total_rna=weight_total_rna,
-                    method = c("L-BFGS-B"), 
-                    # maxit = max_iterations,
-                    lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
-                    upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
-                    control = list(factr = 1, pgtol = 0.1,trace = 1, ndeps = c(0.001, 0.001)), 
-                    hessian = FALSE)
-              }
-              else {
-                  if (verbose){
-                    message("optimization m and fix c as discussed in the method")
-                    message("current m value before optimization is, ", kb_slope)
-                    message("fixed c value before optimization is, ", kb_intercept)
-                  }
-                  optim_para <- optim(par = c(kb_slope = kb_slope), optim_mc_func_fix_c,
-                    gr = NULL, kb_intercept = kb_intercept, t_estimate = t_estimate_subset,
-                    alpha = expected_mRNA_mode, 
-                    total_RNAs = expected_total_mRNAs * expected_capture_rate, #* expected_capture_rate
-                    cores = cores,
-                    weight_mode=weight_mode, 
-                    weight_relative_expr=weight_relative_expr, 
-                    weight_total_rna=weight_total_rna,
-                    verbose=verbose,
-                    pseudocnt = 0.01, relative_expr_matrix = relative_expr_matrix_subsets,
-                    split_relative_expr_matrix = split_relative_exprs,
-                    method = c("Brent"), 
-                    # maxit = max_iterations,
-                    lower = c(kb_slope_rng[1]), 
-                    upper = c(kb_slope_rng[2]), 
-                    control = list(reltol=1e-1, trace = 1), ndeps = c(0.001), 
-                    hessian = FALSE)
+                optim_para <- optim(par = c(kb_slope=kb_slope, kb_intercept=kb_intercept), optim_mc_func_fix_c,
+                  gr = NULL, t_estimate = t_estimate_subset,
+                  verbose = verbose, 
+                  alpha = expected_mRNA_mode, 
+                  total_RNAs = expected_total_mRNAs * expected_capture_rate, # * expected_capture_rate
+                  cores = cores, pseudocnt = 0.01,
+                  relative_expr_matrix = relative_expr_matrix_subsets,
+                  split_relative_expr_matrix = split_relative_exprs,
+                  weight_mode=weight_mode, 
+                  weight_relative_expr=weight_relative_expr, 
+                  weight_total_rna=weight_total_rna,
+                  method = c("L-BFGS-B"), 
+                  # maxit = max_iterations,
+                  lower = c(kb_slope_rng[1], kb_intercept_rng[1]), 
+                  upper = c(kb_slope_rng[2], kb_intercept_rng[2]), 
+                  control = list(factr = 1, pgtol = 0.1,trace = 1, ndeps = c(0.001, 0.001)), 
+                  hessian = FALSE)
+            }
+            else {
+                if (verbose){
+                  message("optimization m and fix c as discussed in the method")
+                  message("current m value before optimization is, ", kb_slope)
+                  message("fixed c value before optimization is, ", kb_intercept)
+                }
+                optim_para <- optim(par = c(kb_slope = kb_slope), optim_mc_func_fix_c,
+                  gr = NULL, kb_intercept = kb_intercept, t_estimate = t_estimate_subset,
+                  alpha = expected_mRNA_mode, 
+                  total_RNAs = expected_total_mRNAs * expected_capture_rate, #* expected_capture_rate
+                  cores = cores,
+                  weight_mode=weight_mode, 
+                  weight_relative_expr=weight_relative_expr, 
+                  weight_total_rna=weight_total_rna,
+                  verbose=verbose,
+                  pseudocnt = 0.01, relative_expr_matrix = relative_expr_matrix_subsets,
+                  split_relative_expr_matrix = split_relative_exprs,
+                  method = c("Brent"), 
+                  # maxit = max_iterations,
+                  lower = c(kb_slope_rng[1]), 
+                  upper = c(kb_slope_rng[2]), 
+                  control = list(reltol=1e-1, trace = 1), ndeps = c(0.001), 
+                  hessian = FALSE)
 
-              }
-              if (verbose)
-                  message("optimization is done!")
-              kb_slope <- optim_para$par[1]
-              if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2])
-                kb_intercept <- optim_para$par[2]
-              
-              if (verbose){
-                message("current m value after optimization is, ", kb_slope)
-                message("current c value after optimization is, ", kb_intercept)
-              }
-              
-              total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix_subsets),
-                  t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
-              if (verbose)
-                  message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
-              save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
-              k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
-                function(x) {
-                    a_matrix <- matrix(c(log10(x[, "t_estimate"]),
-                    1, kb_slope, -1), ncol = 2, nrow = 2, byrow = T)
-                    colnames(a_matrix) <- c("k", "b")
-                    b_matrix <- matrix(c(log10(x[, "alpha_v"]), -kb_intercept), nrow = 2, byrow = T)
-                    k_b_solution <- t(solve(a_matrix, b_matrix))
-                })
-              # print (k_b_solution)
-              rownames(k_b_solution) <- k_b_solution$Cell
-              k_b_solution <- t(k_b_solution[, c(2, 3)])
-              split_kb <- split(k_b_solution, col(k_b_solution,
-                  as.factor = T))
-              if (verbose)
-                message("Apply the estimated linear regression model to recovery the absolute copy number for all transcripts each cell...")
-              adj_split_relative_expr <- mcmapply(norm_kb, split_kb,
-                  split_relative_exprs, mc.cores = cores)
-              total_rna_df$estimate_k <- k_b_solution[1, ]
-              total_rna_df$estimate_b <- k_b_solution[2, ]
-              norm_cds <- adj_split_relative_expr
-              row.names(norm_cds) <- row.names(relative_expr_matrix_subsets)
-              colnames(norm_cds) <- colnames(relative_expr_matrix_subsets)
-              t_estimate_subset <- 10^(-(kb_slope + kb_intercept/total_rna_df$estimate_k))
-              alpha_v <- estimate_t(norm_cds)
-              total_RNAs <- apply(norm_cds, 2, sum)
-          }
-          return(list(norm_cds = norm_cds, kb_slope = kb_slope, kb_intercept = kb_intercept, k_b_solution = k_b_solution)) #
+            }
+            if (verbose)
+                message("optimization is done!")
+            kb_slope <- optim_para$par[1]
+            if (use_fixed_intercept == FALSE && kb_intercept_rng[1] != kb_intercept_rng[2])
+              kb_intercept <- optim_para$par[2]
+            
+            if (verbose){
+              message("current m value after optimization is, ", kb_slope)
+              message("current c value after optimization is, ", kb_intercept)
+            }
+            
+            total_rna_df <- data.frame(Cell = colnames(relative_expr_matrix_subsets),
+                t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
+            if (verbose)
+                message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
+            save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
+            k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
+              function(x) {
+                  a_matrix <- matrix(c(log10(x[, "t_estimate"]),
+                  1, kb_slope, -1), ncol = 2, nrow = 2, byrow = T)
+                  colnames(a_matrix) <- c("k", "b")
+                  b_matrix <- matrix(c(log10(x[, "alpha_v"]), -kb_intercept), nrow = 2, byrow = T)
+                  k_b_solution <- t(solve(a_matrix, b_matrix))
+              })
+            # print (k_b_solution)
+            rownames(k_b_solution) <- k_b_solution$Cell
+            k_b_solution <- t(k_b_solution[, c(2, 3)])
+            split_kb <- split(k_b_solution, col(k_b_solution,
+                as.factor = T))
+            if (verbose)
+              message("Apply the estimated linear regression model to recovery the absolute copy number for all transcripts each cell...")
+            adj_split_relative_expr <- mcmapply(norm_kb, split_kb,
+                split_relative_exprs, mc.cores = cores)
+            total_rna_df$estimate_k <- k_b_solution[1, ]
+            total_rna_df$estimate_b <- k_b_solution[2, ]
+            norm_cds <- adj_split_relative_expr
+            row.names(norm_cds) <- row.names(relative_expr_matrix_subsets)
+            colnames(norm_cds) <- colnames(relative_expr_matrix_subsets)
+            t_estimate_subset <- 10^(-(kb_slope + kb_intercept/total_rna_df$estimate_k))
+            alpha_v <- estimate_t(norm_cds)
+            total_RNAs <- apply(norm_cds, 2, sum)
+        }
+
+        return(list(norm_cds = norm_cds, kb_slope = kb_slope, kb_intercept = kb_intercept, k_b_solution = k_b_solution, 
+                    expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, calibrated_modes_df = calibrated_modes_df)) #
       }
       )
-      
       norm_cds <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$norm_cds))
       colnames(norm_cds) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$norm_cds)))) #set colnames
       norm_cds <- norm_cds[, colnames(relative_cds)] #switch back to the original order
 
-      kb_slope_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$kb_slope))
-      kb_intercept_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$kb_intercept))
-      
-      k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
-      colnames(k_b_solution) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$k_b_solution)))) #colnames
-      norm_cds <- norm_cds[, colnames(relative_cds)]
-      
       if (verbose)
         message("Return results...")
       if (return_all == T) {
-        if(!(is.null(kb_slope) || is.null(kb_intercept)))
-          calibrated_mc <- NULL 
-        if(!is.null(calibrated_modes_df))
-          calibrated_modes_df <- NULL
+        kb_slope_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$kb_slope))
+        kb_intercept_vec <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$kb_intercept))
+        
+        k_b_solution <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$k_b_solution))
+        colnames(k_b_solution) <- as.character(unlist(lapply(norm_cds_list, function(x) colnames(x$k_b_solution)))) #colnames
+        norm_cds <- norm_cds[, colnames(relative_cds)]
+        
+        # return all estimated values
+        expected_mRNA_mode <- NULL
+        if(!is.null(norm_cds_list[[1]]$expected_mRNA_mode)){
+          expected_mRNA_mode <- unlist(lapply(norm_cds_list, function(x) x$expected_mRNA_mode))
+          names(expected_mRNA_mode) <- colnames(k_b_solution)
+        }
+
+        calibrated_mc <- NULL
+        if(!is.null(norm_cds_list[[1]]$calibrated_mc))
+          calibrated_mc <- do.call(cbind.data.frame, lapply(norm_cds_list, function(x) x$calibrated_mc))
+
+        calibrated_modes_df <- NULL
+        if(!is.null(norm_cds_list[[1]]$calibrated_modes_df)){
+          calibrated_modes_df <- do.call(rbind.data.frame, lapply(norm_cds_list, function(x) x$calibrated_modes_df))
+          rownames(calibrated_modes_df) <- colnames(k_b_solution) #colnames
+        }
+        
         return(list(norm_cds = norm_cds, kb_slope = t(kb_slope_vec), kb_intercept = kb_intercept_vec, k_b_solution = k_b_solution, 
-          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, calibrated_modes_df = calibrated_modes_df))
+          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, 
+          calibrated_modes_df = calibrated_modes_df))
     }
     norm_cds
   }
