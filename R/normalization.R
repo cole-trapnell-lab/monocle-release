@@ -692,10 +692,10 @@ relative2abs <- function(relative_cds,
       if (return_all == T) {
         if(!(is.null(kb_slope) || is.null(kb_intercept)))
           calibrated_mc <- NULL 
-        if(!is.null(expected_mRNA_mode))
-          calibrated_modes <- NULL
+        if(!is.null(calibrated_modes_df))
+          calibrated_modes_df <- NULL
         return(list(norm_cds = norm_cds, kb_slope = t(kb_slope_vec), kb_intercept = kb_intercept_vec, k_b_solution = k_b_solution, 
-          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, calibrated_modes = calibrated_modes_df))
+          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, calibrated_modes_df = calibrated_modes_df))
     }
     norm_cds
   }
