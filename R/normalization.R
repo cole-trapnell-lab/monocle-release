@@ -100,7 +100,7 @@ dmode <- function(x, breaks="Sturges") {
 
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
 optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
-          relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
+          relative_expr_matrix = relative_expr_mat, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
           cores = 1, weight_mode=0.17, weight_relative_expr=0.50, weight_total_rna=0.33, verbose = F,  ...) {
   data('spike_df') #add the spikein dataset
@@ -396,7 +396,7 @@ relative2abs <- function(relative_cds,
   mixture_type = 1,
   detection_threshold = 800, 
   expected_mRNA_mode = NULL, 
-  expected_total_mRNAs = 37500, #150000 * 0.25
+  expected_total_mRNAs = 37500, #based on lung endogenous RNA
   reads_per_cell = 1e6,
   expected_capture_rate = 0.25,
   weight_mode=0.17, 
