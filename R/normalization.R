@@ -1,4 +1,3 @@
-
 # Calculate the probability vector 
 makeprobsvec<-function(p){
   phat<-p/sum(p)
