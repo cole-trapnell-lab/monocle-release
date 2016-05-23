@@ -267,13 +267,13 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
                             ladder = ladder)
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
-    ladder_reg <- rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+    ladder_reg <- MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
     data.frame(k=k,b=b)
   })
   
-  kb_reg <- rlm (b ~ k, data=kb_df)
+  kb_reg <- MASS::rlm (b ~ k, data=kb_df)
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1], kb_df = kb_df))
 }
 
@@ -302,7 +302,7 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
     ladder_reg <- tryCatch({
-       ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+       ladder_reg <-  MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
 
         ladder_reg
       }, error = function(e) {
@@ -326,7 +326,7 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
   })
 
   ladder_df <- subset(mode_df, hypothetical_ladder_tpm > 0 & ladder > 0)
-  ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+  ladder_reg <-  MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
   b <- coefficients(ladder_reg)[1]
   k <- coefficients(ladder_reg)[2]
 
@@ -445,7 +445,7 @@ relative2abs <- function(relative_cds,
       spike_df$log_fpkm <- log10(spike_df$FPKM)
       spike_df$log_numMolecules <- log10(spike_df$numMolecules)
       molModel <- tryCatch({
-        molModel <- rlm(log_numMolecules ~ log_fpkm, 
+        molModel <- MASS::rlm(log_numMolecules ~ log_fpkm, 
                         data = spike_df)
         molModel
       }, error = function(e) {
@@ -472,7 +472,7 @@ relative2abs <- function(relative_cds,
                                                  })), k = unlist(lapply(molModels, FUN = function(x) {
                                                    slope = x$coefficients[2]
                                                  })))
-    kb_model <- rlm(b ~ k, data = k_b_solution)
+    kb_model <- MASS::rlm(b ~ k, data = k_b_solution)
     kb_slope <- kb_model$coefficients[2]
     kb_intercept <- kb_model$coefficients[1]
     if (return_all == T) {
@@ -522,7 +522,7 @@ relative2abs <- function(relative_cds,
 
           calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
           # expected_mRNA_mode <- ceiling(calibrated_modes)
-          calibrated_mc <- coef(rlm(b ~ k, data = calibrated_modes_df))
+          calibrated_mc <- coef(MASS::rlm(b ~ k, data = calibrated_modes_df))
 
           kb_slope <- calibrated_mc[2]
 
