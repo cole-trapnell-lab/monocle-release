@@ -647,7 +647,7 @@ relative2abs <- function(relative_cds,
                 t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
             if (verbose)
                 message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
-            save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
+            # save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
             k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
               function(x) {
                   a_matrix <- matrix(c(log10(x[, "t_estimate"]),
