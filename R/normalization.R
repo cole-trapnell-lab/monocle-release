@@ -100,8 +100,8 @@ dmode <- function(x, breaks="Sturges") {
 
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
 optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
-          relative_expr_matrix = relative_expr_matrix, split_relative_expr_matrix = split_relative_exprs,
-          alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
+          relative_expr_matrix = relative_expr, split_relative_expr_matrix = split_relative_exprs,
+          alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(37500, ncol(relative_expr_matrix)),
           cores = 1, weight_mode=0.17, weight_relative_expr=0.50, weight_total_rna=0.33, verbose = F,  ...) {
   data('spike_df') #add the spikein dataset
 
@@ -267,13 +267,13 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
                             ladder = ladder)
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
-    ladder_reg <- rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+    ladder_reg <- MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
     b <- coefficients(ladder_reg)[1]
     k <- coefficients(ladder_reg)[2]
     data.frame(k=k,b=b)
   })
   
-  kb_reg <- rlm (b ~ k, data=kb_df)
+  kb_reg <- MASS::rlm (b ~ k, data=kb_df)
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1], kb_df = kb_df))
 }
 
@@ -302,7 +302,7 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
     ladder_df <- subset(ladder_df, hypothetical_ladder_tpm > 0 & ladder > 0)
     
     ladder_reg <- tryCatch({
-       ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+       ladder_reg <-  MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
 
         ladder_reg
       }, error = function(e) {
@@ -326,14 +326,13 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
   })
 
   ladder_df <- subset(mode_df, hypothetical_ladder_tpm > 0 & ladder > 0)
-  ladder_reg <-  rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
+  ladder_reg <-  MASS::rlm (log10(ladder) ~ log10(hypothetical_ladder_tpm), data=ladder_df)
   b <- coefficients(ladder_reg)[1]
   k <- coefficients(ladder_reg)[2]
 
   return(data.frame(mean_hypotetical_mode = dmode(mode_df$hypothetical_mode), 
     k = k, b = b))
 }
-
 
 #' Transform relative expression values into absolute transcript counts.
 #' 
@@ -396,7 +395,7 @@ relative2abs <- function(relative_cds,
   mixture_type = 1,
   detection_threshold = 800, 
   expected_mRNA_mode = NULL, 
-  expected_total_mRNAs = 150000, 
+  expected_total_mRNAs = 37500, #based on lung endogenous RNA
   reads_per_cell = 1e6,
   expected_capture_rate = 0.25,
   weight_mode=0.17, 
@@ -445,7 +444,7 @@ relative2abs <- function(relative_cds,
       spike_df$log_fpkm <- log10(spike_df$FPKM)
       spike_df$log_numMolecules <- log10(spike_df$numMolecules)
       molModel <- tryCatch({
-        molModel <- rlm(log_numMolecules ~ log_fpkm, 
+        molModel <- MASS::rlm(log_numMolecules ~ log_fpkm, 
                         data = spike_df)
         molModel
       }, error = function(e) {
@@ -472,7 +471,7 @@ relative2abs <- function(relative_cds,
                                                  })), k = unlist(lapply(molModels, FUN = function(x) {
                                                    slope = x$coefficients[2]
                                                  })))
-    kb_model <- rlm(b ~ k, data = k_b_solution)
+    kb_model <- MASS::rlm(b ~ k, data = k_b_solution)
     kb_slope <- kb_model$coefficients[2]
     kb_intercept <- kb_model$coefficients[1]
     if (return_all == T) {
@@ -522,7 +521,8 @@ relative2abs <- function(relative_cds,
 
           calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
           # expected_mRNA_mode <- ceiling(calibrated_modes)
-          calibrated_mc <- coef(rlm(b ~ k, data = calibrated_modes_df))
+
+          calibrated_mc <- coef(MASS::rlm(b ~ k, data = calibrated_modes_df))
 
           kb_slope <- calibrated_mc[2]
 
@@ -593,7 +593,7 @@ relative2abs <- function(relative_cds,
                   gr = NULL, t_estimate = t_estimate_subset,
                   verbose = verbose, 
                   alpha = expected_mRNA_mode, 
-                  total_RNAs = expected_total_mRNAs * expected_capture_rate, # * expected_capture_rate
+                  total_RNAs = expected_total_mRNAs, # * expected_capture_rate
                   cores = cores, pseudocnt = 0.01,
                   relative_expr_matrix = relative_expr_matrix_subsets,
                   split_relative_expr_matrix = split_relative_exprs,
@@ -616,7 +616,7 @@ relative2abs <- function(relative_cds,
                 optim_para <- optim(par = c(kb_slope = kb_slope), optim_mc_func_fix_c,
                   gr = NULL, kb_intercept = kb_intercept, t_estimate = t_estimate_subset,
                   alpha = expected_mRNA_mode, 
-                  total_RNAs = expected_total_mRNAs * expected_capture_rate, #* expected_capture_rate
+                  total_RNAs = expected_total_mRNAs, #* expected_capture_rate
                   cores = cores,
                   weight_mode=weight_mode, 
                   weight_relative_expr=weight_relative_expr, 
@@ -630,7 +630,6 @@ relative2abs <- function(relative_cds,
                   upper = c(kb_slope_rng[2]), 
                   control = list(reltol=1e-1, trace = 1), ndeps = c(0.001), 
                   hessian = FALSE)
-
             }
             if (verbose)
                 message("optimization is done!")
@@ -647,7 +646,7 @@ relative2abs <- function(relative_cds,
                 t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
             if (verbose)
                 message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
-            save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
+
             k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
               function(x) {
                   a_matrix <- matrix(c(log10(x[, "t_estimate"]),
@@ -717,7 +716,6 @@ relative2abs <- function(relative_cds,
     norm_cds
   }
 }
-
 #' Spike-in transcripts data.
 #'
 #' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
