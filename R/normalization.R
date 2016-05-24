@@ -1,4 +1,3 @@
-
 # Calculate the probability vector 
 makeprobsvec<-function(p){
   phat<-p/sum(p)
@@ -503,18 +502,18 @@ relative2abs <- function(relative_cds,
         calibrated_mc <- NULL 
         calibrated_modes_df <- NULL
 
+        ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
+        ladder_df$numMolecules <- ladder_df[, mixture_name] * 
+          (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
+             10^(23))
+        ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
+        
         if(is.null(kb_slope) || is.null(kb_intercept)){
-          ladder_df <- subset(spike_df, mixture_name > detection_threshold) 
-          ladder_df$numMolecules <- ladder_df[, mixture_name] * 
-            (volume * 10^(-3) * 1/dilution * 10^(-18) * 6.02214129 * 
-               10^(23))
-          ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
-
           calibrated_modes <- lapply(1:length(split_relative_exprs), 
                          calibrate_mode, 
                          tpm_distribution = split_relative_exprs, 
-                         ladder = spike_df$numMolecules, 
-                         total_ladder_transcripts = sum(spike_df$numMolecules),
+                         ladder = ladder_df$numMolecules, 
+                         total_ladder_transcripts = sum(ladder_df$numMolecules),
                          total_mRNA = expected_total_mRNAs, 
                          capture_rate = expected_capture_rate,
                          reads = reads_per_cell)
@@ -558,8 +557,8 @@ relative2abs <- function(relative_cds,
               calibrated_modes <- lapply(1:length(split_relative_exprs), 
                              calibrate_mode, 
                              tpm_distribution = split_relative_exprs, 
-                             ladder = spike_df$numMolecules, 
-                             total_ladder_transcripts = sum(spike_df$numMolecules),
+                             ladder = ladder_df$numMolecules, 
+                             total_ladder_transcripts = sum(ladder_df$numMolecules),
                              total_mRNA = expected_total_mRNAs, 
                              capture_rate = expected_capture_rate,
                              reads = reads_per_cell)
