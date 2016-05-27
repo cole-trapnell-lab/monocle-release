@@ -711,8 +711,12 @@ relative2abs <- function(relative_cds,
           rownames(calibrated_modes_df) <- colnames(k_b_solution) #colnames
         }
         
+        calibrated_total_mRNAs <- NULL
+        if(calibrate_total_mRNA)
+          calibrated_total_mRNAs <- expected_total_mRNAs
+
         return(list(norm_cds = norm_cds, kb_slope = t(kb_slope_vec), kb_intercept = kb_intercept_vec, k_b_solution = k_b_solution, 
-          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, 
+          expected_mRNA_mode = expected_mRNA_mode, calibrated_mc = calibrated_mc, calibrated_total_mRNAs = calibrated_total_mRNAs,
           calibrated_modes_df = calibrated_modes_df))
     }
     norm_cds
