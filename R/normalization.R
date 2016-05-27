@@ -395,7 +395,8 @@ relative2abs <- function(relative_cds,
   mixture_type = 1,
   detection_threshold = 800, 
   expected_mRNA_mode = NULL, 
-  expected_total_mRNAs = 37500, #based on lung endogenous RNA
+  expected_total_mRNAs = 100000, #based on lung endogenous RNA
+  calibrate_total_mRNA = T,
   reads_per_cell = 1e6,
   expected_capture_rate = 0.25,
   weight_mode=0.17, 
@@ -406,6 +407,7 @@ relative2abs <- function(relative_cds,
   cores = 1, 
   optim_num = 1, ...) {
   relative_expr_matrix <- exprs(relative_cds)
+  # relative_expr_matrix <- apply(relative_expr_matrix, 2, function(x) x / sum(x) * 10^6) #convert to TPM
 
   parameters <- c(t_estimate, volume, dilution, detection_threshold,  weight_mode, weight_relative_expr, weight_total_rna,  optim_num)
   if(any(c(!is.finite(parameters), is.null(parameters))))
@@ -509,17 +511,29 @@ relative2abs <- function(relative_cds,
              10^(23))
         ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
         
-        if(is.null(kb_slope) || is.null(kb_intercept)){
-          calibrated_modes <- lapply(1:length(split_relative_exprs), 
-                         calibrate_mode, 
-                         tpm_distribution = split_relative_exprs, 
-                         ladder = ladder_df$numMolecules, 
-                         total_ladder_transcripts = sum(ladder_df$numMolecules),
-                         total_mRNA = expected_total_mRNAs, 
-                         capture_rate = expected_capture_rate,
-                         reads = reads_per_cell)
+        calibrated_modes <- lapply(1:length(split_relative_exprs), 
+                       calibrate_mode, 
+                       tpm_distribution = split_relative_exprs, 
+                       ladder = ladder_df$numMolecules, 
+                       total_ladder_transcripts = sum(ladder_df$numMolecules),
+                       total_mRNA = expected_total_mRNAs, 
+                       capture_rate = expected_capture_rate,
+                       reads = reads_per_cell)
+        calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+        if(verbose)
+          message('Calibrating mean total_mRNAs is ...')
 
-          calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+        if(calibrate_total_mRNA) {
+          num_gene_expressed <- apply(relative_expr_matrix, 2, function(x) sum(x > 1))
+          mean_relative_expression <- apply(relative_expr_matrix, 2, function(x) mean((x[x > 1])))
+          expected_total_mRNAs <- mean(num_gene_expressed * (mean_relative_expression / t_estimate) * calibrated_modes_df$mean_hypotetical_mode)
+          expected_total_mRNAs <- rep(expected_total_mRNAs, length(split_relative_exprs))
+        }
+
+        if(verbose)
+          message(paste('The calibrated mean total_mRNAs is', expected_total_mRNAs))
+
+        if(is.null(kb_slope) || is.null(kb_intercept)){
           # expected_mRNA_mode <- ceiling(calibrated_modes)
           calibrated_mc <- coef(MASS::rlm(b ~ k, data = calibrated_modes_df))
 
@@ -553,18 +567,6 @@ relative2abs <- function(relative_cds,
         }
         
         if (is.null(expected_mRNA_mode)){
-            if(is.null(calibrated_modes_df)) {
-              calibrated_modes <- lapply(1:length(split_relative_exprs), 
-                             calibrate_mode, 
-                             tpm_distribution = split_relative_exprs, 
-                             ladder = ladder_df$numMolecules, 
-                             total_ladder_transcripts = sum(ladder_df$numMolecules),
-                             total_mRNA = expected_total_mRNAs, 
-                             capture_rate = expected_capture_rate,
-                             reads = reads_per_cell)
-              calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
-            }
-
             expected_mRNA_mode <- calibrated_modes_df$mean_hypotetical_mode
 
             if(verbose){
