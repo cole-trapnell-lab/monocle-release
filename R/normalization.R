@@ -238,7 +238,7 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
 
 estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   #apply each column
-  unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^dmode(log10(relative_expr[relative_expr > relative_expr_thresh])))) #best coverage estimate}
+  unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh])))) #avoid multiple output
 }
 
 
@@ -531,7 +531,7 @@ relative2abs <- function(relative_cds,
         }
 
         if(verbose)
-          message(paste('The calibrated mean total_mRNAs is', expected_total_mRNAs))
+          message(paste('The calibrated mean total_mRNAs is', expected_total_mRNAs[1]))
 
         if(is.null(kb_slope) || is.null(kb_intercept)){
           # expected_mRNA_mode <- ceiling(calibrated_modes)
