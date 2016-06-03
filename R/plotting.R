@@ -609,209 +609,372 @@ plot_clusters<-function(cds,
   c
 }
 
+# #' Plots a pseudotime-ordered, row-centered heatmap
+# #' @export 
+# plot_genes_heatmap <- function(cds, 
+#                                rescaling='row', 
+#                                clustering='row', 
+#                                labCol=FALSE, 
+#                                labRow=TRUE, 
+#                                logMode=TRUE, 
+#                                pseudocount=0.1, 
+#                                use_vst=TRUE,
+#                                border=FALSE, 
+#                                heatscale=c(low='steelblue',mid='white',high='tomato'), 
+#                                heatMidpoint=0,
+#                                method="none",
+#                                scaleMax=2, 
+#                                scaleMin=-2, 
+#                                relative_expr=TRUE, 
+#                                ...){
+  
+#   ## the function can be be viewed as a two step process
+#   ## 1. using the rehape package and other funcs the data is clustered, scaled, and reshaped
+#   ## using simple options or by a user supplied function
+#   ## 2. with the now resahped data the plot, the chosen labels and plot style are built
+#   FM <- exprs(cds)
+  
+#   if (cds@expressionFamily@vfamily == "negbinomial"){
+#     integer_expression <- TRUE
+#   }else{
+#     integer_expression <- FALSE
+#     relative_expr <- TRUE
+#   }
+  
+#   if (integer_expression)
+#   {
+#     if (relative_expr){
+#       if (is.null(sizeFactors(cds)))
+#       {
+#         stop("Error: you must call estimateSizeFactors() first")
+#       }
+#       FM <- Matrix::t(Matrix::t(FM) / sizeFactors(cds))
+#     }
+#     FM <- round(FM)
+#   }
+  
+#   m=FM
+  
+#   if (is.null(fData(cds)$gene_short_name) == FALSE){
+#     feature_labels <- fData(cds)$gene_short_name
+#     feature_labels[is.na(feature_labels)]  <- fData(cds)$f_id
+#     row.names(m) <- feature_labels
+#   }
+  
+#   #remove genes with no expression in any condition
+#   m=m[!apply(m,1,sum)==0,]
+  
+#   if (use_vst && is.null(cds@dispFitInfo[["blind"]]$disp_func) == FALSE){
+#     m = vstExprs(cds, expr_matrix=m)
+#   }else if(logMode){
+#     m = log10(m+pseudocount)
+#   }
+  
+#   #remove genes with no sd
+#   #m=m[!apply(m,1,sd)==0,]
+
+#   ## you can either scale by row or column not both! 
+#   ## if you wish to scale by both or use a different scale method then simply supply a scale
+#   ## function instead NB scale is a base funct
+  
+#   ## I have supplied the default cluster and euclidean distance (JSdist) - and chose to cluster after scaling
+#   ## if you want a different distance/cluster method-- or to cluster and then scale
+#   ## then you can supply a custom function 
+  
+#   if(!is.function(method)){
+#     method = function(mat){as.dist((1 - cor(Matrix::t(mat)))/2)}	
+#   }
+  
+#   ## this is just reshaping into a ggplot format matrix and making a ggplot layer
+  
+#   if(is.function(rescaling))
+#   { 
+#     m=rescaling(m)
+#   } else {
+#     if(rescaling=='column'){
+#       m=m[!apply(m,2,sd)==0,]
+#       m=scale(m, center=TRUE)
+#       m[is.nan(m)] = 0
+#       m[m>scaleMax] = scaleMax
+#       m[m<scaleMin] = scaleMin
+#     }
+#     if(rescaling=='row'){ 
+#       m=m[!apply(m,1,sd)==0,]
+#       m=Matrix::t(scale(Matrix::t(m),center=TRUE))
+#       m[is.nan(m)] = 0
+#       m[m>scaleMax] = scaleMax
+#       m[m<scaleMin] = scaleMin
+#     }
+#   }
+  
+#   # If we aren't going to re-ordering the columns, order them by Pseudotime
+#   if (clustering %in% c("row", "none"))
+#     m = m[,row.names(pData(cds)[order(-pData(cds)$Pseudotime),])]
+  
+#   if(clustering=='row')
+#     m=m[hclust(method(m))$order, ]
+#   if(clustering=='column')  
+#     m=m[,hclust(method(Matrix::t(m)))$order]
+#   if(clustering=='both')
+#     m=m[hclust(method(m))$order ,hclust(method(Matrix::t(m)))$order]
+  
+  
+#   rows=dim(m)[1]
+#   cols=dim(m)[2]
+  
+  
+  
+#   # if(logMode) {
+#   #   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt( log10(m+pseudocount)))
+#   # }else{
+#   #   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt(m))
+#   # }
+  
+#   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt(m))
+  
+#   g=ggplot(data=melt.m)
+  
+#   ## add the heat tiles with or without a white border for clarity
+  
+#   if(border==TRUE)
+#     g2=g+geom_raster(aes(x=colInd,y=rowInd, fill=value),colour='grey')
+#   if(border==FALSE)
+#     g2=g+geom_raster(aes(x=colInd,y=rowInd,ymax=rowInd, fill=value))
+  
+#   ## add axis labels either supplied or from the colnames rownames of the matrix
+  
+#   if(labCol==TRUE) 
+#   {
+#     g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=colnames(m))
+#   }
+#   if(labCol==FALSE) 
+#   {
+#     g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=rep('',cols))
+#   }
+  
+  
+#   if(labRow==TRUE) 
+#   {
+#     g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rownames(m))	
+#   }
+#   if(labRow==FALSE)
+#   { 
+#     g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rep('',rows))	
+#   }
+  
+#   # Get rid of the ticks, they get way too dense with lots of rows
+#   g2 <- g2 + theme(axis.ticks = element_blank()) 
+  
+#   ## get rid of grey panel background and gridlines
+  
+#   g2=g2+theme(panel.grid.minor=element_line(colour=NA), panel.grid.major=element_line(colour=NA),
+#               panel.background=element_rect(fill=NA, colour=NA))
+  
+#   ##adjust x-axis labels
+#   g2=g2+theme(axis.text.x=element_text(angle=-90, hjust=0))
+  
+#   #write(paste(c("Length of heatscale is :", length(heatscale))), stderr())
+  
+#   if(is.function(rescaling))
+#   {
+    
+#   }else{ 
+#     if(rescaling=='row' || rescaling == 'column'){
+#       legendTitle <- "Relative\nexpression"
+#     }else{
+#       if (logMode)
+#       {
+#         legendTitle <- bquote(paste(log[10]," FPKM + ",.(pseudocount),sep=""))
+#         #legendTitle <- paste(expression(plain(log)[10])," FPKM + ",pseudocount,sep="")
+#       } else {
+#         legendTitle <- "FPKM"
+#       }
+#     }
+#   }
+  
+#   if (length(heatscale) == 2){
+#     g2 <- g2 + scale_fill_gradient(low=heatscale[1], high=heatscale[2], name=legendTitle)
+#   } else if (length(heatscale) == 3) {
+#     if (is.null(heatMidpoint))
+#     {
+#       heatMidpoint = (max(m) + min(m)) / 2.0
+#       #write(heatMidpoint, stderr())
+#     }
+#     g2 <- g2 + theme(panel.border = element_blank())
+#     g2 <- g2 + scale_fill_gradient2(low=heatscale[1], mid=heatscale[2], high=heatscale[3], midpoint=heatMidpoint, name=legendTitle)
+#   }else {
+#     g2 <- g2 + scale_fill_gradientn(colours=heatscale, name=legendTitle)
+#   }
+  
+#   #g2<-g2+scale_x_discrete("",breaks=tracking_ids,labels=gene_short_names)
+  
+#   g2 <- g2 + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+  
+#   ## finally add the fill colour ramp of your choice (default is blue to red)-- and return
+#   return (g2)
+# }
+
+
+plot_genes_heatmap <- function(...){
+  .Deprecated("plot_pseudotime_heatmap")
+  plot_pseudotime_heatmap(...)
+}
+
 #' Plots a pseudotime-ordered, row-centered heatmap
-#' @export 
-plot_genes_heatmap <- function(cds, 
-                               rescaling='row', 
-                               clustering='row', 
-                               labCol=FALSE, 
-                               labRow=TRUE, 
-                               logMode=TRUE, 
-                               pseudocount=0.1, 
-                               use_vst=TRUE,
-                               border=FALSE, 
-                               heatscale=c(low='steelblue',mid='white',high='tomato'), 
-                               heatMidpoint=0,
-                               method="none",
-                               scaleMax=2, 
-                               scaleMin=-2, 
-                               relative_expr=TRUE, 
-                               ...){
+#' 
+#' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
+#' @param cluster_rows Whether to cluster the rows of the heatmap.
+#' @param hclust_method The method used by pheatmap to perform hirearchical clustering of the rows. 
+#' @param num_clusters Number of clusters for the heatmap of branch genes
+#' @param hmcols The color scheme for drawing the heatmap.
+#' @param add_annotation_row Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.
+#' @param add_annotation_col Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.
+#' @param show_rownames Whether to show the names for each row in the table.
+#' @param use_gene_short_name Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.
+#' @param scale_max The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.
+#' @param scale_min The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.
+#' @param norm_method Determines how to transform expression values prior to rendering
+#' @param trend_formula A formula string specifying the model used in fitting the spline curve for each gene/feature.
+#' @param return_heatmap Whether to return the pheatmap object to the user. 
+#' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
+#' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
+#' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
+#' @import pheatmap
+#' @export
+#'
+
+plot_pseudotime_heatmap <- function(cds_subset, 
+                                    
+                                    cluster_rows = TRUE,
+                                    hclust_method = "ward.D2", 
+                                    num_clusters = 6,
+                                    
+                                    hmcols = NULL, 
+                                    
+                                    add_annotation_row = NULL,
+                                    add_annotation_col = NULL,
+                                    show_rownames = FALSE, 
+                                    use_gene_short_name = TRUE,
+                                    
+                                    norm_method = c("vstExprs", "log"), 
+                                    scale_max=3, 
+                                    scale_min=-3, 
+                                    
+                                    trend_formula = '~sm.ns(Pseudotime, df=3)',
+                                    
+                                    return_heatmap=FALSE,
+                                    cores=1){
   
-  ## the function can be be viewed as a two step process
-  ## 1. using the rehape package and other funcs the data is clustered, scaled, and reshaped
-  ## using simple options or by a user supplied function
-  ## 2. with the now resahped data the plot, the chosen labels and plot style are built
-  FM <- exprs(cds)
+  newdata <- data.frame(Pseudotime = seq(0, max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
-  if (cds@expressionFamily@vfamily == "negbinomial"){
-    integer_expression <- TRUE
-  }else{
-    integer_expression <- FALSE
-    relative_expr <- TRUE
-  }
+  m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
+                       relative_expr = T, new_data = newdata)
   
-  if (integer_expression)
-  {
-    if (relative_expr){
-      if (is.null(sizeFactors(cds)))
-      {
-        stop("Error: you must call estimateSizeFactors() first")
-      }
-      FM <- Matrix::t(Matrix::t(FM) / sizeFactors(cds))
-    }
-    FM <- round(FM)
-  }
-  
-  m=FM
-  
-  if (is.null(fData(cds)$gene_short_name) == FALSE){
-    feature_labels <- fData(cds)$gene_short_name
-    feature_labels[is.na(feature_labels)]  <- fData(cds)$f_id
-    row.names(m) <- feature_labels
-  }
-  
+
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
-  if (use_vst && is.null(cds@dispFitInfo[["blind"]]$disp_func) == FALSE){
-    m = vstExprs(cds, expr_matrix=m)
-  }else if(logMode){
+  norm_method <- match.arg(norm_method)
+  
+  # FIXME: this needs to check that vst values can even be computed. (They can only be if we're using NB as the expressionFamily)
+  if(norm_method == 'vstExprs' && is.null(cds_subset@dispFitInfo[["blind"]]$disp_func) == FALSE) {
+    m = vstExprs(cds_subset, expr_matrix=m)
+  }     
+  else if(norm_method == 'log') {
     m = log10(m+pseudocount)
   }
   
-  #remove genes with no sd
-  #m=m[!apply(m,1,sd)==0,]
+  # Row-center the data.
+  m=m[!apply(m,1,sd)==0,]
+  m=Matrix::t(scale(Matrix::t(m),center=TRUE))
+  m=m[is.na(row.names(m)) == FALSE,]
+  m[is.nan(m)] = 0
+  m[m>scale_max] = scale_max
+  m[m<scale_min] = scale_min
 
-  ## you can either scale by row or column not both! 
-  ## if you wish to scale by both or use a different scale method then simply supply a scale
-  ## function instead NB scale is a base funct
+  heatmap_matrix <- m
   
-  ## I have supplied the default cluster and euclidean distance (JSdist) - and chose to cluster after scaling
-  ## if you want a different distance/cluster method-- or to cluster and then scale
-  ## then you can supply a custom function 
+  row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
+  row_dist[is.na(row_dist)] <- 1
   
-  if(!is.function(method)){
-    method = function(mat){as.dist((1 - cor(Matrix::t(mat)))/2)}	
+  bks <- seq(-3.1,3.1, by=0.1)
+  if(is.null(hmcols)) {
+    hmcols <- blue2green2red(length(bks) - 1)
   }
   
-  ## this is just reshaping into a ggplot format matrix and making a ggplot layer
+  ph <- pheatmap(heatmap_matrix, 
+                 useRaster = T,
+                 cluster_cols=FALSE, 
+                 cluster_rows=cluster_rows, 
+                 show_rownames=F, 
+                 show_colnames=F, 
+                 clustering_distance_rows=row_dist,
+                 clustering_method = hclust_method,
+                 cutree_rows=num_clusters,
+                 silent=TRUE,
+                 filename=NA,
+                 breaks=bks,
+                 color=hmcols)
+
+  annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
+ 
+  if(!is.null(add_annotation_row)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
   
-  if(is.function(rescaling))
-  { 
-    m=rescaling(m)
-  } else {
-    if(rescaling=='column'){
-      m=m[!apply(m,2,sd)==0,]
-      m=scale(m, center=TRUE)
-      m[is.nan(m)] = 0
-      m[m>scaleMax] = scaleMax
-      m[m<scaleMin] = scaleMin
+  
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds_subset)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
     }
-    if(rescaling=='row'){ 
-      m=m[!apply(m,1,sd)==0,]
-      m=Matrix::t(scale(Matrix::t(m),center=TRUE))
-      m[is.nan(m)] = 0
-      m[m>scaleMax] = scaleMax
-      m[m<scaleMin] = scaleMin
-    }
-  }
-  
-  # If we aren't going to re-ordering the columns, order them by Pseudotime
-  if (clustering %in% c("row", "none"))
-    m = m[,row.names(pData(cds)[order(-pData(cds)$Pseudotime),])]
-  
-  if(clustering=='row')
-    m=m[hclust(method(m))$order, ]
-  if(clustering=='column')  
-    m=m[,hclust(method(Matrix::t(m)))$order]
-  if(clustering=='both')
-    m=m[hclust(method(m))$order ,hclust(method(Matrix::t(m)))$order]
-  
-  
-  rows=dim(m)[1]
-  cols=dim(m)[2]
-  
-  
-  
-  # if(logMode) {
-  #   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt( log10(m+pseudocount)))
-  # }else{
-  #   melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt(m))
-  # }
-  
-  melt.m=cbind(rowInd=rep(1:rows, times=cols), colInd=rep(1:cols, each=rows), reshape2::melt(m))
-  
-  g=ggplot(data=melt.m)
-  
-  ## add the heat tiles with or without a white border for clarity
-  
-  if(border==TRUE)
-    g2=g+geom_raster(aes(x=colInd,y=rowInd, fill=value),colour='grey')
-  if(border==FALSE)
-    g2=g+geom_raster(aes(x=colInd,y=rowInd,ymax=rowInd, fill=value))
-  
-  ## add axis labels either supplied or from the colnames rownames of the matrix
-  
-  if(labCol==TRUE) 
-  {
-    g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=colnames(m))
-  }
-  if(labCol==FALSE) 
-  {
-    g2=g2+scale_x_continuous(breaks=(1:cols)-0.5, labels=rep('',cols))
-  }
-  
-  
-  if(labRow==TRUE) 
-  {
-    g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rownames(m))	
-  }
-  if(labRow==FALSE)
-  { 
-    g2=g2+scale_y_continuous(breaks=(1:rows)-0.5, labels=rep('',rows))	
-  }
-  
-  # Get rid of the ticks, they get way too dense with lots of rows
-  g2 <- g2 + theme(axis.ticks = element_blank()) 
-  
-  ## get rid of grey panel background and gridlines
-  
-  g2=g2+theme(panel.grid.minor=element_line(colour=NA), panel.grid.major=element_line(colour=NA),
-              panel.background=element_rect(fill=NA, colour=NA))
-  
-  ##adjust x-axis labels
-  g2=g2+theme(axis.text.x=element_text(angle=-90, hjust=0))
-  
-  #write(paste(c("Length of heatscale is :", length(heatscale))), stderr())
-  
-  if(is.function(rescaling))
-  {
-    
-  }else{ 
-    if(rescaling=='row' || rescaling == 'column'){
-      legendTitle <- "Relative\nexpression"
-    }else{
-      if (logMode)
-      {
-        legendTitle <- bquote(paste(log[10]," FPKM + ",.(pseudocount),sep=""))
-        #legendTitle <- paste(expression(plain(log)[10])," FPKM + ",pseudocount,sep="")
-      } else {
-        legendTitle <- "FPKM"
-      }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
     }
   }
-  
-  if (length(heatscale) == 2){
-    g2 <- g2 + scale_fill_gradient(low=heatscale[1], high=heatscale[2], name=legendTitle)
-  } else if (length(heatscale) == 3) {
-    if (is.null(heatMidpoint))
-    {
-      heatMidpoint = (max(m) + min(m)) / 2.0
-      #write(heatMidpoint, stderr())
-    }
-    g2 <- g2 + theme(panel.border = element_blank())
-    g2 <- g2 + scale_fill_gradient2(low=heatscale[1], mid=heatscale[2], high=heatscale[3], midpoint=heatMidpoint, name=legendTitle)
-  }else {
-    g2 <- g2 + scale_fill_gradientn(colours=heatscale, name=legendTitle)
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
   }
   
-  #g2<-g2+scale_x_discrete("",breaks=tracking_ids,labels=gene_short_names)
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
   
-  g2 <- g2 + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
   
-  ## finally add the fill colour ramp of your choice (default is blue to red)-- and return
-  return (g2)
+  colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
+  
+  ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+                     useRaster = T,
+                     cluster_cols = FALSE, 
+                     cluster_rows = cluster_rows, 
+                     show_rownames=show_rownames, 
+                     show_colnames=F, 
+                     #scale="row",
+                     clustering_distance_rows=row_dist, #row_dist
+                     clustering_method = hclust_method, #ward.D2
+                     cutree_rows=num_clusters,
+                     # cutree_cols = 2,
+                     annotation_row=annotation_row,
+                     treeheight_row = 20, 
+                     breaks=bks,
+                     fontsize = 6,
+                     color=hmcols, 
+                     silent=TRUE,
+                     filename=NA
+  )
+  
+  grid::grid.rect(gp=grid::gpar("fill", col=NA))
+  grid::grid.draw(ph_res$gtable)
+  if (return_heatmap){
+    return(ph_res)
+  }
 }
 
 #' Plot the branch genes in pseduotime with separate lineage curves.
