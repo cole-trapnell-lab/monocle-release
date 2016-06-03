@@ -276,6 +276,9 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
   return (list(m=coefficients(kb_reg)[2], c=coefficients(kb_reg)[1], kb_df = kb_df))
 }
 
+#' Function used to calibrate the mode, m and c as well as the total mRNA
+#' @importFrom plyr ldply
+#' @importFrom MASS rlm
 calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
   tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
@@ -397,7 +400,7 @@ relative2abs <- function(relative_cds,
   expected_mRNA_mode = NULL, 
   expected_total_mRNAs = 100000, #based on lung endogenous RNA
   calibrate_total_mRNA = T,
-  calculation_trials = 100, 
+  calibration_trials = 100, 
   reads_per_cell = 1e6,
   expected_capture_rate = 0.25,
   weight_mode=0.17, 
@@ -520,7 +523,7 @@ relative2abs <- function(relative_cds,
                        total_mRNA = expected_total_mRNAs, 
                        capture_rate = expected_capture_rate,
                        reads = reads_per_cell,
-                       trials = calculation_trials, 
+                       trials = calibration_trials, 
                        mc.cores = cores)
         calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
         if(verbose)
