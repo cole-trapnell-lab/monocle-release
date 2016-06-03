@@ -397,6 +397,7 @@ relative2abs <- function(relative_cds,
   expected_mRNA_mode = NULL, 
   expected_total_mRNAs = 100000, #based on lung endogenous RNA
   calibrate_total_mRNA = T,
+  calculation_trials = 100, 
   reads_per_cell = 1e6,
   expected_capture_rate = 0.25,
   weight_mode=0.17, 
@@ -511,14 +512,16 @@ relative2abs <- function(relative_cds,
              10^(23))
         ladder_df$rounded_numMolecules <- round(ladder_df$numMolecules)
         
-        calibrated_modes <- lapply(1:length(split_relative_exprs), 
+        calibrated_modes <- mclapply(1:length(split_relative_exprs), 
                        calibrate_mode, 
                        tpm_distribution = split_relative_exprs, 
                        ladder = ladder_df$numMolecules, 
                        total_ladder_transcripts = sum(ladder_df$numMolecules),
                        total_mRNA = expected_total_mRNAs, 
                        capture_rate = expected_capture_rate,
-                       reads = reads_per_cell)
+                       reads = reads_per_cell,
+                       trials = calculation_trials, 
+                       mc.cores = cores)
         calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
         if(verbose)
           message('Calibrating mean total_mRNAs is ...')
