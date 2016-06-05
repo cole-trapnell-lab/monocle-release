@@ -25,7 +25,7 @@ diff_test_helper <- function(x,
   
   disp_guess <- 0
   
-  if (expressionFamily@vfamily == "negbinomial"){
+  if (expressionFamily@vfamily == "negbinomial" | expressionFamily@vfamily == "negbinomial.size"){
     if (relative_expr == TRUE)
     {
       x <- x / Size_Factor
@@ -74,7 +74,7 @@ diff_test_helper <- function(x,
     # what the user has specified for expression family
     #print(disp_guess)
     backup_expression_family <- NULL
-    if (expressionFamily@vfamily == "negbinomial"){
+    if (expressionFamily@vfamily == "negbinomial" | expressionFamily@vfamily == "negbinomial.size"){
         disp_guess <- calulate_NB_dispersion_hint(disp_func, round(x_orig), expr_selection_func = mean)
         backup_expression_family <- negbinomial(isize=1/disp_guess, parallel=TRUE, zero=NULL) #use NB-1 fitting
     }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -196,7 +196,7 @@ differentialGeneTest <- function(cds,
                        # stepsize = null
 
                                  ){
-  if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
+  if (relative_expr && (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size")){
     if (is.null(sizeFactors(cds))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }

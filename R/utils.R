@@ -185,7 +185,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   log_expression <- NULL
   
   FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily == "negbinomial")
+  if (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size")
   {
     expression_lower_thresh <- expression_lower_thresh / colSums(FM)
     expression_upper_thresh <- expression_upper_thresh / colSums(FM)
@@ -261,7 +261,7 @@ selectGenesInExpressionRange <- function(cds,
   gene_nz_median = apply(exprs(cds), 1, function(x) { x <- x[x > detectionLimit]; stat_fun(x)})
   gene_nz_median<-esApply(cds,1,
                           function(x) { 
-                            if (relative_expr && cds@expressionFamily@vfamily == "negbinomial"){
+                            if (relative_expr && (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size")){
                               x <- x / Size_Factor
                             }
                             x <- x[x > detectionLimit]

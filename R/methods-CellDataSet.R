@@ -74,7 +74,7 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, cores=1, dispModelNa
 
 checkSizeFactors <- function(cds)
 {
-  if (cds@expressionFamily@vfamily == "negbinomial")
+  if (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size")
   {
     if (is.null(sizeFactors(cds))){
       stop("Error: you must call estimateSizeFactors() before calling this function.")

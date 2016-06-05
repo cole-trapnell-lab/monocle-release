@@ -187,7 +187,7 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
                               label_by_short_name=TRUE,
                               relative_expr=TRUE){
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily == "negbinomial" | cds_subset@expressionFamily@vfamily == "negbinomial.size"){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -301,7 +301,7 @@ plot_genes_positive_cells <- function(cds_subset,
   
   percent <- NULL
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily == "negbinomial" | cds_subset@expressionFamily@vfamily == "negbinomial.size"){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -403,7 +403,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     relative_expr=TRUE,
                                     method = "VGAM"){
   
-    if (cds_subset@expressionFamily@vfamily == "negbinomial") {
+    if (cds_subset@expressionFamily@vfamily == "negbinomial" | cds_subset@expressionFamily@vfamily == "negbinomial.size") {
         integer_expression <- TRUE
     }
     else {
@@ -1238,7 +1238,7 @@ plot_coexpression_matrix <- function(cds,
   
   cds_subset <- cds[union(row_gene_ids, col_gene_ids),]
   
-  if (cds_subset@expressionFamily@vfamily == "negbinomial"){
+  if (cds_subset@expressionFamily@vfamily == "negbinomial" | cds_subset@expressionFamily@vfamily == "negbinomial.size"){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE

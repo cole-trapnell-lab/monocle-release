@@ -1161,7 +1161,7 @@ reduceDimension <- function(cds,
 
   }
   
-  if (cds@expressionFamily@vfamily == "negbinomial") {
+  if (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size") {
       if (is.null(use_vst)) 
           use_vst = TRUE
       if (is.null(pseudo_expr)) 
@@ -1175,7 +1175,7 @@ reduceDimension <- function(cds,
   }
  
  # If we aren't using VST, then normalize the expression values by size factor
-   if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial") {
+   if (use_vst == FALSE && (cds@expressionFamily@vfamily == "negbinomial" | cds@expressionFamily@vfamily == "negbinomial.size")) {
       checkSizeFactors(cds)
       size_factors <- sizeFactors(cds)
       FM <- Matrix::t(Matrix::t(FM)/size_factors)

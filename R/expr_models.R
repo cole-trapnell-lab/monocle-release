@@ -14,7 +14,7 @@ fit_model_helper <- function(x,
         sep = "")
     orig_x <- x
     x <- x + pseudocount
-    if (expressionFamily@vfamily == "negbinomial") {
+    if (expressionFamily@vfamily == "negbinomial" | expressionFamily@vfamily == "negbinomial.size") {
         if (relative_expr) {
             x <- x/Size_Factor
         }
@@ -52,7 +52,7 @@ fit_model_helper <- function(x,
         # what the user has specified for expression family
         #print(disp_guess)
         backup_expression_family <- NULL
-        if (expressionFamily@vfamily == "negbinomial"){
+        if (expressionFamily@vfamily == "negbinomial" | expressionFamily@vfamily == "negbinomial.size"){
             disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
             backup_expression_family <- negbinomial(isize=1/disp_guess, parallel=TRUE, zero=NULL)
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
@@ -433,7 +433,7 @@ disp_calc_helper <- function(x, modelFormulaStr, expressionFamily){
   modelFormulaStr <- paste("f_expression", modelFormulaStr, sep="")
   f_expression <- x
 
-  if (expressionFamily@vfamily == "negbinomial"){
+  if (expressionFamily@vfamily == "negbinomial" | expressionFamily@vfamily == "negbinomial.size"){
     x <- x / Size_Factor
     f_expression <- round(x)
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
