@@ -220,12 +220,17 @@ data(HSMM_sample_sheet)
  <<show_mRNA_totals, eval = TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
  pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
  
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
  qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
-   geom_vline(xintercept=10000) + 
-   geom_vline(xintercept=40000)
- 
- HSMM <- HSMM[,row.names(subset(pData(HSMM), Total_mRNAs >= 10000 & Total_mRNAs <= 40000))]
- HSMM <- detectGenes(HSMM, min_expr = 0.1)
+   geom_vline(xintercept=lower_bound) + 
+   geom_vline(xintercept=upper_bound)
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & 
+              pData(HSMM)$Total_mRNAs < upper_bound]								  
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
  @ %def
  
  We've gone ahead and removed the few cells with either very low mRNA recovery or far more mRNA that the typical cell. Often, doublets or triplets have roughly twice the mRNA recovered as true single cells, so the latter filter is another means of excluding all but single cells from the analysis. Such filtering is handy if your protocol doesn't allow directly visualization of cell after they've been captured. Note that these thresholds of 10,000 and 40,000 mRNAs are specific to this dataset. You may need to adjust filter thresholds based on your experimental protocol.
