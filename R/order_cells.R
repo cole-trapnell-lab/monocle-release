@@ -1501,22 +1501,30 @@ project2MST <- function(cds, Projection_Method){
 }
 
 #project points to a line
-projPointOnLine <- function(point, line){
-  vx = line[1, 2]
-  vy = line[2, 2]
-  
-  # difference of point with line origin
-  dx = point[1] - line[1,1]
-  dy = point[2] - line[2,1]
-  
-  # Position of projection on line, using dot product
-  tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
-  
-  # convert position on line to cartesian coordinates
-  point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
-  
-  return(point)
+projPointOnLine <- function(point, line) {
+  ap <- point - line[, 1]
+  ab <- line[, 2] - line[, 1]
+
+  res <- line[, 1] + (ap %*% ab) / (ab %*% ab) * ab 
+  return(res)
 }
+
+# projPointOnLine <- function(point, line){
+#   vx = line[1, 2]
+#   vy = line[2, 2]
+  
+#   # difference of point with line origin
+#   dx = point[1] - line[1,1]
+#   dy = point[2] - line[2,1]
+  
+#   # Position of projection on line, using dot product
+#   tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
+  
+#   # convert position on line to cartesian coordinates
+#   point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
+  
+#   return(point)
+# }
 
 # Project point to line segment
 project_point_to_line_segment <- function(p, df){

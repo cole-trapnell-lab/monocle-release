@@ -102,7 +102,6 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
           relative_expr_matrix = relative_expr_mat, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
           cores = 1, weight_mode=0.17, weight_relative_expr=0.50, weight_total_rna=0.33, verbose = F,  ...) {
-
   data('spike_df') #add the spikein dataset
 
   if(is.null(spike_df$log_numMolecule))
@@ -168,7 +167,6 @@ optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_esti
   
   
   gm_dist_divergence <- exp(mean(log(dist_divergence)))
-  
 
   #total RNA MSE
   sum_total_cells_rna_finite <- sum_total_cells_rna[is.finite(sum_total_cells_rna)]
@@ -474,7 +472,6 @@ relative2abs <- function(relative_cds,
                                                  })), k = unlist(lapply(molModels, FUN = function(x) {
                                                    slope = x$coefficients[2]
                                                  })))
-
     kb_model <- MASS::rlm(b ~ k, data = k_b_solution)
     kb_slope <- kb_model$coefficients[2]
     kb_intercept <- kb_model$coefficients[1]
@@ -488,7 +485,6 @@ relative2abs <- function(relative_cds,
       formula_all_variables <- all.vars(as.formula(modelFormulaStr))
       
       names(t_estimate) <- colnames(relative_expr_matrix)
-      
       pd <- pData(relative_cds)
       pd$Cell = row.names(pd) #use pData instead of the merged data.frame
       norm_cds_list <- plyr::dlply(pd, c(formula_all_variables), function(x){
@@ -537,6 +533,7 @@ relative2abs <- function(relative_cds,
 
         if(is.null(kb_slope) || is.null(kb_intercept)){
           # expected_mRNA_mode <- ceiling(calibrated_modes)
+
           calibrated_mc <- coef(MASS::rlm(b ~ k, data = calibrated_modes_df))
 
           kb_slope <- calibrated_mc[2]
@@ -633,7 +630,6 @@ relative2abs <- function(relative_cds,
                   upper = c(kb_slope_rng[2]), 
                   control = list(reltol=1e-1, trace = 1), ndeps = c(0.001), 
                   hessian = FALSE)
-
             }
             if (verbose)
                 message("optimization is done!")
@@ -650,7 +646,7 @@ relative2abs <- function(relative_cds,
                 t_estimate = t_estimate_subset, alpha_v = expected_mRNA_mode)
             if (verbose)
                 message("Estimating the slope and intercept for the linear regression between relative expression value and copy number...")
-            # save(file = 'debug_relative2abs', total_rna_df, split_relative_exprs)
+
             k_b_solution <- plyr::ddply(total_rna_df, .(Cell),
               function(x) {
                   a_matrix <- matrix(c(log10(x[, "t_estimate"]),
