@@ -1041,9 +1041,6 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
 }
 
-
-
-
 #' Plot the branch genes in pseduotime with separate branch curves.
 #' 
 #' This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
