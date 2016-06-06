@@ -102,14 +102,15 @@ plot_spanning_tree <- function(cds,
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
       markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
-      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "Var1", by.y="row.names")
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
       markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
       markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="Var2")
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
     #print (head(edge_df))
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
   }else{
