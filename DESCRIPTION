@@ -2,8 +2,8 @@ Package: monocle
 Type: Package
 Title: Clustering, differential expression, and trajectory analysis for single-
     cell RNA-Seq
-Version: 1.99.0
-Date: 2013-11-19
+Version: 2.0.0
+Date: 2016-06-06
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
 Description: Monocle performs differential expression and time-series analysis
