@@ -898,10 +898,13 @@ plot_pseudotime_heatmap <- function(cds_subset,
   row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
   row_dist[is.na(row_dist)] <- 1
   
-  bks <- seq(-3.1,3.1, by=0.1)
   if(is.null(hmcols)) {
+    bks <- seq(-3.1,3.1, length.out = 0.1)
     hmcols <- blue2green2red(length(bks) - 1)
   }
+  else {
+    bks <- seq(-3.1,3.1, length.out = length(hmcols))
+  } 
   
   ph <- pheatmap(heatmap_matrix, 
                  useRaster = T,
@@ -1596,11 +1599,14 @@ plot_genes_branched_heatmap <- function(cds_subset,
     row_dist[is.na(row_dist)] <- 1
 
     exp_rng <- range(heatmap_matrix) #bks is based on the expression range
-    bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, by=0.1)
-    if(is.null(hmcols)) {
-        hmcols <- blue2green2red(length(bks) - 1)
-    }
     
+    if(is.null(hmcols)) {
+      bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, by=0.1)
+      hmcols <- blue2green2red(length(bks) - 1)
+    }
+    else {
+      bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, length.out=length(hmcols))
+    }
     # prin  t(hmcols)
     ph <- pheatmap(heatmap_matrix, 
              useRaster = T,
