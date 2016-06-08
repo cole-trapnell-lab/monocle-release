@@ -29,6 +29,11 @@ BUGFIXES
   o Variance stabilization is applied correctly when a CellDataSet object's
     expressionFamily is negbinomial.size().
     
+  o The gene_id field in results from calculateMarkerSpecificity is now a
+    character instead of a factor. This was leading to indexing errors and 
+    nonsensical semi-supervised clustering and ordering results. 
+    
+    
 Version 1.99.0
 --------------------------------------------------------------------------------
   o The first public release of the Monocle 2 series. For a summary of 

@@ -551,7 +551,7 @@ load_lung <- function(){
                          phenoData = pd, 
                          featureData = fd,
                          lowerDetectionLimit=1,
-                         expressionFamily=negbinomial())
+                         expressionFamily=negbinomial.size())
 
   lung <- estimateSizeFactors(lung)
   pData(lung)$Size_Factor <- lung_phenotype_data$Size_Factor
@@ -565,7 +565,7 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   
   # DDRTree based ordering:
-  lung <- reduceDimension(lung, norm_method="log",ncenter = 18,  pseudo_expr = 1) #
+  lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1) #
   lung <- orderCells(lung)
   E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
   if(E14_state != 1)

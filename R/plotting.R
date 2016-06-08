@@ -521,14 +521,16 @@ plot_genes_in_pseudotime <-function(cds_subset,
     else {
         cds_exprs$feature_label <- cds_exprs$f_id
     }
+    cds_exprs$f_id <- as.character(cds_exprs$f_id)
     cds_exprs$feature_label <- factor(cds_exprs$feature_label)
 
     new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime)
     model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula,
                         relative_expr = T, new_data = new_data)
     colnames(model_expectation) <- colnames(cds_subset)
-
-    cds_exprs$expectation <- apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
+    expectation <- ddply(cds_exprs, .(f_id, Cell), function(x) data.frame("expectation"=model_expectation[x$f_id, x$Cell]))
+    cds_exprs <- merge(cds_exprs, expectation)
+    #cds_exprs$expectation <- expectation#apply(cds_exprs,1, function(x) model_expectation[x$f_id, x$Cell])
 
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr

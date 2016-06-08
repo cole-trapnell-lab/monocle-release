@@ -172,7 +172,7 @@ data(HSMM_sample_sheet)
                         phenoData = pd, 
                         featureData = fd,
                         lowerDetectionLimit=1,
-                        expressionFamily=negbinomial())
+                        expressionFamily=negbinomial.size())
  
  @ %def
  
@@ -359,7 +359,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  To cluster the cells, we'll choose the top ten markers for each of these cell types:
  <<cluster_cells_semisup_pick_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 10)$gene_id)
+ semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 20)$gene_id)
  HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
  plot_ordering_genes(HSMM)
  @ %def
@@ -464,7 +464,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
  
  <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+ HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
  @ %def
  
  Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.
