@@ -899,7 +899,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   row_dist[is.na(row_dist)] <- 1
   
   if(is.null(hmcols)) {
-    bks <- seq(-3.1,3.1, length.out = 0.1)
+    bks <- seq(-3.1,3.1, by = 0.1)
     hmcols <- blue2green2red(length(bks) - 1)
   }
   else {
