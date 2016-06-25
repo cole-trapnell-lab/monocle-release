@@ -321,8 +321,10 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
 
     fpkm_hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
 
+    #calculate the c directly from here: 
+    c <- mean(log10(ladder_df$ladder))
     df <- data.frame(hypothetical_mode=10^(k * fpkm_hypothetical_mode + b), 
-      hypothetical_ladder_tpm = hypothetical_ladder_tpm, ladder = ladder 
+      hypothetical_ladder_tpm = hypothetical_ladder_tpm, ladder = ladder, c = c
       )
     df
   })
@@ -333,7 +335,7 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
   k <- coefficients(ladder_reg)[2]
 
   return(data.frame(mean_hypotetical_mode = dmode(mode_df$hypothetical_mode), 
-    k = k, b = b))
+    k = k, b = b, c = exp(mean(log(mode_df$c)))))
 }
 
 
@@ -526,6 +528,7 @@ relative2abs <- function(relative_cds,
                        trials = calibration_trials, 
                        mc.cores = cores)
         calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+        save(file = 'calibrated_modes_df', calibrated_modes_df)
         if(verbose)
           message('Calibrating mean total_mRNAs is ...')
 
@@ -546,7 +549,7 @@ relative2abs <- function(relative_cds,
           kb_slope <- calibrated_mc[2]
 
           if(is.null(kb_intercept))
-            kb_intercept <- calibrated_mc[1]
+            kb_intercept <- exp(mean(log((calibrated_modes_df$c)))) #calibrated_mc[1]
         }
       
         if (is.null(kb_slope_rng)){
