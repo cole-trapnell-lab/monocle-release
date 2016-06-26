@@ -355,7 +355,7 @@ calibrate_mode_analytical <- function(ind, tpm_distribution, t_estimate, ladder,
   tpm_distribution <-  tpm_distribution * total_mRNA / (total_ladder_transcripts + total_mRNA) #put the tpm for the spike-in and the endogenous RNA at the same space
   fpkm_hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
   t_estimate <- t_estimate * total_mRNA / (total_ladder_transcripts + total_mRNA)
-  kb_df <- data_frame(k = coef(spike_molModel)[2], b = coef(spike_molModel)[1])
+  kb_df <- data.frame(k = coef(spike_molModel)[2], b = coef(spike_molModel)[1])
   
   hypothetical_mode=10^(kb_df$k * log10(t_estimate) + kb_df$b)
   return (list(m=mean_x_ij, c=mean_y_ij, k = kb_df$k, b = kb_df$b, 
