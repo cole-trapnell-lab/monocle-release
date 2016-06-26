@@ -340,11 +340,12 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
 }
 
 #' Function used to calibrate the mode, m and c as well as the total mRNA using analytical formula: 
-calibrate_mode_analytical <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
+calibrate_mode_analytical <- function(ind, tpm_distribution, t_estimate, ladder, total_ladder_transcripts, total_mRNA, capture_rate){
+  t_estimate <- t_estimate[ind] / sum(tpm_distribution[[ind]]) * 1e6
   tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
   capture_rate <- capture_rate[ind]
-  reads <- reads[ind]
+  # reads <- reads[ind]
   
   x_ij <- ladder / (total_ladder_transcripts + total_mRNA) * 10^6 
   mean_y_ij <- mean(log10(ladder))
@@ -353,11 +354,12 @@ calibrate_mode_analytical <- function(ind, tpm_distribution, ladder, total_ladde
   spike_molModel <- rlm(log10(ladder) ~ log10(x_ij))
   tpm_distribution <-  tpm_distribution * total_mRNA / (total_ladder_transcripts + total_mRNA) #put the tpm for the spike-in and the endogenous RNA at the same space
   fpkm_hypothetical_mode <- dmode(log10(tpm_distribution[tpm_distribution > 0]))
+  t_estimate <- t_estimate * total_mRNA / (total_ladder_transcripts + total_mRNA)
   kb_df <- data_frame(k = coef(spike_molModel)[2], b = coef(spike_molModel)[1])
   
-  hypothetical_mode=10^(kb_df$k * fpkm_hypothetical_mode + kb_df$b)
+  hypothetical_mode=10^(kb_df$k * log10(t_estimate) + kb_df$b)
   return (list(m=mean_x_ij, c=mean_y_ij, k = kb_df$k, b = kb_df$b, 
-               fpkm_hypothetical_mode = fpkm_hypothetical_mode, hypothetical_mode = hypothetical_mode))
+               fpkm_hypothetical_mode = fpkm_hypothetical_mode, updated_t_estimate = t_estimate, hypothetical_mode = hypothetical_mode))
 }
 
 #' Transform relative expression values into absolute transcript counts.
@@ -541,14 +543,16 @@ relative2abs <- function(relative_cds,
         calibrated_modes <- mclapply(1:length(split_relative_exprs), 
                        calibrate_mode_analytical, 
                        tpm_distribution = split_relative_exprs, 
+                       t_estimate = t_estimate,
                        ladder = ladder_df[ladder_df$conc_attomoles_ul_Mix1 > detection_threshold, 'numMolecules'], 
                        total_ladder_transcripts = sum(ladder_df[ladder_df$conc_attomoles_ul_Mix1 > detection_threshold, 'numMolecules']),
                        total_mRNA = expected_total_mRNAs, 
                        capture_rate = expected_capture_rate,
-                       reads = reads_per_cell,
-                       trials = calibration_trials, 
+                       #reads = reads_per_cell,
+                       #trials = calibration_trials, 
                        mc.cores = cores)
         calibrated_modes_df <- do.call(rbind.data.frame, calibrated_modes)
+        save(file = 'calibrated_modes_df', calibrated_modes_df)
         if(verbose)
           message('Calibrating mean total_mRNAs is ...')
 
