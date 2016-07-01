@@ -9,6 +9,8 @@ fit_model_helper <- function(x,
     modelFormulaStr <- paste("f_expression", modelFormulaStr,
         sep = "")
     orig_x <- x
+    # FIXME: should we be using this here?
+    # x <- x + pseudocount
     if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         if (relative_expr) {
             x <- x/Size_Factor

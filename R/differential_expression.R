@@ -69,7 +69,7 @@ diff_test_helper <- function(x,
   error = function(e) { 
     if(verbose)
       print (e);
-    data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
+      data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
     #data.frame(status = "FAIL", pval=1.0) 
   }
   )

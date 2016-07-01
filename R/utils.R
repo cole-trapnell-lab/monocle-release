@@ -271,6 +271,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 }
 
 
+
 #' Retrieve a table of values specifying the mean-variance relationship
 #' 
 #' Calling estimateDispersions computes a smooth function describing how variance
