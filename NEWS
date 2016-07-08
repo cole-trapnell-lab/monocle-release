@@ -1,7 +1,7 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
 
-Version 2.0.0
+Version 2.1.0
 --------------------------------------------------------------------------------
 FEATURES
   o Monocle's algorithm for converting relative expression values (e.g. TPMs)
@@ -17,7 +17,7 @@ FEATURES
   o A new heatmap function plot_pseudotime_heatmap() replaces the old 
     plot_genes_heatmap().
     
-  o Lots of new documentation. More to follow in upcoming releases
+  o Lots of new documentation. More to follow in upcoming releases.
     
 BUGFIXES
   o Ordering cells with DDRTree no longer compresses cells at the tips of
@@ -33,6 +33,8 @@ BUGFIXES
     character instead of a factor. This was leading to indexing errors and 
     nonsensical semi-supervised clustering and ordering results. 
     
+  o BEAM() and plot_branched_heatmap() now use cBind instead of cbind, fixing an 
+    issue with sparse matrices.
     
 Version 1.99.0
 --------------------------------------------------------------------------------
