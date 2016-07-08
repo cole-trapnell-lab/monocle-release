@@ -29,7 +29,7 @@ fit_model_helper <- function(x,
             }
         }
     }
-    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff", "betabinomial", "betabinomialff")) {
+    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")) {
         f_expression <- x
     }
     else {
@@ -56,7 +56,7 @@ fit_model_helper <- function(x,
             backup_expression_family <- negbinomial()
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
-        }else if (expressionFamily@vfamily %in% c("binomialff", "betabinomial", "betabinomialff")){
+        }else if (expressionFamily@vfamily %in% c("binomialff")){
           backup_expression_family <- NULL
         }else{
           backup_expression_family <- NULL
@@ -467,35 +467,6 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   res
 }
 
-disp_calc_helper_BB <- function(cds, expressionFamily, min_cells_detected){
-  
-  nzGenes <- Matrix::rowSums(exprs(cds) > 0)
-  nzGenes <- names(nzGenes[nzGenes > min_cells_detected])
-  
-  x <- t(t(exprs(cds[nzGenes,])) / pData(cds[nzGenes,])$Size_Factor)
-  m1 <- Matrix::rowMeans(x)
-  m2 <- Matrix::rowMeans(x^2)
-  n <- qlcMatrix::rowMax(x)
-  n[n < 1] <- 1
-  #n <- max(1, n)
-  
-  denom <- n * ((m2/m1) - m1 - 1) + m1
-  alpha_hat <- (n*m1 - m2) / denom
-  beta_hat <- (n - m1)*(n - (m2/m1)) / denom
-  
-  mu = alpha_hat/(alpha_hat + beta_hat)
-  rho = 1/(1 + alpha_hat + beta_hat)
-  
-  res <- data.frame(mu=mu, disp=rho)
-  res[res$mu == 0]$mu = NA
-  res[res$mu == 0]$disp = NA
-  res <- cbind(gene_id=row.names(fData(cds[nzGenes,])), res)
-  res <- subset(res, disp < 1e5)
-
-  res
-}
-
-
 #' Helper function to estimate dispersions
 #' @importFrom stringr str_split str_trim
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores)
@@ -555,43 +526,6 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       coefs[1] + coefs[2] / q
     attr( ans, "coefficients" ) <- coefs
     
-  }else if (cds@expressionFamily@vfamily %in% c("betabinomial")){
-    if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
-      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms) 
-      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_BB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-    }else{
-      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname")) 
-      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_BB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-      #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
-    }
-    
-    #message("fitting disersion curves")
-    #print (disp_table)
-    if(!is.list(disp_table))
-      stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
-    #disp_table <- do.call(rbind.data.frame, disp_table)
-    disp_table <- subset(disp_table, is.na(mu) == FALSE)
-    res <- parametricDispersionFit(disp_table, c(1e-10, 1))
-    fit <- res[[1]]
-    coefs <- res[[2]]
-    #removeOutliers = TRUE
-    if (removeOutliers){
-      CD <- cooks.distance(fit)
-      #cooksCutoff <- qf(.99, 2, ncol(cds) - 2)
-      cooksCutoff <- 4/nrow(disp_table)
-      #print (head(CD[CD > cooksCutoff]))
-      #print (head(names(CD[CD > cooksCutoff])))
-      message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
-      outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
-      res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,], c(1e-10, 1))
-      fit <- res[[1]]
-      coefs <- res[[2]]
-    }
-    
-    names( coefs ) <- c( "asymptDisp", "extraPois" )
-    ans <- function( q )
-      coefs[1] + coefs[2] / q
-    attr( ans, "coefficients" ) <- coefs
   }
   
   res <- list(disp_table = disp_table, disp_func = ans)

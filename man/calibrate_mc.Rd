@@ -4,7 +4,7 @@
 \alias{calibrate_mc}
 \title{Make an educated guess on the spike-based slope regression parameters}
 \usage{
-calibrate_mc(total_mRNA, capture_rate, ladder, total_ladder_transcripts,
+calibrate_mc(total_mRNA, capture_rate, ladder, total_ladder_transcripts, reads,
   trials = 100)
 }
 \description{

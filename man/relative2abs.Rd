@@ -6,13 +6,14 @@
 \usage{
 relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
   modelFormulaStr = "~1", kb_slope = NULL, kb_intercept = NULL,
-  kb_slope_rng = NULL, kb_intercept_rng = NULL, ERCC_controls = NULL,
+  kb_slope_rng = NULL, kb_intercept_rng = NULL,
+  use_fixed_intercept = TRUE, ERCC_controls = NULL,
   ERCC_annotation = NULL, volume = 10, dilution = 40000,
   mixture_type = 1, detection_threshold = 800, expected_mRNA_mode = NULL,
-  expected_total_mRNAs = 5e+05, expected_capture_rate = 0.1,
-  weight_mode = 0.33, weight_relative_expr = 0.33,
-  weight_total_rna = 0.33, verbose = FALSE, return_all = FALSE,
-  cores = 1, optim_num = 1)
+  expected_total_mRNAs = 1e+05, calibrate_total_mRNA = T,
+  reads_per_cell = 1e+06, expected_capture_rate = 0.25,
+  weight_mode = 0.17, weight_relative_expr = 0.5, weight_total_rna = 0.33,
+  verbose = FALSE, return_all = FALSE, cores = 1, optim_num = 1, ...)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
@@ -53,7 +54,7 @@ in a list format}
 
 \item{alpha_v}{the hypothesized mode of transcript counts for each cell. Default is 1.}
 
-\item{total_RNAs}{the guess of total transcript counts in a single cell. Default is 50000.}
+\item{total_RNAs}{the guess of total transcript counts in a single cell. Default is 150000.}
 
 \item{weight}{the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)}
 }
