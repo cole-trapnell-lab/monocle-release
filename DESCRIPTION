@@ -16,7 +16,7 @@ Description: Monocle performs differential expression and time-series analysis
 License: Artistic-2.0
 Depends:
     R (>= 2.10.0),
-    Matrix (>=1.2-6),
+    Matrix (>= 1.2-6),
     Biobase,
     ggplot2(>= 1.0.0),
     VGAM (>= 1.0-1),
