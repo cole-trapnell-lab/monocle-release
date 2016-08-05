@@ -1651,4 +1651,93 @@ plot_ordering_genes <- function(cds){
   g
 }
 
+#' Plots clusters of cells .
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_name_size the size of cell name labels
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_cell_clusters(HSMM)
+#' plot_cell_clusters(HSMM, color_by="Pseudotime")
+#' plot_cell_clusters(HSMM, markers="MYH3")
+#' }
+plot_cell_clusters <- function(cds, 
+                               x=1, 
+                               y=2, 
+                               color_by="Cluster", 
+                               # show_tree=TRUE, 
+                               # show_backbone=TRUE, 
+                               # backbone_color="black", 
+                               markers=NULL, 
+                               show_cell_names=FALSE, 
+                               cell_size=1.5,
+                               # cell_link_size=0.75,
+                               cell_name_size=2, ...
+                               # show_branch_points=TRUE
+){
+  if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
+    stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
+  }
 
+  gene_short_name <- NULL
+  sample_name <- NULL
+  
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info <- pData(cds)
+  
+  tSNE_dim_coords <- reducedDimA(cds)
+  data_df <- data.frame(t(tSNE_dim_coords[c(x,y),]))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- colnames(cds)
+  data_df <- merge(data_df, lib_info, by.x="sample_name", by.y="row.names")
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
+    #print (head(edge_df))
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+  }else{
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
+  }
+  
+  # FIXME: setting size here overrides the marker expression funtionality. 
+  # Don't do it!
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  }else {
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+  }
+  
+  g <- g + 
+    #scale_color_brewer(palette="Set1") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    #guides(color = guide_legend(label.position = "top")) +
+    theme(legend.key = element_blank()) +
+    theme(panel.background = element_rect(fill='white'))
+  g
+}

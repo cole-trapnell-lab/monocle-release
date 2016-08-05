@@ -22,6 +22,7 @@
 #' @param verbose Verbose parameter for DDRTree
 #' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
+#' @import densityClust
 #' @export
 clusterCells_Density_Peak <- function(cds, 
                                       variance_explained = 0.8, 
@@ -99,7 +100,7 @@ clusterCells_Density_Peak <- function(cds,
   #find the number of clusters: 
   # cluster_num <- length(unique(dataClust$clusters))
   
-  pData(cds)$Cluster <- dataClust$clusters
+  pData(cds)$Cluster <- as.factor(dataClust$clusters)
   
   if (is.null(old_ordering_genes) == FALSE)
     cds <- setOrderingFilter(cds, old_ordering_genes)
@@ -107,9 +108,10 @@ clusterCells_Density_Peak <- function(cds,
   if (is.null(cell_type_hierarchy) == FALSE)
     cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
   
-  reducedDimA(cds) <- t(tsne_data) #we may add a new clustering plotting function? 
-  pData(cds)$State <- dataClust$clusters
+  reducedDimA(cds) <- t(tsne_data) 
+  pData(cds)$State <- as.factor(dataClust$clusters)
   
   return(cds)
 }
 
+#add the new plot for plotting the clusters: 
