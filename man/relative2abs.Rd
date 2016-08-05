@@ -11,9 +11,10 @@ relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
   ERCC_annotation = NULL, volume = 10, dilution = 40000,
   mixture_type = 1, detection_threshold = 800, expected_mRNA_mode = NULL,
   expected_total_mRNAs = 1e+05, calibrate_total_mRNA = T,
-  reads_per_cell = 1e+06, expected_capture_rate = 0.25,
-  weight_mode = 0.17, weight_relative_expr = 0.5, weight_total_rna = 0.33,
-  verbose = FALSE, return_all = FALSE, cores = 1, optim_num = 1, ...)
+  calibration_trials = 100, reads_per_cell = 1e+06,
+  expected_capture_rate = 0.25, weight_mode = 0.17,
+  weight_relative_expr = 0.5, weight_total_rna = 0.33, verbose = FALSE,
+  return_all = FALSE, cores = 1, optim_num = 1, ...)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
