@@ -75,6 +75,9 @@ clusterCells_Density_Peak <- function(cds,
   }
   
   #first perform PCA 
+  if (verbose) 
+      message("Remove noise by PCA ...")
+
   pca_res <- prcomp(t(FM), center = T, scale = T)
   std_dev <- pca_res$sdev 
   pr_var <- std_dev^2
@@ -83,19 +86,30 @@ clusterCells_Density_Peak <- function(cds,
   topDim_pca <- pca_res$x[, 1:num_dim]
   
   #then run tSNE 
-  tsne_res <- Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
+  if (verbose) 
+      message("Reduce dimension by tSNE ...")
+
+  tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
   
   tsne_data <- tsne_res$Y[, 1:max_components]
   row.names(tsne_data) <- colnames(tsne_data)
+
   #finally use density peak to determine the number of clusters
+  if (verbose) 
+      message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
+
   dataDist <- dist(tsne_data)
-  dataClust <- densityClust(dataDist, gaussian = T)
+  dataClust <- densityClust::densityClust(dataDist, gaussian = T)
   
   #automatically pick up the rho and delta values: 
   if(inspect_rho_sigma == F)
-    dataClust <- findClusters(dataClust, rho = quantile(dataClust$rho, probs = 0.95), delta = quantile(dataClust$delta, probs = 0.95))
-  else 
-    dataClust <- findClusters(dataClust)
+    dataClust <- densityClust::findClusters(dataClust, rho = quantile(dataClust$rho, probs = 0.95), delta = quantile(dataClust$delta, probs = 0.95))
+  else {
+   if (verbose) 
+      message("Please click on the decision plot to select rho and delta for density peak clustering...")
+   
+    dataClust <- densityClust::findClusters(dataClust)
+  }
   
   #find the number of clusters: 
   # cluster_num <- length(unique(dataClust$clusters))
