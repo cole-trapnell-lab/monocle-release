@@ -39,7 +39,9 @@ Imports:
     pheatmap,
     stringr,
     proxy,
-    slam
+    slam, 
+    Rtsne,
+    densityClust
 VignetteBuilder: knitr
 Suggests:
     knitr,
