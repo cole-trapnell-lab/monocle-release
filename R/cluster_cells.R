@@ -53,21 +53,7 @@ clusterCells_Density_Peak <- function(cds,
   xm <- Matrix::rowMeans(FM)
   xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
   FM <- FM[xsd > 0,]
-  
-  if (is.null(residualModelFormulaStr) == FALSE) {
-    if (verbose) 
-      message("Removing batch effects")
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
-                                       data = pData(cds), drop.unused.levels = TRUE)
-    
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-  }else{
-    X.model_mat <- NULL
-  }
-  
+   
   FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
   
   if (nrow(FM) == 0) {
@@ -85,6 +71,21 @@ clusterCells_Density_Peak <- function(cds,
   num_dim <- min(which(cumsum(prop_varex) > variance_explained))
   topDim_pca <- pca_res$x[, 1:num_dim]
   
+  #perform the model formula transformation right before tSNE: 
+  if (is.null(residualModelFormulaStr) == FALSE) {
+    if (verbose) 
+      message("Removing batch effects")
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                       data = pData(cds), drop.unused.levels = TRUE)
+    
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+  }else{
+    X.model_mat <- NULL
+  }
+
   #then run tSNE 
   if (verbose) 
       message("Reduce dimension by tSNE ...")
