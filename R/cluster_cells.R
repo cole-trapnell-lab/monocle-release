@@ -26,6 +26,7 @@
 clusterCells_Density_Peak <- function(cds, 
                                       variance_explained = 0.8, 
                                       inspect_rho_sigma = F, 
+                                      num_clusters = NULL,
                                       cell_type_hierarchy=NULL,
                                       frequency_thresh=0.10,
                                       clustering_genes=NULL,
@@ -100,9 +101,22 @@ clusterCells_Density_Peak <- function(cds,
   dataDist <- dist(tsne_data)
   dataClust <- densityClust::densityClust(dataDist, gaussian = F)
   
+  #automatically find the rho / sigma based on the number of cells you want: 
+  if(!is.null(num_clusters)){
+    gamma <- dataClust$rho * dataClust$delta
+    ind <- order(gamma)[num_clusters]
+    rho_val <- dataClust$rho[ind]
+    delta_val <- dataClust$delta[ind]
+  }
+  else 
+  {
+    rho_val <- quantile(dataClust$rho, probs = 0.90)
+    delta_val <- quantile(dataClust$delta, probs = 0.90)
+  }
+
   #automatically pick up the rho and delta values: 
   if(inspect_rho_sigma == F)
-    dataClust <- densityClust::findClusters(dataClust, rho = quantile(dataClust$rho, probs = 0.95), delta = quantile(dataClust$delta, probs = 0.95))
+    dataClust <- densityClust::findClusters(dataClust, rho = rho_val, delta = delta_val)
   else {
    if (verbose) 
       message("Please click on the decision plot to select rho and delta for density peak clustering...")
