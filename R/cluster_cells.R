@@ -4,9 +4,7 @@
 #' workflows. In an experiment containing a mixture of cell types, each cluster might
 #' correspond to a different cell type. This method takes a CellDataSet as input
 #' along with a requested number of clusters, clusters them with an unsupervised 
-#' algorithm (Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find 
-#' of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072), 
-#' and then returns the CellDataSet with the cluster assignments stored in
+#' algorithm, and then returns the CellDataSet with the cluster assignments stored in
 #' the pData table. When number of clusters is set to NULL (num_clusters = NULL), 
 #' the decision plot as introduced in the above citation will be plotted and the 
 #' users are required to click on the decision plot to select the rho and delta 
@@ -23,6 +21,7 @@
 #' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @import densityClust
+#' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 #' @export
 clusterCells_Density_Peak <- function(cds, 
                                       variance_explained = 0.8, 
@@ -99,7 +98,7 @@ clusterCells_Density_Peak <- function(cds,
       message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
 
   dataDist <- dist(tsne_data)
-  dataClust <- densityClust::densityClust(dataDist, gaussian = T)
+  dataClust <- densityClust::densityClust(dataDist, gaussian = F)
   
   #automatically pick up the rho and delta values: 
   if(inspect_rho_sigma == F)
@@ -115,15 +114,24 @@ clusterCells_Density_Peak <- function(cds,
   # cluster_num <- length(unique(dataClust$clusters))
   
   pData(cds)$Cluster <- as.factor(dataClust$clusters)
-  
+  pData(cds)$peaks <- as.factor(dataClust$peaks)
+  pData(cds)$halo <- as.factor(dataClust$halo)
+  pData(cds)$delta <- as.factor(dataClust$delta)
+  pData(cds)$rho <- as.factor(dataClust$rho)
+
   if (is.null(old_ordering_genes) == FALSE)
     cds <- setOrderingFilter(cds, old_ordering_genes)
   
   if (is.null(cell_type_hierarchy) == FALSE)
     cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
   
-  reducedDimA(cds) <- t(tsne_data) 
+  reducedDimA(cds) <- t(tsne_data) #this may move to the auxClusteringData environment
   pData(cds)$State <- as.factor(dataClust$clusters)
+
+  #set the important information from densityClust to certain part of the cds object: 
+  cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
+  cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data) 
+  cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
   
   return(cds)
 }
