@@ -78,10 +78,10 @@ clusterCells_Density_Peak <- function(cds,
     X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
                                        data = pData(cds), drop.unused.levels = TRUE)
     
-    fit <- limma::lmFit(FM, X.model_mat, ...)
+    fit <- limma::lmFit(topDim_pca, X.model_mat, ...)
     beta <- fit$coefficients[, -1, drop = FALSE]
     beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    topDim_pca <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
   }else{
     X.model_mat <- NULL
   }
