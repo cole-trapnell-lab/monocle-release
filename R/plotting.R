@@ -1762,8 +1762,6 @@ plot_rho_delta <- function(cds){
 
     df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta)
     g <- qplot(rho, delta, data = df) +  monocle_theme_opts() + 
-      xlab(paste("Component", x)) + 
-      ylab(paste("Component", y)) +
       theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
       #guides(color = guide_legend(label.position = "top")) +
       theme(legend.key = element_blank()) +
