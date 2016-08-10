@@ -29,7 +29,8 @@ clusterCells_Density_Peak <- function(cds,
                                       skip_rho_sigma = F, 
                                       variance_explained = 0.8, 
                                       inspect_rho_sigma = F, 
-                                      num_clusters = NULL,
+                                      rho_val = NULL, 
+                                      delta_val = NULL, 
                                       cell_type_hierarchy=NULL,
                                       frequency_thresh=0.10,
                                       clustering_genes=NULL,
@@ -69,15 +70,16 @@ clusterCells_Density_Peak <- function(cds,
     dataClust <- densityClust::densityClust(dataDist, ...) #gaussian = F
   }
   #automatically find the rho / sigma based on the number of cells you want: 
-  if(!is.null(num_clusters)){
-    gamma <- dataClust$rho * dataClust$delta
-    ind <- order(gamma)[num_clusters]
-    rho_val <- dataClust$rho[ind]
-    delta_val <- dataClust$delta[ind]
+  if(!is.null(rho_val) & !is.null(delta_val)){
+    if(verbose)
+      message('Use the user provided rho and delta for assigning the density peaks and clusters')
   }
   else 
   {
-    rho_val <- quantile(dataClust$rho, probs = 0.90)
+    if(verbose)
+      message('Use 0.9 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
+
+    rho_val <- quantile(dataClust$rho, probs = 0.95)
     delta_val <- quantile(dataClust$delta, probs = 0.90)
   }
 

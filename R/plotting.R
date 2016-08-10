@@ -1741,3 +1741,36 @@ plot_cell_clusters <- function(cds,
     theme(panel.background = element_rect(fill='white'))
   g
 }
+
+#' Plots the decision map of density clusters .
+#'
+#' @param cds CellDataSet for the experiment
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_rho_delta(HSMM)
+#' }
+
+plot_rho_delta <- function(cds){
+    if(!is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
+    & !is.null(pData(cds)$Cluster)
+    & !is.null(pData(cds)$peaks)
+    & !is.null(pData(cds)$halo)
+    & !is.null(pData(cds)$delta)
+    & !is.null(pData(cds)$rho)) {
+
+    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta)
+    g <- qplot(rho, delta, data = df) +  monocle_theme_opts() + 
+      xlab(paste("Component", x)) + 
+      ylab(paste("Component", y)) +
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      #guides(color = guide_legend(label.position = "top")) +
+      theme(legend.key = element_blank()) +
+      theme(panel.background = element_rect(fill='white'))
+  }
+  else {
+    stop('Please run clusterCells_Density_Peak before using this plotting function')
+  }
+  g
+}
