@@ -95,13 +95,11 @@ clusterCells_Density_Peak <- function(cds,
   #cluster_num <- length(unique(dataClust$clusters))
   
   pData(cds)$Cluster <- as.factor(dataClust$clusters)
-  pData(cds)$peaks <- as.factor(dataClust$peaks)
+  pData(cds)$peaks <- F
+  pData(cds)$peaks[dataClust$peaks] <- T
   pData(cds)$halo <- as.factor(dataClust$halo)
   pData(cds)$delta <- as.factor(dataClust$delta)
   pData(cds)$rho <- as.factor(dataClust$rho)
-
-  if (is.null(old_ordering_genes) == FALSE)
-    cds <- setOrderingFilter(cds, old_ordering_genes)
   
   if (is.null(cell_type_hierarchy) == FALSE)
     cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
