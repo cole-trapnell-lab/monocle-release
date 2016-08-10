@@ -1760,8 +1760,10 @@ plot_rho_delta <- function(cds){
     & !is.null(pData(cds)$delta)
     & !is.null(pData(cds)$rho)) {
 
-    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta)
-    g <- qplot(rho, delta, data = df) +  monocle_theme_opts() + 
+    df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
+      delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
+
+    g <- qplot(rho, delta, data = df, alpha = I(0.6)) +  monocle_theme_opts() + 
       theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
       #guides(color = guide_legend(label.position = "top")) +
       theme(legend.key = element_blank()) +
