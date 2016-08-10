@@ -17,15 +17,14 @@ clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
 
+\item{num_clusters}{Number of clusters you wanted. If you specify this argument, the rho and sigma used to define the threshold for density cluster
+will automatically calculated based on the top num_cluster product of rho and sigma.}
+
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
 \item{verbose}{Verbose parameter for DDRTree}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
-
-\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
-
-\item{param.gamma}{gamma parameter for DDRTree}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell

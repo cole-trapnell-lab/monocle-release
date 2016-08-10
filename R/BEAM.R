@@ -326,6 +326,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @param branch_labels the name for each branch, for example, AT1 or AT2  
 #' @param ... Additional arguments passed to buildBranchCellDataSet
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
+#' @export 
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
                     trajectory_states = c(2, 3),
@@ -467,6 +468,7 @@ calABCs <- function(cds,
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @export 
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
           trajectory_states = c(2, 3), 
@@ -618,6 +620,7 @@ calILRs <- function (cds,
 #' @param ... Additional arguments passed to calILRs
 #' @return a vector containing the time for the bifurcation point with gene names for each value
 #' @importFrom reshape2 melt
+#' @export 
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,

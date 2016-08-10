@@ -15,9 +15,9 @@
 #' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
 #' @param variance_explained Variance explained by the PCA components, used to select the component numbers for tSNE 
 #' @param inspect_rho_sigma A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters
+#' @param num_clusters Number of clusters you wanted. If you specify this argument, the rho and sigma used to define the threshold for density cluster
+#' will automatically calculated based on the top num_cluster product of rho and sigma. 
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
-#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
-#' @param param.gamma gamma parameter for DDRTree
 #' @param verbose Verbose parameter for DDRTree
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
