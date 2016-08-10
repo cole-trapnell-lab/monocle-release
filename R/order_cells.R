@@ -1304,7 +1304,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            reduction_method=c("DDRTree", "ICA"),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE'),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
@@ -1355,7 +1355,51 @@ reduceDimension <- function(cds,
   }
   else{
     reduction_method <- match.arg(reduction_method)
-    if (reduction_method == "ICA") {
+    if (reduction_method == "tSNE") {
+    #first perform PCA 
+    if (verbose) 
+        message("Remove noise by PCA ...")
+
+      pca_res <- prcomp(t(FM), center = T, scale = T)
+      std_dev <- pca_res$sdev 
+      pr_var <- std_dev^2
+      prop_varex <- pr_var/sum(pr_var)
+      num_dim <- min(which(cumsum(prop_varex) > 0.8)) #variance_explained
+      topDim_pca <- pca_res$x[, 1:num_dim]
+      
+      # #perform the model formula transformation right before tSNE: 
+      # if (is.null(residualModelFormulaStr) == FALSE) {
+      #   if (verbose) 
+      #     message("Removing batch effects")
+      #   X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+      #                                      data = pData(cds), drop.unused.levels = TRUE)
+        
+      #   fit <- limma::lmFit(topDim_pca, X.model_mat, ...)
+      #   beta <- fit$coefficients[, -1, drop = FALSE]
+      #   beta[is.na(beta)] <- 0
+      #   topDim_pca <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+      # }else{
+      #   X.model_mat <- NULL
+      # }
+
+      #then run tSNE 
+      if (verbose) 
+          message("Reduce dimension by tSNE ...")
+
+      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
+      
+      tsne_data <- tsne_res$Y[, 1:max_components]
+      row.names(tsne_data) <- colnames(tsne_data)
+
+      reducedDimA(cds) <- t(tsne_data) #this may move to the auxClusteringData environment
+
+      #set the important information from densityClust to certain part of the cds object: 
+      cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
+      cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data) 
+      cds@dim_reduce_type <- "tSNE"
+    }
+
+    else if (reduction_method == "ICA") {
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
