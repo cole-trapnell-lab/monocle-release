@@ -1310,7 +1310,7 @@ reduceDimension <- function(cds,
                             pseudo_expr=NULL, 
                             verbose=FALSE,
                             ...){
- 
+  extra_arguments <- list(...)
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
@@ -1364,7 +1364,13 @@ reduceDimension <- function(cds,
       std_dev <- pca_res$sdev 
       pr_var <- std_dev^2
       prop_varex <- pr_var/sum(pr_var)
-      num_dim <- min(which(cumsum(prop_varex) > 0.8)) #variance_explained
+
+      if("variance_explained" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- min(which(cumsum(prop_varex) > variance_explained)) #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
       topDim_pca <- pca_res$x[, 1:num_dim]
       
       # #perform the model formula transformation right before tSNE: 
