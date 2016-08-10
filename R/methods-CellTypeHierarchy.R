@@ -308,10 +308,10 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' or ordering.
 #' 
 #' @param marker_specificities The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}
-#' @num_markers The number of markers to include in the results for each cell type
+#' @param num_markers The number of markers to include in the results for each cell type
 #' @return A data frame of specificity results
 #' @importFrom dplyr top_n
-#' @sealso
+#' @seealso
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
   

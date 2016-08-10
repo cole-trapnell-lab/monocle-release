@@ -19,7 +19,7 @@
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param param.gamma gamma parameter for DDRTree
 #' @param verbose Verbose parameter for DDRTree
-#' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
+#' @param ... Additional arguments passed to \code{\link{densityClust}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @import densityClust
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
@@ -66,7 +66,7 @@ clusterCells_Density_Peak <- function(cds,
     if (verbose) 
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
 
-    dataClust <- densityClust::densityClust(dataDist, gaussian = F)
+    dataClust <- densityClust::densityClust(dataDist, ...) #gaussian = F
   }
   #automatically find the rho / sigma based on the number of cells you want: 
   if(!is.null(num_clusters)){
