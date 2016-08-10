@@ -12,6 +12,7 @@
 #' 
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
 #' @param variance_explained Variance explained by the PCA components, used to select the component numbers for tSNE 
 #' @param inspect_rho_sigma A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
@@ -23,31 +24,50 @@
 #' @import densityClust
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 #' @export
+
 clusterCells_Density_Peak <- function(cds, 
+                                      skip_rho_sigma = F, 
                                       variance_explained = 0.8, 
                                       inspect_rho_sigma = F, 
                                       num_clusters = NULL,
                                       cell_type_hierarchy=NULL,
                                       frequency_thresh=0.10,
                                       clustering_genes=NULL,
-                                      max_components=2, 
-                                      residualModelFormulaStr=NULL,
-                                      param.gamma=100,
                                       verbose = F, 
                                       ...) {
-  
-  tsne_data <- reducedDimA(tsne_data)
-  if(ncol(tsne_data) != ncol(tsne_data))
-    stop('')
+  tsne_data <- reducedDimA(cds)
+  if(ncol(tsne_data) != ncol(cds))
+    stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
 
-  #finally use density peak to determine the number of clusters
-  if (verbose) 
-      message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
+  dataDist <- dist(t(tsne_data)) #calculate distances between cells
 
+  if(skip_rho_sigma 
+    & !is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
+    & !is.null(pData(cds)$Cluster)
+    & !is.null(pData(cds)$peaks)
+    & !is.null(pData(cds)$halo)
+    & !is.null(pData(cds)$delta)
+    & !is.null(pData(cds)$rho)) {
+    dataClust <- cds@auxClusteringData[["tSNE"]]$densityPeak
+    dataClust$rho <- pData(cds)$rho
+    dataClust$delta <- pData(cds)$delta
+    dataClust$distance <- dataDist
+    dataClust$peaks <- pData(cds)$peaks
+    dataClust$clusters <- pData(cds)$clusters
+    dataClust$halo <- pData(cds)$halo
 
-  dataDist <- dist(tsne_data)
-  dataClust <- densityClust::densityClust(dataDist, gaussian = F)
-  
+    # res <- list(rho=rho, delta=delta, distance=distance, dc=dc, threshold=c(rho=NA, delta=NA), peaks=NA, clusters=NA, halo=NA)
+    dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo')]
+    class(dataClust) <- 'densityCluster'
+  }
+  else{
+
+    #finally use density peak to determine the number of clusters
+    if (verbose) 
+        message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
+
+    dataClust <- densityClust::densityClust(dataDist, gaussian = F)
+  }
   #automatically find the rho / sigma based on the number of cells you want: 
   if(!is.null(num_clusters)){
     gamma <- dataClust$rho * dataClust$delta

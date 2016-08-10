@@ -379,7 +379,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
   marker_diff <- differentialGeneTest(cds, 
                                       fullModelFormulaStr=fullModelFormulaStr,
                                       reducedModelFormulaStr=residualModelFormulaStr,
-                                      verbose=T,
+                                      verbose=verbose,
                                       cores=cores)
   
   return(marker_diff)
