@@ -1308,9 +1308,10 @@ reduceDimension <- function(cds,
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
+                            num_fstree_genes = NULL,
                             verbose=FALSE,
                             ...){
- 
+
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
@@ -1336,6 +1337,31 @@ reduceDimension <- function(cds,
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
+  }
+
+  #if no orderingGene information is there, use FSTree to automatically pick up the ordering genes: 
+  if(is.null(fData(cds)$use_for_ordering)){
+    if(verbose)
+      print("Running FSTree to automatically select genes for ordering")
+
+    if(ncol(cds) > 1000){
+      fstree_res <- fstree(FM, dim = max_components, num_landmarks = 1000, verbose = verbose, ...); # unsupervised
+      
+      #add the landmark to one column of the pData: 
+      pData(cds)$landmark <- F
+      pData(cds)$landmark[fstree_res$landmark_selection_res$L] <- T
+    }
+    else   
+      fstree_res <- fstree(FM, dim = max_components, verbose = verbose, ...); # unsupervised
+
+    if(is.null(num_fstree_genes)){
+      order_genes <- row.names(FM)[order(fstree_res$weights, decreasing = T)][1:100]
+      cds <- setOrderingFilter(cds, order_genes)
+    }
+    else {
+      order_genes <- row.names(FM)[order(fstree_res$weights, decreasing = T)][1:num_fstree_genes]
+      cds <- setOrderingFilter(cds, order_genes)
+    }
   }
 
   if (is.function(reduction_method)) {   
