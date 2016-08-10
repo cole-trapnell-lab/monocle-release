@@ -1366,7 +1366,7 @@ reduceDimension <- function(cds,
       prop_varex <- pr_var/sum(pr_var)
 
       if("variance_explained" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
-        num_dim <- min(which(cumsum(prop_varex) > variance_explained)) #variance_explained
+        num_dim <- min(which(cumsum(prop_varex) > extra_arguments$variance_explained)) #variance_explained
       }
       else{
         num_dim <- 50
