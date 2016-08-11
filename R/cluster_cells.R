@@ -80,7 +80,7 @@ clusterCells_Density_Peak <- function(cds,
       message('Use 0.9 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
 
     rho_val <- quantile(dataClust$rho, probs = 0.95)
-    delta_val <- quantile(dataClust$delta, probs = 0.90)
+    delta_val <- quantile(dataClust$delta, probs = 0.95)
   }
 
   #automatically pick up the rho and delta values: 

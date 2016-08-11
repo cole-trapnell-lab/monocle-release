@@ -1680,7 +1680,7 @@ plot_cell_clusters <- function(cds,
                                x=1, 
                                y=2, 
                                color_by="Cluster", 
-                               show_density_peak=TRUE, 
+                               show_density_peak=FALSE, 
                                show_density=TRUE, 
                                rho_threshold=NULL,
                                delta_threshold=NULL, 
@@ -1726,7 +1726,7 @@ plot_cell_clusters <- function(cds,
   }
   
   if (show_density){
-    q <- q + stat_density2d(geom="raster", aes(fill = ..density..), contour = FALSE) + 
+    g <- g + stat_density2d(geom="raster", aes(fill = ..density..), contour = FALSE) + 
       scale_fill_gradient(low="white", high="red") 
   }
 
@@ -1743,7 +1743,7 @@ plot_cell_clusters <- function(cds,
       density_peak_df <- subset(data_df, peaks == TRUE)[,c("sample_name", "data_dim_1", "data_dim_2")]
     }
     else if (!is.null(rho_threshold) & !is.null(delta_threshold)){
-      density_peak_df <- subset(data_df, rho >= rho_threshold & delta_threshold >= delta_threshold)[,c("sample_name", "data_dim_1", "data_dim_2")]
+      density_peak_df <- subset(data_df, rho >= rho_threshold & delta >= delta_threshold)[,c("sample_name", "data_dim_1", "data_dim_2")]
     }
     else{
       stop('If you want to plot the density peaks based on parmaters rho and delta, please set the threshold for both of them')
@@ -1771,7 +1771,7 @@ plot_cell_clusters <- function(cds,
 
 #' Plots the decision map of density clusters .
 #'
-#' @param cds CellDataSet for the experiment
+#' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
 #' @export
 #' @examples
 #' \dontrun{
@@ -1787,10 +1787,12 @@ plot_rho_delta <- function(cds){
     & !is.null(pData(cds)$delta)
     & !is.null(pData(cds)$rho)) {
 
-    df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
-      delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
+    # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
+    #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
 
-    g <- qplot(rho, delta, data = df, alpha = I(0.6)) +  monocle_theme_opts() + 
+    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta)
+
+    g <- qplot(rho, delta, data = df, alpha = I(0.3)) +  monocle_theme_opts() + 
       theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
       #guides(color = guide_legend(label.position = "top")) +
       theme(legend.key = element_blank()) +
@@ -1802,4 +1804,32 @@ plot_rho_delta <- function(cds){
   g
 }
 
+#' Plots the percentage of variance explained by the each component.
+#'
+#' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_pc_variance_explained(HSMM)
+#' }
+plot_pc_variance_explained <- function(cds){
+  # FM <- convert2DRData(cds, norm_method = 'log')  
+  # pca_res <- prcomp(t(FM), center = T, scale = T)
+  # std_dev <- pca_res$sdev 
+  # pr_var <- std_dev^2
+  # prop_varex <- pr_var/sum(pr_var)
+
+  if(cds@dim_reduce_type != tSNE){
+    stop('plot_pc_variance_explained is currently is only supported for tSNE based density peak clustering')
+  }
+  if(is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+    stop('Please first run reduceDimension with reduction_method as tSNE before applying this function')
+  }
+  variance_explained <- cds@auxClusteringData[["tSNE"]]$variance_explained
+  
+  p <- qplot(1:length(prop_varex), prop_varex)
+  # return(prop_varex = prop_varex, p = p)
+  p  
+}
 
