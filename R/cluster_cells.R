@@ -19,6 +19,7 @@
 #' @param delta_threshold The threshold of local distance (delta) used to select the density peaks 
 #' @param peaks A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.  
 #' will automatically calculated based on the top num_cluster product of rho and sigma. 
+#' @param gaussian A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
 #' @param verbose Verbose parameter for DDRTree
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -34,6 +35,7 @@ clusterCells_Density_Peak <- function(cds,
                                       rho_threshold = NULL, 
                                       delta_threshold = NULL, 
                                       peaks = NULL,
+                                      gaussian = T, 
                                       cell_type_hierarchy=NULL,
                                       frequency_thresh=0.10,
                                       clustering_genes=NULL,
@@ -70,7 +72,7 @@ clusterCells_Density_Peak <- function(cds,
     if (verbose) 
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
 
-    dataClust <- densityClust::densityClust(dataDist, ...) #gaussian = F
+    dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian) #gaussian = F
   }
   #automatically find the rho / sigma based on the number of cells you want: 
   if(!is.null(rho_threshold) & !is.null(delta_threshold)){

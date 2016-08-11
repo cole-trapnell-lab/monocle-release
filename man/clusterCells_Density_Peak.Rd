@@ -6,8 +6,8 @@
 \usage{
 clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
-  peaks = NULL, cell_type_hierarchy = NULL, frequency_thresh = 0.1,
-  clustering_genes = NULL, verbose = F, ...)
+  peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
+  frequency_thresh = 0.1, clustering_genes = NULL, verbose = F, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -24,6 +24,8 @@ clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
 
 \item{peaks}{A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.
 will automatically calculated based on the top num_cluster product of rho and sigma.}
+
+\item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
