@@ -1744,7 +1744,7 @@ plot_cell_clusters <- function(cds,
       density_peak_df <- subset(data_df, rho >= rho_threshold & delta_threshold >= delta_threshold)[,c("sample_name", "data_dim_1", "data_dim_2")]
     }
     else{
-      stop('If you want to plot the density peaks based on parmater rho and delta, please set the threshold for both rho and delta value')
+      stop('If you want to plot the density peaks based on parmaters rho and delta, please set the threshold for both of them')
     }
     density_peak_df$density_peak_idx <- match(density_peak_df$sample_name, colnames(cds))
     density_peak_df <- density_peak_df[!duplicated(density_peak_df$density_peak_idx), ]

@@ -96,12 +96,12 @@ clusterCells_Density_Peak <- function(cds,
   #find the number of clusters: 
   #cluster_num <- length(unique(dataClust$clusters))
   
-  pData(cds)$Cluster <- as.factor(dataClust$clusters)
+  pData(cds)$Cluster <- dataClust$clusters
   pData(cds)$peaks <- F
   pData(cds)$peaks[dataClust$peaks] <- T
-  pData(cds)$halo <- as.factor(dataClust$halo)
-  pData(cds)$delta <- as.factor(dataClust$delta)
-  pData(cds)$rho <- as.factor(dataClust$rho)
+  pData(cds)$halo <- dataClust$halo
+  pData(cds)$delta <- dataClust$delta
+  pData(cds)$rho <- dataClust$rho
   
   if (is.null(cell_type_hierarchy) == FALSE)
     cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
