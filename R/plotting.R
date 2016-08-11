@@ -1680,8 +1680,8 @@ plot_cell_clusters <- function(cds,
                                x=1, 
                                y=2, 
                                color_by="Cluster", 
-                               show_density_peak=FALSE, 
-                               show_density=TRUE, 
+                               show_density_peak=TRUE, 
+                               show_density=FALSE, 
                                rho_threshold=NULL,
                                delta_threshold=NULL, 
                                markers=NULL, 
@@ -1799,7 +1799,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 
     df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta, peaks = peaks)
 
-    g <- qplot(rho, delta, data = df, alpha = I(0.3), color = peaks) +  monocle_theme_opts() + 
+    g <- qplot(rho, delta, data = df, alpha = I(0.5), color = peaks) +  monocle_theme_opts() + 
       theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
       scale_color_manual(values=c("grey","black")) + 
       theme(legend.key = element_blank()) +
@@ -1818,6 +1818,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param return_all A logical argument to determine whether or not the variance of each component is returned
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @export
 #' @examples
@@ -1831,54 +1832,57 @@ plot_pc_variance_explained <- function(cds,
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
+                            return_all = F, 
                             verbose=FALSE,
                             ...){
-  extra_arguments <- list(...)
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
-  
-  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
-  xm <- Matrix::rowMeans(FM)
-  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
-  FM <- FM[xsd > 0,]
-  
-  if (is.null(residualModelFormulaStr) == FALSE) {
-    if (verbose) 
-      message("Removing batch effects")
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
-                                       data = pData(cds), drop.unused.levels = TRUE)
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+    prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
+  }
+  else{
+    extra_arguments <- list(...)
+    FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+    
+    #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+    xm <- Matrix::rowMeans(FM)
+    xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+    FM <- FM[xsd > 0,]
+    
+    if (is.null(residualModelFormulaStr) == FALSE) {
+      if (verbose) 
+        message("Removing batch effects")
+      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                         data = pData(cds), drop.unused.levels = TRUE)
 
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-  }else{
-    X.model_mat <- NULL
-  }
-  
-  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-  
-  if (nrow(FM) == 0) {
-    stop("Error: all rows have standard deviation zero")
-  }
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    }else{
+      X.model_mat <- NULL
+    }
+    
+    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+    
+    if (nrow(FM) == 0) {
+      stop("Error: all rows have standard deviation zero")
+    }
 
-  # FM <- convert2DRData(cds, norm_method = 'log')  
-  pca_res <- prcomp(t(FM), center = T, scale = T)
-  std_dev <- pca_res$sdev 
-  pr_var <- std_dev^2
-  prop_varex <- pr_var/sum(pr_var)
-
-  if(cds@dim_reduce_type != tSNE){
-    stop('plot_pc_variance_explained is currently is only supported for tSNE based density peak clustering')
+    # FM <- convert2DRData(cds, norm_method = 'log')  
+    pca_res <- prcomp(t(FM), center = T, scale = T)
+    std_dev <- pca_res$sdev 
+    pr_var <- std_dev^2
+    prop_varex <- pr_var/sum(pr_var)
   }
-  if(is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
-    stop('Please first run reduceDimension with reduction_method as tSNE before applying this function')
-  }
-  variance_explained <- cds@auxClusteringData[["tSNE"]]$variance_explained
   
-  p <- qplot(1:length(prop_varex), prop_varex) +  monocle_theme_opts() + 
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
       theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
-      theme(panel.background = element_rect(fill='white'))
+      theme(panel.background = element_rect(fill='white')) + xlab('components') + 
+      ylab('variance explained by each component')
   # return(prop_varex = prop_varex, p = p)
-  p  
+  if(return_all) {
+    return(list(variance_explained = prop_varex, p = p))
+  }
+  else
+    return(p)  
 }
 
