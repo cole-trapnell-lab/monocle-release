@@ -1657,6 +1657,10 @@ plot_ordering_genes <- function(cds){
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param show_density_peak A logic flag to determine whether or not the density peak in the plot should be plotted
+#' @param show_density A logic flag to determine whether or not the density of the samples in the plot is plot
+#' @param rho_threshold The threshold of rho used to determine the density peaks plotted
+#' @param delta_threshold The threshold for delta to determine used to determine the density peaks plotted
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
@@ -1683,9 +1687,7 @@ plot_cell_clusters <- function(cds,
                                markers=NULL, 
                                show_cell_names=FALSE, 
                                cell_size=1.5,
-                               # cell_link_size=0.75,
                                cell_name_size=2, ...
-                               # show_branch_points=TRUE
 ){
   if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
