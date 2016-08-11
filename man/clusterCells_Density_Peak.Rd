@@ -4,7 +4,7 @@
 \alias{clusterCells_Density_Peak}
 \title{Cluster cells into a specified number of groups based on .}
 \usage{
-clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
+clusterCells_Density_Peak(cds, skip_rho_sigma = F, number_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
   frequency_thresh = 0.1, clustering_genes = NULL, verbose = F, ...)
@@ -14,7 +14,8 @@ clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
 
 \item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
 
-\item{variance_explained}{Variance explained by the PCA components, used to select the component numbers for tSNE}
+\item{number_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters}
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
 

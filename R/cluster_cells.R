@@ -13,7 +13,8 @@
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
-#' @param variance_explained Variance explained by the PCA components, used to select the component numbers for tSNE 
+#' @param number_clusters Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+#' corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters
 #' @param inspect_rho_sigma A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters
 #' @param rho_threshold The threshold of local density (rho) used to select the density peaks 
 #' @param delta_threshold The threshold of local distance (delta) used to select the density peaks 
@@ -30,7 +31,7 @@
 
 clusterCells_Density_Peak <- function(cds, 
                                       skip_rho_sigma = F, 
-                                      variance_explained = 0.8, 
+                                      number_clusters = NULL, 
                                       inspect_rho_sigma = F, 
                                       rho_threshold = NULL, 
                                       delta_threshold = NULL, 
@@ -81,11 +82,20 @@ clusterCells_Density_Peak <- function(cds,
   }
   else 
   {
-    if(verbose)
-      message('Use 0.9 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
+    if(is.null(number_clusters)) {
+      if(verbose)
+        message('Use 0.95 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
 
-    rho_threshold <- quantile(dataClust$rho, probs = 0.95)
-    delta_threshold <- quantile(dataClust$delta, probs = 0.95)
+      rho_threshold <- quantile(dataClust$rho, probs = 0.95)
+      delta_threshold <- quantile(dataClust$delta, probs = 0.95)
+    }
+    else {
+        if(verbose)
+          message(paste('Use 0.5 of the rho as the cutoff and first', number_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
+
+      rho_threshold <- quantile(dataClust$rho, probs = 0.5)
+      delta_threshold <- dataClust$delta[order(dataClust$delta)[number_clusters]]
+    }
   }
 
   #automatically pick up the rho and delta values: 
