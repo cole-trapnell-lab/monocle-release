@@ -5,7 +5,7 @@
 \title{Plots clusters of cells .}
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
-  show_density_peak = TRUE, show_density = TRUE, rho_threshold = NULL,
+  show_density_peak = FALSE, show_density = TRUE, rho_threshold = NULL,
   delta_threshold = NULL, markers = NULL, show_cell_names = FALSE,
   cell_size = 1.5, cell_name_size = 2, ...)
 }

@@ -5,8 +5,8 @@
 \title{Cluster cells into a specified number of groups based on .}
 \usage{
 clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
-  inspect_rho_sigma = F, rho_val = NULL, delta_val = NULL,
-  cell_type_hierarchy = NULL, frequency_thresh = 0.1,
+  inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
+  peaks = NULL, cell_type_hierarchy = NULL, frequency_thresh = 0.1,
   clustering_genes = NULL, verbose = F, ...)
 }
 \arguments{
@@ -18,14 +18,18 @@ clusterCells_Density_Peak(cds, skip_rho_sigma = F, variance_explained = 0.8,
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
 
+\item{rho_threshold}{The threshold of local density (rho) used to select the density peaks}
+
+\item{delta_threshold}{The threshold of local distance (delta) used to select the density peaks}
+
+\item{peaks}{A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.
+will automatically calculated based on the top num_cluster product of rho and sigma.}
+
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
 \item{verbose}{Verbose parameter for DDRTree}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
-
-\item{num_clusters}{Number of clusters you wanted. If you specify this argument, the rho and sigma used to define the threshold for density cluster
-will automatically calculated based on the top num_cluster product of rho and sigma.}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell

@@ -15,7 +15,9 @@
 #' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
 #' @param variance_explained Variance explained by the PCA components, used to select the component numbers for tSNE 
 #' @param inspect_rho_sigma A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters
-#' @param num_clusters Number of clusters you wanted. If you specify this argument, the rho and sigma used to define the threshold for density cluster
+#' @param rho_threshold The threshold of local density (rho) used to select the density peaks 
+#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks 
+#' @param peaks A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.  
 #' will automatically calculated based on the top num_cluster product of rho and sigma. 
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
 #' @param verbose Verbose parameter for DDRTree
@@ -29,8 +31,9 @@ clusterCells_Density_Peak <- function(cds,
                                       skip_rho_sigma = F, 
                                       variance_explained = 0.8, 
                                       inspect_rho_sigma = F, 
-                                      rho_val = NULL, 
-                                      delta_val = NULL, 
+                                      rho_threshold = NULL, 
+                                      delta_threshold = NULL, 
+                                      peaks = NULL,
                                       cell_type_hierarchy=NULL,
                                       frequency_thresh=0.10,
                                       clustering_genes=NULL,
@@ -70,7 +73,7 @@ clusterCells_Density_Peak <- function(cds,
     dataClust <- densityClust::densityClust(dataDist, ...) #gaussian = F
   }
   #automatically find the rho / sigma based on the number of cells you want: 
-  if(!is.null(rho_val) & !is.null(delta_val)){
+  if(!is.null(rho_threshold) & !is.null(delta_threshold)){
     if(verbose)
       message('Use the user provided rho and delta for assigning the density peaks and clusters')
   }
@@ -79,13 +82,13 @@ clusterCells_Density_Peak <- function(cds,
     if(verbose)
       message('Use 0.9 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
 
-    rho_val <- quantile(dataClust$rho, probs = 0.95)
-    delta_val <- quantile(dataClust$delta, probs = 0.95)
+    rho_threshold <- quantile(dataClust$rho, probs = 0.95)
+    delta_threshold <- quantile(dataClust$delta, probs = 0.95)
   }
 
   #automatically pick up the rho and delta values: 
   if(inspect_rho_sigma == F)
-    dataClust <- densityClust::findClusters(dataClust, rho = rho_val, delta = delta_val)
+    dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks)
   else {
    if (verbose) 
       message("Please click on the decision plot to select rho and delta for density peak clustering...")
