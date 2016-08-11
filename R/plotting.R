@@ -1676,9 +1676,10 @@ plot_cell_clusters <- function(cds,
                                x=1, 
                                y=2, 
                                color_by="Cluster", 
-                               # show_tree=TRUE, 
-                               # show_backbone=TRUE, 
-                               # backbone_color="black", 
+                               show_density_peak=TRUE, 
+                               show_density=TRUE, 
+                               rho_threshold=NULL,
+                               delta_threshold=NULL, 
                                markers=NULL, 
                                show_cell_names=FALSE, 
                                cell_size=1.5,
@@ -1722,6 +1723,11 @@ plot_cell_clusters <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   
+  if (show_density){
+    q <- q + stat_density2d(geom="raster", aes(fill = ..density..), contour = FALSE) + 
+      scale_fill_gradient(low="white", high="red") 
+  }
+
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
@@ -1730,6 +1736,25 @@ plot_cell_clusters <- function(cds,
     g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
   }
   
+  if (show_density_peak && cds@dim_reduce_type == 'tSNE'){
+    if(is.null(rho_threshold) & is.null(delta_threshold)){
+      density_peak_df <- subset(data_df, peaks == TRUE)[,c("sample_name", "data_dim_1", "data_dim_2")]
+    }
+    else if (!is.null(rho_threshold) & !is.null(delta_threshold)){
+      density_peak_df <- subset(data_df, rho >= rho_threshold & delta_threshold >= delta_threshold)[,c("sample_name", "data_dim_1", "data_dim_2")]
+    }
+    else{
+      stop('If you want to plot the density peaks based on parmater rho and delta, please set the threshold for both rho and delta value')
+    }
+    density_peak_df$density_peak_idx <- match(density_peak_df$sample_name, colnames(cds))
+    density_peak_df <- density_peak_df[!duplicated(density_peak_df$density_peak_idx), ]
+    
+    g <- g + geom_point(aes_string(x="data_dim_1", y="data_dim_2"), 
+                        size=5, na.rm=TRUE, data=density_peak_df) +
+      geom_text(aes_string(x="data_dim_1", y="data_dim_2", label="density_peak_idx"), 
+                size=4, color="white", na.rm=TRUE, data=density_peak_df)
+  }
+
   g <- g + 
     #scale_color_brewer(palette="Set1") +
     monocle_theme_opts() + 
@@ -1774,3 +1799,5 @@ plot_rho_delta <- function(cds){
   }
   g
 }
+
+
