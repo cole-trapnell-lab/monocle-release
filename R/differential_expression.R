@@ -126,7 +126,7 @@ differentialGeneTest <- function(cds,
                                  verbose=FALSE
                                  ){
   if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-    if (is.null(sizeFactors(cds))){
+    if (is.null(sizeFactors(cds)) || sum(is.na(sizeFactors(cds)))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }
   }
