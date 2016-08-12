@@ -816,7 +816,8 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   if (verbose) 
     message("Finding SVD")
 
-  s <- irlba::irlba(V, n.comp, n.comp)  
+  initial_v <- as.matrix(qnorm(1:(ncol(V) + 1)/(ncol(V) + 1))[1:ncol(V)])
+  s <- irlba::irlba(V, n.comp, n.comp, v = initial_v)  
   svs <- s$d  
  
   D <- diag(c(1/sqrt(s$d)))

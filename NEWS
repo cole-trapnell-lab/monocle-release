@@ -1,6 +1,23 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
 
+Version 2.1.1
+--------------------------------------------------------------------------------
+  
+BUGFIXES
+  o Fixed an problem where reduceDimension would return different results on 
+    repeated runs given the same inputs.The problem was actually in DDRTree in 
+    two places: kmeans and irlba. We now call irlba with deterministically 
+    initialized eigenvectors and kmeans with deterministically selected rows of 
+    the input.
+    
+  o Fixed a problem in classifyCells related to joining factors and levels. This
+    would generate annoying warnings.
+    
+  o Fixed the check for valid sizeFactors prior to differentialGeneTest. Without
+    this check, differentialGeneTest would report FAIL on all genes because of
+    factors not having enough levels. 
+
 Version 2.1.0
 --------------------------------------------------------------------------------
 FEATURES
