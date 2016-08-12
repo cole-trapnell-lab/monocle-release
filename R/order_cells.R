@@ -1366,7 +1366,7 @@ reduceDimension <- function(cds,
       prop_varex <- pr_var/sum(pr_var)
 
       if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
-        num_dim <- min(which(cumsum(prop_varex) > extra_arguments$num_dim)) #variance_explained
+        num_dim <- extra_arguments$num_dim #variance_explained
       }
       else{
         num_dim <- 50
@@ -1403,7 +1403,7 @@ reduceDimension <- function(cds,
       cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
       cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data) 
       cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex 
-      
+
       cds@dim_reduce_type <- "tSNE"
     }
 
