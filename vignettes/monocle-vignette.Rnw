@@ -509,7 +509,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  length(semisup_clustering_genes)
  @ %def
  
-Using the XXX genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
+Using the 705 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
  <<semi_sup_ordering_trajectory, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
  HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
  plot_ordering_genes(HSMM_myo)
