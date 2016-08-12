@@ -228,11 +228,13 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
       stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
     class_df <- as.data.frame(cds_pdata %>% do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
-    class_df$CellType <- factor(unlist(class_df$CellType))
+    class_df$CellType <-  as.character(unlist(class_df$CellType))
+    class_df$rowname <- as.character(class_df$rowname)
   }else{
     type_res <- classifyCellsHelperCell(cds, cth)
     class_df <- data.frame(rowname = names(type_res), CellType = type_res)
-    class_df$CellType <- factor(class_df$CellType)
+    class_df$CellType <- as.character(class_df$CellType)
+    class_df$rowname <- as.character(class_df$rowname)
   }
   
   options(dplyr.show_progress = progress_opts)
@@ -243,6 +245,8 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
   
   
   pData(cds) <- as.data.frame(suppressMessages(inner_join(add_rownames(pData(cds)), class_df)))
+  
+  pData(cds)$CellType <- factor(pData(cds)$CellType)
   
   row.names(pData(cds)) <- pData(cds)$rowname
   pData(cds) <- pData(cds)[,-1]
@@ -343,6 +347,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
     cds <- cds[,pData(cds)$CellType %in% c("Ambiguous") == FALSE]
   if (remove_unknown)
     cds <- cds[,pData(cds)$CellType %in% c("Unknown") == FALSE]
+  pData(cds)$CellType <- droplevels(pData(cds)$CellType)
   
   if (balanced){
     cell_type_counts <- table(pData(cds)$CellType)
