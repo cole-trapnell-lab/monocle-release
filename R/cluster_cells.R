@@ -92,9 +92,12 @@ clusterCells_Density_Peak <- function(cds,
     else {
         if(verbose)
           message(paste('Use 0.5 of the rho as the cutoff and first', number_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
-
-      rho_threshold <- quantile(dataClust$rho, probs = 0.5)
-      delta_threshold <- dataClust$delta[order(dataClust$delta)[number_clusters]]
+      delta_rho_df <- data.frame(delta = dataClust$delta, rho = dataClust$rho)
+      rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
+      delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
+      threshold_ind <- order(dataClust$delta)[number_clusters]
+      delta_threshold <- delta_rho_df$delta[threshold_ind] 
+      rho_threshold <- delta_rho_df$rho[threshold_ind]
     }
   }
 
@@ -111,7 +114,7 @@ clusterCells_Density_Peak <- function(cds,
   #find the number of clusters: 
   #cluster_num <- length(unique(dataClust$clusters))
   
-  pData(cds)$Cluster <- dataClust$clusters
+  pData(cds)$Cluster <- factor(dataClust$clusters)
   pData(cds)$peaks <- F
   pData(cds)$peaks[dataClust$peaks] <- T
   pData(cds)$halo <- dataClust$halo
