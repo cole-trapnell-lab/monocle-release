@@ -73,7 +73,7 @@ clusterCells_Density_Peak <- function(cds,
     if (verbose) 
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
 
-    dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian) #gaussian = F
+    dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian, verbose = verbose) #gaussian = F
   }
   #automatically find the rho / sigma based on the number of cells you want: 
   if(!is.null(rho_threshold) & !is.null(delta_threshold)){
@@ -103,7 +103,7 @@ clusterCells_Density_Peak <- function(cds,
 
   #automatically pick up the rho and delta values: 
   if(inspect_rho_sigma == F)
-    dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks)
+    dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks, verbose = verbose)
   else {
    if (verbose) 
       message("Please click on the decision plot to select rho and delta for density peak clustering...")
