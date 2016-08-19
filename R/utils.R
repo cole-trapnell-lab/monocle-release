@@ -173,6 +173,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 # does is very confusing.
 ####
 #' Filter genes outside of a given range of expression
+#' @return A vector of Strings. The strings are gene names whose median expression value falls between the specified range
 #'
 #' @export
 selectGenesInExpressionRange <- function(cds, 
