@@ -99,6 +99,7 @@ dmode <- function(x, breaks="Sturges") {
 }
 
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
+#' @return an Integer Value
 optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_mat, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
