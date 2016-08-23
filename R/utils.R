@@ -510,7 +510,6 @@ get_classic_muscle_markers <- function(){
 }
 
 #' Build a CellDataSet from the HSMMSingleCell package
-#' 
 #' @import HSMMSingleCell
 #' @export
 load_HSMM <- function(){
@@ -533,7 +532,6 @@ load_HSMM_markers <- function(){
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
-#' 
 #' @export
 load_lung <- function(){
   baseLoc <- system.file(package="monocle")
