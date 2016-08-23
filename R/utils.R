@@ -173,7 +173,6 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 # does is very confusing.
 ####
 #' Filter genes outside of a given range of expression
-#' @return A vector of Strings. The strings are gene names whose median expression value falls between the specified range
 #'
 #' @export
 selectGenesInExpressionRange <- function(cds, 
@@ -316,7 +315,6 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
 # Some convenience functions for loading the HSMM data
 
 #' Return the names of classic muscle genes
-#' @return a vector object that contains Strings
 #' @export
 get_classic_muscle_markers <- function(){
   c("MEF2C", "MEF2D", "MYF5", "ANPEP", "PDGFRA",
@@ -325,7 +323,6 @@ get_classic_muscle_markers <- function(){
 }
 
 #' Build a CellDataSet from the HSMMSingleCell package
-#' @return a CellDataSet object
 #' @export
 load_HSMM <- function(){
   
@@ -348,7 +345,6 @@ load_HSMM_markers <- function(){
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
-#' @return a CellDataSet object
 #' @export
 load_lung <- function(){
   baseLoc <- system.file(package="monocle")
