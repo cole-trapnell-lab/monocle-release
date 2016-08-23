@@ -12,7 +12,6 @@ monocle_theme_opts <- function()
 }
 
 #' Plots the minimum spanning tree on cells.
-#' @description Plots the minimum spanning tree on cells.
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -593,7 +592,6 @@ plot_clusters<-function(cds,
 }
 
 #' Plots a pseudotime-ordered, row-centered heatmap
-#' @return a ggplot2 plot object
 #' @export 
 plot_genes_heatmap <- function(cds, 
                                rescaling='row', 
