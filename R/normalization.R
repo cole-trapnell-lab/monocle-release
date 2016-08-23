@@ -516,4 +516,4 @@ relative2abs <- function(relative_cds,
 #'   \item{numMolecules}{number of molecules calculated from concentration and volume}
 #'   \item{rounded_numMolecules}{number in rounded digit of molecules calculated from concentration and volume}
 #' }
-"spike_df"
+
