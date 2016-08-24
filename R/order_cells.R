@@ -1,76 +1,86 @@
-#' Scale pseudotime to be in the range from 0 to 100 (it works both for situations involving only one state and complex states)
+#' Scale pseudotime to be in the range from 0 to 100 
+#' 
+#' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @param verbose Whether to emit verbose output
 #' @return an updated CellDataSet object which an
-#' @export
-scale_pseudotime <- function(cds) {
-    pd <- pData(cds)
-    pd$Cell_name <- row.names(pd)
-    range_df <- plyr::ddply(pd, .(State), function(x) {
-        min_max <- range(x$Pseudotime)
-        min_cell <- subset(x, Pseudotime %in% min_max[1])
-        max_cell <- subset(x, Pseudotime %in% min_max[2])
-        min_cell$fate_type <- 'Start'
-        max_cell$fate_type <- 'End'
-        rbind(min_cell, max_cell)
-    }) #pseudotime range for each state
+scale_pseudotime <- function(cds, verbose = F) {
+  pd <- pData(cds)
+  pd$Cell_name <- row.names(pd)
+  range_df <- plyr::ddply(pd, .(State), function(x) {
+    min_max <- range(x$Pseudotime)
+    min_cell <- subset(x, Pseudotime %in% min_max[1])
+    max_cell <- subset(x, Pseudotime %in% min_max[2])
+    min_cell$fate_type <- 'Start'
+    max_cell$fate_type <- 'End'
+    rbind(min_cell, max_cell)
+  }) #pseudotime range for each state
+  
+  #1. construct a tree of the selected cells
+  adj_list <- data.frame(Source = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Parent'], Target = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Cell_name'])
+  #convert to cell fate adjancency list:
+  adj_list$Source <- pd[as.character(adj_list$Source), 'State']
+  adj_list$Target <- pd[as.character(adj_list$Target), 'State']
+  
+  uniq_cell_list <- unique(c(as.character(adj_list$Source), as.character(adj_list$Target)))
+  adj_mat <- matrix(rep(0, length(uniq_cell_list)^2), nrow = length(uniq_cell_list), ncol = length(uniq_cell_list), dimnames = list(uniq_cell_list, uniq_cell_list))
+  adj_mat[as.matrix(adj_list)] <- 1
+  net <- graph.adjacency(as.matrix(adj_mat), mode = 'directed', weighted = NULL, diag = FALSE)
+  
+  # plot(net, layout = layout.fruchterman.reingold,
+  #        vertex.size = 25,
+  #        vertex.color="red",
+  #        vertex.frame.color= "white",
+  #        vertex.label.color = "white",
+  #        vertex.label.cex = .5,
+  #        vertex.label.family = "sans",
+  #        edge.width=2,
+  #        edge.color="black")
+  
+  #dfs_net <- graph.dfs(net, root = 1, order.out = T) #DFS search for the cell fate tree
+  #net_order_out <- as.vector(dfs_net$order.out)
+  net_leaves <- which(degree(net, v = V(net), mode = "out")==0, useNames = T)
+  
+  pd$scale_pseudotime <- NA
+  
+  #2. scale the psedutime:
+  for(i in net_leaves) {
+    path_vertex <- as.vector(get.all.shortest.paths(net, from = 1, to = i, mode="out")$res[[1]])
+    pd_subset <- subset(pd, State %in% path_vertex & is.na(scale_pseudotime))
     
-    #1. construct a tree of the selected cells
-    adj_list <- data.frame(Source = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Parent'], Target = subset(range_df, length(Parent) > 0 & !is.na(Parent))[, 'Cell_name'])
-    #convert to cell fate adjancency list:
-    adj_list$Source <- pd[as.character(adj_list$Source), 'State']
-    adj_list$Target <- pd[as.character(adj_list$Target), 'State']
+    #scale the pseudotime between the parent cell of the first cell to the last cell on the remaing branch
+    # print(path_vertex)
+    min_cell_name <- row.names(subset(pd_subset, Pseudotime == min(Pseudotime)))
+    # print(min_cell_name)
     
-    uniq_cell_list <- unique(c(as.character(adj_list$Source), as.character(adj_list$Target)))
-    adj_mat <- matrix(rep(0, length(uniq_cell_list)^2), nrow = length(uniq_cell_list), ncol = length(uniq_cell_list), dimnames = list(uniq_cell_list, uniq_cell_list))
-    adj_mat[as.matrix(adj_list)] <- 1
-    net <- graph.adjacency(as.matrix(adj_mat), mode = 'directed', weighted = NULL, diag = FALSE)
+    if(!is.na(pd[min_cell_name, 'Parent'])) {
+      parent_min_cell <- as.character(pd[min_cell_name, 'Parent'])
+      subset_min_pseudo <- pd[parent_min_cell, 'Pseudotime']
+      scale_pseudotime_ini <- pd[parent_min_cell, 'scale_pseudotime']
+      scaling_factor <- (100 - pd[parent_min_cell, 'scale_pseudotime']) / c(max(pd_subset$Pseudotime) - subset_min_pseudo)
+    }
+    else {
+      subset_min_pseudo <- min(pd[, 'Pseudotime'])
+      scale_pseudotime_ini <- 0
+      scaling_factor <- 100 / c(max(pd_subset$Pseudotime) - min(pd_subset$Pseudotime))
+    }
     
-    # plot(net, layout = layout.fruchterman.reingold,
-    #        vertex.size = 25,
-    #        vertex.color="red",
-    #        vertex.frame.color= "white",
-    #        vertex.label.color = "white",
-    #        vertex.label.cex = .5,
-    #        vertex.label.family = "sans",
-    #        edge.width=2,
-    #        edge.color="black")
+    pseudotime_scaled <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
     
-    #dfs_net <- graph.dfs(net, root = 1, order.out = T) #DFS search for the cell fate tree
-    #net_order_out <- as.vector(dfs_net$order.out)
-    net_leaves <- which(degree(net, v = V(net), mode = "out")==0, useNames = T)
+    if(verbose)
+      message(i, '\t', range(pseudotime_scaled)[1],'\t', range(pseudotime_scaled)[2])
     
-    pd$scale_pseudotime <- NA
-    
-    #2. scale the psedutime:
-    for(i in net_leaves) {
-        path_vertex <- as.vector(get.all.shortest.paths(net, from = 1, to = i, mode="out")$res[[1]])
-        pd_subset <- subset(pd, State %in% path_vertex & is.na(scale_pseudotime))
-        
-        #scale the pseudotime between the parent cell of the first cell to the last cell on the remaing branch
-        # print(path_vertex)
-        min_cell_name <- row.names(subset(pd_subset, Pseudotime == min(Pseudotime)))
-        print(min_cell_name)
-        if(!is.na(pd[min_cell_name, 'Parent'])) {
-            parent_min_cell <- as.character(pd[min_cell_name, 'Parent'])
-            subset_min_pseudo <- pd[parent_min_cell, 'Pseudotime']
-            scale_pseudotime_ini <- pd[parent_min_cell, 'scale_pseudotime']
-            scaling_factor <- (100 - pd[parent_min_cell, 'scale_pseudotime']) / c(max(pd_subset$Pseudotime) - subset_min_pseudo)
-        }
-        else {
-            subset_min_pseudo <- min(pd[, 'Pseudotime'])
-            scale_pseudotime_ini <- 0
-            scaling_factor <- 100 / c(max(pd_subset$Pseudotime) - min(pd_subset$Pseudotime))
-        }
-        
-        scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
-        message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
-        pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
-    }	
-    
-    pData(cds) <- pd
-    
-    return(cds)
+    pd[row.names(pd_subset), 'ori_pseudotime'] <- pd[row.names(pd_subset), 'Pseudotime']
+    pd[row.names(pd_subset), 'Pseudotime'] <- pseudotime_scaled
+  }	
+  scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
+  message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
+  pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
+  
+  pData(cds) <- pd
+  
+  return(cds)
 }
 
 # Methods for PQ-tree based ordering
@@ -82,6 +92,9 @@ get_next_node_id <- function()
 }
 
 #' Recursively builds and returns a PQ tree for the MST
+#' @param mst The minimum spanning tree, as an igraph object.
+#' @param use_weights Whether to use edge weights when finding the diameter path of the tree.
+#' @param root_node The name of the root node to use for starting the path finding. 
 #' @import igraph
 pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 {
@@ -118,8 +131,8 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
   first_diam_path_node_idx <- head(as.vector(diam), n=1)
   last_diam_path_node_idx <- tail(as.vector(diam), n=1)
   if (sum(ind_nodes) == 0 || 
-        (igraph::degree(mst, first_diam_path_node_idx) == 1 && 
-           igraph::degree(mst, last_diam_path_node_idx) == 1))
+      (igraph::degree(mst, first_diam_path_node_idx) == 1 && 
+       igraph::degree(mst, last_diam_path_node_idx) == 1))
   {
     ind_backbone <- diam
   }
@@ -238,8 +251,8 @@ make_canonical <-function(pq_tree)
   
   for (p_node in single_child_p)
   {
-    child_of_p_node <- V(canonical_pq) [ nei(p_node, mode="out") ]
-    parent_of_p_node <- V(canonical_pq) [ nei(p_node, mode="in") ]
+    child_of_p_node <- V(canonical_pq) [ suppressWarnings(nei(p_node, mode="out")) ]
+    parent_of_p_node <- V(canonical_pq) [ suppressWarnings(nei(p_node, mode="in")) ]
     
     for (child_of_p in child_of_p_node)
     {
@@ -256,104 +269,39 @@ make_canonical <-function(pq_tree)
   return (canonical_pq)
 }
 
-extract_ordering <- function(pq_tree, curr_node)
+count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 {
   nei <- NULL
   
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    #V(pq_tree)[curr_node]$num_desc = 0
+    children_counts[curr_node] = 0
+    return(children_counts)
+  } else {
+    children_count = 0
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
+      children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
+      if (V(pq_tree)[child]$type == "leaf")
+      {
+        children_count <- children_count + 1
+      }
+      else
+      {
+        children_count <- children_count + children_counts[child]
+      }
     }
-    p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    if (runif(1) >= 0.5)
-    {
-      q_level <- rev(q_level)
-    }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
+    #print (curr_node)
+    children_counts[curr_node] = children_count
+    return(children_counts)
   }
 }
 
-extract_fixed_ordering <- function(pq_tree, curr_node)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    #p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    # if (runif(1) >= 0.5)
-    # {
-    #     q_level <- rev(q_level)
-    # }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-weight_of_p_node_order<-function(p_level_list, dist_matrix)
-{
-  cost <- 0
-  if (length(p_level_list) <= 1)
-  {
-    return (0)
-  }
-  #print (p_level_list)
-  #print (length(p_level_list))
-  for (i in (1:(length(p_level_list)-1)))
-  {
-    #print (i)
-    #print ("***")
-    #print (p_level_list[[i]])
-    #print (paste("...", p_level_list[[i]][length(p_level_list[[i]])]))
-    #print (p_level_list[[i+1]])
-    #print (paste("...", p_level_list[[i+1]][1]))
-    #print (dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]])
-    cost <- cost + dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]]
-  }
-  return(cost)
-}
 
 #' Return an ordering for a P node in the PQ tree
+#' @param q_level_list A list of Q nodes in the PQ tree
+#' @param dist_matrix A symmetric matrix of pairwise distances between cells
 #' @importFrom combinat permn
 order_p_node <- function(q_level_list, dist_matrix)
 { 
@@ -462,71 +410,6 @@ order_q_node <- function(q_level_list, dist_matrix)
   return(list(ql=q_levels, wt=min(path_weights)))
 }
 
-#order_q_node(q_level, dp)
-
-extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #print ("ordering leaf node")
-    return (V(pq_tree)[curr_node]$name)
-  }else if (V(pq_tree)[curr_node]$type == "P"){
-    #print ("ordering P node")
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    p_level <- order_p_node(p_level, dist_matrix)
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }else if(V(pq_tree)[curr_node]$type == "Q"){
-    #print ("ordering Q node")
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    q_level <- order_q_node(q_level, dist_matrix)
-    q_level <- q_level$ql
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
-{
-  nei <- NULL
-  
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #V(pq_tree)[curr_node]$num_desc = 0
-    children_counts[curr_node] = 0
-    return(children_counts)
-  } else {
-    children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
-      if (V(pq_tree)[child]$type == "leaf")
-      {
-        children_count <- children_count + 1
-      }
-      else
-      {
-        children_count <- children_count + children_counts[child]
-      }
-    }
-    #print (curr_node)
-    children_counts[curr_node] = children_count
-    return(children_counts)
-  }
-}
-
 measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 {
   nei <- NULL
@@ -539,7 +422,7 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
   } else {
     
     children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
       if (V(pq_tree)[child]$type == "leaf")
@@ -570,7 +453,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
     node_states[V(pq_tree)[curr_node]$name] = assigned_state
     return(node_states)
   } else {
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
     {
       node_states <- assign_cell_lineage(pq_tree, child, assigned_state, node_states)
     }
@@ -578,7 +461,50 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
   }
 }
 
+
+extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
+{
+  nei <- NULL
+  
+  if (V(pq_tree)[curr_node]$type == "leaf")
+  {
+    #print ("ordering leaf node")
+    return (V(pq_tree)[curr_node]$name)
+  }else if (V(pq_tree)[curr_node]$type == "P"){
+    #print ("ordering P node")
+    p_level <- list()
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
+    {
+      p_level[[length(p_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
+    }
+    p_level <- order_p_node(p_level, dist_matrix)
+    p_level <- unlist(p_level)
+    #print (p_level)
+    return (p_level)
+  }else if(V(pq_tree)[curr_node]$type == "Q"){
+    #print ("ordering Q node")
+    q_level <- list()
+    for (child in V(pq_tree) [ suppressWarnings(nei(curr_node, mode="out")) ])
+    {
+      q_level[[length(q_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
+    }
+    q_level <- order_q_node(q_level, dist_matrix)
+    q_level <- q_level$ql
+    q_level <- unlist(q_level)
+    #print (q_level)
+    return (q_level)
+  }
+}
+
+
+
 #' Extract a linear ordering of cells from a PQ tree
+#' 
+#' @param orig_pq_tree The PQ object to use for ordering
+#' @param curr_node The node in the PQ tree to use as the start of ordering
+#' @param dist_matrix A symmetric matrix containing pairwise distances between cells
+#' @param num_branches The number of outcomes allowed in the trajectory.
+#' @param reverse_main_path Whether to reverse the direction of the trajectory
 #' @importFrom plyr arrange
 extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
@@ -601,7 +527,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
   if(length(names(branch_node_counts)) < num_branches)
     stop('Number of branches attempted is larger than the branches constructed from pq_tree algorithm')
-
+  
   branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
   #print (branch_node_counts)
   
@@ -628,16 +554,16 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     branch_id <- names(branch_node_counts)[i]
     #print (branch_id)
     branch_tree <- branch_tree + vertex(branch_id)
-    parents <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
+    parents <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
     if (length(parents) > 0 && parents$type == "P")
     {
-      p_node_parent <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-      parent_branch_id <- V(pq_tree)[nei(p_node_parent, mode="in")]$name
+      p_node_parent <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
+      parent_branch_id <- V(pq_tree)[suppressWarnings(nei(p_node_parent, mode="in"))]$name
       #print (parent_branch_id)
       #print (branch_id)
       branch_tree <- branch_tree + edge(parent_branch_id, branch_id)
     }
-    pq_tree[V(pq_tree) [ nei(names(branch_node_counts)[i], mode="in") ], names(branch_node_counts)[i] ] <- FALSE
+    pq_tree[V(pq_tree) [ suppressWarnings(nei(names(branch_node_counts)[i], mode="in")) ], names(branch_node_counts)[i] ] <- FALSE
   }
   
   #branch_point_roots[[length(branch_point_roots) + 1]] <- curr_node
@@ -683,7 +609,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       curr_branch_root_cell <- names(curr_branch_pseudotimes)[length(curr_branch_pseudotimes)]
     }
     
-    for (child in V(branch_tree) [ nei(curr_branch, mode="out") ])
+    for (child in V(branch_tree) [ suppressWarnings(nei(curr_branch, mode="out")) ])
     {
       child_cell_ordering_subtree <- graph.empty()
       
@@ -756,7 +682,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
     
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     ordering_tree_res$subtree <- cell_tree
     
     if (length(children) == 1){
@@ -779,11 +705,11 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     cell_tree <- ordering_tree_res$subtree
     curr_cell_pseudotime <- last_pseudotime
     V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
-    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ nei(curr_cell, mode="in") ]$name
+    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ suppressWarnings(nei(curr_cell, mode="in")) ]$name
     #print (curr_cell_pseudotime)
     
     ordering_tree_res$subtree <- cell_tree
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
+    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     
     for (child in children)	{
       next_node <- V(cell_tree)[child]$name
@@ -809,7 +735,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
                             parent = cell_parents)
   
   ordering_df <- plyr::arrange(ordering_df, pseudo_time)
-  return(ordering_df)
+  return(list("ordering_df"=ordering_df, "cell_ordering_tree"=cell_ordering_tree))
 }
 
 reverse_ordering <- function(pseudo_time_ordering)
@@ -849,13 +775,11 @@ setOrderingFilter <- function(cds, ordering_genes){
   cds
 }
 
-#' Run the fastICA algorithm on a numeric matrix.
-#' @importFrom fastICA  ica.R.def ica.R.par
-#' @importFrom irlba irlba
+# Run the fastICA algorithm on a numeric matrix.
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
-  
+  #FIXME: This will internally convert to a dense matrix
   d <- dd[dd != 1L]
   if (length(d) != 2L) 
     stop("data must be matrix-conformal")
@@ -891,17 +815,11 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   
   if (verbose) 
     message("Finding SVD")
-  if (use_irlba)
-  {
-    s <- irlba::irlba(V, n.comp, n.comp)  
-    svs <- s$d  
-  }
-  else
-  {
-    s <- La.svd(V)
-    svs <- s$d  
-  }
-  
+
+  initial_v <- as.matrix(qnorm(1:(ncol(V) + 1)/(ncol(V) + 1))[1:ncol(V)])
+  s <- irlba::irlba(V, n.comp, n.comp, v = initial_v)  
+  svs <- s$d  
+ 
   D <- diag(c(1/sqrt(s$d)))
   K <- D %*% t(s$u)
   K <- matrix(K[1:n.comp, ], n.comp, p)
@@ -911,13 +829,13 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
     message("Running ICA")
   if (alg.typ == "deflation") {
     a <- fastICA::ica.R.def(X1, n.comp, tol = tol, fun = fun, 
-                   alpha = alpha, maxit = maxit, verbose = verbose, 
-                   w.init = w.init)
+                            alpha = alpha, maxit = maxit, verbose = verbose, 
+                            w.init = w.init)
   }
   else if (alg.typ == "parallel") {
     a <- fastICA::ica.R.par(X1, n.comp, tol = tol, fun = fun, 
-                   alpha = alpha, maxit = maxit, verbose = verbose, 
-                   w.init = w.init)
+                            alpha = alpha, maxit = maxit, verbose = verbose, 
+                            w.init = w.init)
   }
   w <- a %*% K
   S <- w %*% X
@@ -925,163 +843,725 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   return(list(X = t(X), K = t(K), W = t(a), A = t(A), S = t(S), svs=svs))
 }
 
+#
+# extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
+# {
+#   nei <- NULL
+#   type <- NULL
+#   pseudo_time <- NULL
+#   
+#   dp_mst <- minSpanningTree(cds) 
+#   
+#   Pseudotime <- shortest.paths(dp_mst, v=root_cell, to=V(dp_mst))
+#   
+#   curr_state <- 1
+#   #' a function to assign pseudotime for the MST
+#   assign_cell_state_helper <- function(ordering_tree_res, curr_cell, visited_node = curr_cell) {
+#     nei <- NULL
+#     
+#     cell_tree <- ordering_tree_res$subtree
+#     V(cell_tree)[curr_cell]$cell_state = curr_state
+#     
+#     children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="all")) ]$name 
+#     children <- setdiff(children, V(cell_tree)[visited_node]$name)
+#     
+#     ordering_tree_res$subtree <- cell_tree
+#     #V(ordering_tree_res$subtree)[curr_cell]$parent = visited_node
+#     
+#     if (length(children) == 0){
+#       return (ordering_tree_res)
+#     }else if (length(children) == 1){
+#       #visited_node <- union(children, visited_node)
+#       V(ordering_tree_res$subtree)[children]$parent = V(cell_tree)[curr_cell]$name
+#       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name, curr_cell)
+#     }else{
+#       for (child in children) {
+#         #visited_node <- union(child, visited_node)
+#         V(ordering_tree_res$subtree)[children]$parent = rep(V(cell_tree)[curr_cell]$name, length(children))
+#         curr_state <<- curr_state + 1
+#         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, curr_cell)
+#       }
+#     }
+#     return (ordering_tree_res)
+#   }
+#   
+#   res <- list(subtree = dp_mst, root = root_cell)
+#   #V(res$subtree)$parent <- rep(NA, nrow(pData(cds)))
+#   res <- assign_cell_state_helper(res, res$root)
+#   
+#   states <- V(res$subtree)$cell_state
+#   
+#   cell_names <-  colnames(Pseudotime)
+#   cell_states <- states
+#   cell_pseudotime <- Pseudotime
+#   cell_parents <- V(res$subtree)$parent
+#   
+#   ordering_df <- data.frame(sample_name = cell_names,
+#                             cell_state = factor(cell_states),
+#                             pseudo_time = as.vector(cell_pseudotime),
+#                             parent = cell_parents)
+#   row.names(ordering_df) <- ordering_df$sample_name
+#   # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
+#   return(ordering_df)
+# }
 
-#' Orders cells according to progress through a learned biological process.
+extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
+{
+  nei <- NULL
+  type <- NULL
+  pseudo_time <- NULL
+  
+  dp <- cellPairwiseDistances(cds) 
+  dp_mst <- minSpanningTree(cds) 
+  
+  curr_state <- 1
+
+  res <- list(subtree = dp_mst, root = root_cell)
+  
+  states = rep(1, ncol(dp))
+  names(states) <- V(dp_mst)$name
+  
+  pseudotimes = rep(0, ncol(dp))
+  names(pseudotimes) <- V(dp_mst)$name
+  
+  parents = rep(NA, ncol(dp))
+  names(parents) <- V(dp_mst)$name
+  
+  mst_traversal <- graph.dfs(dp_mst, 
+                             root=root_cell, 
+                             neimode = "all", 
+                             unreachable=FALSE, 
+                             father=TRUE)
+  mst_traversal$father <- as.numeric(mst_traversal$father)
+  curr_state <- 1
+  
+  for (i in 1:length(mst_traversal$order)){
+    curr_node = mst_traversal$order[i]
+    curr_node_name = V(dp_mst)[curr_node]$name
+    
+    if (is.na(mst_traversal$father[curr_node]) == FALSE){
+      parent_node = mst_traversal$father[curr_node]
+      parent_node_name = V(dp_mst)[parent_node]$name
+      parent_node_pseudotime = pseudotimes[parent_node_name]
+      parent_node_state = states[parent_node_name]
+      curr_node_pseudotime = parent_node_pseudotime + dp[curr_node_name, parent_node_name]
+      if (degree(dp_mst, v=parent_node_name) > 2){
+        curr_state <- curr_state + 1
+      }
+    }else{
+      parent_node = NA
+      parent_node_name = NA
+      curr_node_pseudotime = 0
+    }
+    
+    curr_node_state = curr_state
+    pseudotimes[curr_node_name] <- curr_node_pseudotime
+    states[curr_node_name] <- curr_node_state
+    parents[curr_node_name] <- parent_node_name
+  }
+  
+  ordering_df <- data.frame(sample_name = names(states),
+                            cell_state = factor(states),
+                            pseudo_time = as.vector(pseudotimes),
+                            parent = parents)
+  row.names(ordering_df) <- ordering_df$sample_name
+  # ordering_df <- plyr::arrange(ordering_df, pseudo_time)
+  return(ordering_df)
+}
+
+
+select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
+  if (is.null(root_state) == FALSE) {
+    if (is.null(pData(cds)$State)){
+      stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
+    }
+    # FIXME: Need to gaurd against the case when the supplied root state isn't actually a terminal state in the tree.
+    root_cell_candidates <- subset(pData(cds), State == root_state)
+    if (nrow(root_cell_candidates) == 0){
+      stop(paste("Error: no cells for State =", root_state))
+    }
+    
+    # build a local MST to find a good root cell for this state
+    dp <- as.matrix(dist(t(reducedDimS(cds)[,row.names(root_cell_candidates)])))
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    
+    # Make sure to use the real MST here
+    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+    #root_cell_candidates <- root_cell_candidates[row.names(root_cell_candidates) %in% tip_leaves,]
+    #sg <- make_ego_graph(dp_mst, nodes=row.names(root_cell_candidates))[[1]]
+    
+    diameter <- get.diameter(dp_mst)
+    
+    if (length(diameter) == 0){
+      stop(paste("Error: no valid root cells for State =", root_state))
+    }
+    
+    #root_cell = names(diameter)[tip_leaves %in% names(diameter)]
+    root_cell_candidates <- root_cell_candidates[names(diameter),]
+    if (is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell) == FALSE &&
+        pData(cds)[cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell,]$State == root_state){
+        root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
+    }else{
+      root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
+    }
+    if (length(root_cell) > 1)
+      root_cell <- root_cell[1]
+    
+    # If we used DDRTree, we need to go from this actual cell to the nearst
+    # point on the principal graph
+    if (cds@dim_reduce_type == "DDRTree"){
+      #root_cell_idx <- which(V(minSpanningTree(cds))$name == root_cell, arr.ind=T)
+      graph_point_for_root_cell <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex[root_cell,]
+      root_cell = V(minSpanningTree(cds))[graph_point_for_root_cell]$name
+    }
+    
+  }else{
+    if (is.null(minSpanningTree(cds))){
+      stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
+    }
+    diameter <- get.diameter(minSpanningTree(cds))
+    if (is.null(reverse) == FALSE && reverse == TRUE){
+      root_cell = names(diameter[length(diameter)])
+    } else {
+      root_cell = names(diameter[1])
+    }
+  }
+  return(root_cell)
+}
+
+#' Orders cells according to pseudotime.
+#' 
+#' Learns a "trajectory" describing the biological process the cells are
+#' going through, and calculates where each cell falls within that trajectory. 
+#' Monocle learns trajectories in two steps. The first step is reducing the dimensionality
+#' of the data with \code{\link{reduceDimension}()}. The second is this function.
+#' function. This function takes as input a CellDataSet and returns it with 
+#' two new columns: \code{Pseudotime} and \code{State}, which together encode 
+#' where each cell maps to the trajectory. \code{orderCells()} optionally takes
+#' a "root" state, which you can use to specify the start of the trajectory. If 
+#' you don't provide a root state, one is selected arbitrarily.    
+#' 
+#' The \code{reduction_method} argument to \code{\link{reduceDimension}()} 
+#' determines which algorithm is used by \code{orderCells()} to learn the trajectory.
+#' If \code{reduction_method == "ICA"}, this function uses \emph{polygonal reconstruction}
+#' to learn the underlying trajectory. If \code{reduction_method == "DDRTree"}, 
+#' the trajectory is specified by the principal graph learned by the 
+#' \code{\link[DDRTree]{DDRTree}()} function.
+#' 
+#' Whichever algorithm you use, the trajectory will be composed of segments. 
+#' The cells from a segment will share the same value of \code{State}. One of
+#' these segments will be selected as the root of the trajectory arbitrarily. 
+#' The most distal cell on that segment will be chosen as the "first" cell in the
+#' trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will 
+#' then "walk" along the trajectory, and as it encounters additional cells, it
+#' will assign them increasingly large values of Pseudotime.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param root_state The state to use as the root of the trajectory. 
+#' You must already have called orderCells() once to use this argument.
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
-#' @param root_cell the name of a cell to use as the root of the ordering tree.
-#' @param scale_pseudotime a logic flag to determine whether or not to scale the pseudotime. If this is set to be true, then the pData dataframe of the returned CDS included an additional column called scale_pseudotime which store the scaled pseudotime values.
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL, scale_pseudotime = F){
-  
-  adjusted_S <- t(cds@reducedDimS)
-  
-  dp <- as.matrix(dist(adjusted_S))
-  
-  #print (sum(rowSums(dp)))
-  #dp <- as.matrix(dist(dp))
-  #dp <- as.matrix(dist(adjusted_S))
-  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
-  # Build an MST of the cells in ICA space.
-  gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds) <- dp_mst
-  # Build the PQ tree
-  next_node <<- 0
-  res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
-  #stopifnot(length(V(res$subtree)[type == "leaf"]) == nrow(pData(cds)))
-  
-  cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, reverse)
-  row.names(cc_ordering) <- cc_ordering$sample_name
-  
-  pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-  pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
-  pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
-  
-  if(scale_pseudotime) {
-      cds <- scale_pseudotime(cds)
+orderCells <- function(cds, 
+                       root_state=NULL, 
+                       num_paths = NULL, 
+                       reverse=NULL){
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
+  # reducedDimA, S, and K are not NULL in the cds
+  if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 0))) {
+    stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
+  }
+
+  root_cell <- select_root_cell(cds, root_state, reverse)
+  
+  cds@auxOrderingData <- new.env( hash=TRUE )
+  if (cds@dim_reduce_type == "ICA"){
+    if (is.null(num_paths)){
+      num_paths = 1
+    }
+    adjusted_S <- t(cds@reducedDimS)
+    
+    dp <- as.matrix(dist(adjusted_S))
+    
+    cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
+    # Build an MST of the cells in ICA space.
+    gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+    # Build the PQ tree
+    next_node <<- 0
+    res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
+
+    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+    
+    order_list <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, FALSE)
+    cc_ordering <- order_list$ordering_df
+    row.names(cc_ordering) <- cc_ordering$sample_name
+    
+    minSpanningTree(cds)  <- as.undirected(order_list$cell_ordering_tree)
+    
+    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
+    pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
+    #pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name 
+    
+    minSpanningTree(cds) <- dp_mst
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
+
+  } else if (cds@dim_reduce_type == "DDRTree"){
+    if (is.null(num_paths) == FALSE){
+      message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
+    }
+    cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
+
+    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
+
+    K_old <- reducedDimK(cds)
+    old_dp <- cellPairwiseDistances(cds) 
+    old_mst <- minSpanningTree(cds)
+    old_A <- reducedDimA(cds)
+    old_W <- reducedDimW(cds)
+    
+    cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+    minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree 
+    
+    root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
+    cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
+    cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
+    
+    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+    root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
+    
+    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+    
+    cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
+    
+    pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
+    if (is.null(root_state) == TRUE) {
+      closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+      pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
+    }
+
+    reducedDimK(cds) <-  K_old 
+    cellPairwiseDistances(cds) <- old_dp
+    minSpanningTree(cds) <- old_mst
+    reducedDimA(cds) <- old_A
+    reducedDimW(cds) <- old_W
+  
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } 
+  
+  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
+  # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
+  # for now
+  #if(scale_pseudotime) {
+    #cds <- scale_pseudotime(cds)
+  #}
   
   cds
 }
 
+# Helper function to normalize the expression data prior to dimensionality
+# reduction
+normalize_expr_data <- function(cds, 
+                                norm_method = c("vstExprs", "log", "none"), 
+                                pseudo_expr = NULL){
+  FM <- exprs(cds)
+  
+  # If the user has selected a subset of genes for use in ordering the cells
+  # via setOrderingFilter(), subset the expression matrix.
+  if (is.null(fData(cds)$use_for_ordering) == FALSE && 
+      nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
+    FM <- FM[fData(cds)$use_for_ordering, ]
+  }
+  
+  norm_method <- match.arg(norm_method)
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+    
+    # If we're going to be using log, and the user hasn't given us a pseudocount
+    # set it to 1 by default.
+    if (is.null(pseudo_expr)){
+      if(norm_method == "log")
+        pseudo_expr = 1
+      else
+        pseudo_expr = 0
+    }
+    
+    checkSizeFactors(cds)
+    
+    if (norm_method == "vstExprs") {
+      if (is.null(fData(cds)$use_for_ordering) == FALSE && 
+          nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
+        VST_FM <- vstExprs(cds[fData(cds)$use_for_ordering,], round_vals = FALSE)
+      }else{
+        VST_FM <- vstExprs(cds, round_vals = FALSE)
+      }
+      
+      if (is.null(VST_FM) == FALSE) {
+        FM <- VST_FM
+      }
+      else {
+        stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
+      }
+    }else if (norm_method == "log") {
+      # If we are using log, normalize by size factor before log-transforming
+      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      FM <- FM + pseudo_expr
+      FM <- log2(FM)
+    }else if (norm_method == "none"){
+      # If we are using log, normalize by size factor before log-transforming
+      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      FM <- FM + pseudo_expr
+    }
+  }else if (cds@expressionFamily@vfamily == "binomialff") {
+    if (norm_method == "none"){
+      #If this is binomial data, transform expression values into TF-IDF scores.
+      ncounts <- FM > 0
+      ncounts[ncounts != 0] <- 1
+      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
+    }else{
+      stop("Error: the only normalization method supported with binomial data is 'none'")
+    }
+  }else if (cds@expressionFamily@vfamily == "Tobit") {
+    FM <- FM + pseudo_expr
+    if (norm_method == "none"){
+      
+    }else if (norm_method == "log"){
+      FM <- log2(FM)
+    }else{
+      stop("Error: the only normalization methods supported with Tobit-distributed (e.g. FPKM/TPM) data are 'log' (recommended) or 'none'")
+    }
+  }else if (cds@expressionFamily@vfamily == "gaussianff") {
+    if (norm_method == "none"){
+      FM <- FM + pseudo_expr
+    }else{
+      stop("Error: the only normalization method supported with gaussian data is 'none'")
+    }
+  }
+  return (FM)
+}
 
-#' Computes a projection of a CellDataSet object into a lower dimensional space
+#' Compute a projection of a CellDataSet object into a lower dimensional space
+#' 
+#' Monocle aims to learn how cells transition through a biological program of 
+#' gene expression changes in an experiment. Each cell can be viewed as a point 
+#' in a high-dimensional space, where each dimension describes the expression of 
+#' a different gene in the genome. Identifying the program of gene expression 
+#' changes is equivalent to learning a \emph{trajectory} that the cells follow
+#' through this space. However, the more dimensions there are in the analysis, 
+#' the harder the trajectory is to learn. Fortunately, many genes typically
+#' co-vary with one another, and so the dimensionality of the data can be
+#' reduced with a wide variety of different algorithms. Monocle provides two 
+#' different algorithms for dimensionality reduction via \code{reduceDimension}. 
+#' Both take a CellDataSet object and a number of dimensions allowed for the 
+#' reduced space. You can also provide a model formula indicating some variables
+#' (e.g. batch ID or other technical factors) to "subtract" from the data so it
+#' doesn't contribute to the trajectory. 
+#' 
+#' You can choose two different reduction algorithms: Independent Component 
+#' Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
+#' The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
+#' Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
+#' which was implemented in Monocle version 1. \code{\link[DDRTree]{DDRTree}} is a more recent manifold
+#' learning algorithm developed by Qi Mao and colleages. It is substantially more 
+#' powerful, accurate, and robust for single-cell trajectory analysis than ICA,
+#' and is now the default method. 
+#' 
+#' Often, experiments include cells from different batches or treatments. You can
+#' reduce the effects of these treatments by transforming the data with a linear
+#' model prior to dimensionality reduction. To do so, provide a model formula  
+#' through \code{residualModelFormulaStr}.
+#' 
+#' Prior to reducing the dimensionality of the data, it usually helps 
+#' to normalize it so that highly expressed or highly variable genes don't 
+#' dominate the computation. \code{reduceDimension()} automatically transforms
+#' the data in one of several ways depending on the \code{expressionFamily} of 
+#' the CellDataSet object. If the expressionFamily is \code{negbinomial} or \code{negbinomial.size}, the
+#' data are variance-stabilized. If the expressionFamily is \code{Tobit}, the data
+#' are adjusted by adding a pseudocount (of 1 by default) and then log-transformed. 
+#' If you don't want any transformation at all, set norm_method to "none" and 
+#' pseudo_expr to 0. This maybe useful for single-cell qPCR data, or data you've
+#' already transformed yourself in some way.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param max_components the dimensionality of the reduced space
-#' @param use_irlba Whether to use the IRLBA package for ICA reduction.
+#' @param reduction_method A character string specifying the algorithm to use for dimensionality reduction.
+#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
-#' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
+#' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
-#' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
+#' @importFrom fastICA  ica.R.def ica.R.par
+#' @import irlba
+#' @import DDRTree
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            use_irlba=TRUE, 
-                            pseudo_expr=1, 
-                            batch=NULL, 
-                            batch2=NULL, 
-                            covariates=NULL, 
-                            use_vst=FALSE,
+                            reduction_method=c("DDRTree", "ICA"),
+                            norm_method = c("vstExprs", "log", "none"), 
+                            residualModelFormulaStr=NULL,
+                            pseudo_expr=NULL, 
                             verbose=FALSE,
                             ...){
+ 
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
-  FM <- exprs(cds)
+  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  xm <- Matrix::rowMeans(FM)
+  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  FM <- FM[xsd > 0,]
   
-  if (is.null(use_vst) && cds@expressionFamily@vfamily == "negbinomial"){
-    use_vst = TRUE
-    pseudo_expr = 0
-  }
-  
-  # If we aren't using VST, then normalize the expression values by size factor
-  if (use_vst == FALSE && cds@expressionFamily@vfamily == "negbinomial")
-  {
-    checkSizeFactors(cds)
-    size_factors <- sizeFactors(cds)
-    #print (size_factors)
-    FM <- t(t(FM) / size_factors)
-    #FM <- log2(FM)
-  }
-  
-  if (is.null(fData(cds)$use_for_ordering) == FALSE && nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0)
-    FM <- FM[fData(cds)$use_for_ordering,]
-  
-  if (cds@expressionFamily@vfamily == "binomialff"){
-    ncounts <- FM
-    ncounts[ncounts != 0] <- 1
-    FM <- t(t(ncounts) * log(1 + ncol(ncounts) / rowSums(ncounts)))
-  }
-  
-  if (cds@expressionFamily@vfamily != "binomialff"){
-    FM <- FM + pseudo_expr
-  }
-  
-  FM <- FM[matrixStats::rowSds(FM) > 0,]
-  
-
-  if (cds@expressionFamily@vfamily != "binomialff"){
-    if (use_vst){
-      VST_FM <- vstExprs(cds, round_vals=FALSE)
-      if (is.null(VST_FM) == FALSE){
-        FM <- VST_FM
-        FM <- FM[fData(cds)$use_for_ordering,]
-      }else{
-        stop("Error: set the variance-stabilized value matrix with vstExprs(cds) <- computeVarianceStabilizedValues() before calling this function with use_vst=TRUE")
-      }
-      #
-    }else{
-      FM <- log2(FM)
-    }
-  }
-
-  # TODO: get rid of this if possible.
-  if (is.null(batch) == FALSE || is.null(batch2) == FALSE|| is.null(covariates) == FALSE)
-  {
-    if (verbose)
+  if (is.null(residualModelFormulaStr) == FALSE) {
+    if (verbose) 
       message("Removing batch effects")
-    #FM <- log2(FM)
-    FM <- limma::removeBatchEffect(FM, batch=batch, batch2=batch2, covariates=covariates)
-    if (cds@expressionFamily@vfamily != "binomialff"){
-      if (use_vst == FALSE) {
-        FM <- 2^FM
-      }
-    }
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                       data = pData(cds), drop.unused.levels = TRUE)
+
+    fit <- limma::lmFit(FM, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+  }else{
+    X.model_mat <- NULL
   }
   
-  #FM <- log2(FM)
-  if (verbose)
-    message("Reducing to independent components")
+  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
   
-  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
-  
-  x_pca <- t(t(FM) %*% init_ICA$K)
-  W <- t(init_ICA$W)
-  
-  weights <- W
+  if (nrow(FM) == 0) {
+    stop("Error: all rows have standard deviation zero")
+  }
 
-  A <- t(solve(weights) %*% t(init_ICA$K))
-  
-  colnames(A) <- colnames(weights)
-  rownames(A) <- rownames(FM)
-  
-  S <- weights %*% x_pca
-  
-  rownames(S) <- colnames(weights)
-  colnames(S) <- colnames(FM) 
-  
-  reducedDimW(cds) <- W
-  reducedDimA(cds) <- A
-  reducedDimS(cds) <- S
-  reducedDimK(cds) <- init_ICA$K
-  
+  if (is.function(reduction_method)) {   
+    reducedDim <- method(FM, ...)
+    qplot(reducedDimW[1, ], reducedDimW[2, ])
+    colnames(reducedDim) <- colnames(FM)
+    reducedDimW(cds) <- as.matrix(reducedDim)
+    reducedDimA(cds) <- as.matrix(reducedDim)
+    reducedDimS(cds) <- as.matrix(reducedDim)
+    reducedDimK(cds) <- as.matrix(reducedDim)
+    dp <- as.matrix(dist(reducedDim))
+    cellPairwiseDistances(cds) <- dp
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+    cds@dim_reduce_type <- "function_passed"
+  }
+  else{
+    reduction_method <- match.arg(reduction_method)
+    if (reduction_method == "ICA") {
+      if (verbose) 
+        message("Reducing to independent components")
+      init_ICA <- ica_helper(Matrix::t(FM), max_components, 
+                             use_irlba = TRUE, ...)
+      x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
+      W <- Matrix::t(init_ICA$W)
+      weights <- W
+      A <- Matrix::t(solve(weights) %*% Matrix::t(init_ICA$K))
+      colnames(A) <- colnames(weights)
+      rownames(A) <- rownames(FM)
+      S <- weights %*% x_pca
+      rownames(S) <- colnames(weights)
+      colnames(S) <- colnames(FM)
+      reducedDimW(cds) <- as.matrix(W)
+      reducedDimA(cds) <- as.matrix(A)
+      reducedDimS(cds) <- as.matrix(S)
+      reducedDimK(cds) <- as.matrix(init_ICA$K)
+      adjusted_S <- Matrix::t(reducedDimS(cds))
+      dp <- as.matrix(dist(adjusted_S))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "ICA"
+    }
+    else if (reduction_method == "DDRTree") {
+      
+      if (verbose) 
+        message("Learning principal graph with DDRTree")
+
+      # TODO: DDRTree should really work with sparse matrices.
+      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
+                             ...)
+      if(ncol(ddrtree_res$Y) == ncol(cds))
+        colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      else
+        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      
+      colnames(ddrtree_res$Z) <- colnames(FM)
+      reducedDimS(cds) <- ddrtree_res$Z
+      reducedDimK(cds) <- ddrtree_res$Y
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "DDRTree"
+      cds <- findNearestPointOnMST(cds)
+    }
+    else {
+      stop("Error: unrecognized dimensionality reduction method")
+    }
+  }
   cds
 }
 
+# Project each point to the nearest on the MST:
+findNearestPointOnMST <- function(cds){
+  dp_mst <- minSpanningTree(cds)
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
+  
+  tip_leaves <- names(which(degree(dp_mst) == 1))
+  
+  distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
+  closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) ) } )
+  #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
+  
+  #closest_vertex <- as.vector(closest_vertex)
+  closest_vertex_names <- colnames(Y)[closest_vertex]
+  closest_vertex_df <- as.matrix(closest_vertex) #index on Z 
+  row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
 
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+  cds
+}
 
+project2MST <- function(cds, Projection_Method){
+  dp_mst <- minSpanningTree(cds)
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
+  
+  cds <- findNearestPointOnMST(cds)
+  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+
+  #closest_vertex <- as.vector(closest_vertex)
+  closest_vertex_names <- colnames(Y)[closest_vertex]
+  closest_vertex_df <- as.matrix(closest_vertex)
+  row.names(closest_vertex_df) <- row.names(closest_vertex)
+  #closest_vertex_names <- as.vector(closest_vertex)
+  
+  tip_leaves <- names(which(degree(dp_mst) == 1))
+  
+  if(!is.function(Projection_Method)) {
+    P <- Y[, closest_vertex]
+  }
+  else{
+    P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
+    for(i in 1:length(closest_vertex)) {
+      neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ]) 
+      projection <- NULL
+      distance <- NULL 
+      Z_i <- Z[, i]
+      
+      for(neighbor in neighbors) {
+        if(closest_vertex_names[i] %in% tip_leaves) {
+          tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #projPointOnLine: always perform orthogonal projection to the line
+        }
+        else {
+          tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])
+        }
+        projection <- rbind(projection, tmp)
+        distance <- c(distance, dist(rbind(Z_i, tmp)))
+      }
+      if(class(projection) != 'matrix')
+        projection <- as.matrix(projection)
+      P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
+    }
+  }
+    # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+
+  colnames(P) <- colnames(Z)
+  
+  #reducedDimK(cds) <- P
+  dp <- as.matrix(dist(t(P)))
+  #dp <- as.matrix(dist(t(reducedDimS(cds))))
+  
+  min_dist = min(dp[dp!=0])
+  #dp[dp == 0] <- min_dist
+  dp <- dp + min_dist #to avoid exact Pseudotime for a lot cells 
+  diag(dp) <- 0
+  
+  cellPairwiseDistances(cds) <- dp
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output 
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+
+  cds
+}
+
+#project points to a line
+projPointOnLine <- function(point, line) {
+  ap <- point - line[, 1]
+  ab <- line[, 2] - line[, 1]
+
+  res <- line[, 1] + (ap %*% ab) / (ab %*% ab) * ab 
+  return(res)
+}
+
+# projPointOnLine <- function(point, line){
+#   vx = line[1, 2]
+#   vy = line[2, 2]
+  
+#   # difference of point with line origin
+#   dx = point[1] - line[1,1]
+#   dy = point[2] - line[2,1]
+  
+#   # Position of projection on line, using dot product
+#   tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
+  
+#   # convert position on line to cartesian coordinates
+#   point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
+  
+#   return(point)
+# }
+
+# Project point to line segment
+project_point_to_line_segment <- function(p, df){
+  # returns q the closest point to p on the line segment from A to B 
+  A <- df[, 1]
+  B <- df[, 2]
+  # vector from A to B
+  AB <- (B-A)
+  # squared distance from A to B
+  AB_squared = sum(AB^2)
+  if(AB_squared == 0) {
+    # A and B are the same point
+    q <- A
+  }
+  else {
+    # vector from A to p
+    Ap <- (p-A)
+    # from http://stackoverflow.com/questions/849211/
+    # Consider the line extending the segment, parameterized as A + t (B - A)
+    # We find projection of point p onto the line. 
+    # It falls where t = [(p-A) . (B-A)] / |B-A|^2
+    # t <- max(0, min(1, sum(Ap * AB) / AB_squared))
+    t <- sum(Ap * AB) / AB_squared
+    
+    if (t < 0.0) {
+      # "Before" A on the line, just return A
+      q <- A
+    }
+    else if (t > 1.0) {
+      # "After" B on the line, just return B
+      q <- B
+    }
+    else {
+      # projection lines "inbetween" A and B on the line
+      q <- A + t * AB#
+    }
+  }
+  return(q)
+}

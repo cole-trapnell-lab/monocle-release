@@ -5,34 +5,7 @@ test_that("genSmoothCurves() fits (branched) smooth curves for the data along ps
 
 	set.seed(123)
 
-	baseLoc <- system.file(package="monocle")
-	#baseLoc <- './inst'
-	extPath <- file.path(baseLoc, "extdata")
-	load(file.path(extPath, "lung_phenotype_data.RData"))
-	load(file.path(extPath, "lung_exprs_data.RData"))
-	load(file.path(extPath, "lung_feature_data.RData"))
-	lung_exprs_data <- lung_exprs_data[,row.names(lung_phenotype_data)]
-
-	pd <- new("AnnotatedDataFrame", data = lung_phenotype_data)
-	fd <- new("AnnotatedDataFrame", data = lung_feature_data)
-
-	# Now, make a new CellDataSet using the RNA counts
-	lung <- newCellDataSet(as.matrix(lung_exprs_data), 
-	                       phenoData = pd, 
-	                       featureData = fd,
-	                       lowerDetectionLimit=1,
-	                       expressionFamily=negbinomial())
-
-	lung <- estimateSizeFactors(lung)
-	lung <- estimateDispersions(lung)
-
-	pData(lung)$Total_mRNAs <- colSums(exprs(lung))
-	lung <- detectGenes(lung, min_expr = 1)
-	expressed_genes <- row.names(subset(fData(lung), num_cells_expressed >= 5))
-	ordering_genes <- expressed_genes
-	lung <- setOrderingFilter(lung, ordering_genes)
-	lung <- reduceDimension(lung, use_vst = F, pseudo_expr = 1)
-	lung <- orderCells(lung, num_paths=2)
+	lung <- load_lung()
 
 	cds_subset <- buildLineageBranchCellDataSet(cds = lung, #lineage_states = trajectory_states,
 	                                                lineage_labels = NULL, stretch = T,
@@ -73,10 +46,10 @@ test_that("genSmoothCurves() fits (branched) smooth curves for the data along ps
 	str_new_cds_branchB <- data.frame(Pseudotime = seq(0, 100,
 	                                                   length.out = 100), Lineage = as.factor(unique(as.character(pData(cds_subset)$Lineage))[2]))
 	
-	lung_smooth_df <- genSmoothCurves(cds_subset[, ], cores=2, trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
-	                               relative_expr = T, pseudocount = 0, 
+	lung_smooth_df <- genSmoothCurves(cds_subset[, ], cores=detectCores(), trend_formula = "~sm.ns(Pseudotime, df = 3)*Lineage",
+	                               relative_expr = F, pseudocount = 1, 
 	                               new_data = rbind(str_new_cds_branchA, str_new_cds_branchB))
 	
-	expect_equal(dim(lung_smooth_df), c(10, 200))
+	expect_equal(dim(lung_smooth_df), c(as.vector(nrow(cds_subset)), 200))
 	
 })

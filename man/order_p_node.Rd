@@ -6,6 +6,11 @@
 \usage{
 order_p_node(q_level_list, dist_matrix)
 }
+\arguments{
+\item{q_level_list}{A list of Q nodes in the PQ tree}
+
+\item{dist_matrix}{A symmetric matrix of pairwise distances between cells}
+}
 \description{
 Return an ordering for a P node in the PQ tree
 }

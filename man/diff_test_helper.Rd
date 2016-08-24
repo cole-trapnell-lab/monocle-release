@@ -6,7 +6,7 @@
 \usage{
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr, weights, disp_func = NULL,
-  pseudocount = 0, verbose = FALSE)
+  pseudocount = 0, exprs_thrsld_percentage = NULL, verbose = FALSE)
 }
 \arguments{
 \item{relative_expr}{Whether to transform expression into relative values}

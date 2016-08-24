@@ -44,4 +44,55 @@ test_that("orderCells() properly validates its input",{
   # results <- evaluate_promise(orderCells(small_set, root_cell ="ARGHYBLARGH"))
   
   # expect_equal(results$error, "Error: root_cell must be the name of a cell in the CellDataSet")
+  
+  A <- c(2.0000, -81.5590)
+  B <- c(58.0000, 161.9340)
+  p <- c(42.0000, 41.8890)
+  q <- project_point_to_line_segment(p, cbind(A, B))
+  #project_point_to_line_segment()
+  
+  test <- project2MST(HSMM_myo, project_point_to_line_segment)
+  test <- orderCells(test, num_paths=1, root_state = NULL)
+  plot_spanning_tree(test, color_by="Time", cell_size=2)
+  plot_genes_in_pseudotime(test[46319, ], cell_size = 3)
+  plot_spanning_tree(test, color_by="State", cell_size=2)
+  unique(pData(test)$Pseudotime)
+
+  Z <- test@reducedDimS
+  P <- test@reducedDimK
+  
+  #   Z <- cds@reducedDimS
+  #   P <- cds@reducedDimK
+  Z <- as.data.frame(t(Z)); P <- as.data.frame(t(P))
+  Z <- cbind(Z, cell = row.names(Z), type = 'Z')
+  P <- cbind(P, cell = row.names(Z), type = 'P')
+  
+  
+  ZP_df <- rbind(Z, P)
+  ggplot(aes(x = V1, y = V2, group = cell, color = I(type)), 
+         data = ZP_df) + geom_point(size = 3) + geom_line(aes(color = "blue")) + 
+    xlab("C1") + ylab("C2") +  monocle_theme_opts()
+  
+  #new function
+  test2 <- orderCells(HSMM_myo, num_paths=1, root_state = NULL)
+  plot_spanning_tree(test2, color_by="Time", cell_size=2)
+  plot_genes_in_pseudotime(test2[46319, ], cell_size = 3)
+  plot_spanning_tree(test2, color_by="State", cell_size=2)
+  unique(pData(test2)$Pseudotime)
+  
+  Z2 <- test2@reducedDimS
+  P2 <- test2@reducedDimK
+  
+  #   Z <- cds@reducedDimS
+  #   P <- cds@reducedDimK
+  Z2 <- as.data.frame(t(Z2)); P2 <- as.data.frame(t(P2))
+  Z2 <- cbind(Z2, cell = row.names(Z2), type = 'Z')
+  P2 <- cbind(P2, cell = row.names(Z2), type = 'P')
+  
+  
+  ZP2_df <- rbind(Z2, P2)
+  ggplot(aes(x = V1, y = V2, group = cell, color = I(type)), 
+         data = ZP2_df) + geom_point(size = 3) + geom_line(aes(color = "blue")) + 
+    xlab("C1") + ylab("C2") +  monocle_theme_opts()
+  
 })

@@ -2,60 +2,62 @@
 % Please edit documentation in R/plotting.R
 \name{plot_genes_branched_heatmap}
 \alias{plot_genes_branched_heatmap}
-\title{Create a heatmap to demonstrate the bifurcation of gene expression along two lineages}
+\title{Create a heatmap to demonstrate the bifurcation of gene expression along two branchs}
 \usage{
-plot_genes_branched_heatmap(cds_subset, num_clusters = 6, ABC_df = NULL,
-  branchTest_df = NULL, lineage_labels = c("AT1", "AT2"), stretch = T,
-  scaling = T, norm_method = c("vstExprs", "log"), use_fitting_curves = T,
-  dist_method = NULL, hclust_method = "ward", heatmap_height = 3,
-  heatmap_width = 4, ABC_lowest_thrsd = 0, ABC_highest_thrsd = 2,
-  qval_lowest_thrsd = 1, qval_highest_thrsd = 5, hmcols = NULL,
-  Cell_type_color = c("#979797", "#F05662", "#7990C8"),
-  trend_formula = "~sm.ns(Pseudotime, df=3) * Lineage", pseudo_cnt = 0,
-  add_annotation_row = NULL, add_annotation_col = NULL, show_rownames = F,
-  cores = 1, use_gene_short_name = F, file_name = "branched_heatmap.pdf")
+plot_genes_branched_heatmap(cds_subset, branch_point = 1,
+  branch_states = NULL, branch_labels = c("Cell fate 1", "Cell fate 2"),
+  cluster_rows = TRUE, hclust_method = "ward.D2", num_clusters = 6,
+  hmcols = NULL, branch_colors = c("#979797", "#F05662", "#7990C8"),
+  add_annotation_row = NULL, add_annotation_col = NULL,
+  show_rownames = FALSE, use_gene_short_name = TRUE, scale_max = 3,
+  scale_min = -3, norm_method = c("vstExprs", "log"),
+  trend_formula = "~sm.ns(Pseudotime, df=3) * Branch",
+  return_heatmap = FALSE, cores = 1)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
 
+\item{branch_point}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
+
+\item{branch_states}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
+
+\item{branch_labels}{The labels for the branchs.}
+
+\item{cluster_rows}{Whether to cluster the rows of the heatmap.}
+
+\item{hclust_method}{The method used by pheatmap to perform hirearchical clustering of the rows.}
+
 \item{num_clusters}{Number of clusters for the heatmap of branch genes}
 
-\item{ABC_df}{Matrix of Area Between Curves for the branching genes calculated using the calABCs function}
+\item{hmcols}{The color scheme for drawing the heatmap.}
 
-\item{branchTest_df}{Matrix of branchTest result (normally only on the branching genes)}
+\item{branch_colors}{The colors used in the annotation strip indicating the pre- and post-branch cells.}
 
-\item{lineage_labels}{The label for the lineages (first (second) lineage corresponding to state 2 (3))}
+\item{add_annotation_row}{Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.}
 
-\item{dist_method}{The method to calculate distance for each gene used in the hirearchical clustering, any one of them: "euclidean", "maximum", "manhattan", "canberra", "binary" or "minkowski". (This option is not in function for now)}
+\item{add_annotation_col}{Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.}
 
-\item{hclust_method}{The method to perform hirearchical clustering, any one of them: ward", "single", "complete", "average", "mcquitty", "median", "centroid"}
+\item{show_rownames}{Whether to show the names for each row in the table.}
 
-\item{heatmap_height}{Height of the saved heatmap}
+\item{use_gene_short_name}{Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.}
 
-\item{heatmap_width}{Width of the saved heatmap}
+\item{scale_max}{The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.}
 
-\item{ABC_lowest_thrsd}{The minimum log10(abs(ABCs)) used to annotate the heatmap}
+\item{scale_min}{The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.}
 
-\item{ABC_highest_thrsd}{The maximum log10(abs(ABCs)) used to annotate the heatmap}
+\item{norm_method}{Determines how to transform expression values prior to rendering}
 
-\item{qval_lowest_thrsd}{The minimum log10(qval) used to annotate the heatmap}
+\item{trend_formula}{A formula string specifying the model used in fitting the spline curve for each gene/feature.}
 
-\item{qval_highest_thrsd}{The maximum log10(qval) used to annotate the heatmap}
+\item{return_heatmap}{Whether to return the pheatmap object to the user.}
 
-\item{hmcols}{The color scheme for drawing the heatmap}
-
-\item{Cell_type_color}{The color for the progenitors and two lineages}
-
-\item{cores}{Number of cores to run this function}
-
-\item{vstExprs}{Logic flag to determine whether or not vst will be performed for the fitted gene expression values}
+\item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
 }
 \value{
-A list of heatmap_matrix (expression matrix for the lineage committment), ph (pheatmap heatmap object),
-annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
-Note that, in order to draw the heatmap generate by this function you need to use grid.newpage(); grid.draw(res$ph$gt) (assuming "res" is the variable name for the result of this function)
+A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
+annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
-Create a heatmap to demonstrate the bifurcation of gene expression along two lineages
+Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
 }
 

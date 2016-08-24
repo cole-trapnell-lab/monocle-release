@@ -4,29 +4,24 @@
 \alias{relative2abs}
 \title{Transform relative expression values into absolute transcript counts.}
 \usage{
-relative2abs(relative_cds, modelFormulaStr = "~1",
-  t_estimate = estimate_t(exprs(relative_cds)), m = -3.652201,
-  c = 2.263576, m_rng = c(-10, -0.1), c_rng = c(c, c),
-  ERCC_controls = NULL, ERCC_annotation = NULL, volume = 10,
-  dilution = 40000, mixture_type = 1, detection_threshold = 800,
-  alpha_v = 1, total_RNAs = 50000, weight = 0.01, verbose = FALSE,
-  return_all = FALSE, cores = 1, optim_num = 1)
+relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
+  modelFormulaStr = "~1", kb_slope = NULL, kb_intercept = NULL,
+  kb_slope_rng = NULL, kb_intercept_rng = NULL,
+  use_fixed_intercept = TRUE, ERCC_controls = NULL,
+  ERCC_annotation = NULL, volume = 10, dilution = 40000,
+  mixture_type = 1, detection_threshold = 800, expected_mRNA_mode = NULL,
+  expected_total_mRNAs = 1e+05, calibrate_total_mRNA = T,
+  reads_per_cell = 1e+06, expected_capture_rate = 0.25,
+  weight_mode = 0.17, weight_relative_expr = 0.5, weight_total_rna = 0.33,
+  verbose = FALSE, return_all = FALSE, cores = 1, optim_num = 1, ...)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
 
-\item{modelFormulaStr}{modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.}
-
 \item{t_estimate}{an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 based on isoform FPKM will give better results in general}
 
-\item{m}{the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)}
-
-\item{c}{the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).}
-
-\item{m_rng}{the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1}
-
-\item{c_rng}{the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize.}
+\item{modelFormulaStr}{modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.}
 
 \item{ERCC_controls}{the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively.}
 
@@ -38,22 +33,30 @@ based on isoform FPKM will give better results in general}
 
 \item{mixture_type}{the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1.}
 
-\item{detection_threshold}{the lowest ERCC concentration used as a sequencing detection limit, by default is 0.01430512 attomole / Ul. Note that by default we use Mix 1 in ERCC spike-in kit. For all other concentrations, please refer to the illumina ERCC spikein USE GUIDE.}
+\item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
 
-\item{alpha_v}{the hypothesized mode of transcript counts for each cell. Default is 1.}
-
-\item{total_RNAs}{the guess of total transcript counts in a single cell. Default is 50000.}
-
-\item{weight}{the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)}
-
-\item{verbose}{a logic flag to determine whether or not we should print all the optimization details}
+\item{verbose}{a logical flag to determine whether or not we should print all the optimization details}
 
 \item{return_all}{parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 in a list format}
 
 \item{cores}{number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.}
 
-\item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
+\item{optim_num}{The number of rounds of optimization to perform.}
+
+\item{m}{the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)}
+
+\item{c}{the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).}
+
+\item{m_rng}{the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1}
+
+\item{c_rng}{the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize.}
+
+\item{alpha_v}{the hypothesized mode of transcript counts for each cell. Default is 1.}
+
+\item{total_RNAs}{the guess of total transcript counts in a single cell. Default is 150000.}
+
+\item{weight}{the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)}
 }
 \value{
 an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE.

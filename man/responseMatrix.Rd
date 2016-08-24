@@ -4,12 +4,15 @@
 \alias{responseMatrix}
 \title{Response values}
 \usage{
-responseMatrix(models, newdata = NULL, cores = detectCores())
+responseMatrix(models, newdata = NULL, response_type = "response",
+  cores = detectCores())
 }
 \arguments{
 \item{models}{a list of models, e.g. as returned by fitModels()}
 
 \item{newdata}{a dataframe used to generate new data for interpolation of time points}
+
+\item{response_type}{the response desired, as accepted by VGAM's predict function}
 
 \item{cores}{number of cores used for calculation}
 }

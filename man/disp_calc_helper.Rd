@@ -4,7 +4,10 @@
 \alias{disp_calc_helper}
 \title{Helper function for parallel dispersion modeling}
 \usage{
-disp_calc_helper(x, modelFormulaStr, expressionFamily)
+disp_calc_helper(cds, expressionFamily, min_cells_detected)
+}
+\arguments{
+\item{x}{A numeric vector of expression values}
 }
 \description{
 Helper function for parallel dispersion modeling

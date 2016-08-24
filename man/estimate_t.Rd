@@ -4,8 +4,7 @@
 \alias{estimate_t}
 \title{Find the most commonly occuring relative expression value in each cell}
 \usage{
-estimate_t(relative_expr_matrix, return_all = F, relative_expr_thresh = 0.1,
-  ...)
+estimate_t(relative_expr_matrix, relative_expr_thresh = 0.1)
 }
 \arguments{
 \item{relative_expr_matrix}{a matrix of relative expression values for 
@@ -13,18 +12,12 @@ values with each row and column representing genes/isoforms and cells,
 respectively. Row and column names should be included. 
 Expression values should not be log-transformed.}
 
-\item{return_all}{parameter for the intended return results. If setting TRUE, 
-matrix of dmode as well as max mu and min mu of two gaussian distribution 
-mixture will be returned}
-
 \item{relative_expr_thresh}{Relative expression values below this threshold 
 are considered zero.}
 }
 \value{
 an vector of most abundant relative_expr value corresponding to the 
-RPC 1. If setting return_all = TRUE, the mode based on gaussian 
-density function and the max or min
-mode from the mixture gaussian model
+RPC 1.
 }
 \description{
 Converting relative expression values to mRNA copies per cell requires
