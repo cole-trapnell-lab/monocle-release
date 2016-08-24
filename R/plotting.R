@@ -162,7 +162,6 @@ plot_cell_trajectory <- function(cds,
 
 #' @rdname package-deprecated
 #' @title Plots the minimum spanning tree on cells.
-#'
 #' This function is deprecated.
 #'
 #' @param cds CellDataSet for the experiment
