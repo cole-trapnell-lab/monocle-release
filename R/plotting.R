@@ -1109,7 +1109,7 @@ plot_genes_branched_pseudotime <- function (cds,
         cds_subset <- buildBranchCellDataSet(cds = cds, 
                                                     branch_states = branch_states, 
                                                     branch_point=branch_point,
-                                                    branch_labels = branch_labels)
+                                                    branch_labels = branch_labels, ...)
     }
     else {
         cds_subset <- cds
@@ -1465,11 +1465,11 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
                                         return_heatmap=FALSE,
-                                        cores = 1) {
+                                        cores = 1, ...) {
   
   new_cds <- buildBranchCellDataSet(cds_subset, 
                                     branch_states=branch_states, 
-                                    branch_point=branch_point)
+                                    branch_point=branch_point, ...)
   
   new_cds@dispFitInfo <- cds_subset@dispFitInfo
   
