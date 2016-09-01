@@ -11,9 +11,13 @@ cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
     type_res <- unlist(type_res)
     
     names(type_res) <- row.names(pData(cds_subset))
-
+    cell_type_name <- V(cth@classificationTree) [ child ]$name
+    if (length(frequency_thresh) > 1)
+      required_thresh <- frequency_thresh[cell_type_name]
+    else
+      required_thresh <- frequency_thresh
     if ((sum(type_res) / length(type_res)) > frequency_thresh){
-      next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
+      next_nodes <- c(next_nodes, cell_type_name)
     }
     #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
   }
@@ -220,14 +224,23 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' mix <- classifyCells(mix, Cluster, 0.05)
 #' }
 #' 
-classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
+classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NULL, ...) {
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
   if (length(list(...)) > 0){
-    if (is.null(frequency_thresh))
+    if (is.null(enrichment_thresh) && is.null(frequency_thresh))
       stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
+    
+    cds <- classifyCells(cds, cth)
+    if (is.null(frequency_thresh)){
+      frequency_thresholds <- prop.table(table(pData(cds)$CellType))
+      frequency_thresholds <- frequency_thresholds * enrichment_thresh
+      frequency_thresholds <- unlist(lapply(frequency_thresholds, min, 1.0))
+    }else
+      frequency_thresholds <- frequency_thresh
+
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
-    class_df <- as.data.frame(cds_pdata %>% do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
+    class_df <- as.data.frame(cds_pdata %>% do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresholds)))
     class_df$CellType <- factor(unlist(class_df$CellType))
   }else{
     type_res <- classifyCellsHelperCell(cds, cth)
