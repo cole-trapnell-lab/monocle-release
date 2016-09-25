@@ -165,7 +165,7 @@ data(HSMM_sample_sheet)
                         featureData = fd)
  
  # Next, use it to estimate RNA counts
- rpc_matrix <- relative2abs(HSMM, cores = detectCores())
+ rpc_matrix <- relative2abs(HSMM)
  
  # Now, make a new CellDataSet using the RNA counts
  HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
@@ -292,7 +292,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
  disp_table <- dispersionTable(HSMM)
- unsup_clustering_genes <- subset(disp_table, mean_expression >= 1 & dispersion_empirical >= 1 * dispersion_fit)
+ unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 & dispersion_empirical >= 1 * dispersion_fit)
  HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
  plot_ordering_genes(HSMM)
  @ %def
@@ -445,7 +445,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  <<select_ordering_genes, eval=TRUE>>=
  disp_table <- dispersionTable(HSMM_myo)
  ordering_genes <- subset(disp_table, 
-                          mean_expression >= 1 & 
+                          mean_expression >= 0.5 & 
                           dispersion_empirical >= 2 * dispersion_fit)$gene_id
  @ %def
  
@@ -464,7 +464,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
  
  <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+ HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
  @ %def
  
  Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.
