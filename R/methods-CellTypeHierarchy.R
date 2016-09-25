@@ -180,7 +180,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @param cds The CelllDataSet you want to classify
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
-#' @importFrom dplyr add_rownames select_ do group_by_ inner_join
+#' @importFrom dplyr add_rownames select_ mutate group_by_ inner_join
 #' @export 
 #' @examples
 #' \dontrun{
@@ -227,9 +227,9 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
     if (is.null(frequency_thresh))
       stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
-    class_df <- as.data.frame(cds_pdata %>% do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
+    class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
     class_df$CellType <-  as.character(unlist(class_df$CellType))
-    class_df$rowname <- as.character(class_df$rowname)
+    #class_df$rowname <- as.character(class_df$rowname)
   }else{
     type_res <- classifyCellsHelperCell(cds, cth)
     class_df <- data.frame(rowname = names(type_res), CellType = type_res)
