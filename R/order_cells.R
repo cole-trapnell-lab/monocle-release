@@ -73,7 +73,7 @@ scale_pseudotime <- function(cds, verbose = F) {
     
     pd[row.names(pd_subset), 'ori_pseudotime'] <- pd[row.names(pd_subset), 'Pseudotime']
     pd[row.names(pd_subset), 'Pseudotime'] <- pseudotime_scaled
-  }	
+  } 
   scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
   message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
   pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
@@ -178,9 +178,9 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
       #print (V(nb))
       for (n_i in V(nb))
       {
-        n <- V(nb)[n_i]$name			
+        n <- V(nb)[n_i]$name      
         if (n %in% V(mst_no_backbone)$name)
-        {	
+        { 
           #print (n)
           
           sc <- subcomponent(mst_no_backbone, n)
@@ -190,7 +190,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
           
           if (ecount(sg) > 0)
           {
-            #print (E(sg))	
+            #print (E(sg))  
             sub_pq <- pq_helper(sg, use_weights)
             
             
@@ -204,7 +204,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
             for (i in 1:nrow(edge_list))
             {
               new_subtree <- new_subtree + edge(V(sub_pq$subtree)[edge_list[i, 1]]$name, V(sub_pq$subtree)[edge_list[i, 2]]$name)
-            }   					
+            }             
             #plot (new_subtree)
             
             new_subtree <- new_subtree + edge(new_p_id, V(sub_pq$subtree)[sub_pq$root]$name)  
@@ -656,7 +656,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       for (i in 1:nrow(edge_list))
       {
         cell_ordering_tree <- cell_ordering_tree + edge(V(cell_ordering_tree)[edge_list[i, 1]]$name, V(cell_ordering_tree)[edge_list[i, 2]]$name)
-      }   					
+      }             
       
       if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
       {
@@ -688,7 +688,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     if (length(children) == 1){
       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
     }else{
-      for (child in children)	{
+      for (child in children) {
         curr_state <<- curr_state + 1
         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
       }
@@ -711,7 +711,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     ordering_tree_res$subtree <- cell_tree
     children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     
-    for (child in children)	{
+    for (child in children) {
       next_node <- V(cell_tree)[child]$name
       delta_pseudotime <- dist_matrix[curr_cell, next_node]
       ordering_tree_res <- assign_pseudotime_helper(ordering_tree_res, dist_matrix, last_pseudotime + delta_pseudotime, next_node)
@@ -816,7 +816,8 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   if (verbose) 
     message("Finding SVD")
 
-  s <- irlba::irlba(V, n.comp, n.comp)  
+  initial_v <- as.matrix(qnorm(1:(ncol(V) + 1)/(ncol(V) + 1))[1:ncol(V)])
+  s <- irlba::irlba(V, n.comp, n.comp, v = initial_v)  
   svs <- s$d  
  
   D <- diag(c(1/sqrt(s$d)))
@@ -1242,6 +1243,8 @@ normalize_expr_data <- function(cds,
       stop("Error: the only normalization method supported with gaussian data is 'none'")
     }
   }
+  if(norm_method != "none")
+    #normalize_expr_data
   return (FM)
 }
 
@@ -1308,10 +1311,9 @@ reduceDimension <- function(cds,
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
-                            num_fstree_genes = NULL,
                             verbose=FALSE,
                             ...){
-
+ 
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
@@ -1333,35 +1335,10 @@ reduceDimension <- function(cds,
     X.model_mat <- NULL
   }
   
-  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+  # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
-  }
-
-  #if no orderingGene information is there, use FSTree to automatically pick up the ordering genes: 
-  if(is.null(fData(cds)$use_for_ordering)){
-    if(verbose)
-      print("Running FSTree to automatically select genes for ordering")
-
-    if(ncol(cds) > 1000){
-      fstree_res <- fstree(FM, dim = max_components, num_landmarks = 1000, verbose = verbose, ...); # unsupervised
-      
-      #add the landmark to one column of the pData: 
-      pData(cds)$landmark <- F
-      pData(cds)$landmark[fstree_res$landmark_selection_res$L] <- T
-    }
-    else   
-      fstree_res <- fstree(FM, dim = max_components, verbose = verbose, ...); # unsupervised
-
-    if(is.null(num_fstree_genes)){
-      order_genes <- row.names(FM)[order(fstree_res$weights, decreasing = T)][1:100]
-      cds <- setOrderingFilter(cds, order_genes)
-    }
-    else {
-      order_genes <- row.names(FM)[order(fstree_res$weights, decreasing = T)][1:num_fstree_genes]
-      cds <- setOrderingFilter(cds, order_genes)
-    }
   }
 
   if (is.function(reduction_method)) {   
@@ -1589,4 +1566,21 @@ project_point_to_line_segment <- function(p, df){
     }
   }
   return(q)
+}
+
+#' traverse from one cell to another cell 
+#'
+#' @param g CellDataSet for the experiment
+#' @param initial_vertex the minimum (untransformed) expression level to use in plotted the genes.
+#' @param g terminal_vertex for the experiment
+#' @return a list of 
+#' @import igraph
+#' @export
+
+traverseTree <- function(g, initial_vertex, terminal_vertex){ 
+  distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
+  branchPoints <- which(degree(g) == 3)
+  path <- shortest_paths(g, from = initial_vertex, terminal_vertex)
+  
+  return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }

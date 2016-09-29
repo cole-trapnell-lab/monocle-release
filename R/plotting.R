@@ -470,7 +470,19 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     label_by_short_name=TRUE,
                                     relative_expr=TRUE,
                                     vertical_jitter=NULL,
-                                    horizontal_jitter=NULL){
+                                    horizontal_jitter=NULL, 
+                                    end_states = NULL){
+    if(!is.null(end_states)){
+      subset_pseudotime <- subset(pData(cds_subset), State = end_states)$Pseudotime
+      cell_id <- which.max(subset_pseudotime)
+      cell_initial <- which.min(pData(cds_subset)$Pseudotime)
+      g <- minSpanningTree(cds_subset)
+      g_trip_res <- traverseTree(g, initial_vertex = paste("cell_", cell_initial, sep = ''), terminal_vertex = paste("cell_", cell_id, sep = ''))
+      
+      cell_list <- g_trip_res$shortest_path[[1]]$name
+      cell_list_id <- do.call(rbind, strsplit(cell_list, "_"))
+      cds_subset <- cds_subset[, as.numeric(cell_list_id[, 2])]
+    }
   
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
