@@ -18,12 +18,12 @@ Depends:
     R (>= 2.10.0),
     Matrix (>= 1.2-6),
     Biobase,
-    ggplot2(>= 1.0.0),
+    ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
     DDRTree (>= 0.1.5),
 Imports:
     parallel,
-    igraph(>= 1.0.0),
+    igraph (>= 1.0.0),
     BiocGenerics,
     HSMMSingleCell (>= 0.101.5),
     plyr,
@@ -39,7 +39,9 @@ Imports:
     pheatmap,
     stringr,
     proxy,
-    slam
+    slam,
+    MASS,
+    qlcMatrix
 VignetteBuilder: knitr
 Suggests:
     knitr,
