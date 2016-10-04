@@ -92,20 +92,52 @@ norm_kb <- function(kb, exprs_cds) {
 }
 
 #use gaussian kernel to calculate the mode of transcript counts
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats density
+>>>>>>> First commit
 dmode <- function(x, breaks="Sturges") {
   if (length(x) < 2) return (0);
   den <- density(x, kernel=c("gaussian"))
   ( den$x[den$y==max(den$y)] )
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 # Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
+=======
+#' Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
+#' @param kb_slope_intercept test
+#' @param kb_intercept test
+#' @param t_estimate test
+#' @param relative_expr_matrix test
+#' @param split_relative_expr_matrix test
+#' @param alpha test
+#' @param total_RNAs test
+#' @param cores the number of cores to be used while testing each gene for differential expression.
+#' @param weight_mode test
+#' @param weight_relative_expr test
+#' @param weight_total_rna test
+#' @param verbose test
+#' @param ... test 
+#' @importFrom stats runif
+#' @importFrom parallel mcmapply
+>>>>>>> First commit
 #' @return an Integer Value
 optim_mc_func_fix_c <- function (kb_slope_intercept, kb_intercept = NULL, t_estimate = estimate_t(TPM_isoform_count_cds),
           relative_expr_matrix = relative_expr_mat, split_relative_expr_matrix = split_relative_exprs,
           alpha = rep(1, ncol(relative_expr_matrix)), total_RNAs = rep(150000, ncol(relative_expr_matrix)),
           cores = 1, weight_mode=0.17, weight_relative_expr=0.50, weight_total_rna=0.33, verbose = F,  ...) {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   data('spike_df') #add the spikein dataset
 
+=======
+  
+  #data('spike_df', envir = environment()) #add the spikein dataset
+  TPM_isoform_count_cds <- NA
+  relative_expr_mat <- NA
+  split_relative_exprs <- NA
+  Cell <- NA
+>>>>>>> First commit
   if(is.null(spike_df$log_numMolecule))
     spike_df$log_numMolecules <- log10(spike_df$numMolecules)
   
@@ -245,8 +277,20 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 
 
 #' Make an educated guess on the spike-based slope regression parameters
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @importFrom plyr ldply
 #' @importFrom MASS rlm
+=======
+#' @importFrom plyr ldply 
+#' @importFrom MASS rlm 
+#' @param total_mRNA a number
+#' @param capture_rate a number
+#' @param ladder a number
+#' @param total_ladder_transcripts a number
+#' @param reads a number
+#' @param trials a number
+#' @importFrom stats rmultinom
+>>>>>>> First commit
 calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcripts, reads, trials=100){
   if(length(capture_rate) > 1) capture_rate <- dmode(capture_rate) 
   if(length(reads) > 1) reads <- 10^dmode(log10(reads)) 
@@ -281,12 +325,31 @@ calibrate_mc <- function(total_mRNA, capture_rate, ladder, total_ladder_transcri
 #' Function used to calibrate the mode, m and c as well as the total mRNA
 #' @importFrom plyr ldply
 #' @importFrom MASS rlm
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
+=======
+#' @param ind a number (ind is short for specified "index")
+#' @param tpm_distribution test
+#' @param ladder test
+#' @param total_ladder_transcripts test
+#' @param total_mRNA a number
+#' @param capture_rate a number
+#' @param reads a number
+#' @param trials a number 
+#' @importFrom stats rmultinom
+calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcripts, total_mRNA, capture_rate, reads, trials=100){
+  hypothetical_ladder_tpm <- NA
+>>>>>>> First commit
   tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
   total_mRNA <- total_mRNA[ind] 
   capture_rate <- capture_rate[ind]
   reads <- reads[ind]
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 
+=======
+  
+  
+>>>>>>> First commit
   mode_df <- ldply (seq(0,trials, by=1), function(i){
     hypothetical_ladder <- rmultinom(1, (total_ladder_transcripts * capture_rate), (ladder / sum(ladder)))
     
@@ -341,6 +404,16 @@ calibrate_mode <- function(ind, tpm_distribution, ladder, total_ladder_transcrip
 }
 
 #' Function used to calibrate the mode, m and c as well as the total mRNA using analytical formula: 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @param ind a number (ind is short for specified index) 
+#' @param tpm_distribution test
+#' @param t_estimate test
+#' @param ladder test
+#' @param total_ladder_transcripts test
+#' @param total_mRNA a number
+#' @param capture_rate a number
+>>>>>>> First commit
 calibrate_mode_analytical <- function(ind, tpm_distribution, t_estimate, ladder, total_ladder_transcripts, total_mRNA, capture_rate){
   t_estimate <- t_estimate[ind] / sum(tpm_distribution[[ind]]) * 1e6
   tpm_distribution <- tpm_distribution[[ind]] / sum(tpm_distribution[[ind]]) * 1e6
@@ -378,24 +451,38 @@ calibrate_mode_analytical <- function(ind, tpm_distribution, t_estimate, ladder,
 #' @param t_estimate an vector for the estimated most abundant FPKM value of isoform for a single cell. Estimators based on gene-level relative expression can also give good approximation but estimators
 #' based on isoform FPKM will give better results in general
 #' @param modelFormulaStr modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @param m the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)
 #' @param c the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).  
 #' @param m_rng the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1
 #' @param c_rng the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize. 
+=======
+# @param m the initial guess of the slope for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell)
+# @param c the initial guess of the intercept for the regression line of b_i (intercept of spikein regression in i-th cell) and k_i (slope of spikein regression in i-th cell). Note that this value can be approximated by calculation based on the spikein data (See method section in the paper).  
+# @param m_rng the range of m values used by the optimization function to optimize. By default, it is between -10 and -0.1
+# @param c_rng the range of c values. Since we can approximate this value based on spikein data. By default, it is fixed. Under certain cases, we can provide a small range for the optimization function to optimize. 
+>>>>>>> First commit
 #' @param ERCC_controls the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively. 
 #' @param ERCC_annotation the ERCC_annotation matrix from illumina USE GUIDE which will be ued for calculating the ERCC transcript copy number for performing the transformation. 
 #' @param volume the approximate volume of the lysis chamber (nanoliters). Default is 10
 #' @param dilution the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000. The number of spike-in transcripts per single-cell lysis reaction was calculated from
 #' @param mixture_type the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1. 
 #' @param detection_threshold the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration. 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @param alpha_v the hypothesized mode of transcript counts for each cell. Default is 1. 
 #' @param total_RNAs the guess of total transcript counts in a single cell. Default is 150000. 
 #' @param weight the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)
+=======
+# @param alpha_v the hypothesized mode of transcript counts for each cell. Default is 1. 
+# @param total_RNAs the guess of total transcript counts in a single cell. Default is 150000. 
+# @param weight the weight for the first term associate with the mode of transcript in the optimization function (See the method section in the paper for more details)
+>>>>>>> First commit
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
 #' @param cores number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.
 #' @param verbose a logical flag to determine whether or not we should print all the optimization details 
 #' @param optim_num The number of rounds of optimization to perform.
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @return an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE. 
 #' @export
 #' @importFrom plyr ddply
@@ -403,15 +490,45 @@ calibrate_mode_analytical <- function(ind, tpm_distribution, t_estimate, ladder,
 #' \dontrun{
 #' HSMM_relative_expr_matrix <- exprs(HSMM)
 #' HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix, t_estimate = estimate_t(HSMM_relative_expr_matrix))
+=======
+#' @param kb_slope test
+#' @param kb_intercept test
+#' @param kb_slope_rng test
+#' @param kb_intercept_rng test
+#' @param use_fixed_intercept test
+#' @param expected_mRNA_mode test
+#' @param expected_total_mRNAs test
+#' @param calibrate_total_mRNA test
+#' @param calibration_trials test
+#' @param reads_per_cell test
+#' @param expected_capture_rate test
+#' @param weight_mode test
+#' @param weight_relative_expr test
+#' @param weight_total_rna test
+#' @param ... test (why does ... need to be here)
+#' @return an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE. 
+#' @export
+#' @importFrom plyr ddply .
+#' @importFrom stats optim
+#' @importFrom parallel mcmapply mclapply detectCores
+#' @examples
+#' \dontrun{
+#' HSMM_relative_expr_matrix <- exprs(HSMM)
+#' HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix, 
+#'    t_estimate = estimate_t(HSMM_relative_expr_matrix))
+>>>>>>> First commit
 #'}
 
 relative2abs <- function(relative_cds, 
   t_estimate = estimate_t(exprs(relative_cds)),
   modelFormulaStr = "~1", 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   #kb_slope = -3.652201, 
   #kb_intercept = 2.263576, 
   #kb_slope_rng = c(-10, -0.1), 
   #kb_intercept_rng = c(kb_intercept, kb_intercept), 
+=======
+>>>>>>> First commit
   kb_slope = NULL,
   kb_intercept = NULL,
   kb_slope_rng = NULL,
@@ -438,7 +555,14 @@ relative2abs <- function(relative_cds,
   optim_num = 1, ...) {
   relative_expr_matrix <- exprs(relative_cds)
   # relative_expr_matrix <- apply(relative_expr_matrix, 2, function(x) x / sum(x) * 10^6) #convert to TPM
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 
+=======
+  
+  FPKM <- NA
+  spike_df <- spike_df
+  
+>>>>>>> First commit
   parameters <- c(t_estimate, volume, dilution, detection_threshold,  weight_mode, weight_relative_expr, weight_total_rna,  optim_num)
   if(any(c(!is.finite(parameters), is.null(parameters))))
     stop('Your input parameters should not contain either null or infinite numbers')
@@ -456,8 +580,14 @@ relative2abs <- function(relative_cds,
       stop("If you want to transform the data to copy number with your spikein data, please provide both of ERCC_controls and ERCC_annotation data frame...")
     valid_ids <- which(ERCC_annotation[, mixture_name] >= 
                          detection_threshold)
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     if (verbose) 
       message("Performing robust linear regression for each cell based on the spikein data...")
+=======
+    if (verbose) {
+      message("Performing robust linear regression for each cell based on the spikein data...")
+    }
+>>>>>>> First commit
     molModels <- apply(ERCC_controls, 2, function(cell_exprs, 
                                                   input.ERCC.annotation, valid_ids) {
       spike_df <- input.ERCC.annotation
@@ -768,4 +898,9 @@ relative2abs <- function(relative_cds,
 #'   \item{numMolecules}{number of molecules calculated from concentration and volume}
 #'   \item{rounded_numMolecules}{number in rounded digit of molecules calculated from concentration and volume}
 #' }
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+"spike_df"
+
+>>>>>>> First commit
 

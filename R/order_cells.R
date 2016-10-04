@@ -6,6 +6,10 @@
 #' @param verbose Whether to emit verbose output
 #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+  Parent <- NA
+>>>>>>> First commit
   pd <- pData(cds)
   pd$Cell_name <- row.names(pd)
   range_df <- plyr::ddply(pd, .(State), function(x) {
@@ -87,7 +91,11 @@ scale_pseudotime <- function(cds, verbose = F) {
 
 get_next_node_id <- function()
 {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   next_node <<- next_node + 1
+=======
+  next_node <- next_node + 1
+>>>>>>> First commit
   return (next_node) 
 }
 
@@ -237,10 +245,17 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
   return (list(root=root_node_id, subtree=new_subtree))
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 make_canonical <-function(pq_tree)
 {
   nei <- NULL
   
+=======
+
+make_canonical <-function(pq_tree)
+{
+  type <- NA
+>>>>>>> First commit
   canonical_pq <- pq_tree
   
   V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out") == 2]$color="black"
@@ -269,9 +284,16 @@ make_canonical <-function(pq_tree)
   return (canonical_pq)
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 {
   nei <- NULL
+=======
+
+count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
+{
+  
+>>>>>>> First commit
   
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
@@ -410,9 +432,15 @@ order_q_node <- function(q_level_list, dist_matrix)
   return(list(ql=q_levels, wt=min(path_weights)))
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 {
   nei <- NULL
+=======
+
+measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
+{
+>>>>>>> First commit
   
   if (V(pq_tree)[curr_node]$type != "Q")
   {
@@ -444,7 +472,11 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 # Assign leaf nodes reachable in pq_tree from curr_node to assigned_state
 assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
 {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   nei <- NULL
+=======
+  
+>>>>>>> First commit
   
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
@@ -461,10 +493,16 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
   }
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 
 extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 {
   nei <- NULL
+=======
+extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
+{
+  
+>>>>>>> First commit
   
   if (V(pq_tree)[curr_node]$type == "leaf")
   {
@@ -508,9 +546,14 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 #' @importFrom plyr arrange
 extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   nei <- NULL
   type <- NULL
   pseudo_time <- NULL
+=======
+  type <- NA
+  pseudo_time <- NA
+>>>>>>> First commit
   
   pq_tree <- orig_pq_tree
   
@@ -584,7 +627,10 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
   {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     nei <- NULL
+=======
+>>>>>>> First commit
     
     curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
     #print (curr_branch_pseudotimes)
@@ -677,7 +723,11 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
   {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     nei <- NULL
+=======
+    
+>>>>>>> First commit
     
     cell_tree <- ordering_tree_res$subtree
     V(cell_tree)[curr_cell]$cell_state = curr_state
@@ -689,7 +739,11 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
     }else{
       for (child in children)	{
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
         curr_state <<- curr_state + 1
+=======
+        curr_state <- curr_state + 1
+>>>>>>> First commit
         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
       }
     }
@@ -700,7 +754,11 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
   
   assign_pseudotime_helper <- function(ordering_tree_res, dist_matrix, last_pseudotime, curr_cell)
   {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     nei <- NULL
+=======
+    
+>>>>>>> First commit
     
     cell_tree <- ordering_tree_res$subtree
     curr_cell_pseudotime <- last_pseudotime
@@ -776,6 +834,10 @@ setOrderingFilter <- function(cds, ordering_genes){
 }
 
 # Run the fastICA algorithm on a numeric matrix.
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats rnorm qnorm
+>>>>>>> First commit
 ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
                        row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
   dd <- dim(X) 
@@ -878,7 +940,11 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 #       for (child in children) {
 #         #visited_node <- union(child, visited_node)
 #         V(ordering_tree_res$subtree)[children]$parent = rep(V(cell_tree)[curr_cell]$name, length(children))
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #         curr_state <<- curr_state + 1
+=======
+#         curr_state <- curr_state + 1
+>>>>>>> First commit
 #         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name, curr_cell)
 #       }
 #     }
@@ -907,9 +973,15 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 
 extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   nei <- NULL
   type <- NULL
   pseudo_time <- NULL
+=======
+  #nei <- NULL
+  #type <- NULL
+  #pseudo_time <- NULL
+>>>>>>> First commit
   
   dp <- cellPairwiseDistances(cds) 
   dp_mst <- minSpanningTree(cds) 
@@ -969,7 +1041,11 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   return(ordering_df)
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 
+=======
+#' @importFrom stats dist
+>>>>>>> First commit
 select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
   if (is.null(root_state) == FALSE) {
     if (is.null(pData(cds)$State)){
@@ -1062,6 +1138,10 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 #' You must already have called orderCells() once to use this argument.
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats dist
+>>>>>>> First commit
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds, 
@@ -1093,7 +1173,11 @@ orderCells <- function(cds,
     dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- dp_mst
     # Build the PQ tree
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     next_node <<- 0
+=======
+    next_node <- 0
+>>>>>>> First commit
     res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
 
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
@@ -1172,7 +1256,11 @@ normalize_expr_data <- function(cds,
                                 norm_method = c("vstExprs", "log", "none"), 
                                 pseudo_expr = NULL){
   FM <- exprs(cds)
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   
+=======
+  use_for_ordering <- NULL
+>>>>>>> First commit
   # If the user has selected a subset of genes for use in ordering the cells
   # via setOrderingFilter(), subset the expression matrix.
   if (is.null(fData(cds)$use_for_ordering) == FALSE && 
@@ -1297,11 +1385,19 @@ normalize_expr_data <- function(cds,
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @import methods
+>>>>>>> First commit
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats dist
+>>>>>>> First commit
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
@@ -1340,8 +1436,12 @@ reduceDimension <- function(cds,
   }
 
   if (is.function(reduction_method)) {   
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     reducedDim <- method(FM, ...)
     qplot(reducedDimW[1, ], reducedDimW[2, ])
+=======
+    reducedDim <- reduction_method(FM, ...)
+>>>>>>> First commit
     colnames(reducedDim) <- colnames(FM)
     reducedDimW(cds) <- as.matrix(reducedDim)
     reducedDimA(cds) <- as.matrix(reducedDim)
@@ -1435,6 +1535,11 @@ findNearestPointOnMST <- function(cds){
   cds
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @import igraph
+#' @importFrom stats dist
+>>>>>>> First commit
 project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)

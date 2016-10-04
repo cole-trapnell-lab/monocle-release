@@ -1,3 +1,9 @@
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @import igraph
+#' @import methods
+#' @importFrom Biobase exprs pData
+>>>>>>> First commit
 cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
@@ -63,6 +69,10 @@ cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
   return (CellType)
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom Biobase exprs pData
+>>>>>>> First commit
 classifyCellsHelperCell <- function(cds, cth){
   #next_node_list <- rep(list(), ncol(cds)) 
   
@@ -181,6 +191,10 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
 #' @importFrom dplyr add_rownames select_ do group_by_ inner_join
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom Biobase pData pData<-
+>>>>>>> First commit
 #' @export 
 #' @examples
 #' \dontrun{
@@ -262,14 +276,27 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @param cds The CellDataSet containing the genes you want to calculate specificity for
 #' @param cth The CellTypeHierarchy defining the cell types
+=======
+#' 
+#' @param remove_ambig a boolean that determines if ambiguous cells should be removed
+#' @param remove_unknown a boolean that determines whether unknown cells should be removed
+>>>>>>> First commit
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,
 #' returns a dataframe with N x k rows. Each row contains a gene and a specifity
 #' score for one of the types.
 #' @importFrom reshape2 dcast
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @export
 calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
+=======
+#' @importFrom Biobase exprs fData pData
+#' @export
+calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
+  CellType <- NA
+>>>>>>> First commit
   markerSpecificityHelper <- function(cds, cth){
     averageExpression <- Matrix::rowMeans(exprs(cds))
     averageExpression <- unlist(averageExpression)
@@ -280,6 +307,10 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = T)
   
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+ 
+>>>>>>> First commit
   cds <- cds[,row.names(subset(pData(cds), CellType %in% c("Unknown", "Ambiguous") == FALSE))]
   cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", "CellType"), "CellType") 
   class_df <- as.data.frame(cds_pdata %>% do(markerSpecificityHelper(cds[,.$rowname], cth)))
@@ -312,6 +343,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' or ordering.
 #' 
 #' @param marker_specificities The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @num_markers The number of markers to include in the results for each cell type
 #' @return A data frame of specificity results
 #' @importFrom dplyr top_n
@@ -319,6 +351,15 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
   
+=======
+#' @param num_markers The number of markers that will be shown for each cell type
+#' @return A data frame of specificity results
+#' @importFrom dplyr top_n
+#' @export
+selectTopMarkers <- function(marker_specificities, num_markers = 10){
+  
+  specificity <- NA
+>>>>>>> First commit
   as.data.frame(marker_specificities %>%
     group_by_("CellType") %>%
     top_n(n = num_markers, wt = specificity))
@@ -333,12 +374,25 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @param balanced Whether to downsample the cells so that there's an equal number of each type prior to performing the test
 #' @param verbose Whether to emit verbose output during the the search for cell-type dependent genes
 #' @param cores The number of cores to use when testing
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @return A table of differential expression test results
 #' @importFrom stringr str_replace_all
 #' @importFrom dplyr sample_n
 #' @export 
 markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
   
+=======
+#' @param reclassify_cells a boolean that indicates whether or not the cds and cth should be run through classifyCells again
+#' @param remove_ambig a boolean that indicates whether or not ambiguous cells should be removed the cds
+#' @param remove_unknown a boolean that indicates whether or not unknown cells should be removed from the cds
+#' @return A table of differential expression test results
+#' @importFrom stringr str_replace_all
+#' @importFrom dplyr sample_n
+#' @importFrom Biobase pData pData<-
+#' @export 
+markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
+  CellType <- NULL
+>>>>>>> First commit
   if (verbose)
     message("Classifying cells according to markers")
   if (reclassify_cells)

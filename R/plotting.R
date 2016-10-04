@@ -31,6 +31,10 @@ monocle_theme_opts <- function()
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @return a ggplot2 plot object
 #' @import ggplot2
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @import gridExtra
+>>>>>>> First commit
 #' @importFrom reshape2 melt
 #' @export
 #' @examples
@@ -53,8 +57,15 @@ plot_cell_trajectory <- function(cds,
                                cell_link_size=0.75,
                                cell_name_size=2,
                                show_branch_points=TRUE){
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   gene_short_name <- NULL
   sample_name <- NULL
+=======
+  gene_short_name <- NA
+  sample_name <- NA
+  data_dim_1 <- NA
+  data_dim_2 <- NA
+>>>>>>> First commit
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
@@ -163,7 +174,12 @@ plot_cell_trajectory <- function(cds,
 #' @rdname package-deprecated
 #' @title Plots the minimum spanning tree on cells.
 #' This function is deprecated.
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #'
+=======
+#' @description This function arranges all of the cells in the cds in a tree and
+#' predicts their location based on their pseudotime value
+>>>>>>> First commit
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -235,6 +251,10 @@ plot_spanning_tree <- function(cds,
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors
+>>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -346,6 +366,10 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
 #' @import ggplot2
 #' @importFrom plyr ddply
 #' @importFrom reshape2 melt
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors
+>>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -450,6 +474,10 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @import ggplot2
 #' @importFrom plyr ddply .
 #' @importFrom reshape2 melt
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom ggplot2 Position
+>>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -470,7 +498,13 @@ plot_genes_in_pseudotime <-function(cds_subset,
                                     relative_expr=TRUE,
                                     vertical_jitter=NULL,
                                     horizontal_jitter=NULL){
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   
+=======
+    
+  f_id <- NA
+  Cell <- NA
+>>>>>>> First commit
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
         integer_expression <- TRUE
     }
@@ -579,10 +613,20 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @importFrom stringr str_join
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @export
 #' @examples
 #' \dontrun{
 #' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
+=======
+#' @importFrom ggplot2 Position
+#' @import grid
+#' @export
+#' @examples
+#' \dontrun{
+#' full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  
+#'    modelFormulaStr="~VGAM::bs(Pseudotime)")
+>>>>>>> First commit
 #' expression_curve_matrix <- responseMatrix(full_model_fits)
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
@@ -612,7 +656,11 @@ plot_clusters<-function(cds,
   
   facet_wrap_labeller <- function(gg.plot,labels=NULL) {
     #works with R 3.0.1 and ggplot2 0.9.3.1
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     require(gridExtra)
+=======
+    #require(gridExtra)
+>>>>>>> First commit
     
     g <- ggplotGrob(gg.plot)
     gg <- g$grobs      
@@ -907,6 +955,10 @@ plot_genes_heatmap <- function(...){
 #' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' @import pheatmap
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats sd as.dist cor cutree
+>>>>>>> First commit
 #' @export
 #'
 
@@ -932,6 +984,10 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     return_heatmap=FALSE,
                                     cores=1){
   
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+  pseudocount <- NA
+>>>>>>> First commit
   newdata <- data.frame(Pseudotime = seq(0, max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
@@ -1075,6 +1131,10 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @import ggplot2
 #' @importFrom plyr ddply
 #' @importFrom reshape2 melt
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors
+>>>>>>> First commit
 #' @export 
 plot_genes_branched_pseudotime <- function (cds, 
                                             branch_states = NULL, 
@@ -1095,7 +1155,12 @@ plot_genes_branched_pseudotime <- function (cds,
                                             #gene_pairs = NULL,
                                             ...)
 {
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
     if (is.null(reducedModelFormulaStr) == FALSE) {
+=======
+  Branch <- NA  
+  if (is.null(reducedModelFormulaStr) == FALSE) {
+>>>>>>> First commit
         pval_df <- branchTest(cds, 
                               branch_states=branch_states,
                               branch_point=branch_point,
@@ -1249,6 +1314,7 @@ plot_genes_branched_pseudotime <- function (cds,
     q + expand_limits(y = min_expr)
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 # Not sure we're ready to release this one quite yet:
 # Plot the branch genes in pseduotime with separate branch curves 
 # @param cds CellDataSet for the experiment
@@ -1259,6 +1325,22 @@ plot_genes_branched_pseudotime <- function (cds,
 # @return a ggplot2 plot object
 # @import ggplot2
 # @importFrom reshape2 melt
+=======
+#' Not sure we're ready to release this one quite yet:
+#' Plot the branch genes in pseduotime with separate branch curves 
+#' @param cds CellDataSet for the experiment
+#' @param rowgenes Gene ids or short names to be arrayed on the vertical axis.
+#' @param colgenes Gene ids or short names to be arrayed on the horizontal axis
+#' @param relative_expr Whether to transform expression into relative values
+#' @param min_expr The minimum level of expression to show in the plot
+#' @param cell_size A number how large the cells should be in the plot
+#' @param label_by_short_name a boolean that indicates whether cells should be labeled by their short name
+#' @param show_density a boolean that indicates whether a 2D density estimation should be shown in the plot
+#' @param round_expr a boolean that indicates whether cds_expr values should be rounded or not
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+>>>>>>> First commit
 plot_coexpression_matrix <- function(cds, 
                                      rowgenes, 
                                      colgenes, 
@@ -1269,11 +1351,20 @@ plot_coexpression_matrix <- function(cds,
                                      show_density=TRUE,
                                      round_expr=FALSE){
   
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   gene_short_name <- NULL
   adjusted_expression.x <- NULL
   adjusted_expression.y <- NULL
   ..density.. <- NULL
   f_id <- NULL
+=======
+  gene_short_name <- NA
+  f_id <- NA
+  adjusted_expression.x <- NULL
+  adjusted_expression.y <- NULL
+  ..density.. <- NULL
+  
+>>>>>>> First commit
   
   row_gene_ids <- row.names(subset(fData(cds), gene_short_name %in% rowgenes))
   row_gene_ids <- union(row_gene_ids, intersect(rowgenes, row.names(fData(cds))))
@@ -1392,6 +1483,10 @@ table.ramp <- function(n, mid = 0.5, sill = 0.5, base = 1, height = 1)
     height * y
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom grDevices rgb
+>>>>>>> First commit
 rgb.tables <- function(n,
 red = c(0.75, 0.25, 1),
 green = c(0.5, 0.25, 1),
@@ -1437,6 +1532,10 @@ blue2green2red <- matlab.like2
 #' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' @import pheatmap
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom stats sd as.dist cor cutree
+>>>>>>> First commit
 #' @export
 #'
 plot_genes_branched_heatmap <- function(cds_subset, 
@@ -1466,6 +1565,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         return_heatmap=FALSE,
                                         cores = 1) {
   
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+  cds <- NA
+>>>>>>> First commit
   new_cds <- buildBranchCellDataSet(cds_subset, 
                                     branch_states=branch_states, 
                                     branch_point=branch_point)
@@ -1637,7 +1740,15 @@ plot_genes_branched_heatmap <- function(cds_subset,
 #' @export
 plot_ordering_genes <- function(cds){
   disp_table <- dispersionTable(cds)
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 
+=======
+  use_for_ordering <- NA
+  mean_expression <- NA
+  dispersion_empirical <- NA
+  dispersion_fit <- NA
+  gene_id <- NA
+>>>>>>> First commit
   ordering_genes <- row.names(subset(fData(cds), use_for_ordering == TRUE))
   
   g <- qplot(mean_expression, dispersion_empirical, data=disp_table, log="xy", color=I("darkgrey")) + 

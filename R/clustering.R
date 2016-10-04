@@ -10,16 +10,29 @@
 #' @param ... Extra parameters to pass to pam() during clustering
 #' @return a pam cluster object
 #' @importFrom cluster pam
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @export
 #' @examples
 #' \dontrun{
 #' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~sm.ns(Pseudotime)")
+=======
+#' @importFrom stats as.dist cor
+#' @export
+#' @examples
+#' \dontrun{
+#' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  
+#'    modelFormulaStr="~sm.ns(Pseudotime)")
+>>>>>>> First commit
 #' expression_curve_matrix <- responseMatrix(full_model_fits)
 #' clusters <- clusterGenes(expression_curve_matrix, k=4)
 #' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 #' }
 clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matrix::t(x)))/2)}, ...){
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   expr_matrix <- expr_matrix[rowSums(is.na(expr_matrix)) == 0,] 
+=======
+  expr_matrix <- expr_matrix[rowSums(is.na(expr_matrix)) == 0,]
+>>>>>>> First commit
   expr_matrix <- expr_matrix[is.nan(rowSums(expr_matrix)) == FALSE,] 
   expr_matrix[is.na(expr_matrix)] <- 0
   n<-method(expr_matrix)
@@ -40,12 +53,23 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param num_clusters number of desired cell clusters
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 #' @param max_components number of dimensions to project the data into via \code{\link{reduceDimensions}()}
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
+=======
+#' @param cell_type_hierarchy the CellTypeHierarchy that divides the cells from cds into different types of cells
+#' @param max_components number of dimensions to project the data into via \code{\link{reduceDimension}()}
+#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
+#' @param clustering_genes a vector of genes used to differentiate between the cell types in the CellTypeHierarchy
+>>>>>>> First commit
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param param.gamma gamma parameter for DDRTree
 #' @param verbose Verbose parameter for DDRTree
 #' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom Biobase fData pData pData<-
+>>>>>>> First commit
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @export
 clusterCells <- function(cds, 
@@ -62,6 +86,10 @@ clusterCells <- function(cds,
   # disp_table <- dispersionTable(cds)
   # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
   # cds <- setOrderingFilter(cds, ordering_genes)
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+  use_for_ordering <- NA
+>>>>>>> First commit
   if (is.null(fData(cds)$use_for_ordering) == FALSE)
     old_ordering_genes <- row.names(subset(fData(cds), use_for_ordering)) 
   else
@@ -89,3 +117,15 @@ clusterCells <- function(cds,
   return(cds)
 }
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' Reduces number of dimensions in a cell data set to 2
+#' 
+#' @format need to fill in later, check by running in vingette
+
+"reduceDimension"
+
+
+
+
+>>>>>>> First commit

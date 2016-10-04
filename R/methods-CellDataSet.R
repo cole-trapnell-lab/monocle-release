@@ -29,6 +29,10 @@ setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric")
 #' @rdname CellDataSet-methods
 #' @param locfunc A function applied to the geometric-mean-scaled expression values to derive the size factor.
 #' @param ... Additional arguments to be passed to estimateSizeFactorsForMatrix
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors<-
+>>>>>>> First commit
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateSizeFactors", 
           signature(object="CellDataSet"),
@@ -46,6 +50,10 @@ function( object, locfunc=median, ... )
 #' @param remove_outliers Whether to remove outliers (using Cook's distance) when estimating dispersions
 #' @param cores The number of cores to use for computing dispersions
 #' @aliases CellDataSet,ANY,ANY-method
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors
+>>>>>>> First commit
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
 function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1, remove_outliers=TRUE, cores=1,...)
@@ -83,6 +91,10 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1
 
 ###################
 
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+#' @importFrom BiocGenerics sizeFactors
+>>>>>>> First commit
 checkSizeFactors <- function(cds)
 {
   if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))

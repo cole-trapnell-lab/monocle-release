@@ -4,12 +4,52 @@
 \alias{optim_mc_func_fix_c}
 \title{Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts}
 \usage{
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 optim_mc_func_fix_c(m, c, t_estimate = estimate_t(TPM_isoform_count_cds),
   relative_expr_matrix = relative_expr_matrix,
   split_relative_expr_matrix = split_relative_exprs, alpha = rep(1,
   ncol(relative_expr_matrix)), total_RNAs = rep(50000,
   ncol(relative_expr_matrix)), cores = 1, weight = 0.5,
   add_kl_divergence = T, verbose = F, ...)
+=======
+optim_mc_func_fix_c(kb_slope_intercept, kb_intercept = NULL,
+  t_estimate = estimate_t(TPM_isoform_count_cds),
+  relative_expr_matrix = relative_expr_mat,
+  split_relative_expr_matrix = split_relative_exprs, alpha = rep(1,
+  ncol(relative_expr_matrix)), total_RNAs = rep(150000,
+  ncol(relative_expr_matrix)), cores = 1, weight_mode = 0.17,
+  weight_relative_expr = 0.5, weight_total_rna = 0.33, verbose = F, ...)
+}
+\arguments{
+\item{kb_slope_intercept}{test}
+
+\item{kb_intercept}{test}
+
+\item{t_estimate}{test}
+
+\item{relative_expr_matrix}{test}
+
+\item{split_relative_expr_matrix}{test}
+
+\item{alpha}{test}
+
+\item{total_RNAs}{test}
+
+\item{cores}{the number of cores to be used while testing each gene for differential expression.}
+
+\item{weight_mode}{test}
+
+\item{weight_relative_expr}{test}
+
+\item{weight_total_rna}{test}
+
+\item{verbose}{test}
+
+\item{...}{test}
+}
+\value{
+an Integer Value
+>>>>>>> First commit
 }
 \description{
 Calculate the optimization function based on mode of transcript counts, Jessen-Shannon distance as well as the hypothetical total RNA counts
