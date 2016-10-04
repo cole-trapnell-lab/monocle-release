@@ -3,9 +3,6 @@ library(monocle)
 context("clusterGenes")
 
 test_that("clusterGenes() properly validates its input",{
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  
-=======
   load("HSMM_gene_annotation.rda")
   load("HSMM_expr_matrix.rda")
   load("HSMM_sample_sheet.rda")
@@ -82,7 +79,4 @@ test_that("clusterGenes() properly validates its input",{
    expect_gte(clusters$id.med[i], 1)
   }
   expect_equal(substring(clusters$medoids, 0, 8), c("ENSG0000", "ENSG0000", "ENSG0000", "ENSG0000")) 
-   
-   
->>>>>>> First commit
 })

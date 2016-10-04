@@ -1,6 +1,3 @@
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#Helper function for parallel VGAM fitting
-=======
 #' @param x test
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
 #' @param expressionFamily specifies the VGAM family function used for expression responses
@@ -11,7 +8,6 @@
 #' @title Helper function for parallel VGAM fitting
 #' @name fit_model_helper
 #' @description test
->>>>>>> First commit
 fit_model_helper <- function(x, 
                              modelFormulaStr, 
                              expressionFamily, 
@@ -19,12 +15,9 @@ fit_model_helper <- function(x,
                              disp_func=NULL, 
                              verbose=FALSE,
                              ...){
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+
     modelFormulaStr <- paste("f_expression", modelFormulaStr,
-=======
-  modelFormulaStr <- paste("f_expression", modelFormulaStr,
->>>>>>> First commit
-        sep = "")
+    sep = "")
     orig_x <- x
     # FIXME: should we be using this here?
     # x <- x + pseudocount
@@ -146,10 +139,7 @@ fitModel <- function(cds,
 #' @param newdata a dataframe used to generate new data for interpolation of time points
 #' @param response_type the response desired, as accepted by VGAM's predict function
 #' @param cores number of cores used for calculation
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom parallel detectCores mclapply
->>>>>>> First commit
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @export
 responseMatrix <- function(models, newdata = NULL, response_type="response", cores = detectCores()) {
@@ -196,10 +186,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
 #' @param residual_type the response desired, as accepted by VGAM's predict function
 #' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom parallel detectCores mclapply
->>>>>>> First commit
 residualMatrix <- function(models,  residual_type="response", cores = detectCores()) {
   res_list <- mclapply(models, function(x) {
     if (is.null(x)) { NA } else {
@@ -242,10 +229,7 @@ residualMatrix <- function(models,  residual_type="response", cores = detectCore
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param response_type the response desired, as accepted by VGAM's predict function
 #' @param cores the number of cores to be used while testing each gene for differential expression
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase fData
->>>>>>> First commit
 #' @return a data frame containing the data for the fitted spline curves.
 #' @export
 #'
@@ -308,10 +292,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param residual_type the response desired, as accepted by VGAM's predict function
 #' @param cores the number of cores to be used while testing each gene for differential expression
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase pData fData
->>>>>>> First commit
 #' @return a data frame containing the data for the fitted spline curves.
 #'
 genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
@@ -366,10 +347,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats glm Gamma
->>>>>>> First commit
 parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
 {
   coefs <- initial_coefs
@@ -444,12 +422,8 @@ parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
 #' @param cds A CellDataSet to use for variance stabilization.
 #' @param dispModelName The name of the dispersion function to use for VST.
 #' @param expr_matrix An matrix of values to transform. Must be normalized (e.g. by size factors) already. This function doesn't do this for you.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @param round_vals Whether to round expression values to the nearest integer before applying the transformation. 
-=======
 #' @param round_vals Whether to round expression values to the nearest integer before applying the transformation.
 #' @importFrom BiocGenerics sizeFactors 
->>>>>>> First commit
 #' @export
 vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TRUE ) {
   fitInfo <- cds@dispFitInfo[[dispModelName]]
@@ -475,10 +449,8 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
   vst( ncounts )
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
+
 #' @importFrom Biobase exprs pData fData
->>>>>>> First commit
 disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   
   rounded <- round(exprs(cds))
@@ -514,9 +486,6 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 }
 
 #' Helper function to estimate dispersions
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @importFrom stringr str_split str_trim
-=======
 #' @importFrom Biobase pData
 #' @importFrom stats cooks.distance
 #' @importFrom stringr str_split str_trim
@@ -526,7 +495,6 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 #' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
 #' @param removeOutliers a boolean it determines whether or not outliers from the data should be removed
 #' @param cores the number of cores to be used while testing each gene for differential expression.
->>>>>>> First commit
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores)
 {
   
@@ -540,11 +508,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   #                              modelFormulaStr=modelFormulaStr, 
   #                              expressionFamily=cds@expressionFamily)
   # }
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  
-=======
   mu <- NA
->>>>>>> First commit
   model_terms <- unlist(lapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
   model_terms <- model_terms[model_terms != ""]
   progress_opts <- options()$dplyr.show_progress
@@ -594,10 +558,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   return(res)
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats var
->>>>>>> First commit
 calulate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
 {
   expr_hint <- expr_selection_func(f_expression)
@@ -620,10 +581,7 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_
 # note that quasipoisson expects a slightly different format for the 
 # dispersion parameter, hence the differences in return value between
 # this function and calulate_NB_dispersion_hint
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats var
->>>>>>> First commit
 calulate_QP_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
 {
   expr_hint <- expr_selection_func(f_expression)

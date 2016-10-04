@@ -1,11 +1,5 @@
 library(HSMMSingleCell)
 library(monocle)
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-context("fitModels")
-
-test_that("fitModels() properly validates its input",{
-  
-=======
 library(DDRTree)
 context("fitModels")
 
@@ -133,6 +127,5 @@ test_that("fitModels() properly validates its input",{
   expect_equal(levels(diff_test_res$family), "negbinomial.size")
   expect_equal(diff_test_res$pval, c(1.956459e-32, 8.9011122e-01, 1.490169e-45))
   expect_equal(diff_test_res$qval, c(2.934689e-32, 8.9011122e-01, 4.470506e-45))
->>>>>>> First commit
 })
 

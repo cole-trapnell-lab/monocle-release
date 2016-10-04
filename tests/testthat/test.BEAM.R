@@ -1,11 +1,7 @@
 library(monocle)
 context("BEAM")
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-test_that("BEAM() reports valid branchTest, bifurcationTmePoint detection results for markers in lung dataset", {
-=======
 test_that("BEAM() reports valid branchTest, bifurcationTimePoint detection results for markers in lung dataset", {
->>>>>>> First commit
 
 	set.seed(123)
 
@@ -32,11 +28,6 @@ test_that("BEAM() reports valid branchTest, bifurcationTimePoint detection resul
 
 	# test the branchTest
 	expect_gt(sum(BEAM_res2$qval < 0.01), 100)
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-
-=======
-	
->>>>>>> First commit
 })
 
 

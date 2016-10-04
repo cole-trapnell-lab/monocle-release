@@ -161,13 +161,8 @@ data(HSMM_sample_sheet)
  
  # First create a CellDataSet from the relative expression levels
  HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
                         phenoData = pd, 
                         featureData = fd)
-=======
-                       phenoData = pd, 
-                       featureData = fd)
->>>>>>> First commit
  
  # Next, use it to estimate RNA counts
  rpc_matrix <- relative2abs(HSMM, cores = detectCores())
@@ -217,13 +212,8 @@ data(HSMM_sample_sheet)
  This dataset has already been filtered using the following commands: 
  
  <<select_cells, eval = FALSE>>=
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
  valid_cells <- row.names(subset(pData(HSMM), Cells.in.Well == 1 & Control == FALSE & Clump == FALSE & Debris == FALSE & Mapped.Fragments > 1000000))
  HSMM <- HSMM[,valid_cells]
-=======
-  valid_cells <- row.names(subset(pData(HSMM), Cells.in.Well == 1 & Control == FALSE & Clump == FALSE & Debris == FALSE & Mapped.Fragments > 1000000))
-  HSMM <- HSMM[,valid_cells]
->>>>>>> First commit
  @ %def
  
  If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells:
@@ -324,11 +314,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  <<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
  plot_cell_trajectory(HSMM, 1, 2, color="Media")
  @ %def
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
- 
-=======
 
->>>>>>> First commit
  Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
  
  <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
@@ -393,7 +379,6 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
  
  <<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
  HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
                       frequency_thresh=0.1,
@@ -401,15 +386,6 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
                       clustering_genes=row.names(subset(marker_diff, qval < 0.05)),
                       residualModelFormulaStr="~Media + num_genes_expressed")
  plot_cell_trajectory(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
-=======
- #HSMM <- clusterCells(HSMM, 
-                    #num_clusters = 2,
-                    #cell_type_hierarchy = cth,
-                    #frequency_thresh = 0.1,
-                    #clustering_genes = row.names(subset(marker_diff, qval < 0.05)),
-                    #residualModelFormulaStr = "~Media + num_genes_expressed")
- plot_cell_trajectory(HSMM, 1, 2, color_by ="CellType", markers = c("MYF5", "ANPEP"))
->>>>>>> First commit
  @ %def
  As you can see, the clusters are highly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
  

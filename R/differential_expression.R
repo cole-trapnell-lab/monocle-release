@@ -1,6 +1,3 @@
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-# Helper function for parallel differential expression testing
-=======
 #' @title Helper function for parallel differential expression testing
 #' @param x test
 #' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
@@ -12,7 +9,6 @@
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
 #' @name diff_test_helper
 #' @description test
->>>>>>> First commit
 diff_test_helper <- function(x, 
                              fullModelFormulaStr, 
                              reducedModelFormulaStr, 
@@ -27,10 +23,6 @@ diff_test_helper <- function(x,
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
   
   x_orig <- x
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  
-=======
->>>>>>> First commit
   disp_guess <- 0
   
   if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
@@ -99,10 +91,7 @@ diff_test_helper <- function(x,
 #' @param full_models a list of models, e.g. as returned by fitModels(), forming the numerators of the L.R.Ts.
 #' @param reduced_models a list of models, e.g. as returned by fitModels(), forming the denominators of the L.R.Ts.
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats p.adjust
->>>>>>> First commit
 #' @export
 compareModels <- function(full_models, reduced_models){
   stopifnot(length(full_models) == length(reduced_models))
@@ -137,11 +126,8 @@ compareModels <- function(full_models, reduced_models){
 #' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase fData
 #' @importFrom stats p.adjust
->>>>>>> First commit
 #' @seealso \code{\link[VGAM]{vglm}}
 #' @export
 differentialGeneTest <- function(cds, 
@@ -151,10 +137,7 @@ differentialGeneTest <- function(cds,
                                  cores=1, 
                                  verbose=FALSE
                                  ){
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
   status <- NA
->>>>>>> First commit
   if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (is.null(sizeFactors(cds)) || sum(is.na(sizeFactors(cds)))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")

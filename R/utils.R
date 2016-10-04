@@ -8,10 +8,7 @@
 #' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
 #' @import VGAM
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase annotatedDataFrameFrom assayDataNew
->>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -86,18 +83,12 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
   
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom parallel splitIndices
->>>>>>> First commit
 splitRows <- function (x, ncl) {
   lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom parallel splitIndices
->>>>>>> First commit
 splitCols <- function (x, ncl) {
   lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
@@ -137,10 +128,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...)
 #' @return The result of with(pData(X) apply(exprs(X)), MARGIN, FUN, ...))
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom BiocGenerics clusterCall parRapply parCapply
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase pData exprs multiassign
->>>>>>> First commit
 #' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
   parent <- environment(FUN)
@@ -180,10 +168,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   res
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase multiassign
->>>>>>> First commit
 smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
@@ -218,10 +203,7 @@ smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
 #' @param expression_lower_thresh the expression level below which to exclude genes used to determine negentropy
 #' @param expression_upper_thresh the expression level above which to exclude genes used to determine negentropy
 #' @return a vector of gene names
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats quantile
->>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -329,10 +311,7 @@ dispersionTable <- function(cds){
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param min_expr the expression threshold 
 #' @return an updated CellDataSet object
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom Biobase fData fData<- exprs pData pData<- 
->>>>>>> First commit
 #' @export
 #' @examples
 #' \dontrun{
@@ -403,10 +382,7 @@ isSparseMatrix <- function(x){
 # Estimate size factors for each column, given a sparseMatrix from the Matrix
 # package
 #' @import slam
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats median
->>>>>>> First commit
 estimateSizeFactorsForSparseMatrix <- function(counts, 
                                                locfunc = median, 
                                                round_exprs=TRUE, 
@@ -460,10 +436,7 @@ estimateSizeFactorsForSparseMatrix <- function(counts,
   sfs   
 }
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @importFrom stats median
->>>>>>> First commit
 estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_exprs=TRUE, method="mean-geometric-mean-total"){
   
   CM <- counts
@@ -517,10 +490,7 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
 
 #' Function to calculate the size factor for the single-cell RNA-seq data
 #'  
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #'  @importFrom stats median
->>>>>>> First commit
 #' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
 #' @param locfunc The location function used to find the representive value 
 #' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
@@ -550,25 +520,17 @@ get_classic_muscle_markers <- function(){
 }
 
 #' Build a CellDataSet from the HSMMSingleCell package
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @export
-load_HSMM <- function(){
-  
-  data(HSMM_expr_matrix, envir = environment())
-  data(HSMM_gene_annotation, envir = environment())
-  data(HSMM_sample_sheet, envir = environment())
-=======
 #' @import HSMMSingleCell
 #' @importFrom utils data
 #' @export
 load_HSMM <- function(){
-  
   HSMM_sample_sheet <- NA
   HSMM_gene_annotation <- NA
   HSMM_expr_matrix <- NA
   gene_short_name <- NA
-  
->>>>>>> First commit
+  data(HSMM_expr_matrix, envir = environment())
+  data(HSMM_gene_annotation, envir = environment())
+  data(HSMM_sample_sheet, envir = environment())
   pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
   fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
   HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
@@ -576,26 +538,17 @@ load_HSMM <- function(){
 }
 
 #' Return a CellDataSet of classic muscle genes
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+#' @importFrom Biobase fData
 #' @return A CellDataSet object
 #' @export
 load_HSMM_markers <- function(){
-=======
-#' @importFrom Biobase fData
-#' @export
-load_HSMM_markers <- function(){
   gene_short_name <- NA
->>>>>>> First commit
   HSMM <- load_HSMM()
   marker_names <- get_classic_muscle_markers()
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @export
-load_lung <- function(){
-=======
 #' @importFrom Biobase pData pData<- exprs fData
 #' @importFrom DESeq2 estimateSizeFactors estimateDispersions
 #' @export
@@ -603,8 +556,6 @@ load_lung <- function(){
   lung_phenotype_data <- NA
   lung_feature_data <- NA
   num_cells_expressed <- NA
-  
->>>>>>> First commit
   baseLoc <- system.file(package="monocle")
   #baseLoc <- './inst'
   extPath <- file.path(baseLoc, "extdata")

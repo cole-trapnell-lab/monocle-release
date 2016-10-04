@@ -3,9 +3,6 @@ library(monocle)
 context("clusterCells")
 
 test_that("clusterCells() properly validates its input",{
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  
-=======
   lung <- load_lung()
   lung <- clusterCells(lung, num_clusters = 2)
   lung_pData <- pData(lung)
@@ -31,5 +28,4 @@ test_that("clusterCells() properly validates its input",{
   expect_gte(lung_pData$Total_mRNAs[i], 50.42859)
   expect_lte(lung_pData$Total_mRNAs[i], 16184.71)
   }
->>>>>>> First commit
 })

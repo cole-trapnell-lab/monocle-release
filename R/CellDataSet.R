@@ -29,11 +29,6 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #' @aliases CellDataSet-class
 #' @exportClass CellDataSet
 #' @importFrom Biobase ExpressionSet
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @import BiocGenerics
-=======
->>>>>>> First commit
-#' 
 setClass( "CellDataSet", 
           contains = "ExpressionSet",
           slots = c(reducedDimS = "matrix",

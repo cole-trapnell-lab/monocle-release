@@ -4,9 +4,6 @@ context("estimateDispersion")
 
 
 test_that("estimateDispersion() properly validates its input",{
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  
-=======
   lung <- load_lung()
   lung_pData <- pData(lung)
   expect_that(colnames(lung_pData), c("file", "total_mass", "internal_scale", "external_scale","median_transcript_frags", "BioSample", "age", "genotype", "Sample.Name", "SRA.Sample", "MBases", "MBytes", "SRA.Study", "BioProject", "source_name", "strain", "tissue", "Assay.Type", "Center.Name", 
@@ -51,5 +48,4 @@ test_that("estimateDispersion() properly validates its input",{
   expect_that((is.na(lung_pData$Parent) | substring(lung_pData$Parent, 0, 6) == "SRR103"))
   expect_that(lung_pData$num_genes_expressed >= 10)
   expect_that(lung_pData$num_genes_expressed <= 196) 
->>>>>>> First commit
 })

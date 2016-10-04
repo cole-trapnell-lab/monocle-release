@@ -14,21 +14,13 @@
 #'   = "DDRTree"}.
 #' @param branch_states The states for two branching branches
 #' @param branch_labels The names for each branching branch
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @import methods
 #' @import igraph
 #' @importFrom Biobase pData<- exprs
 #' @importFrom stats setNames
->>>>>>> First commit
-#' @param stretch A logical flag to determine whether or not the pseudotime
-#'   trajectory for each branch should be stretched to the same range or not
+#' @param stretch A logical flag to determine whether or not the pseudotime trajectory for each branch should be stretched to the same range or not
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
-
->>>>>>> First commit
 buildBranchCellDataSet <- function(cds,
                                           branch_states = NULL, 
                                           branch_point = 1,
@@ -36,12 +28,6 @@ buildBranchCellDataSet <- function(cds,
                                           stretch = TRUE)
 {
   # TODO: check that branches are on the same paths
-  
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
-  
-  
->>>>>>> First commit
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
   if(is.null(branch_point) & is.null(branch_states)) 
@@ -254,10 +240,6 @@ buildBranchCellDataSet <- function(cds,
   pData$weight <- weight_vec
   Size_Factor <- pData$Size_Factor
   
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
-  fData <- NULL
->>>>>>> First commit
   fData <- fData(cds)
   
   colnames(exprs_data) <- row.names(pData) #check this 
@@ -292,11 +274,8 @@ buildBranchCellDataSet <- function(cds,
 #' @param branch_labels the name for each branch, for example, AT1 or AT2  
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @param ... Additional arguments passed to differentialGeneTest
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @import methods
 #' @importFrom stats as.formula
->>>>>>> First commit
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -350,11 +329,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @param num number of points on the fitted branch trajectories used for calculating the ABCs. Default is 5000. 
 #' @param branch_labels the name for each branch, for example, AT1 or AT2  
 #' @param ... Additional arguments passed to buildBranchCellDataSet
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @import methods
 #' @importFrom Biobase pData fData
->>>>>>> First commit
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -368,12 +344,6 @@ calABCs <- function(cds,
                     num = 5000, 
                     branch_labels = NULL,
                     ...){
-  
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
-  
-  
->>>>>>> First commit
   ABC_method = "integral"
   if (length(trajectory_states) != 2)
     stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
@@ -478,11 +448,7 @@ calABCs <- function(cds,
 #' This function is used to calculate the Instant Log Ratio between two branches which can be used to prepare the heatmap demonstrating the branch gene expression divergence hirearchy. If "stretch" is specifified, each  
 #' branch will be firstly stretched into maturation level from 0-100. Since the results when we use "stretching" are always better and 
 #' IRLs for non-stretched spline curves are often mismatched, we may only turn down "non-stretch" functionality in future versions. Then, we fit two separate nature spline curves for each 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' individual linages. The log-ratios of the value on each spline curve corresponding to each branchs are calculated, which can be  
-=======
 #' individual linages. The log-ratios of the value on each spline curve corresponding to each branch are calculated, which can be  
->>>>>>> First commit
 #' used as a measure for the magnitude of divergence between two branching branchs. 
 #'
 #' @param cds CellDataSet for the experiment
@@ -505,11 +471,8 @@ calABCs <- function(cds,
 #' @param ... Additional arguments passed to buildBranchCellDataSet
 #' @return a ggplot2 plot object
 #' @import ggplot2
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @import methods
 #' @importFrom Biobase pData fData
->>>>>>> First commit
 #' @importFrom reshape2 melt
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -661,13 +624,9 @@ calILRs <- function (cds,
 #' @param verbose Whether to report verbose output
 #' @param ... Additional arguments passed to calILRs
 #' @return a vector containing the time for the bifurcation point with gene names for each value
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-#' @importFrom reshape2 melt
-=======
 #' @import methods
 #' @importFrom reshape2 melt
 #' @importFrom parallel detectCores
->>>>>>> First commit
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,
@@ -796,11 +755,8 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param ... additional arguments to be passed to differentialGeneTest
 #' @return a data frame containing the p values and q-values from the BEAM test, with one row per gene.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 #' @import methods
 #' @importFrom Biobase fData
->>>>>>> First commit
 #' @export
 BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch", 
 					reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
