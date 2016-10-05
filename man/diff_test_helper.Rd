@@ -6,6 +6,7 @@
 \usage{
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr, weights, disp_func = NULL,
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   pseudocount = 0, exprs_thrsld_percentage = NULL, verbose = FALSE)
 }
 \arguments{
@@ -13,5 +14,28 @@ diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
 }
 \description{
 Helper function for parallel differential expression testing
+=======
+  verbose = FALSE)
+}
+\arguments{
+\item{x}{test}
+
+\item{fullModelFormulaStr}{a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
+
+\item{reducedModelFormulaStr}{a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
+
+\item{expressionFamily}{specifies the VGAM family function used for expression responses}
+
+\item{relative_expr}{Whether to transform expression into relative values}
+
+\item{weights}{test}
+
+\item{disp_func}{test}
+
+\item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
+}
+\description{
+test
+>>>>>>> First commit
 }
 

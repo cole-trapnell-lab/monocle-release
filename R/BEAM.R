@@ -14,8 +14,11 @@
 #'   = "DDRTree"}.
 #' @param branch_states The states for two branching branches
 #' @param branch_labels The names for each branching branch
-#' @param stretch A logical flag to determine whether or not the pseudotime
-#'   trajectory for each branch should be stretched to the same range or not
+#' @import methods
+#' @import igraph
+#' @importFrom Biobase pData<- exprs
+#' @importFrom stats setNames
+#' @param stretch A logical flag to determine whether or not the pseudotime trajectory for each branch should be stretched to the same range or not
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
@@ -25,7 +28,6 @@ buildBranchCellDataSet <- function(cds,
                                           stretch = TRUE)
 {
   # TODO: check that branches are on the same paths
-  
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
   if(is.null(branch_point) & is.null(branch_states)) 
@@ -272,6 +274,8 @@ buildBranchCellDataSet <- function(cds,
 #' @param branch_labels the name for each branch, for example, AT1 or AT2  
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @param ... Additional arguments passed to differentialGeneTest
+#' @import methods
+#' @importFrom stats as.formula
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @export
 branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -325,6 +329,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @param num number of points on the fitted branch trajectories used for calculating the ABCs. Default is 5000. 
 #' @param branch_labels the name for each branch, for example, AT1 or AT2  
 #' @param ... Additional arguments passed to buildBranchCellDataSet
+#' @import methods
+#' @importFrom Biobase pData fData
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -338,7 +344,6 @@ calABCs <- function(cds,
                     num = 5000, 
                     branch_labels = NULL,
                     ...){
-  
   ABC_method = "integral"
   if (length(trajectory_states) != 2)
     stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
@@ -443,7 +448,7 @@ calABCs <- function(cds,
 #' This function is used to calculate the Instant Log Ratio between two branches which can be used to prepare the heatmap demonstrating the branch gene expression divergence hirearchy. If "stretch" is specifified, each  
 #' branch will be firstly stretched into maturation level from 0-100. Since the results when we use "stretching" are always better and 
 #' IRLs for non-stretched spline curves are often mismatched, we may only turn down "non-stretch" functionality in future versions. Then, we fit two separate nature spline curves for each 
-#' individual linages. The log-ratios of the value on each spline curve corresponding to each branchs are calculated, which can be  
+#' individual linages. The log-ratios of the value on each spline curve corresponding to each branch are calculated, which can be  
 #' used as a measure for the magnitude of divergence between two branching branchs. 
 #'
 #' @param cds CellDataSet for the experiment
@@ -466,6 +471,8 @@ calABCs <- function(cds,
 #' @param ... Additional arguments passed to buildBranchCellDataSet
 #' @return a ggplot2 plot object
 #' @import ggplot2
+#' @import methods
+#' @importFrom Biobase pData fData
 #' @importFrom reshape2 melt
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
@@ -617,7 +624,9 @@ calILRs <- function (cds,
 #' @param verbose Whether to report verbose output
 #' @param ... Additional arguments passed to calILRs
 #' @return a vector containing the time for the bifurcation point with gene names for each value
+#' @import methods
 #' @importFrom reshape2 melt
+#' @importFrom parallel detectCores
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,
@@ -746,6 +755,8 @@ detectBifurcationPoint <- function(str_log_df = NULL,
 #' @param cores the number of cores to be used while testing each gene for differential expression
 #' @param ... additional arguments to be passed to differentialGeneTest
 #' @return a data frame containing the p values and q-values from the BEAM test, with one row per gene.
+#' @import methods
+#' @importFrom Biobase fData
 #' @export
 BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch", 
 					reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 

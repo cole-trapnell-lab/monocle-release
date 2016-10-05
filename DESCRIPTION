@@ -16,14 +16,15 @@ Description: Monocle performs differential expression and time-series analysis
 License: Artistic-2.0
 Depends:
     R (>= 2.10.0),
+    methods,
     Matrix (>= 1.2-6),
     Biobase,
     ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
-    DDRTree (>= 0.1.5),
+    DDRTree (>= 0.1.4)
 Imports:
     parallel,
-    igraph (>= 1.0.0),
+    igraph (>= 1.0.1),
     BiocGenerics,
     HSMMSingleCell (>= 0.101.5),
     plyr,
@@ -31,17 +32,19 @@ Imports:
     combinat,
     fastICA,
     grid,
+    gridExtra,
     irlba (>= 2.0.0),
     matrixStats,
+    MASS,
     reshape2,
     limma,
     dplyr,
+    qlcMatrix,
     pheatmap,
     stringr,
     proxy,
     slam,
-    MASS,
-    qlcMatrix
+    stats
 VignetteBuilder: knitr
 Suggests:
     knitr,

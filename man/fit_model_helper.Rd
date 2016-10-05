@@ -5,10 +5,32 @@
 \title{Helper function for parallel VGAM fitting}
 \usage{
 fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr,
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   disp_func = NULL, pseudocount = 0, verbose = FALSE, weights = NULL,
   ...)
 }
 \description{
 Helper function for parallel VGAM fitting
+=======
+  disp_func = NULL, verbose = FALSE, ...)
+}
+\arguments{
+\item{x}{test}
+
+\item{modelFormulaStr}{a formula string specifying the model to fit for the genes.}
+
+\item{expressionFamily}{specifies the VGAM family function used for expression responses}
+
+\item{relative_expr}{Whether to transform expression into relative values}
+
+\item{disp_func}{test}
+
+\item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
+
+\item{...}{test}
+}
+\description{
+test
+>>>>>>> First commit
 }
 

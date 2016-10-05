@@ -92,6 +92,7 @@ norm_kb <- function(kb, exprs_cds) {
 }
 
 #use gaussian kernel to calculate the mode of transcript counts
+#' @importFrom stats density
 dmode <- function(x, breaks="Sturges") {
   if (length(x) < 2) return (0);
   den <- density(x, kernel=c("gaussian"))
@@ -142,7 +143,6 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
     frac_x <- P(t_estimate[ind]); 
     num_single_copy_genes / frac_x / expected_capture_rate
   }))
-  
   return(proposed_totals)
 }
 
@@ -174,11 +174,14 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
 #' @param optim_num The number of rounds of optimization to perform.
 #' @return an matrix of absolute count for isoforms or genes after the transformation.  
 #' @export
-#' @importFrom plyr ddply
+#' @importFrom plyr ddply .
+#' @importFrom stats optim
+#' @importFrom parallel mcmapply mclapply detectCores
 #' @examples
 #' \dontrun{
 #' HSMM_relative_expr_matrix <- exprs(HSMM)
-#' HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix, t_estimate = estimate_t(HSMM_relative_expr_matrix))
+#' HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix, 
+#'    t_estimate = estimate_t(HSMM_relative_expr_matrix))
 #'}
 
 relative2abs <- function(relative_cds, 
@@ -308,4 +311,7 @@ relative2abs <- function(relative_cds,
 #'   \item{numMolecules}{number of molecules calculated from concentration and volume}
 #'   \item{rounded_numMolecules}{number in rounded digit of molecules calculated from concentration and volume}
 #' }
+"spike_df"
+
+
 

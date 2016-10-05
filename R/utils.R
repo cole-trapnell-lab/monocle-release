@@ -8,6 +8,7 @@
 #' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
 #' @import VGAM
+#' @importFrom Biobase annotatedDataFrameFrom assayDataNew
 #' @export
 #' @examples
 #' \dontrun{
@@ -82,10 +83,12 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
   
 }
 
+#' @importFrom parallel splitIndices
 splitRows <- function (x, ncl) {
   lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
+#' @importFrom parallel splitIndices
 splitCols <- function (x, ncl) {
   lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
@@ -125,6 +128,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...)
 #' @return The result of with(pData(X) apply(exprs(X)), MARGIN, FUN, ...))
 #' @importFrom parallel makeCluster stopCluster
 #' @importFrom BiocGenerics clusterCall parRapply parCapply
+#' @importFrom Biobase pData exprs multiassign
 #' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
   parent <- environment(FUN)
@@ -164,6 +168,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   res
 }
 
+#' @importFrom Biobase multiassign
 smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
@@ -198,6 +203,7 @@ smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
 #' @param expression_lower_thresh the expression level below which to exclude genes used to determine negentropy
 #' @param expression_upper_thresh the expression level above which to exclude genes used to determine negentropy
 #' @return a vector of gene names
+#' @importFrom stats quantile
 #' @export
 #' @examples
 #' \dontrun{
@@ -305,6 +311,7 @@ dispersionTable <- function(cds){
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param min_expr the expression threshold 
 #' @return an updated CellDataSet object
+#' @importFrom Biobase fData fData<- exprs pData pData<- 
 #' @export
 #' @examples
 #' \dontrun{
@@ -375,6 +382,7 @@ isSparseMatrix <- function(x){
 # Estimate size factors for each column, given a sparseMatrix from the Matrix
 # package
 #' @import slam
+#' @importFrom stats median
 estimateSizeFactorsForSparseMatrix <- function(counts, 
                                                locfunc = median, 
                                                round_exprs=TRUE, 
@@ -428,6 +436,7 @@ estimateSizeFactorsForSparseMatrix <- function(counts,
   sfs   
 }
 
+#' @importFrom stats median
 estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_exprs=TRUE, method="mean-geometric-mean-total"){
   
   CM <- counts
@@ -481,6 +490,7 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
 
 #' Function to calculate the size factor for the single-cell RNA-seq data
 #'  
+#'  @importFrom stats median
 #' @param counts The matrix for the gene expression data, either read counts or FPKM values or transcript counts
 #' @param locfunc The location function used to find the representive value 
 #' @param round_exprs A logic flag to determine whether or not the expression value should be rounded
@@ -511,9 +521,13 @@ get_classic_muscle_markers <- function(){
 
 #' Build a CellDataSet from the HSMMSingleCell package
 #' @import HSMMSingleCell
+#' @importFrom utils data
 #' @export
 load_HSMM <- function(){
-  
+  HSMM_sample_sheet <- NA
+  HSMM_gene_annotation <- NA
+  HSMM_expr_matrix <- NA
+  gene_short_name <- NA
   data(HSMM_expr_matrix, envir = environment())
   data(HSMM_gene_annotation, envir = environment())
   data(HSMM_sample_sheet, envir = environment())
@@ -524,16 +538,24 @@ load_HSMM <- function(){
 }
 
 #' Return a CellDataSet of classic muscle genes
+#' @importFrom Biobase fData
+#' @return A CellDataSet object
 #' @export
 load_HSMM_markers <- function(){
+  gene_short_name <- NA
   HSMM <- load_HSMM()
   marker_names <- get_classic_muscle_markers()
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
+#' @importFrom Biobase pData pData<- exprs fData
+#' @importFrom DESeq2 estimateSizeFactors estimateDispersions
 #' @export
 load_lung <- function(){
+  lung_phenotype_data <- NA
+  lung_feature_data <- NA
+  num_cells_expressed <- NA
   baseLoc <- system.file(package="monocle")
   #baseLoc <- './inst'
   extPath <- file.path(baseLoc, "extdata")

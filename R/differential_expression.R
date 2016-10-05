@@ -1,4 +1,14 @@
-# Helper function for parallel differential expression testing
+#' @title Helper function for parallel differential expression testing
+#' @param x test
+#' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param expressionFamily specifies the VGAM family function used for expression responses
+#' @param relative_expr Whether to transform expression into relative values
+#' @param weights test
+#' @param disp_func test
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
+#' @name diff_test_helper
+#' @description test
 diff_test_helper <- function(x, 
                              fullModelFormulaStr, 
                              reducedModelFormulaStr, 
@@ -13,7 +23,6 @@ diff_test_helper <- function(x,
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
   
   x_orig <- x
-  
   disp_guess <- 0
   
   if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
@@ -82,6 +91,7 @@ diff_test_helper <- function(x,
 #' @param full_models a list of models, e.g. as returned by fitModels(), forming the numerators of the L.R.Ts.
 #' @param reduced_models a list of models, e.g. as returned by fitModels(), forming the denominators of the L.R.Ts.
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @importFrom stats p.adjust
 #' @export
 compareModels <- function(full_models, reduced_models){
   stopifnot(length(full_models) == length(reduced_models))
@@ -116,6 +126,8 @@ compareModels <- function(full_models, reduced_models){
 #' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @importFrom Biobase fData
+#' @importFrom stats p.adjust
 #' @seealso \code{\link[VGAM]{vglm}}
 #' @export
 differentialGeneTest <- function(cds, 
@@ -125,6 +137,7 @@ differentialGeneTest <- function(cds,
                                  cores=1, 
                                  verbose=FALSE
                                  ){
+  status <- NA
   if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (is.null(sizeFactors(cds)) || sum(is.na(sizeFactors(cds)))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")

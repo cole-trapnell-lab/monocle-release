@@ -7,6 +7,22 @@
 estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
   min_cells_detected, removeOutliers, cores)
 }
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+\arguments{
+\item{cds}{a CellDataSet that contains all cells user wants evaluated}
+
+\item{modelFormulaStr}{a formula string specifying the model to fit for the genes.}
+
+\item{relative_expr}{Whether to transform expression into relative values}
+
+\item{min_cells_detected}{Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation}
+
+\item{removeOutliers}{a boolean it determines whether or not outliers from the data should be removed}
+
+\item{cores}{the number of cores to be used while testing each gene for differential expression.}
+}
+>>>>>>> First commit
 \description{
 Helper function to estimate dispersions
 }

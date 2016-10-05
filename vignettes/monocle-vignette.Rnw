@@ -314,7 +314,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  <<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
  plot_cell_trajectory(HSMM, 1, 2, color="Media")
  @ %def
- 
+
  Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
  
  <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=

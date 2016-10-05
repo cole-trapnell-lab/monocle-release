@@ -2,7 +2,12 @@
 % Please edit documentation in R/plotting.R
 \name{plot_coexpression_matrix}
 \alias{plot_coexpression_matrix}
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 \title{Plot the branch genes in pseduotime with separate lineage curves}
+=======
+\title{Not sure we're ready to release this one quite yet:
+Plot the branch genes in pseduotime with separate branch curves}
+>>>>>>> First commit
 \usage{
 plot_coexpression_matrix(cds, rowgenes, colgenes, relative_expr = TRUE,
   min_expr = NULL, cell_size = 0.85, label_by_short_name = TRUE,
@@ -18,11 +23,27 @@ plot_coexpression_matrix(cds, rowgenes, colgenes, relative_expr = TRUE,
 \item{relative_expr}{Whether to transform expression into relative values}
 
 \item{min_expr}{The minimum level of expression to show in the plot}
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
+=======
+
+\item{cell_size}{A number how large the cells should be in the plot}
+
+\item{label_by_short_name}{a boolean that indicates whether cells should be labeled by their short name}
+
+\item{show_density}{a boolean that indicates whether a 2D density estimation should be shown in the plot}
+
+\item{round_expr}{a boolean that indicates whether cds_expr values should be rounded or not}
+>>>>>>> First commit
 }
 \value{
 a ggplot2 plot object
 }
 \description{
+<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
 Plot the branch genes in pseduotime with separate lineage curves
+=======
+Not sure we're ready to release this one quite yet:
+Plot the branch genes in pseduotime with separate branch curves
+>>>>>>> First commit
 }
 
