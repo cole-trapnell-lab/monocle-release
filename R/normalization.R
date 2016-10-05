@@ -167,11 +167,11 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
 #' @param dilution the dilution of the spikein transcript in the lysis reaction mix. Default is 40, 000. The number of spike-in transcripts per single-cell lysis reaction was calculated from
 #' @param mixture_type the type of spikein transcripts from the spikein mixture added in the experiments. By default, it is mixture 1. Note that m/c we inferred are also based on mixture 1. 
 #' @param detection_threshold the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration. 
+#' @param expected_capture_rate the expected fraction of RNA molecules in the lysate that will be captured as cDNAs during reverse transcription
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
 #' @param cores number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.
 #' @param verbose a logical flag to determine whether or not we should print all the optimization details 
-#' @param optim_num The number of rounds of optimization to perform.
 #' @return an matrix of absolute count for isoforms or genes after the transformation.  
 #' @export
 #' @importFrom plyr ddply .
@@ -193,11 +193,10 @@ relative2abs <- function(relative_cds,
   dilution = 40000, 
   mixture_type = 1,
   detection_threshold = 800, 
-  expected_mRNA_mode = NULL, 
   expected_capture_rate = 0.25,
   verbose = FALSE, 
   return_all = FALSE, 
-  cores = 1, ...) {
+  cores = 1) {
   
   relative_expr_matrix <- exprs(relative_cds)
   # relative_expr_matrix <- apply(relative_expr_matrix, 2, function(x) x / sum(x) * 10^6) #convert to TPM

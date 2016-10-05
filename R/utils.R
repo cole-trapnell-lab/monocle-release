@@ -550,7 +550,6 @@ load_HSMM_markers <- function(){
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
 #' @importFrom Biobase pData pData<- exprs fData
-#' @importFrom DESeq2 estimateSizeFactors estimateDispersions
 #' @export
 load_lung <- function(){
   lung_phenotype_data <- NA

@@ -267,8 +267,6 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
-#' @param cds The CellDataSet containing the genes you want to calculate specificity for
-#' @param cth The CellTypeHierarchy defining the cell types
 #' @param remove_ambig a boolean that determines if ambiguous cells should be removed
 #' @param remove_unknown a boolean that determines whether unknown cells should be removed
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,

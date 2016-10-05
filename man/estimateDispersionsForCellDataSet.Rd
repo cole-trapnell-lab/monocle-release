@@ -7,8 +7,6 @@
 estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
   min_cells_detected, removeOutliers, cores)
 }
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 \arguments{
 \item{cds}{a CellDataSet that contains all cells user wants evaluated}
 
@@ -22,7 +20,6 @@ estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
 }
->>>>>>> First commit
 \description{
 Helper function to estimate dispersions
 }

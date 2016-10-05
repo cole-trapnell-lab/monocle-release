@@ -6,15 +6,6 @@
 \usage{
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr, weights, disp_func = NULL,
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  pseudocount = 0, exprs_thrsld_percentage = NULL, verbose = FALSE)
-}
-\arguments{
-\item{relative_expr}{Whether to transform expression into relative values}
-}
-\description{
-Helper function for parallel differential expression testing
-=======
   verbose = FALSE)
 }
 \arguments{
@@ -36,6 +27,5 @@ Helper function for parallel differential expression testing
 }
 \description{
 test
->>>>>>> First commit
 }
 

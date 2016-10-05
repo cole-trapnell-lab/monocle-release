@@ -2,13 +2,9 @@
 % Please edit documentation in R/utils.R
 \name{estimateSizeFactorsForMatrix}
 \alias{estimateSizeFactorsForMatrix}
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-\title{Function to calculate the size factor for the single-cell RNA-seq data}
-=======
 \title{Function to calculate the size factor for the single-cell RNA-seq data
  
  @importFrom stats median}
->>>>>>> First commit
 \usage{
 estimateSizeFactorsForMatrix(counts, locfunc = median, round_exprs = TRUE,
   method = "mean-geometric-mean-total")
@@ -25,10 +21,7 @@ estimateSizeFactorsForMatrix(counts, locfunc = median, round_exprs = TRUE,
 }
 \description{
 Function to calculate the size factor for the single-cell RNA-seq data
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
  
  @importFrom stats median
->>>>>>> First commit
 }
 
