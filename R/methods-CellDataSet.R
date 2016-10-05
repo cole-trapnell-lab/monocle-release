@@ -1,74 +1,103 @@
-
-#' Creates a new CellDateSet object.
-#' 
-#' Monocle requires that all data be housed in CellDataSet objects. CellDataSet extends Bioconductor's 
-#' ExpressionSet class, and the same basic interface is supported. newCellDataSet() expects a 
-#' matrix of relative expression values as its first argument, with rows 
-#' as features (usually genes) and columns as cells. Per-feature and per-cell 
-#' metadata can be supplied with the featureData and phenoData arguments, respectively.
-#' Use of these optional arguments is strongly encouraged. The CellDataSet also includes
-#' a VGAM expressionFamily object to encode the distribution that describes all genes.
-#' 
-#' @param cellData expression data matrix for an experiment
-#' @param phenoData data frame containing attributes of individual cells
-#' @param featureData data frame containing attributes of features (e.g. genes)
-#' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
-#' @param expressionFamily the VGAM family function to be used for expression response variables
-#' @return a new CellDataSet object
-#' @details
-#' CellDataSet objects store a matrix of expression values. These values typically 
-#' come from a program that calculates expression values from RNA-Seq reads such as 
-#' Cufflinks. However, they might also be values from a single cell qPCR run or 
-#' some other type of assay.  By default, Monocle expects these values to be more 
-#' or less log-normally distributed. If you log-transform the values before providing
-#' them to newCellDataSet, you will get bad results downstream. You can specify
-#' other VGAM family functions as an argument to this function, but this may result 
-#' in undefined behavior. Expanded support for other family functions (e.g. the negative binomial)
-#' will likely appear in future versions of Monocle.
-#' @export
-#' @examples
-#' \dontrun{
-#' sample_sheet_small <- read.delim("../data/sample_sheet_small.txt", row.names=1)
-#' sample_sheet_small$Time <- as.factor(sample_sheet_small$Time)
-#' gene_annotations_small <- read.delim("../data/gene_annotations_small.txt", row.names=1)
-#' fpkm_matrix_small <- read.delim("../data/fpkm_matrix_small.txt")
-#' pd <- new("AnnotatedDataFrame", data = sample_sheet_small)
-#' fd <- new("AnnotatedDataFrame", data = gene_annotations_small)
-#' HSMM <- new("CellDataSet", exprs = as.matrix(fpkm_matrix_small), phenoData = pd, featureData = fd)
-#' }
-newCellDataSet <- function( cellData, 
-                            phenoData = NULL, 
-                            featureData = NULL, 
-                            lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower = log10(lowerDetectionLimit), lmu = "identitylink"))
-{
-  cellData <- as.matrix( cellData )
-  
-  if( is.null( phenoData ) )
-    phenoData <- annotatedDataFrameFrom( cellData, byrow=FALSE )
-  if( is.null( featureData ) ) 
-    featureData <- annotatedDataFrameFrom( cellData, byrow=TRUE )
-  
-  cds <- new( "CellDataSet",
-              assayData = assayDataNew( "environment", exprs=cellData ),
-              phenoData=phenoData, 
-              featureData=featureData, 
-              lowerDetectionLimit=lowerDetectionLimit,
-              expressionFamily=expressionFamily )
-  
-  fData(cds)$use_for_ordering <- FALSE
-  
-  validObject( cds )
-  cds
-}
-
-#######
-
+#' Methods for the CellDataSet class
+#' @name CellDataSet-methods
+#' @docType methods
+#' @rdname CellDataSet-methods
+#' @param object The CellDataSet object
 setValidity( "CellDataSet", function( object ) {
 #   if( any( counts(object) < 0 ) )
 #     return( "the count data contains negative values" )
   TRUE
 } )
+
+#' @rdname CellDataSet-methods
+#' @aliases CellDataSet,ANY,ANY-method
+setMethod("sizeFactors", signature(object="CellDataSet"), function(object) {
+  sf <- pData(object)$Size_Factor
+  names( sf ) <- colnames( exprs(object) )
+  sf})   
+
+#' @rdname CellDataSet-methods
+#' @aliases CellDataSet,ANY,ANY-method
+#' @param value A vector of size factors, with length equal to the cells in object
+setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric"), setSizeFactors <- function(object, value) {
+  pData(object)$Size_Factor <- value
+  validObject( object )
+  object
+})   
+
+
+#' @rdname CellDataSet-methods
+#' @param locfunc A function applied to the geometric-mean-scaled expression values to derive the size factor.
+#' @param ... Additional arguments to be passed to estimateSizeFactorsForMatrix
+#' @importFrom BiocGenerics sizeFactors<-
+#' @aliases CellDataSet,ANY,ANY-method
+setMethod("estimateSizeFactors", 
+          signature(object="CellDataSet"),
+function( object, locfunc=median, ... ) 
+{
+  sizeFactors(object) <- estimateSizeFactorsForMatrix(exprs(object), locfunc=locfunc, ...)
+  object
+})
+
+#' @rdname CellDataSet-methods
+#' @param modelFormulaStr A model formula, passed as a string, specifying how to group the cells prior to estimated dispersion. 
+#' The default groups all cells together. 
+#' @param relative_expr Whether to transform expression into relative values
+#' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
+#' @param remove_outliers Whether to remove outliers (using Cook's distance) when estimating dispersions
+#' @param cores The number of cores to use for computing dispersions
+#' @aliases CellDataSet,ANY,ANY-method
+#' @importFrom BiocGenerics sizeFactors
+setMethod("estimateDispersions", 
+          signature(object="CellDataSet"), 
+function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1, remove_outliers=TRUE, cores=1,...)
+{
+  dispModelName="blind"
+  stopifnot( is( object, "CellDataSet" ) )
+  if( any( is.na( sizeFactors(object) ) ) )
+    stop( "NAs found in size factors. Have you called 'estimateSizeFactors'?" )
+  
+  if( length(list(...)) != 0 )
+    warning( "in estimateDispersions: Ignoring extra argument(s)." )
+  
+  # Remove results from previous fits
+  object@dispFitInfo = new.env( hash=TRUE )
+  
+  # if (isSparseMatrix(exprs(object))){
+  #   sp_mat <- asSlamMatrix(exprs(object))
+  #   nzGenes <- rowapply_simple_triplet_matrix(sp_mat, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) })
+  # }else{
+  #   nzGenes <- apply(exprs(object), 1, function(x) { sum(round(as.vector(x)) > object@lowerDetectionLimit) 
+  #   
+  # }
+
+  dfi <- estimateDispersionsForCellDataSet(object, 
+                                           modelFormulaStr, 
+                                           relative_expr, 
+                                           min_cells_detected,
+                                           remove_outliers,
+                                           cores)
+  object@dispFitInfo[[dispModelName]] <- dfi
+  
+  validObject( object )
+  object
+})
+
+###################
+
+#' @importFrom BiocGenerics sizeFactors
+checkSizeFactors <- function(cds)
+{
+  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))
+  {
+    if (is.null(sizeFactors(cds))){
+      stop("Error: you must call estimateSizeFactors() before calling this function.")
+    }
+    if (sum(is.na(sizeFactors(cds))) > 0){
+      stop("Error: one or more cells has a size factor of NA.")
+    }
+  }
+}
 
 #' Retrieves the coordinates of each cell in the reduced-dimensionality space generated by calls to 
 #' reduceDimension.
@@ -82,7 +111,6 @@ setValidity( "CellDataSet", function( object ) {
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
 #' S <- reducedDimS(HSMM)
 #' }
 reducedDimS <- function( cds ) {
@@ -98,7 +126,10 @@ reducedDimS <- function( cds ) {
 #' @param cds A CellDataSet object.
 #' @param value A matrix of coordinates specifying each cell's position in the reduced-dimensionality space.
 #' @return An update CellDataSet object
-#' @export
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimS(S)
+#' }
 `reducedDimS<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimS <- value
@@ -116,7 +147,6 @@ reducedDimS <- function( cds ) {
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
 #' W <- reducedDimW(HSMM)
 #' }
 reducedDimW <- function( cds ) {
@@ -124,15 +154,47 @@ reducedDimW <- function( cds ) {
   cds@reducedDimW
 }   
 
-#' Get the whitened expression values for a CellDataSet.
-#' 
-#' Sets the whitened expression values for each cell prior to dimensionality
-#' reduction. Not intended to be called directly.
+#' Sets the the whitening matrix during independent component analysis.
+#'
+#' @param cds A CellDataSet object.
+#' @param value a numeric matrix
+#' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
+#' @docType methods
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimK(K)
+#' }
+`reducedDimK<-` <- function( cds, value ) {
+  stopifnot( is( cds, "CellDataSet" ) )
+  cds@reducedDimK <- value
+  validObject( cds )
+  cds
+}   
+
+#' Retrieves the the whitening matrix during independent component analysis.
+#'
+#' @param cds A CellDataSet object.
+#' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
+#' @docType methods
+#' @export
+#' @examples
+#' \dontrun{
+#' K <- reducedDimW(HSMM)
+#' }
+reducedDimK <- function( cds ) {
+  stopifnot( is( cds, "CellDataSet" ) )
+  cds@reducedDimK
+}   
+
+#' Sets the whitened expression values for each cell prior to independent component analysis. Not intended to be called directly.
 #'
 #' @param cds A CellDataSet object.
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
-#' @export
+#' @examples
+#' \dontrun{
+#' #' cds <- reducedDimA(A)
+#' }
 `reducedDimW<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimW <- value
@@ -151,7 +213,6 @@ reducedDimW <- function( cds ) {
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
 #' A <- reducedDimA(HSMM)
 #' }
 reducedDimA <- function( cds ) {
@@ -168,6 +229,10 @@ reducedDimA <- function( cds ) {
 #' @param value A whitened expression data matrix
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- reducedDimA(A)
+#' }
 `reducedDimA<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@reducedDimA <- value
@@ -175,7 +240,7 @@ reducedDimA <- function( cds ) {
   cds
 }   
 
-#' Retrieve the minimum spanning tree generated by Monocle during cell ordering.
+#' Retrieves the minimum spanning tree generated by Monocle during cell ordering.
 #'
 #' Retrieves the minimum spanning tree (MST) that Monocle constructs during orderCells().
 #' This MST is mostly used in plot_spanning_tree to help assess the accuracy 
@@ -185,7 +250,6 @@ reducedDimA <- function( cds ) {
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
 #' T <- minSpanningTree(HSMM)
 #' }
 minSpanningTree <- function( cds ) {
@@ -201,6 +265,10 @@ minSpanningTree <- function( cds ) {
 #' @param value an igraph object describing the minimum spanning tree.
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- minSpanningTree(T)
+#' }
 `minSpanningTree<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@minSpanningTree <- value
@@ -214,10 +282,10 @@ minSpanningTree <- function( cds ) {
 #'
 #' @param cds expression data matrix for an experiment
 #' @return A square, symmetric matrix containing the distances between each cell in the reduced-dimensionality space.
+#' @docType methods
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
 #' D <- cellPairwiseDistances(HSMM)
 #' }
 cellPairwiseDistances <- function( cds ) {
@@ -231,1343 +299,14 @@ cellPairwiseDistances <- function( cds ) {
 #' @param value a square, symmetric matrix containing pairwise distances between cells.
 #' @return An updated CellDataSet object
 #' @export
+#' @examples
+#' \dontrun{
+#' cds <- cellPairwiseDistances(D)
+#' }
 `cellPairwiseDistances<-` <- function( cds, value ) {
   stopifnot( is( cds, "CellDataSet" ) )
   cds@cellPairwiseDistances <- value
   validObject( cds )
   cds
 }   
-
-#####
-
-# Methods for PQ-tree based ordering
-
-get_next_node_id <- function()
-{
-  next_node <<- next_node + 1
-  return (next_node) 
-}
-
-# Recursively builds and returns a PQ tree for the MST
-pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
-{
-  new_subtree <- graph.empty()
-  
-  root_node_id <- paste("Q_", get_next_node_id(), sep="")
-  
-  new_subtree <- new_subtree + vertex(root_node_id, type="Q", color="black")
-  
-  if (is.null(root_node) == FALSE){
-    sp <- get.all.shortest.paths(mst, from=V(mst)[root_node])
-    #print(sp)
-    sp_lengths <- sapply(sp$res, length)
-    target_node_idx <- which(sp_lengths == max(sp_lengths))[1]
-    #print(unlist(sp$res[target_node_idx]))
-    diam <- V(mst)[unlist(sp$res[target_node_idx])]
-    #print(diam)
-  }else{
-    if (use_weights){
-      diam <- V(mst)[get.diameter(mst)]
-    }else{
-      diam <- V(mst)[get.diameter(mst, weights=NA)]
-    }
-  }
-  
-  
-  #print (diam)
-  
-  V(new_subtree)[root_node_id]$diam_path_len = length(diam)
-  
-  diam_decisiveness <- igraph::degree(mst, v=diam) > 2
-  ind_nodes <- diam_decisiveness[diam_decisiveness == TRUE]
-  
-  first_diam_path_node_idx <- head(as.vector(diam), n=1)
-  last_diam_path_node_idx <- tail(as.vector(diam), n=1)
-    if (sum(ind_nodes) == 0 || 
-          (igraph::degree(mst, first_diam_path_node_idx) == 1 && 
-             igraph::degree(mst, last_diam_path_node_idx) == 1))
-    {
-      ind_backbone <- diam
-    }
-    else 
-    {
-      last_bb_point <- names(tail(ind_nodes, n=1))[[1]]
-      first_bb_point <- names(head(ind_nodes, n=1))[[1]]	
-      #diam_path_vertex_names <- as.vector()
-      #print (last_bb_point)
-      #print (first_bb_point)
-      diam_path_names <- V(mst)[as.vector(diam)]$name
-      last_bb_point_idx <- which(diam_path_names == last_bb_point)[1]
-      first_bb_point_idx <- which(diam_path_names == first_bb_point)[1]
-      ind_backbone_idxs <- as.vector(diam)[first_bb_point_idx:last_bb_point_idx]
-      #print (ind_backbone_idxs)
-      ind_backbone <- V(mst)[ind_backbone_idxs]
-      
-      #ind_backbone <- diam[first_bb_point:last_bb_point]
-    }
-  
-  
-  
-  mst_no_backbone <- mst - ind_backbone
-  #print (V(mst_no_backbone)$name)
-  
-  for (backbone_n in ind_backbone)
-  {
-    #print (n)
-    #backbone_n <- ind_backbone[[i]]
-    
-    if (igraph::degree(mst, v=backbone_n) > 2)
-    {
-      new_p_id <- paste("P_", get_next_node_id(), sep="")
-      #print(new_p_id)
-      new_subtree <- new_subtree + vertex(new_p_id, type="P", color="grey")
-      new_subtree <- new_subtree + vertex(V(mst)[backbone_n]$name, type="leaf", color="white")
-      new_subtree <- new_subtree + edge(new_p_id, V(mst)[backbone_n]$name)
-      new_subtree <- new_subtree + edge(root_node_id, new_p_id)
-      
-      nb <- graph.neighborhood(mst, 1, nodes=backbone_n)[[1]]
-      
-      #print (E(nb))
-      #print (V(nb))
-      for (n_i in V(nb))
-      {
-        n <- V(nb)[n_i]$name			
-        if (n %in% V(mst_no_backbone)$name)
-        {	
-          #print (n)
-          
-          sc <- subcomponent(mst_no_backbone, n)
-          
-          sg <- induced.subgraph(mst_no_backbone, sc, impl="copy_and_delete")
-          
-          
-          if (ecount(sg) > 0)
-          {
-            #print (E(sg))	
-            sub_pq <- pq_helper(sg, use_weights)
-            
-            
-            # Works, but slow:
-            for (v in V(sub_pq$subtree))
-            {
-              new_subtree <- new_subtree + vertex(V(sub_pq$subtree)[v]$name, type=V(sub_pq$subtree)[v]$type, color=V(sub_pq$subtree)[v]$color, diam_path_len=V(sub_pq$subtree)[v]$diam_path_len)
-            }
-            
-            edge_list <- get.edgelist(sub_pq$subtree)
-            for (i in 1:nrow(edge_list))
-            {
-              new_subtree <- new_subtree + edge(V(sub_pq$subtree)[edge_list[i, 1]]$name, V(sub_pq$subtree)[edge_list[i, 2]]$name)
-            }   					
-            #plot (new_subtree)
-            
-            new_subtree <- new_subtree + edge(new_p_id, V(sub_pq$subtree)[sub_pq$root]$name)  
-          }
-          else
-          {
-            new_subtree <- new_subtree + vertex(n, type="leaf", color="white")
-            new_subtree <- new_subtree + edge(new_p_id, n)
-          }
-        }
-        
-      }
-      #print ("##########################")
-    }
-    else
-    {
-      new_subtree <- new_subtree + vertex(V(mst)[backbone_n]$name, type="leaf", color="white")
-      new_subtree <- new_subtree + edge(root_node_id, V(mst)[backbone_n]$name)
-    }
-  }
-  # else
-  # {
-  #     for (backbone_n in diam)
-  #     {
-  #           new_subtree <- new_subtree + vertex(backbone_n, type="leaf")
-  #           new_subtree <- new_subtree + edge(root_node_id, backbone_n)
-  #     }
-  # }
-  
-  return (list(root=root_node_id, subtree=new_subtree))
-}
-
-make_canonical <-function(pq_tree)
-{
-  canonical_pq <- pq_tree
-  
-  V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out") == 2]$color="black"
-  V(canonical_pq)[type == "P" &  igraph::degree(canonical_pq, mode="out")== 2]$type="Q"
-  
-  single_child_p <- V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out")== 1]
-  V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out")==1]$color="blue"
-  
-  for (p_node in single_child_p)
-  {
-    child_of_p_node <- V(canonical_pq) [ nei(p_node, mode="out") ]
-    parent_of_p_node <- V(canonical_pq) [ nei(p_node, mode="in") ]
-    
-    for (child_of_p in child_of_p_node)
-    {
-      canonical_pq[parent_of_p_node, child_of_p] <- TRUE
-      # print (p_node)
-      # print (child_of_p)
-      # print (parent_of_p_node)
-      # print ("*********")
-    }
-  }
-  
-  canonical_pq <- delete.vertices(canonical_pq, V(canonical_pq)[type == "P" & igraph::degree(canonical_pq, mode="out")==1])
-  #print (V(canonical_pq)[type == "Q" & igraph::degree(canonical_pq, mode="in")==0])
-  return (canonical_pq)
-}
-
-extract_ordering <- function(pq_tree, curr_node)
-{
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    if (runif(1) >= 0.5)
-    {
-      q_level <- rev(q_level)
-    }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-extract_fixed_ordering <- function(pq_tree, curr_node)
-{
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    return (V(pq_tree)[curr_node]$name)
-  }
-  else if (V(pq_tree)[curr_node]$type == "P")
-  {
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    #p_level <- p_level[sample(length(p_level))]
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }
-  else if(V(pq_tree)[curr_node]$type == "Q")
-  {
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_ordering(pq_tree, child)
-    }
-    # if (runif(1) >= 0.5)
-    # {
-    #     q_level <- rev(q_level)
-    # }
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-weight_of_p_node_order<-function(p_level_list, dist_matrix)
-{
-  cost <- 0
-  if (length(p_level_list) <= 1)
-  {
-    return (0)
-  }
-  #print (p_level_list)
-  #print (length(p_level_list))
-  for (i in (1:(length(p_level_list)-1)))
-  {
-    #print (i)
-    #print ("***")
-    #print (p_level_list[[i]])
-    #print (paste("...", p_level_list[[i]][length(p_level_list[[i]])]))
-    #print (p_level_list[[i+1]])
-    #print (paste("...", p_level_list[[i+1]][1]))
-    #print (dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]])
-    cost <- cost + dist_matrix[p_level_list[[i]][length(p_level_list[[i]])], p_level_list[[i+1]][1]]
-  }
-  return(cost)
-}
-
-order_p_node <- function(q_level_list, dist_matrix)
-{ 
-  q_order_res <- permn(q_level_list, fun=order_q_node, dist_matrix)
-  #print (q_order_res)
-  all_perms <- lapply(q_order_res, function(x) { x$ql } )
-  #print ("perm ql:")
-  #print(all_perms)
-  all_perms_weights <- unlist(lapply(q_order_res, function(x) { x$wt }))
-  #print ("perm weights:")
-  #print (all_perms_weights)
-  
-  opt_perm_idx <- head((which(all_perms_weights == min(all_perms_weights))), 1)
-  opt_perm <- all_perms[[opt_perm_idx]]
-  
-  #print ("opt_path:")
-  #print (opt_perm)
-  #print ("opt_all_weight:")
-  #print (min(all_perms_weights))
-  #print ("weights:")
-  #print (all_perms_weights)
-  # print ("q_level_list:")
-  # print (q_level_list)
-  stopifnot (length(opt_perm) == length(q_level_list))
-  
-  return(opt_perm)
-}
-
-order_q_node <- function(q_level_list, dist_matrix)
-{
-  new_subtree <- graph.empty()
-  
-  if (length(q_level_list) == 1)
-  {
-    return (list(ql=q_level_list, wt=0))
-  }
-  for (i in 1:length(q_level_list))
-  {
-    new_subtree <- new_subtree + vertex(paste(i,"F"), type="forward")
-    new_subtree <- new_subtree + vertex(paste(i,"R"), type="reverse")
-  }
-  
-  for (i in (1:(length(q_level_list)-1)))
-  {
-    cost <- dist_matrix[q_level_list[[i]][length(q_level_list[[i]])], q_level_list[[i+1]][1]]
-    new_subtree <- new_subtree + edge(paste(i,"F"), paste(i+1,"F"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][length(q_level_list[[i]])], q_level_list[[i+1]][length(q_level_list[[i+1]])]]
-    new_subtree <- new_subtree + edge(paste(i,"F"), paste(i+1,"R"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][1], q_level_list[[i+1]][1]]
-    new_subtree <- new_subtree + edge(paste(i,"R"), paste(i+1,"F"), weight=cost)
-    
-    cost <- dist_matrix[q_level_list[[i]][1], q_level_list[[i+1]][length(q_level_list[[i+1]])]]
-    new_subtree <- new_subtree + edge(paste(i,"R"), paste(i+1,"R"), weight=cost)
-  }
-  
-  first_fwd = V(new_subtree)[paste(1,"F")]
-  first_rev = V(new_subtree)[paste(1,"R")]
-  last_fwd = V(new_subtree)[paste(length(q_level_list),"F")]
-  last_rev = V(new_subtree)[paste(length(q_level_list),"R")]
-  
-  FF_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_fwd), to=as.vector(last_fwd), mode="out", output="vpath")$vpath)
-  FR_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_fwd), to=as.vector(last_rev), mode="out", output="vpath")$vpath)
-  RF_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_rev), to=as.vector(last_fwd), mode="out", output="vpath")$vpath)
-  RR_path <- unlist(get.shortest.paths(new_subtree, from=as.vector(first_rev), to=as.vector(last_rev), mode="out", output="vpath")$vpath)
-  
-  # print (FF_path)
-  # print (FR_path)
-  # print (RF_path)
-  # print (RR_path)
-  
-  FF_weight <- sum(E(new_subtree, path=FF_path)$weight)
-  FR_weight <- sum(E(new_subtree, path=FR_path)$weight)
-  RF_weight <- sum(E(new_subtree, path=RF_path)$weight)
-  RR_weight <- sum(E(new_subtree, path=RR_path)$weight)
-  
-  # print (FF_weight)
-  # print (FR_weight)
-  # print (RF_weight)
-  # print (RR_weight)
-  
-  paths <- list(FF_path, FR_path, RF_path, RR_path)
-  path_weights <- c(FF_weight, FR_weight, RF_weight, RR_weight)
-  opt_path_idx <- head((which(path_weights == min(path_weights))), 1)
-  opt_path <- paths[[opt_path_idx]]
-  
-  # print ("opt_path:")
-  # print (opt_path)
-  # print ("q_level_list:")
-  # print (q_level_list)
-  stopifnot (length(opt_path) == length(q_level_list))
-  
-  directions <- V(new_subtree)[opt_path]$type
-  #print (directions)
-  q_levels <- list()
-  for (i in 1:length(directions))
-  {
-    if (directions[[i]] == "forward"){
-      q_levels[[length(q_levels)+1]] <- q_level_list[[i]]
-    }else{
-      q_levels[[length(q_levels)+1]] <- rev(q_level_list[[i]])
-    }
-  }
-  
-  return(list(ql=q_levels, wt=min(path_weights)))
-}
-
-#order_q_node(q_level, dp)
-
-extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
-{
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #print ("ordering leaf node")
-    return (V(pq_tree)[curr_node]$name)
-  }else if (V(pq_tree)[curr_node]$type == "P"){
-    #print ("ordering P node")
-    p_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      p_level[[length(p_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    p_level <- order_p_node(p_level, dist_matrix)
-    p_level <- unlist(p_level)
-    #print (p_level)
-    return (p_level)
-  }else if(V(pq_tree)[curr_node]$type == "Q"){
-    #print ("ordering Q node")
-    q_level <- list()
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      q_level[[length(q_level)+1]] <- extract_good_ordering(pq_tree, child, dist_matrix)
-    }
-    q_level <- order_q_node(q_level, dist_matrix)
-    q_level <- q_level$ql
-    q_level <- unlist(q_level)
-    #print (q_level)
-    return (q_level)
-  }
-}
-
-count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
-{
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #V(pq_tree)[curr_node]$num_desc = 0
-    children_counts[curr_node] = 0
-    return(children_counts)
-  } else {
-    children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
-      if (V(pq_tree)[child]$type == "leaf")
-      {
-        children_count <- children_count + 1
-      }
-      else
-      {
-        children_count <- children_count + children_counts[child]
-      }
-    }
-    #print (curr_node)
-    children_counts[curr_node] = children_count
-    return(children_counts)
-  }
-}
-
-measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
-{
-  if (V(pq_tree)[curr_node]$type != "Q")
-  {
-    #V(pq_tree)[curr_node]$num_desc = 0
-    path_lengths[curr_node] = 0
-    return(path_lengths)
-  } else {
-    
-    children_count = 0
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      children_counts <- count_leaf_descendents(pq_tree, child, children_counts)
-      if (V(pq_tree)[child]$type == "leaf")
-      {
-        children_count <- children_count + 1
-      }
-      else
-      {
-        children_count <- children_count + children_counts[child]
-      }
-    }
-    
-    
-    path_lengths[curr_node] = children_count
-    return(children_counts)
-  }
-}
-
-# Assign leaf nodes reachable in pq_tree from curr_node to assigned_state
-assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
-{
-  if (V(pq_tree)[curr_node]$type == "leaf")
-  {
-    #V(pq_tree)[curr_node]$num_desc = 0
-    #print (curr_node)
-    node_states[V(pq_tree)[curr_node]$name] = assigned_state
-    return(node_states)
-  } else {
-    for (child in V(pq_tree) [ nei(curr_node, mode="out") ])
-    {
-      node_states <- assign_cell_lineage(pq_tree, child, assigned_state, node_states)
-    }
-    return(node_states)
-  }
-}
-
-extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
-{
-  pq_tree <- orig_pq_tree
-  
-  # children_counts <- rep(0, length(as.vector(V(pq_tree))))
-  #     names(children_counts) <- V(pq_tree)$name
-  # children_counts <- count_leaf_descendents(pq_tree, curr_node, children_counts)
-  # 
-  # branch_node_counts <- children_counts[V(res$subtree)[type == "P"]]
-  # branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  # print (branch_node_counts)
-  
-  
-  branch_node_counts <- V(pq_tree)[type == "Q"]$diam_path_len
-  names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
-  branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  #print (branch_node_counts)
-  
-  
-  cell_states <- rep(NA, length(as.vector(V(pq_tree)[type=="leaf"])))
-  names(cell_states) <- V(pq_tree)[type=="leaf"]$name
-  
-  cell_states <- assign_cell_lineage(pq_tree, curr_node, 1, cell_states)
-  
-  branch_point_roots <- list()
-  
-  # Start building the ordering tree. Each pseudo-time segment will be a node.
-  branch_tree <- graph.empty()
-  #root_branch_id <- "Q_1"
-  #branch_tree <- branch_tree + vertex(root_branch_id)
-  
-  for (i in 1:num_branches)
-  {
-    #cell_states <- assign_cell_lineage(pq_tree, names(branch_node_counts)[i], i+1, cell_states)
-    #print (head(cell_states))
-    #print(names(branch_node_counts)[i])
-    
-    branch_point_roots[[length(branch_point_roots) + 1]] <- names(branch_node_counts)[i]
-    branch_id <- names(branch_node_counts)[i]
-    #print (branch_id)
-    branch_tree <- branch_tree + vertex(branch_id)
-    parents <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-    if (length(parents) > 0 && parents$type == "P")
-    {
-      p_node_parent <- V(pq_tree)[nei(names(branch_node_counts)[i], mode="in")]
-      parent_branch_id <- V(pq_tree)[nei(p_node_parent, mode="in")]$name
-      #print (parent_branch_id)
-      #print (branch_id)
-      branch_tree <- branch_tree + edge(parent_branch_id, branch_id)
-    }
-    pq_tree[V(pq_tree) [ nei(names(branch_node_counts)[i], mode="in") ], names(branch_node_counts)[i] ] <- FALSE
-  }
-  
-  #branch_point_roots[[length(branch_point_roots) + 1]] <- curr_node
-  #branch_point_roots <- rev(branch_point_roots)
-  branch_pseudotimes <- list()
-  
-  for (i in 1:length(branch_point_roots))
-  {
-    branch_ordering <- extract_good_ordering(pq_tree, branch_point_roots[[i]], dist_matrix)
-    branch_ordering_time <- weight_of_ordering(branch_ordering, dist_matrix)
-    names(branch_ordering_time) <- branch_ordering
-    branch_pseudotimes[[length(branch_pseudotimes) + 1]] = branch_ordering_time
-    names(branch_pseudotimes)[length(branch_pseudotimes)] = branch_point_roots[[i]]
-  }
-  
-  cell_ordering_tree <- graph.empty()
-  curr_branch <- "Q_1"
-  
-  extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
-  {
-    curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
-    #print (curr_branch_pseudotimes)
-    curr_branch_root_cell <- NA
-    for (i in 1:length(curr_branch_pseudotimes))
-    {
-      cell_ordering_tree <- cell_ordering_tree + vertex(names(curr_branch_pseudotimes)[i])
-      if (i > 1)
-      {
-        if (reverse_ordering == FALSE){
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i-1], names(curr_branch_pseudotimes)[i])
-        }else{
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i], names(curr_branch_pseudotimes)[i-1])
-        }
-      }
-    }
-    
-    if (reverse_ordering == FALSE)
-    {
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[1]
-    }else{
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[length(curr_branch_pseudotimes)]
-    }
-    
-    for (child in V(branch_tree) [ nei(curr_branch, mode="out") ])
-    {
-      child_cell_ordering_subtree <- graph.empty()
-      
-      child_head <- names(branch_pseudotimes[[child]])[1]
-      child_tail <- names(branch_pseudotimes[[child]])[length(branch_pseudotimes[[child]])]
-      
-      # find the closest cell in the parent branch for each of the head and the tail
-      
-      curr_branch_cell_names <- names(branch_pseudotimes[[curr_branch]])
-      head_dist_to_curr <- dist_matrix[child_head, curr_branch_cell_names]
-      closest_to_head <- names(head_dist_to_curr)[which(head_dist_to_curr == min(head_dist_to_curr))]
-      
-      head_dist_to_anchored_branch = NA
-      branch_index_for_head <- NA
-      
-      head_dist_to_anchored_branch <- dist_matrix[closest_to_head, child_head]
-      
-      tail_dist_to_curr <- dist_matrix[child_tail, curr_branch_cell_names]
-      closest_to_tail <- names(tail_dist_to_curr)[which(tail_dist_to_curr == min(tail_dist_to_curr))]
-      
-      tail_dist_to_anchored_branch = NA
-      branch_index_for_tail <- NA
-      
-      tail_dist_to_anchored_branch <- dist_matrix[closest_to_tail, child_tail]
-      
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        reverse_child <- TRUE
-      }else{
-        reverse_child <- FALSE
-      }
-      
-      res <- extract_branched_ordering_helper(branch_tree, child, child_cell_ordering_subtree, branch_pseudotimes, dist_matrix, reverse_child)
-      child_cell_ordering_subtree <- res$subtree
-      child_subtree_root <- res$root
-      
-      # Works, but slow:
-      for (v in V(child_cell_ordering_subtree))
-      {
-        cell_ordering_tree <- cell_ordering_tree + vertex(V(child_cell_ordering_subtree)[v]$name)
-      }
-      
-      edge_list <- get.edgelist(child_cell_ordering_subtree)
-      for (i in 1:nrow(edge_list))
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(V(cell_ordering_tree)[edge_list[i, 1]]$name, V(cell_ordering_tree)[edge_list[i, 2]]$name)
-      }   					
-      
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_tail, child_subtree_root)
-      }else{
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_head, child_subtree_root)
-      }
-      
-    }
-    
-    return (list(subtree=cell_ordering_tree, root=curr_branch_root_cell, last_cell_state=1, last_cell_pseudotime=0.0))
-  }
-  
-  res <- extract_branched_ordering_helper(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_main_path)
-  cell_ordering_tree <- res$subtree
-  
-  curr_state <- 1
-  
-  assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
-  {
-    cell_tree <- ordering_tree_res$subtree
-    V(cell_tree)[curr_cell]$cell_state = curr_state
-    
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
-    ordering_tree_res$subtree <- cell_tree
-    
-    if (length(children) == 1){
-      ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
-    }else{
-      for (child in children)	{
-        curr_state <<- curr_state + 1
-        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
-      }
-    }
-    return (ordering_tree_res)
-  }
-  
-  res <- assign_cell_state_helper(res, res$root)
-  
-  assign_pseudotime_helper <- function(ordering_tree_res, dist_matrix, last_pseudotime, curr_cell)
-  {
-    cell_tree <- ordering_tree_res$subtree
-    curr_cell_pseudotime <- last_pseudotime
-    V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
-    #print (curr_cell_pseudotime)
-    
-    ordering_tree_res$subtree <- cell_tree
-    children <- V(cell_tree) [ nei(curr_cell, mode="out") ]
-    
-    for (child in children)	{
-      next_node <- V(cell_tree)[child]$name
-      delta_pseudotime <- dist_matrix[curr_cell, next_node]
-      ordering_tree_res <- assign_pseudotime_helper(ordering_tree_res, dist_matrix, last_pseudotime + delta_pseudotime, next_node)
-    }
-    
-    return (ordering_tree_res)
-  }
-  
-  res <- assign_pseudotime_helper(res, dist_matrix, 0.0, res$root)
-  
-  cell_names <- V(res$subtree)$name
-  cell_states <- V(res$subtree)$cell_state
-  cell_pseudotime <- V(res$subtree)$pseudotime
-  # print (cell_names)
-  # print (cell_states)
-  # print (cell_pseudotime)
-  ordering_df <- data.frame(sample_name = cell_names,
-                            cell_state = factor(cell_states),
-                            pseudo_time = cell_pseudotime)
-  
-  ordering_df <- arrange(ordering_df, pseudo_time)
-  return(ordering_df)
-}
-
-reverse_ordering <- function(pseudo_time_ordering)
-{
-  pt <- pseudo_time_ordering$pseudo_time
-  names(pt) <- pseudo_time_ordering$sample_name
-  
-  rev_pt <- -((pt - max(pt)))
-  rev_df <- pseudo_time_ordering
-  rev_df$pseudo_time <- rev_pt
-  return(rev_df)
-}
-
-
-weight_of_ordering <- function(ordering, dist_matrix)
-{
-  time_delta <- c(0)
-  curr_weight <- 0
-  ep <- 0.01
-  for (i in 2:length(ordering))
-  {
-    d <- dist_matrix[ordering[[i]], ordering[[i-1]]]
-    curr_weight <- curr_weight + d + ep
-    time_delta <- c(time_delta, curr_weight)
-  }
-  
-  return(time_delta)
-}
-
-#####
-#' Get the set of \'detectably expressed\' genes
-#' 
-#' This function counts how many cells each feature in a CellDataSet object that areexpressed 
-#' above a minimum threshold. Also counts the number of genes above this threshold are 
-#' detectable in each cell. This is useful for selecting the set of genes that 
-#' will be used for ordering cells.
-#'
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param min_expr the expression threshold 
-#' @return an updated CellDataSet object
-#' @export
-#' @examples
-#' \dontrun{
-#' data(HSMM)
-#' HSMM <- detectGenes(HSMM, min_expr=0.1)
-#' }
-detectGenes <- function(cds, min_expr=NULL){
-  FM <- exprs(cds)
-  if (is.null(min_expr))
-  {
-    min_expr <- cds@lowerDetectionLimit
-  }
-  FM_genes <- do.call(rbind, apply(FM, 1, 
-                                       function(x) {
-                                         return(data.frame(
-                                           num_cells_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                         )
-                                         )
-                                       })
-  )
-  
-  FM_cells <- do.call(rbind, apply(FM, 2, 
-                                       function(x) {
-                                         return(data.frame(
-                                           num_genes_expressed=sum(unlist(as.list(x)) >= min_expr)
-                                         )
-                                         )
-                                       })
-  )
- 
- 
-  fData(cds)$num_cells_expressed <-  FM_genes[row.names(fData(cds)),]
-  
-  pData(cds)$num_genes_expressed <-  FM_cells[row.names(pData(cds)),]
-  
-  cds
-}
-
-#' Set the genes to be used for ordering cells.
-#' 
-#' Although Monocle can in principal use all genes to order cells, in practice
-#' this may produce poor results or take a long time, at least with RNA-Seq experiments.
-#' Monocle works much better when ordering is restricted to robustly expressed 
-#' genes.  This function allows you to set the genes that will be used to order
-#' cells in a CellDataSet object.
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
-#' @return an updated CellDataSet object
-#' @export
-setOrderingFilter <- function(cds, ordering_genes){
-  fData(cds)$use_for_ordering <- row.names(fData(cds)) %in% ordering_genes
-  cds
-}
-
-ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c("logcosh", "exp"), alpha = 1, 
-                       row.norm = TRUE, maxit = 200, tol = 1e-4, verbose = FALSE, w.init = NULL, use_irlba=TRUE){
-  dd <- dim(X)
-  d <- dd[dd != 1L]
-  if (length(d) != 2L) 
-    stop("data must be matrix-conformal")
-  X <- if (length(d) != length(dd)) 
-    matrix(X, d[1L], d[2L])
-  else as.matrix(X)
-  if (alpha < 1 || alpha > 2) 
-    stop("alpha must be in range [1,2]")
-  alg.typ <- match.arg(alg.typ)
-  fun <- match.arg(fun)
-  n <- nrow(X)
-  p <- ncol(X)
-  if (n.comp > min(n, p)) {
-    message("'n.comp' is too large: reset to ", min(n, p))
-    n.comp <- min(n, p)
-  }
-  if (is.null(w.init)) 
-    w.init <- matrix(rnorm(n.comp^2), n.comp, n.comp)
-  else {
-    if (!is.matrix(w.init) || length(w.init) != (n.comp^2)) 
-      stop("w.init is not a matrix or is the wrong size")
-  }
-  
-  if (verbose) 
-    message("Centering")
-  X <- scale(X, scale = FALSE)
-  X <- if (row.norm) 
-    t(scale(X, scale = row.norm))
-  else t(X)
-  if (verbose) 
-    message("Whitening")
-  V <- X %*% t(X)/n
-  
-  if (verbose) 
-    message("Finding SVD")
-  if (use_irlba)
-  {
-    s <- irlba(V, min(n,p), min(n,p))  
-    svs <- s$d  
-  }
-  else
-  {
-    s <- La.svd(V)
-    svs <- s$d  
-  }
-  
-  D <- diag(c(1/sqrt(s$d)))
-  K <- D %*% t(s$u)
-  K <- matrix(K[1:n.comp, ], n.comp, p)
-  X1 <- K %*% X
-  
-  if (verbose) 
-    message("Running ICA")
-  if (alg.typ == "deflation") {
-    a <- ica.R.def(X1, n.comp, tol = tol, fun = fun, 
-                   alpha = alpha, maxit = maxit, verbose = verbose, 
-                   w.init = w.init)
-  }
-  else if (alg.typ == "parallel") {
-    a <- ica.R.par(X1, n.comp, tol = tol, fun = fun, 
-                   alpha = alpha, maxit = maxit, verbose = verbose, 
-                   w.init = w.init)
-  }
-  w <- a %*% K
-  S <- w %*% X
-  A <- t(w) %*% solve(w %*% t(w))
-  return(list(X = t(X), K = t(K), W = t(a), A = t(A), S = t(S), svs=svs))
-}
-
-## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
-parametricDispersionFit <- function( means, disps )
-{
-  coefs <- c( .1, 1 )
-  iter <- 0
-  while(TRUE) {
-    residuals <- disps / ( coefs[1] + coefs[2] / means )
-    good <- which( (residuals > 1e-4) & (residuals < 15) )
-    fit <- glm( disps[good] ~ I(1/means[good]),
-                family=Gamma(link="identity"), start=coefs )
-    oldcoefs <- coefs
-    coefs <- coefficients(fit)
-    if( !all( coefs > 0 ) )
-      stop( "Parametric dispersion fit failed. Try a local fit and/or a pooled estimation. (See '?estimateDispersions')" )
-    if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
-      break
-    iter <- iter + 1
-    if( iter > 10 ) {
-      warning( "Dispersion fit did not converge." )
-      break }
-  }
-  
-  names( coefs ) <- c( "asymptDisp", "extraPois" )
-  ans <- function( q )
-    coefs[1] + coefs[2] / q
-  coefs
-}
-
-## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
-getVarianceStabilizedData <- function( cds, coefs ) {
-  ncounts <- exprs(cds)
-  vst <- function( q )
-    log( (1 + coefs["extraPois"] + 2 * coefs["asymptDisp"] * q +
-            2 * sqrt( coefs["asymptDisp"] * q * ( 1 + coefs["extraPois"] + coefs["asymptDisp"] * q ) ) )
-         / ( 4 * coefs["asymptDisp"] ) ) / log(2)
-  vst( ncounts )
-  
-}
-
-estimateSizeFactorsForMatrix <- function( counts, locfunc = median )
-{
-  loggeomeans <- rowMeans( log(counts) )
-  apply( counts, 2, function(cnts)
-    exp( locfunc( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
-}
-
-
-#' Computes a projection of a CellDataSet object into a lower dimensional space
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param max_components the dimensionality of the reduced space
-#' @param use_irlba Whether to use the IRLBA package for ICA reduction.
-#' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param batch a vector of labels specifying batch for each cell, the effects of which will be removed prior to dimensionality reduction.
-#' @param covariates a numeric vector or matrix specifying continuous effects to be removed prior to dimensionality reduction
-#' @param ... additional arguments to pass to the dimensionality reduction function
-#' @return an updated CellDataSet object
-#' @details Currently, Monocle supports dimensionality reduction with Independent Component Analysis (ICA).
-#' @export
-reduceDimension <- function(cds, max_components=2, use_irlba=TRUE, pseudo_expr=1, batch=NULL, covariates=NULL,  ...){
-  FM <- exprs(cds)
-  
-  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
-  {
-    size_factors <- estimateSizeFactorsForMatrix(round(FM))
-    #print (size_factors)
-    FM <- t(t(FM) / size_factors)
-    #FM <- log2(FM)
-  }
-  
-  if (is.null(fData(cds)$use_for_ordering) == FALSE){
-    if (sum(fData(cds)$use_for_ordering == TRUE) == 0){
-      stop("Error: you must set genes to be used for ordering via setOrderingFilter() before calling this function.")
-    }
-    FM <- FM[fData(cds)$use_for_ordering,]
-  }
-
-  
-  
-  FM <- FM + pseudo_expr
-  FM <- FM[rowSds(FM) > 0,]
-  
-  if (is.null(batch) == FALSE || is.null(covariates) == FALSE)
-  {
-    message("Removing batch effects")
-      FM <- log2(FM)
-      FM <- removeBatchEffect(FM, batch=batch, covariates=covariates)
-      FM <- 2^FM
-  }
-  
-  FM <- log2(FM)
-  
-  message("Reducing to independent components")
-  
-  init_ICA <- ica_helper(t(FM), max_components, use_irlba=use_irlba, ...)
-  
-  x_pca <- t(t(FM) %*% init_ICA$K)
-  W <- t(init_ICA$W)
-  
-  weights <- W
-  
-  A <- t(solve(weights) %*% t(init_ICA$K))
-  
-  colnames(A) <- colnames(weights)
-  rownames(A) <- rownames(FM)
-  
-  S <- weights %*% x_pca
-  
-  rownames(S) <- colnames(weights)
-  colnames(S) <- colnames(FM) 
-  
-  reducedDimW(cds) <- W
-  reducedDimA(cds) <- A
-  reducedDimS(cds) <- S
-  
-  cds
-}
-
-#' Order cells according to progress through a learned biological process.
-#' 
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param num_paths the number of end-point cell states to allow in the biological process.
-#' @param reverse whether to reverse the beginning and end points of the learned biological process.
-#' @param root_cell the name of a cell to use as the root of the ordering tree.
-#' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
-#' @export
-orderCells <- function(cds, num_paths=1, reverse=FALSE, root_cell=NULL){
-  
-  adjusted_S <- t(cds@reducedDimS)
-  
-  dp <- as.matrix(dist(adjusted_S))
-  
-  #print (sum(rowSums(dp)))
-  #dp <- as.matrix(dist(dp))
-  #dp <- as.matrix(dist(adjusted_S))
-  cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
-  # Build an MST of the cells in ICA space.
-  gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds) <- dp_mst
-  # Build the PQ tree
-  next_node <<- 0
-  res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
-  #stopifnot(length(V(res$subtree)[type == "leaf"]) == nrow(pData(cds)))
-  
-  cc_ordering <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, reverse)
-  row.names(cc_ordering) <- cc_ordering$sample_name
-  
-  pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-  pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
-  cds
-}
-
-fit_model_helper <- function(x, modelFormulaStr, expressionFamily, lowerDetectionLimit){
-  leftcensored <- x < lowerDetectionLimit
-  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
-    expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff")){
-    expression <- x
-  }else{
-    expression <- log10(x)
-  }
-  
-  tryCatch({
-    FM_fit <-  suppressWarnings(vgam(as.formula(modelFormulaStr), family=expressionFamily, extra = list(leftcensored = leftcensored)))
-    FM_fit
-  }, 
-  #warning = function(w) { FM_fit },
-  error = function(e) { print (e); NULL }
-  )
-}
-
-diff_test_helper <- function(x, fullModelFormulaStr, reducedModelFormulaStr, expressionFamily, lowerDetectionLimit){
-  leftcensored <- x < lowerDetectionLimit
-  if (expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
-    expression <- round(x)
-  }else if (expressionFamily@vfamily %in% c("gaussianff")){
-    expression <- x
-  }else{
-    expression <- log10(x)
-  }
-  
-  test_res <- tryCatch({
-    full_model_fit <- suppressWarnings(vgam(as.formula(fullModelFormulaStr), family=expressionFamily))
-    reduced_model_fit <- suppressWarnings(vgam(as.formula(reducedModelFormulaStr), family=expressionFamily))
-    compareModels(list(full_model_fit), list(reduced_model_fit))
-  }, 
-  #warning = function(w) { FM_fit },
-  error = function(e) { 
-    print (e); 
-    #NULL
-    data.frame(status = "FAIL", pval=1.0, qval=1.0) 
-  }
-  )
-  test_res
-}
-
-
-mcesApply <- function(X, MARGIN, FUN, cores=1, ...) {
-  parent <- environment(FUN)
-  if (is.null(parent))
-    parent <- emptyenv()
-  e1 <- new.env(parent=parent)
-  multiassign(names(pData(X)), pData(X), envir=e1)
-  environment(FUN) <- e1
-  cl <- makeCluster(cores)
-  clusterEvalQ(cl, {require(VGAM);})
-  if (MARGIN == 1){
-    res <- parRapply(cl, exprs(X), FUN, ...)
-  }else{
-    res <- parCapply(cl, exprs(X), FUN, ...)
-  }
-
-  stopCluster(cl)
-  res
-}
-
-#' Fits a model for each gene in a CellDataSet object.
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param modelFormulaStr a formula string specifying the model to fit for the genes.
-#' @param cores the number of processor cores to be used during fitting.
-#' @return a list of VGAM model objects
-#' @export
-#' @details
-#' 
-#' This function fits a Tobit-family vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
-#' The default formula string speficies that the (log transformed) expression values follow a Tobit distribution with upper and lower bounds
-#' specificed by max_expr and min_expr, respectively. By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
-#' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
-#' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
-fitModel <- function(cds,
-                     modelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-                     cores=1){
-  if (cores > 1){
-    f<-mcesApply(cds, 1, fit_model_helper, cores=cores, 
-                 modelFormulaStr=modelFormulaStr, 
-                 expressionFamily=cds@expressionFamily,
-                 lowerDetectionLimit=cds@lowerDetectionLimit)
-    f
-  }else{
-    f<-esApply(cds,1,fit_model_helper, 
-               modelFormulaStr=modelFormulaStr, 
-               expressionFamily=cds@expressionFamily,
-               lowerDetectionLimit=cds@lowerDetectionLimit)
-    f
-  }
-}
-
-#' Response values
-#' 
-#' Generates a matrix of response values for a set of fitted models
-#' @param models a list of models, e.g. as returned by fitModels()
-#' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
-#' @export
-responseMatrix <- function(models){
-  res_list <- lapply(models, function(x) { 
-    if (is.null(x)) { NA } else { 
-      if (x@family@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff")){
-        fit_res <- predict(x, type="response") 
-      }else if (x@family@vfamily %in% c("gaussianff")){
-        fit_res <- predict(x, type="response")
-      }else{
-        fit_res <- 10^predict(x, type="response") 
-      }
-      names(fit_res) <- row.names(predict(x))
-      fit_res
-    } 
-  } )
-  
-  
-  res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE], length)
-  
-  stopifnot(length(unique(res_list_lengths)) == 1)
-  num_na_fits <- length(res_list[is.na(res_list)])
-  if (num_na_fits > 0){
-    na_matrix<- matrix(rep(rep(NA, res_list_lengths[[1]]), num_na_fits),nrow=num_na_fits) 
-    row.names(na_matrix) <- names(res_list[is.na(res_list)])
-    colnames(na_matrix) <- names(res_list[[1]])
-    
-    non_na_matrix <- t(do.call(cbind, lapply(res_list[is.na(res_list) == FALSE], unlist)))
-    row.names(non_na_matrix) <- names(res_list[is.na(res_list) == FALSE])
-    colnames(non_na_matrix) <- names(res_list[[1]])
-    res_matrix <- rbind(non_na_matrix, na_matrix)
-    res_matrix <- res_matrix[names(res_list),]
-  }else{
-    res_matrix <- t(do.call(cbind, lapply(res_list, unlist)))
-    row.names(res_matrix) <- names(res_list[is.na(res_list) == FALSE])
-    colnames(res_matrix) <- names(res_list[[1]])
-  }
-  
-  res_matrix
-}
-
-#' Compare model fits
-#' 
-#' Performs likelihood ratio tests on nested vector generalized additive models 
-#' @param full_models a list of models, e.g. as returned by fitModels(), forming the numerators of the L.R.Ts.
-#' @param reduced_models a list of models, e.g. as returned by fitModels(), forming the denominators of the L.R.Ts.
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
-#' @export
-compareModels <- function(full_models, reduced_models){
-  stopifnot(length(full_models) == length(reduced_models))
-  test_res <- mapply(function(x,y) { 
-    if (is.null(x) == FALSE && is.null(y) == FALSE) {
-      lrt <- lrtest(x,y) 
-      pval=lrt@Body["Pr(>Chisq)"][2,]
-      data.frame(status = "OK", pval=pval)
-    } else { data.frame(status = "FAIL", pval=1.0) } 
-  } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
-  
-  test_res <- do.call(rbind.data.frame, test_res)
-  test_res$qval <- p.adjust(test_res$pval, method="BH")
-  test_res
-}
-
-#' Tests each gene for differential expression as a function of progress through a biological process, or according to other covariates as specified. 
-#' @param cds a CellDataSet object upon which to perform this operation
-#' @param fullModelFormulaStr a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param reducedModelFormulaStr a formula string specifying the reduced model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param cores the number of cores to be used while testing each gene for differential expression
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
-#' @export
-differentialGeneTest <- function(cds, 
-                                 fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-                                 reducedModelFormulaStr="expression~1", cores=1){
-  if (cores > 1){
-    diff_test_res<-mcesApply(cds, 1, diff_test_helper, cores=cores, 
-                             fullModelFormulaStr=fullModelFormulaStr,
-                             reducedModelFormulaStr=reducedModelFormulaStr,
-                             expressionFamily=cds@expressionFamily,
-                             lowerDetectionLimit=cds@lowerDetectionLimit)
-    diff_test_res
-  }else{
-    diff_test_res<-esApply(cds,1,diff_test_helper, 
-               fullModelFormulaStr=fullModelFormulaStr,
-               reducedModelFormulaStr=reducedModelFormulaStr, 
-               expressionFamily=cds@expressionFamily,
-               lowerDetectionLimit=cds@lowerDetectionLimit)
-    diff_test_res
-  }
-  
-  diff_test_res <- do.call(rbind.data.frame, diff_test_res)
-  diff_test_res$qval <- p.adjust(diff_test_res$pval, method="BH")
-  diff_test_res
-}
-
-# differentialGeneTest <- function(cds, 
-#                                  fullModelFormulaStr="expression~sm.ns(Pseudotime, df=3)",
-#                                  reducedModelFormulaStr="expression~1", cores=1){
-#   full_model_fits <- fitModel(cds,  modelFormulaStr=fullModelFormulaStr, cores=cores)
-#   reduced_model_fits <- fitModel(cds, modelFormulaStr=reducedModelFormulaStr, cores=cores)
-#   test_res <- compareModels(full_model_fits, reduced_model_fits)
-#   test_res
-# }
-
-
-#' Plots the minimum spanning tree on cells.
-#'
-#' @param expr_matrix a matrix of expression values to cluster together
-#' @param k how many clusters to create
-#' @param method the distance function to use during clustering
-#' @param ... extra parameters to pass to pam() during clustering
-#' @return a pam cluster object
-#' @export
-#' @examples
-#' \dontrun{
-#' full_model_fits <- fitModel(HSMM[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="expression~sm.ns(Pseudotime)")
-#' expression_curve_matrix <- responseMatrix(full_model_fits)
-#' clusters <- clusterGenes(expression_curve_matrix, k=4)
-#' plot_clusters(HSMM_filtered[ordering_genes,], clusters)
-#' }
-clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(t(x)))/2)}, ...){
-  expr_matrix <- expr_matrix[rowSums(is.na(expr_matrix)) == 0,] 
-  expr_matrix <- t(scale(t(log10(expr_matrix))))
-  expr_matrix <- expr_matrix[is.nan(rowSums(expr_matrix)) == FALSE,] 
-  expr_matrix[is.na(expr_matrix)] <- 0
-  n<-method(expr_matrix)
-  clusters<-pam(n,k, ...)
-  class(clusters)<-"list"
-  clusters$exprs<-expr_matrix
-  clusters
-}
-
-
-####
-#' Filter genes with extremely high or low negentropy
-#'
-#' @param cds a CellDataSet object upon which to perform this operation
-#' @param lower_negentropy_bound the centile below which to exclude to genes 
-#' @param upper_negentropy_bound the centile above which to exclude to genes
-#' @param expression_lower_thresh the expression level below which to exclude genes used to determine negentropy
-#' @param expression_upper_thresh the expression level above which to exclude genes used to determine negentropy
-#' @return a vector of gene names
-#' @export
-#' @examples
-#' \dontrun{
-#' reasonableNegentropy <- selectNegentropyGenes(HSMM, "07%", "95%", 1, 100)
-#' }
-selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
-                                  upper_negentropy_bound="99%", 
-                                  expression_lower_thresh=0.1,
-                                  expression_upper_thresh=Inf){
-  
-  FM <- exprs(cds)
-  if (cds@expressionFamily@vfamily %in% c("zanegbinomialff","negbinomial", "poissonff", "quasipoissonff"))
-  {
-    expression_lower_thresh <- expression_lower_thresh / colSums(FM)
-    expression_upper_thresh <- expression_upper_thresh / colSums(FM)
-    FM <- t(t(FM)/colSums(FM))
-  }
-
-  negentropy_exp <- apply(FM,1,function(x) { 
-    
-    expression <- x[x > expression_lower_thresh]
-    expression <- log2(x); 
-    expression <- expression[is.finite(expression)]
-    
-    if (length(expression)){
-      expression <- scale(expression)
-      mean(-exp(-(expression^2)/2))^2
-    }else{
-      0
-    }
-  }
-  
-  )
-  
-  
-  means <- apply(FM,1,function(x) { 
-    expression <- x[x > expression_lower_thresh]
-    expression <- log2(x); 
-    expression[is.finite(expression) == FALSE] <- NA; 
-
-    if (length(expression)){
-      mean(expression, na.rm=T)
-    }else{
-      NA
-    }
-  }
-  )
-  ordering_df <- data.frame(log_expression = means, negentropy = negentropy_exp)
-  
-  negentropy <- NULL
-  log_express <- NULL
-  negentropy_residual <- NULL
-  
-  ordering_df <- subset(ordering_df, 
-                          is.na(log_expression) == FALSE &
-                          is.nan(log_expression) == FALSE &
-                          is.na(negentropy) == FALSE &
-                          is.nan(negentropy) == FALSE)
-  negentropy_fit <- vglm(negentropy~sm.ns(log_expression, df=4),data=ordering_df, family=VGAM::gaussianff())
-  ordering_df$negentropy_response <- predict(negentropy_fit, newdata=ordering_df, type="response")
-  ordering_df$negentropy_residual <- ordering_df$negentropy - ordering_df$negentropy_response
-  lower_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[lower_negentropy_bound]
-  upper_negentropy_thresh <- quantile(ordering_df$negentropy_residual, probs=seq(0,1,0.01), na.rm=T)[upper_negentropy_bound]
-  
-  ordering_genes <- row.names(subset(ordering_df, 
-                                     negentropy_residual >= lower_negentropy_thresh & 
-                                     negentropy_residual <= upper_negentropy_thresh))
-  ordering_genes
-}
-
 

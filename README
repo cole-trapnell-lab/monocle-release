@@ -1,4 +1,5 @@
-MONOCLE (Release version 1.4.0)
+
+MONOCLE (Release version 2.1.0)
 =======================
 
 Monocle is an analysis toolkit for
@@ -17,8 +18,6 @@ http://cole-trapnell-lab.github.io/monocle-release/
 
 This release supports Mac OS X and Linux. Windows may support this 
 build, but Monocle has not been tested on Windows yet.
-
-
 
 
 
