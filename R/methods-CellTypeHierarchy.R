@@ -232,9 +232,9 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
     if (is.null(frequency_thresh))
       stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
     cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
-    class_df <- as.data.frame(cds_pdata %>% do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
+    class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
     class_df$CellType <-  as.character(unlist(class_df$CellType))
-    class_df$rowname <- as.character(class_df$rowname)
+    #class_df$rowname <- as.character(class_df$rowname)
   }else{
     type_res <- classifyCellsHelperCell(cds, cth)
     class_df <- data.frame(rowname = names(type_res), CellType = type_res)
@@ -267,8 +267,6 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, ...) {
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
-#' @param cds The CellDataSet containing the genes you want to calculate specificity for
-#' @param cth The CellTypeHierarchy defining the cell types
 #' @param remove_ambig a boolean that determines if ambiguous cells should be removed
 #' @param remove_unknown a boolean that determines whether unknown cells should be removed
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,

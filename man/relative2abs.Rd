@@ -5,19 +5,10 @@
 \title{Transform relative expression values into absolute transcript counts.}
 \usage{
 relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
-  modelFormulaStr = "~1", kb_slope = NULL, kb_intercept = NULL,
-  kb_slope_rng = NULL, kb_intercept_rng = NULL,
-  use_fixed_intercept = TRUE, ERCC_controls = NULL,
-  ERCC_annotation = NULL, volume = 10, dilution = 40000,
-  mixture_type = 1, detection_threshold = 800, expected_mRNA_mode = NULL,
-  expected_total_mRNAs = 1e+05, calibrate_total_mRNA = T,
-  reads_per_cell = 1e+06, expected_capture_rate = 0.25,
-  weight_mode = 0.17, weight_relative_expr = 0.5, weight_total_rna = 0.33,
-  verbose = FALSE, return_all = FALSE, cores = 1, optim_num = 1, ...)
-  calibration_trials = 100, reads_per_cell = 1e+06,
-  expected_capture_rate = 0.25, weight_mode = 0.17,
-  weight_relative_expr = 0.5, weight_total_rna = 0.33, verbose = FALSE,
-  return_all = FALSE, cores = 1, optim_num = 1, ...)
+  modelFormulaStr = "~1", ERCC_controls = NULL, ERCC_annotation = NULL,
+  volume = 10, dilution = 40000, mixture_type = 1,
+  detection_threshold = 800, expected_capture_rate = 0.25,
+  verbose = FALSE, return_all = FALSE, cores = 1)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
@@ -26,16 +17,6 @@ relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
 based on isoform FPKM will give better results in general}
 
 \item{modelFormulaStr}{modelformula used to grouping cells for transcript counts recovery. Default is "~ 1", which means to recover the transcript counts from all cells.}
-
-\item{kb_slope}{test}
-
-\item{kb_intercept}{test}
-
-\item{kb_slope_rng}{test}
-
-\item{kb_intercept_rng}{test}
-
-\item{use_fixed_intercept}{test}
 
 \item{ERCC_controls}{the FPKM matrix for each ERCC spike-in transcript in the cells if user wants to perform the transformation based on their spike-in data. Note that the row and column names should match up with the ERCC_annotation and relative_exprs_matrix respectively.}
 
@@ -49,23 +30,7 @@ based on isoform FPKM will give better results in general}
 
 \item{detection_threshold}{the lowest concentration of spikein transcript considered for the regression. Default is 800 which will ensure (almost) all included spike transcripts expressed in all the cells. Also note that the value of c is based on this concentration.}
 
-\item{expected_mRNA_mode}{test}
-
-\item{expected_total_mRNAs}{test}
-
-\item{calibrate_total_mRNA}{test}
-
-\item{calibration_trials}{test}
-
-\item{reads_per_cell}{test}
-
-\item{expected_capture_rate}{test}
-
-\item{weight_mode}{test}
-
-\item{weight_relative_expr}{test}
-
-\item{weight_total_rna}{test}
+\item{expected_capture_rate}{the expected fraction of RNA molecules in the lysate that will be captured as cDNAs during reverse transcription}
 
 \item{verbose}{a logical flag to determine whether or not we should print all the optimization details}
 
@@ -73,13 +38,9 @@ based on isoform FPKM will give better results in general}
 in a list format}
 
 \item{cores}{number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.}
-
-\item{optim_num}{The number of rounds of optimization to perform.}
-
-\item{...}{test (why does ... need to be here)}
 }
 \value{
-an matrix of absolute count for isoforms or genes after the transformation. It can also be a list including the m, c values, the dataframe for the k_i/b_i in each cell as well as the recovered absolute transcript counts if return_all is set to be TRUE.
+an matrix of absolute count for isoforms or genes after the transformation.
 }
 \description{
 Transform a relative expression matrix to absolute transcript matrix based on the inferred linear regression parameters from most abundant isoform relative expression value.

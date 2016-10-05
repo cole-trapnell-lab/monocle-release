@@ -21,6 +21,7 @@ estimateSizeFactorsForMatrix(counts, locfunc = median, round_exprs = TRUE,
 }
 \description{
 Function to calculate the size factor for the single-cell RNA-seq data
+ 
  @importFrom stats median
 }
 

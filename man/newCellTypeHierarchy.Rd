@@ -18,7 +18,7 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)
 }
 \arguments{
-\item{cth}{The CellTypeHierarchy defining the cell types}
+\item{cth}{The CellTypeHierarchy object}
 
 \item{cell_type_name}{The name of the new cell type. Can't already exist in
 cth}
@@ -29,7 +29,7 @@ type}
 \item{parent_cell_type_name}{If this cell type is a subtype of another,
 provide its name here}
 
-\item{cds}{The CelllDataSet containing the genes you want to calculate specificity for}
+\item{cds}{The CelllDataSet you want to classify}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 

@@ -10,7 +10,6 @@ selectTopMarkers(marker_specificities, num_markers = 10)
 \item{marker_specificities}{The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}}
 
 \item{num_markers}{The number of markers that will be shown for each cell type}
-
 }
 \value{
 A data frame of specificity results

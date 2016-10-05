@@ -37,7 +37,7 @@ set.seed(0)
 \maketitle
 
 \begin{abstract}
-Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package \Rpackage{monocle} provides tools for analyzing single-cell expression experiments. It performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with qPCR or other targeted assays. For more information on the algorithm at the core of \Rpackage{monocle}, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Trapnell and Cacchiarelli \emph{et al}\cite{TRAPNELL_CACCHIARELLI}
+Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package \Rpackage{monocle} provides tools for analyzing single-cell expression experiments. Monocle introduced the concept of \emph{pseudotime}, ordering cells along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of \Rpackage{monocle}, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Trapnell and Cacchiarelli \emph{et al}\cite{TRAPNELL_CACCHIARELLI}
 \end{abstract}
 
 \tableofcontents
@@ -153,7 +153,7 @@ data(HSMM_sample_sheet)
  
  \subsection{Converting relative expression values into mRNA counts} \label{conv_rel2abs}
  
- If you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC). RPC values are often easier to analyze than FPKM values, because have better statistical tools to model them. In fact, it's possible to convert FPKM values to RPC values even if there were no spike-in standards included in the experiment. You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
+If you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC). RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them. In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment. Monocle 2 includes an algorithm called \emph{Census} which performs this conversion (Qiu \emph{et al}, submitted). You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
  
  <<build_cell_data_Set_RPC, eval=TRUE>>=
  pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
@@ -165,7 +165,7 @@ data(HSMM_sample_sheet)
                         featureData = fd)
  
  # Next, use it to estimate RNA counts
- rpc_matrix <- relative2abs(HSMM, cores = detectCores())
+ rpc_matrix <- relative2abs(HSMM)
  
  # Now, make a new CellDataSet using the RNA counts
  HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
@@ -292,7 +292,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
  disp_table <- dispersionTable(HSMM)
- unsup_clustering_genes <- subset(disp_table, mean_expression >= 1 & dispersion_empirical >= 1 * dispersion_fit)
+ unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 & dispersion_empirical >= 1 * dispersion_fit)
  HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
  plot_ordering_genes(HSMM)
  @ %def
@@ -440,12 +440,15 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
  @ %def
  
- Choosing genes based on differential analysis of time points is often highly effective, but what if we don't have time series data? If the cells are asynchronously moving through our biological process (as is usually the case), Monocle can often reconstruct their trajectory from a single population captured all at the same time. Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
+ Choosing genes based on differential analysis of time points is often highly effective, but what if we don't have time series data? If the cells are asynchronously moving through our biological process (as is usually the case), Monocle can often reconstruct their trajectory from a single population captured all at the same time. Below are two methods to select genes that require no knowledge of the design of the experiment at all.
+ 
+\subsubsection{Selecting genes with high dispersion across cells} 
+Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
  
  <<select_ordering_genes, eval=TRUE>>=
  disp_table <- dispersionTable(HSMM_myo)
  ordering_genes <- subset(disp_table, 
-                          mean_expression >= 1 & 
+                          mean_expression >= 0.5 & 
                           dispersion_empirical >= 2 * dispersion_fit)$gene_id
  @ %def
  
@@ -464,7 +467,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime, which also has a significant impact on the orientation of branches in the trajectory associated with cell fate decisions.  
  
  <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+ HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
  @ %def
  
  Once the cells are ordered, we can visualize the trajectory in the reducted dimesional space.
@@ -475,7 +478,8 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
  <<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
- HSMM_filtered <- HSMM_myo[expressed_genes,]
+ HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
+ HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
  
  my_genes <- row.names(subset(fData(HSMM_filtered), 
                               gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
@@ -483,6 +487,62 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  cds_subset <- HSMM_filtered[my_genes,]
  plot_genes_in_pseudotime(cds_subset, color_by="Hours")
  @ %def 
+ 
+\subsubsection{Selecting genes based on PCA loading}
+
+A number of single-cell clustering studies have found that principal component
+analysis (PCA) is an effective way of finding genes that vary widely across cells. You 
+can use PCA to pick out a good set of ordering genes in a completely unsupervised
+manner. The procedure below first normalizes the expression data by adding a 
+pseudocount, log-transforming it, and then standardizing it so that all genes
+have roughly the same dyanmic range.  Then, it uses the \Rpackage{irlba} package
+to perform the PCA. The code below is a little more complicated than just calling
+\Rfunction{prcomp()}, but it has the advantage of performing the entire computation
+with sparse matrix operations. This is important for large, sparse CellDataSet 
+objects like the ones common in droplet-based single-cell RNA-Seq.
+
+ <<select_ordering_genes_pca, eval=TRUE>>=
+exprs_filtered <- t(t(exprs(HSMM_filtered)/pData(HSMM_filtered)$Size_Factor))
+nz_genes <- which(exprs_filtered != 0)
+exprs_filtered[nz_genes] <- log(exprs_filtered[nz_genes] + 1)
+
+# Calculate the variance across genes without converting to a dense
+# matrix:
+expression_means <- Matrix::rowMeans(exprs_filtered)
+expression_vars <- Matrix::rowMeans((exprs_filtered - expression_means)^2)
+
+# Filter out genes that are constant across all cells:
+genes_to_keep <- expression_vars > 0
+exprs_filtered <- exprs_filtered[genes_to_keep,]
+expression_means <- expression_means[genes_to_keep]
+expression_vars <- expression_vars[genes_to_keep]
+
+# Here's how to take the top PCA loading genes, but using
+# sparseMatrix operations the whole time, using irlba.
+irlba_pca_res <- irlba(t(exprs_filtered), 
+                       nu=0, 
+                       center=expression_means, 
+                       scale=sqrt(expression_vars), 
+                       right_only=TRUE)$v
+
+row.names(irlba_pca_res) <- row.names(exprs_filtered)
+
+# Take the top 100 genes from components 2 and 3. Component
+# 1 usually is driven by technical noise.
+PC2_genes <- names(sort(abs(irlba_pca_res[, 2]), decreasing = T))[1:100]
+PC3_genes <- names(sort(abs(irlba_pca_res[, 3]), decreasing = T))[1:100]
+
+ordering_genes <- union(PC2_genes, PC3_genes)
+@ %def
+
+Using these to order the cells as above yields the following trajectory:
+ <<order_cells_pca_unsup, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE, eval=TRUE>>=
+HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
+HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+plot_cell_trajectory(HSMM_myo, color_by="Hours")
+@ %def
+
  
  \subsection{Semi-supervised ordering with known marker genes}
  
@@ -767,13 +827,13 @@ Here we can see that State 1 is the proliferative state on the basis high expres
  
  Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings. 
  
- \section{Theory behind Monocle}\label{theory}
- 
- This section is yet to be written.
- 
- \section{Using Monocle with other data types}
- 
- This section is yet to be written.
+% \section{Theory behind Monocle}\label{theory}
+%  
+% This section is yet to be written.
+%  
+% \section{Using Monocle with other data types}
+%  
+% This section is yet to be written.
  
  \section{Citation}\ref{citations}
  If you use Monocle to analyze your experiments, please cite:
