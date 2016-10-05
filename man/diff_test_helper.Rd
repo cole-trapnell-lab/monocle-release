@@ -6,7 +6,6 @@
 \usage{
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr, weights, disp_func = NULL,
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
   pseudocount = 0, exprs_thrsld_percentage = NULL, verbose = FALSE)
 }
 \arguments{
@@ -14,8 +13,6 @@ diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
 }
 \description{
 Helper function for parallel differential expression testing
-=======
-  verbose = FALSE)
 }
 \arguments{
 \item{x}{test}
@@ -34,8 +31,5 @@ Helper function for parallel differential expression testing
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 }
-\description{
-test
->>>>>>> First commit
-}
+
 

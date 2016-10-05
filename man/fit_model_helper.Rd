@@ -5,13 +5,6 @@
 \title{Helper function for parallel VGAM fitting}
 \usage{
 fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr,
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-  disp_func = NULL, pseudocount = 0, verbose = FALSE, weights = NULL,
-  ...)
-}
-\description{
-Helper function for parallel VGAM fitting
-=======
   disp_func = NULL, verbose = FALSE, ...)
 }
 \arguments{
@@ -31,6 +24,5 @@ Helper function for parallel VGAM fitting
 }
 \description{
 test
->>>>>>> First commit
 }
 

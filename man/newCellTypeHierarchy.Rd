@@ -18,7 +18,7 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)
 }
 \arguments{
-\item{cth}{The CellTypeHierarchy object}
+\item{cth}{The CellTypeHierarchy defining the cell types}
 
 \item{cell_type_name}{The name of the new cell type. Can't already exist in
 cth}
@@ -29,21 +29,15 @@ type}
 \item{parent_cell_type_name}{If this cell type is a subtype of another,
 provide its name here}
 
-\item{cds}{The CelllDataSet you want to classify}
+\item{cds}{The CelllDataSet containing the genes you want to calculate specificity for}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 
 \item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
 
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-\item{cds}{The CellDataSet containing the genes you want to calculate specificity for}
-
-\item{cth}{The CellTypeHierarchy defining the cell types}
-=======
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
->>>>>>> First commit
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 

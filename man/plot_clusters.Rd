@@ -32,9 +32,6 @@ Plots kinetic clusters of genes.
 }
 \examples{
 \dontrun{
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  modelFormulaStr="~VGAM::bs(Pseudotime)")
-=======
 full_model_fits <- fitModel(HSMM_filtered[sample(nrow(fData(HSMM_filtered)), 100),],  
    modelFormulaStr="~VGAM::bs(Pseudotime)")
 >>>>>>> First commit

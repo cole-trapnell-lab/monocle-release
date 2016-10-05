@@ -8,11 +8,9 @@ selectTopMarkers(marker_specificities, num_markers = 10)
 }
 \arguments{
 \item{marker_specificities}{The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}}
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 
 \item{num_markers}{The number of markers that will be shown for each cell type}
->>>>>>> First commit
+
 }
 \value{
 A data frame of specificity results

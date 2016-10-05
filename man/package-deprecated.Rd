@@ -3,10 +3,6 @@
 \name{plot_spanning_tree}
 \alias{plot_spanning_tree}
 \title{Plots the minimum spanning tree on cells.
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-
-=======
->>>>>>> First commit
 This function is deprecated.}
 \usage{
 plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",

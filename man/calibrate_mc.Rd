@@ -7,8 +7,6 @@
 calibrate_mc(total_mRNA, capture_rate, ladder, total_ladder_transcripts, reads,
   trials = 100)
 }
-<<<<<<< 7afe2e5a61fe398816056758e84b77f3d44ceb50
-=======
 \arguments{
 \item{total_mRNA}{a number}
 
@@ -22,7 +20,6 @@ calibrate_mc(total_mRNA, capture_rate, ladder, total_ladder_transcripts, reads,
 
 \item{trials}{a number}
 }
->>>>>>> First commit
 \description{
 Make an educated guess on the spike-based slope regression parameters
 }
