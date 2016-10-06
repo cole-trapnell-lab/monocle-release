@@ -1398,8 +1398,11 @@ reduceDimension <- function(cds,
         colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       
       colnames(ddrtree_res$Z) <- colnames(FM)
+      reducedDimW(cds) <- ddrtree_res$W       
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- ddrtree_res$objective_vals
+
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
       cellPairwiseDistances(cds) <- dp
