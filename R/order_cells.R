@@ -1616,7 +1616,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   return(cds_subset)
 }
 
-#' Subset a cds which only includes cells
+#' Subset a cds which only includes cells provided with the argument cells 
 #'
 #' @param cds a cell dataset after trajectory reconstruction 
 #' @param cells a vector contains all the cells you want to subset 
@@ -1655,3 +1655,28 @@ SubSet_cds <- function(cds, cells){
   cds_subset <- orderCells(cds_subset)
 } 
 
+#' Reverse enbedding latent graph coordinates back to the high dimension  
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
+#' @export
+reverseEnbedingCDS <- function(cds) {
+  if(nrow(cds@reducedDimW) < 1)
+    stop('You need to first apply reduceDimension function on your cds before the reverse embedding')
+  
+  FM <- normalize_expr_data(cds, norm_method = 'log')
+
+  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  xm <- Matrix::rowMeans(FM)
+  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  FM <- FM[xsd > 0,]
+  
+  reverse_embedding_data <- reducedDimW(cds) %*% reducedDimK(cds)
+  row.names(reverse_embedding_data) <- row.names(FM)
+
+  cds_subset <- cds[row.names(FM), ]
+  
+  exprs(cds_subset) <- reverse_embedding_data
+  
+  return(cds_subset)
+}

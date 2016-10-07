@@ -19,7 +19,7 @@
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
-                                   progenitor_method = c('sequential_split', 'duplicate'), 
+                                   progenitor_method = c('duplicate', 'sequential_split'), 
                                    branch_states = NULL, 
                                    branch_point = 1,
                                    branch_labels = NULL, 
@@ -239,6 +239,7 @@ buildBranchCellDataSet <- function(cds,
       weight_vec <- c(weight_vec, weight_vec_block)
       
       new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
+      new_pData_block$Branch <- names(paths_to_root)[i]
       pData_blocks[[i]] <- new_pData_block
     }
     pData <- do.call(rbind, pData_blocks)
