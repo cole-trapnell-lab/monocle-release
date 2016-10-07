@@ -1573,17 +1573,85 @@ project_point_to_line_segment <- function(p, df){
 
 #' traverse from one cell to another cell 
 #'
-#' @param g CellDataSet for the experiment
-#' @param initial_vertex the minimum (untransformed) expression level to use in plotted the genes.
-#' @param g terminal_vertex for the experiment
-#' @return a list of 
+#' @param g the tree graph learned from monocle 2 during trajectory reconstruction 
+#' @param starting_cell the initial vertex for traversing on the graph 
+#' @param end_cells the terminal vertex for traversing on the graph 
+#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @import igraph
 #' @export
 
-traverseTree <- function(g, initial_vertex, terminal_vertex){ 
+traverseTree <- function(g, starting_cell, end_cells){ 
   distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
   branchPoints <- which(degree(g) == 3)
   path <- shortest_paths(g, from = initial_vertex, terminal_vertex)
   
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
+
+#' Make a cds by traversing from one cell to another cell 
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @param starting_cell the initial vertex for traversing on the graph 
+#' @param end_cells the terminal vertex for traversing on the graph 
+#' @return a new cds containing only the cells traversed from the intial cell to the end cell 
+#' @import igraph
+#' @export
+traverseTreeCDS <- function(cds, starting_cell, end_cells){
+  subset_cell <- c()
+  dp_mst <- cds@minSpanningTree
+  
+  for(end_cell in end_cells) {
+    traverse_res <- traverseTree(g, starting_cell, end_cell)
+    path_cells <- names(traverse_res$shortest_path[[1]])
+    
+    subset_cell <- c(subset_cell, path_cells)
+  }
+  
+  subset_cell <- unique(subset_cell)
+  cds_subset <- SubSet_cds(cds, subset_cell)
+  
+  root_state <- pData(cds_subset[, starting_cell])[, 'State']
+  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
+  
+  return(cds_subset)
+}
+
+#' Subset a cds which only includes cells
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @param cells a vector contains all the cells you want to subset 
+#' @return a new cds containing only the cells from the cells argument
+#' @import igraph
+#' @export
+SubSet_cds <- function(cds, cells){
+  cells <- unique(cells)
+  if(ncol(reducedDimK(cds)) != ncol(cds))
+    stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
+    
+  exprs_mat <- as(as.matrix(cds[, cells]), "sparseMatrix")
+  cds_subset <- newCellDataSet(exprs_mat, 
+                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]), 
+                                 featureData = new("AnnotatedDataFrame", data = fData(cds)), 
+                                 expressionFamily=negbinomial.size(), 
+                                 lowerDetectionLimit=1)
+  sizeFactors(cds_subset) <- sizeFactors(cds[, cells])
+  cds_subset@dispFitInfo <- cds@dispFitInfo
+
+  cds_subset@reducedDimW <- cds@reducedDimW   
+  cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+  cds_subset@reducedDimK <- cds@reducedDimK[, cells]
+  
+  cds_subset@cellPairwiseDistances <- cds@cellPairwiseDistances[cells, cells]
+  
+  adjusted_K <- Matrix::t(reducedDimK(cds_subset))
+  dp <- as.matrix(dist(adjusted_K))
+  cellPairwiseDistances(cds_subset) <- dp
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  minSpanningTree(cds_subset) <- dp_mst
+  cds_subset@dim_reduce_type <- "DDRTree"
+  cds_subset <- findNearestPointOnMST(cds_subset)
+  
+  cds_subset <- orderCells(cds_subset)
+} 
+

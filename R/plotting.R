@@ -1704,7 +1704,7 @@ plot_multiple_branches_heatmap <- function(cds,
   m <- NULL
   # branche_cell_num <- c()
   for(branch_in in branches) {
-    branches_cells <- row.names(subset(pData(cds), State == branches))
+    branches_cells <- row.names(subset(pData(cds), State == branch_in))
     root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
     root_state_cells <- row.names(subset(pData(cds), State == root_state))
     
