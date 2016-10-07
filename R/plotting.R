@@ -1119,6 +1119,7 @@ plot_genes_branched_pseudotime <- function (cds,
     }
     if("Branch" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Branch is in the model formula we will duplicate the "progenitor" cells
         cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                    progenitor_method = 'duplicate',
                                                     branch_states = branch_states, 
                                                     branch_point=branch_point,
                                                     branch_labels = branch_labels, ...)
@@ -1480,6 +1481,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         cores = 1, ...) {
   
   new_cds <- buildBranchCellDataSet(cds_subset, 
+                                    progenitor_method = 'duplicate',
                                     branch_states=branch_states, 
                                     branch_point=branch_point, ...)
   

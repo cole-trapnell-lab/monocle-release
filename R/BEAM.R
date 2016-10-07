@@ -19,7 +19,7 @@
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
-                                   progenitor_method = c('duplicate', 'sequential_split'), 
+                                   progenitor_method = c('sequential_split', 'duplicate'), 
                                    branch_states = NULL, 
                                    branch_point = 1,
                                    branch_labels = NULL, 
@@ -380,7 +380,8 @@ calABCs <- function(cds,
     stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
   
   
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                progenitor_method = 'duplicate',
                                                 branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
@@ -521,7 +522,8 @@ calILRs <- function (cds,
           ...){
   
  
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                progenitor_method = 'duplicate',
                                                 branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
