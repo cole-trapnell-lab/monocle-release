@@ -364,7 +364,8 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-                    trajectory_states = c(2, 3),
+                    branch_point = 1,
+                    trajectory_states = NULL,
                     relative_expr = TRUE, 
                     stretch = TRUE, 
                     cores = 1, 
@@ -376,21 +377,26 @@ calABCs <- function(cds,
                     ...){
   
   ABC_method = "integral"
-  if (length(trajectory_states) != 2)
-    stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
-  
+  if(!is.null(trajectory_states)){
+    if (length(trajectory_states) != 2)
+      stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  }
   
     cds_subset <- buildBranchCellDataSet(cds = cds, 
                                                 progenitor_method = 'duplicate',
+                                                branch_point = branch_point, 
+                                                branch_states = trajectory_states,
                                                 branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
  
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two branches")
-  if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
-    stop("state(s) in trajectory_states are not included in 'Branch'")
-  
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two branches")
+  # if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
+  #   stop("state(s) in trajectory_states are not included in 'Branch'")
+  # 
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
@@ -506,7 +512,8 @@ calABCs <- function(cds,
 #' @importFrom reshape2 melt
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-          trajectory_states = c(2, 3), 
+          branch_point = 1,
+          trajectory_states = NULL, 
           relative_expr = TRUE, 
           stretch = TRUE, 
           cores = 1, 
@@ -520,7 +527,10 @@ calILRs <- function (cds,
           return_all = F, 
           verbose = FALSE, 
           ...){
-  
+    if(!is.null(trajectory_states)){
+      if (length(trajectory_states) != 2)
+        stop("Sorry, this function only supports the calculation of ILRs between TWO branch trajectories")
+    }
  
     cds_subset <- buildBranchCellDataSet(cds = cds, 
                                                 progenitor_method = 'duplicate',
@@ -528,14 +538,16 @@ calILRs <- function (cds,
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
 
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two Branches")
-  if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
-      stop("state(s) in trajectory_states are not included in 'Branch'")
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two Branches")
+  # if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
+  #     stop("state(s) in trajectory_states are not included in 'Branch'")
     
-  if(verbose)
-    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+  # if(verbose)
+  #   message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
