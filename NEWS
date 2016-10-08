@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-
-CHANGES in monocle 1.1.5:
-
-* After grappling with Bioconductor build issues in HSMMSingleCell related to
-  VGAM updates, we have moved to a different data layout in HSMMSingleCell, 
-  which has caused some changes in the vignette.
-
-CHANGES in monocle 1.1.1:
-
-* Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
-
-CHANGES in monocle 0.99.6:
-=======
 Monocle 2.0.0 Series NEWS
 ================================================================================
 
@@ -72,6 +58,43 @@ Version 1.99.0
   o The first public release of the Monocle 2 series. For a summary of 
     new features and changes, please see: 
     http://cole-trapnell-lab.github.io/monocle-release/features/
->>>>>>> monocle2
 
+CHANGES in monocle 1.1.5:
 
+* After grappling with Bioconductor build issues in HSMMSingleCell related to
+  VGAM updates, we have moved to a different data layout in HSMMSingleCell, 
+  which has caused some changes in the vignette.
+
+CHANGES in monocle 1.1.1:
+
+* Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
+
+CHANGES in monocle 0.99.6:
+
+* plot_genes_jitter, plot_genes_in_pseudotime, and plot_genes_positive_cells now accept a new parameter, labe_by_short_name, to help control faceting 
+
+* orderCells() now accepts the name of the root cell, so you can fix the beginning of the pseudotime trajectory
+
+* CellDataSet objects accept an argument for the VGAM family to be used for the distribution of expression values (e.g. negbinomial())
+
+* Dimensionality reduction, plotting, model fitting, and differential analyis routines now recognize CellDataSet expression families and alter their behavior when expression is count based.  Allows analysis of absolute, as opposed to relative, single cell expression data. 
+
+CHANGES IN monocle 0.99.5:
+
+* Final changes from BioC for inclusion in development branch
+
+CHANGES IN monocle 0.99.4:
+
+* A number of changes to the vignette
+
+CHANGES IN monocle 0.99.3:
+
+* orderCells() now accepts the root_cell_name argument to specify the root of 
+  the ordering tree.
+
+  * various fixes to accomodate the BioConductor build system and coding 
+  standards. Thanks to Sonali Arora for help with this.
+
+CHANGES IN monocle 0.99.0:
+
+  INITIAL RELEASE
