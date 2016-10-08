@@ -1,3 +1,63 @@
+Monocle 2.0.0 Series NEWS
+================================================================================
+
+Version 2.1.1
+--------------------------------------------------------------------------------
+  
+BUGFIXES
+  o Fixed an problem where reduceDimension would return different results on 
+    repeated runs given the same inputs.The problem was actually in DDRTree in 
+    two places: kmeans and irlba. We now call irlba with deterministically 
+    initialized eigenvectors and kmeans with deterministically selected rows of 
+    the input.
+    
+  o Fixed a problem in classifyCells related to joining factors and levels. This
+    would generate annoying warnings.
+    
+  o Fixed the check for valid sizeFactors prior to differentialGeneTest. Without
+    this check, differentialGeneTest would report FAIL on all genes because of
+    factors not having enough levels. 
+
+Version 2.1.0
+--------------------------------------------------------------------------------
+FEATURES
+  o Monocle's algorithm for converting relative expression values (e.g. TPMs)
+    into absolute transcript counts, called "Census" has been re-designed. The
+    new version is much more accurate. Census is available through the 
+    relative2abs() function. The interface to this function has changed, and
+    the output values will be quite different from the old version. The main
+    change is that the version in 1.99.0 reported cDNA counts, as estimated 
+    in each cell's cDNA library. Now, relative2abs reports estimates of mRNA
+    counts in the lysate. These are easier to compare with experiments that
+    estimate mRNA counts via the use of spike-in controls.
+    
+  o A new heatmap function plot_pseudotime_heatmap() replaces the old 
+    plot_genes_heatmap().
+    
+  o Lots of new documentation. More to follow in upcoming releases.
+    
+BUGFIXES
+  o Ordering cells with DDRTree no longer compresses cells at the tips of
+    trajectories.
+    
+  o Pseudo counts are now applied correctly no matter what the underlying 
+    distribution used to model expression is.
+    
+  o Variance stabilization is applied correctly when a CellDataSet object's
+    expressionFamily is negbinomial.size().
+    
+  o The gene_id field in results from calculateMarkerSpecificity is now a
+    character instead of a factor. This was leading to indexing errors and 
+    nonsensical semi-supervised clustering and ordering results. 
+    
+  o BEAM() and plot_branched_heatmap() now use cBind instead of cbind, fixing an 
+    issue with sparse matrices.
+    
+Version 1.99.0
+--------------------------------------------------------------------------------
+  o The first public release of the Monocle 2 series. For a summary of 
+    new features and changes, please see: 
+    http://cole-trapnell-lab.github.io/monocle-release/features/
 
 CHANGES in monocle 1.1.5:
 
@@ -9,32 +69,6 @@ CHANGES in monocle 1.1.1:
 
 * Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
 
-CHANGES in monocle 0.99.6:
 
-* plot_genes_jitter, plot_genes_in_pseudotime, and plot_genes_positive_cells now accept a new parameter, labe_by_short_name, to help control faceting 
 
-* orderCells() now accepts the name of the root cell, so you can fix the beginning of the pseudotime trajectory
 
-* CellDataSet objects accept an argument for the VGAM family to be used for the distribution of expression values (e.g. negbinomial())
-
-* Dimensionality reduction, plotting, model fitting, and differential analyis routines now recognize CellDataSet expression families and alter their behavior when expression is count based.  Allows analysis of absolute, as opposed to relative, single cell expression data. 
-
-CHANGES IN monocle 0.99.5:
-
-* Final changes from BioC for inclusion in development branch
-
-CHANGES IN monocle 0.99.4:
-
-* A number of changes to the vignette
-
-CHANGES IN monocle 0.99.3:
-
-* orderCells() now accepts the root_cell_name argument to specify the root of 
-  the ordering tree.
-
-  * various fixes to accomodate the BioConductor build system and coding 
-  standards. Thanks to Sonali Arora for help with this.
-
-CHANGES IN monocle 0.99.0:
-
-  INITIAL RELEASE
