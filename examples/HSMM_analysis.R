@@ -14,7 +14,7 @@ expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
 # Test the above genes for differential expression in response from switch from GM to DM
 # Note: this step can take several hours on a single core, so you might want to parallelize it
 # with the 'cores' argument 
-diff_test_res <- differentialGeneTest(HSMM[expressed_genes,], fullModelFormulaStr="expression~Media", cores=24)
+diff_test_res <- differentialGeneTest(HSMM[expressed_genes,], fullModelFormulaStr="~Media", cores=24)
 
 # Use the differentially expressed genes as the basis for ordering the cells
 # by progress through differentiation
@@ -28,7 +28,7 @@ ordering_genes <- intersect(ordering_genes, row.names(subset(fData(HSMM), biotyp
 HSMM <- setOrderingFilter(HSMM, ordering_genes)
 
 # Third: perform dimensionality reduction using ICA
-HSMM <- reduceDimension(HSMM, use_irlba=T)
+HSMM <- reduceDimension(HSMM, method="ICA")
 
 # Fourth: compute the minimum spanning tree in the reduced space and use it to order the cells.
 # Note that we're allowing a branch with two outcomes in the biological process
@@ -58,13 +58,13 @@ dev.off()
 # We could just run the code below to get differential expression results, but in this 
 # example, we'll perform the analysis in pieces, because we'll need some of the model
 # information for the gene clustering analysis we'll perform later.
-#diff_test_res <- differentialGeneTest(HSMM_filtered, fullModelFormulaStr="expression~Pseudotime", cores=24)
+#diff_test_res <- differentialGeneTest(HSMM_filtered, fullModelFormulaStr="~Pseudotime", cores=24)
 
 # Fit the full model for each genefirst
-full_model_fits <- fitModel(HSMM_filtered,  modelFormulaStr="expression~VGAM::bs(Pseudotime)", min_expr = 0.1, cores=24)
+full_model_fits <- fitModel(HSMM_filtered,  modelFormulaStr="~VGAM::bs(Pseudotime)", min_expr = 0.1, cores=24)
 
 # Now fit the reduced models
-reduced_model_fits <- fitModel(HSMM_filtered, modelFormulaStr="expression~1", min_expr = 0.1, cores=24)
+reduced_model_fits <- fitModel(HSMM_filtered, modelFormulaStr="~1", min_expr = 0.1, cores=24)
 
 # Compare them with an approximate likelihood ratio test
 pseudotime_test_res <- compareModels(full_model_fits, reduced_model_fits)
