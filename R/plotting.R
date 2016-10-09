@@ -31,7 +31,6 @@ monocle_theme_opts <- function()
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @import gridExtra
 #' @importFrom reshape2 melt
 #' @export
 #' @examples
