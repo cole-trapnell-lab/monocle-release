@@ -1867,7 +1867,8 @@ plot_pc_variance_explained <- function(cds,
       stop("Error: all rows have standard deviation zero")
     }
 
-    # FM <- convert2DRData(cds, norm_method = 'log')  
+    # FM <- convert2DRData(cds, norm_method = 'log') 
+    FM <- FM[!is.na(row.names(FM)), ]
     pca_res <- prcomp(t(FM), center = T, scale = T)
     std_dev <- pca_res$sdev 
     pr_var <- std_dev^2

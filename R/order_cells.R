@@ -1333,6 +1333,7 @@ reduceDimension <- function(cds,
   }
   
   FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+  FM <- FM[!is.na(row.names(FM)), ]
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
