@@ -345,7 +345,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                 cth, 
                                 residualModelFormulaStr="~Media",
-                                cores=detectCores())
+                                cores=1)
  @ %def
  The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
  
@@ -563,7 +563,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
  <<semi_sup_ordering_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
  marker_diff <- markerDiffTable(HSMM_myo[expressed_genes,], 
                                 cth, 
-                                cores=detectCores())
+                                cores=1)
  semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
  length(semisup_clustering_genes)
  @ %def
@@ -790,7 +790,7 @@ Here we can see that State 1 is the proliferative state on the basis high expres
  BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
  
  <<lung_beam_test, include=TRUE, eval=TRUE, warning=FALSE>>=
- BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
+ BEAM_res <- BEAM(lung, branch_point=1, cores = 1)
  BEAM_res <- BEAM_res[order(BEAM_res$qval),]
  BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
  @ %def 
