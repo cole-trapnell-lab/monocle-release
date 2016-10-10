@@ -142,7 +142,7 @@ fitModel <- function(cds,
 #' @importFrom parallel detectCores mclapply
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @export
-responseMatrix <- function(models, newdata = NULL, response_type="response", cores = detectCores()) {
+responseMatrix <- function(models, newdata = NULL, response_type="response", cores = 1) {
     res_list <- mclapply(models, function(x) {
       if (is.null(x)) { NA } else {
           if (x@family@vfamily %in% c("negbinomial", "negbinomial.size")) {
@@ -187,7 +187,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
 #' @param cores number of cores used for calculation
 #' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
 #' @importFrom parallel detectCores mclapply
-residualMatrix <- function(models,  residual_type="response", cores = detectCores()) {
+residualMatrix <- function(models,  residual_type="response", cores = 1) {
   res_list <- mclapply(models, function(x) {
     if (is.null(x)) { NA } else {
         resid(x, type = residual_type)
