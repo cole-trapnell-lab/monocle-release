@@ -573,7 +573,7 @@ Using the 705 genes for ordering produces a trajectory that's highly similar to 
  HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
  plot_ordering_genes(HSMM_myo)
  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
- HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+ HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
  plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def
  
