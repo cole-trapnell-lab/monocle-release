@@ -31,7 +31,6 @@ monocle_theme_opts <- function()
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @import gridExtra
 #' @importFrom reshape2 melt
 #' @export
 #' @examples
@@ -621,26 +620,6 @@ plot_clusters<-function(cds,
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
   facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
-  
-  facet_wrap_labeller <- function(gg.plot,labels=NULL) {
-    #works with R 3.0.1 and ggplot2 0.9.3.1
-    require(gridExtra)
-    
-    g <- ggplotGrob(gg.plot)
-    gg <- g$grobs      
-    strips <- grep("strip_t", names(gg))
-    
-    for(ii in seq_along(labels))  {
-      modgrob <- getGrob(gg[[strips[ii]]], "strip.text", 
-                         grep=TRUE, global=TRUE)
-      gg[[strips[ii]]]$children[[modgrob$name]] <- editGrob(modgrob,label=labels[ii])
-    }
-    
-    g$grobs <- gg
-    class(g) = c("arrange", "ggplot",class(g)) 
-    g
-  }
-  
   
   m.melt <- melt(m, id.vars = c("ids", "cluster"))
   
