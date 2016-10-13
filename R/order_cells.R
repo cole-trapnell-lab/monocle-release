@@ -1170,7 +1170,8 @@ orderCells <- function(cds,
 # reduction
 normalize_expr_data <- function(cds, 
                                 norm_method = c("vstExprs", "log", "none"), 
-                                pseudo_expr = NULL){
+                                pseudo_expr = NULL,
+                                relative_expr = TRUE){
   FM <- exprs(cds)
   
   # If the user has selected a subset of genes for use in ordering the cells
@@ -1195,6 +1196,9 @@ normalize_expr_data <- function(cds,
     checkSizeFactors(cds)
     
     if (norm_method == "vstExprs") {
+      if (relative_expr == FALSE)
+        message("Warning: relative_expr is ignored when using norm_method == 'vstExprs'")
+      
       if (is.null(fData(cds)$use_for_ordering) == FALSE && 
           nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
         VST_FM <- vstExprs(cds[fData(cds)$use_for_ordering,], round_vals = FALSE)
@@ -1210,7 +1214,9 @@ normalize_expr_data <- function(cds,
       }
     }else if (norm_method == "log") {
       # If we are using log, normalize by size factor before log-transforming
-      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      if (relative_expr)
+        FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+        
       FM <- FM + pseudo_expr
       FM <- log2(FM)
     }else if (norm_method == "none"){
@@ -1311,10 +1317,11 @@ reduceDimension <- function(cds,
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
+                            relative_expr=TRUE,
                             verbose=FALSE,
                             ...){
  
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
   
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
   xm <- Matrix::rowMeans(FM)
