@@ -299,7 +299,9 @@ relative2abs <- function(relative_cds,
 #'
 #' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
 #'  Nature paper from Stephen Quake group)
-#'
+#' @name spike_df
+#' @docType data
+#' @keywords datasets
 #' @format A data frame with 92 rows and 9 variables:
 #' \describe{
 #'   \item{ERCC_ID}{ID for ERCC transcripts}

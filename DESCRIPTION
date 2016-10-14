@@ -32,7 +32,6 @@ Imports:
     combinat,
     fastICA,
     grid,
-    gridExtra,
     irlba (>= 2.0.0),
     matrixStats,
     MASS,

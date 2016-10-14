@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods-CellDataSet.R
 \name{reducedDimW}
 \alias{reducedDimW}
-\title{Retrieves the expression values for each cell (as a matrix) after whitening during independent component analysis.}
+\title{Get the whitened expression values for a CellDataSet.}
 \usage{
 reducedDimW(cds)
 }
@@ -13,7 +13,8 @@ reducedDimW(cds)
 A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 }
 \description{
-Retrieves the expression values for each cell (as a matrix) after whitening during independent component analysis.
+Retrieves the expression values for each cell (as a matrix) after whitening 
+during dimensionality reduction.
 }
 \examples{
 \dontrun{
