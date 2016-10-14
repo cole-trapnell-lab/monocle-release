@@ -20,8 +20,10 @@
 \author{Cole Trapnell\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 \texttt{coletrap@uw.edu} \and
 Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
-\texttt{davide@broadinstitute.org}}
-
+\texttt{davide@broadinstitute.org}\and
+Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
+\texttt{xqiu@uw.edu}
+}
 \begin{document}
 
 <<package_loads, include=FALSE, eval=TRUE>>=
