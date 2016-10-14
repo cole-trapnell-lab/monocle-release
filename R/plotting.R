@@ -925,7 +925,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     cores=1){
   
   pseudocount <- NA
-  newdata <- data.frame(Pseudotime = seq(0, max(pData(cds_subset)$Pseudotime),length.out = 100)) 
+  newdata <- data.frame(Pseudotime = seq(min(pData(cds_subset)$Pseudotime), max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
                        relative_expr = T, new_data = newdata)
