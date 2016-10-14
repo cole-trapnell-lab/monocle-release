@@ -22,10 +22,11 @@
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
-                                          branch_states = NULL, 
-                                          branch_point = 1,
-                                          branch_labels = NULL, 
-                                          stretch = TRUE)
+                                   progenitor_method = c('sequential_split', 'duplicate'), 
+                                   branch_states = NULL, 
+                                   branch_point = 1,
+                                   branch_labels = NULL, 
+                                   stretch = TRUE)
 {
   # TODO: check that branches are on the same paths
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
@@ -196,48 +197,83 @@ buildBranchCellDataSet <- function(cds,
   
   pData[common_ancestor_cells, "Branch"] <- names(paths_to_root)[1] #set progenitors to the branch 1
   
-
-  # progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
-  
-  # branchA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
-  # pData[progenitor_ind[branchA], 'State'] <- branch_states[1]
-  # branchB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
-  # pData[progenitor_ind[branchB], 'State'] <- branch_states[2]    
-  
   progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
   
-  pData$Branch <- names(paths_to_root)[1]
-  
-  branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchA], 'Branch'] <- names(paths_to_root)[1]
-  branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchB], 'Branch'] <- names(paths_to_root)[2]   
-  
-  # Duplicate the root cell to make sure both regression start at pseudotime zero:
-  zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
-  exprs_data <- cBind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
-  pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
-  row.names(pData)[nrow(pData)] <- 'duplicate_root'
-  pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
-  
-  weight_vec <- rep(1, nrow(pData))
-  
-  for (i in 1:length(paths_to_root)){
-    path_to_ancestor <- paths_to_root[[i]]
-    branch_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
-    pData[branch_cells,]$Branch <- names(paths_to_root)[i]
+  if (progenitor_method == 'duplicate') {
+    ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
+    expr_blocks <- list()
+    
+    # Duplicate the expression data
+    for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
+      if (nrow(ancestor_exprs) == 1)
+        exprs_data <- t(as.matrix(ancestor_exprs))
+      else exprs_data <- ancestor_exprs
+      
+      colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
+      exprs_data <- cbind(exprs_data, expr_lineage_data)
+      expr_blocks[[i]] <- exprs_data
+    }
+    
+    # Make a bunch of copies of the pData entries from the common ancestors
+    ancestor_pData_block <- pData[common_ancestor_cells,]
+    
+    pData_blocks <- list()
+    
+    weight_vec <- c()
+    for (i in 1:length(paths_to_root)) {
+      weight_vec <- c(weight_vec, rep(1, length(common_ancestor_cells)))
+      weight_vec_block <- rep(1, length(common_ancestor_cells))
+      
+      #pData <- rbind(pData, pData[common_ancestor_cells, ])
+      new_pData_block <- ancestor_pData_block
+      # new_pData_block$Lineage <- lineage_states[i]
+      # new_pData_block$State <- lineage_states[i]
+      
+      row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      
+      pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
+      # pData_lineage_cells$Lineage <- lineage_states[i]
+      # pData_lineage_cells$State <- lineage_states[i]
+      
+      weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
+      
+      weight_vec <- c(weight_vec, weight_vec_block)
+      
+      new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
+      new_pData_block$Branch <- names(paths_to_root)[i]
+      pData_blocks[[i]] <- new_pData_block
+    }
+    pData <- do.call(rbind, pData_blocks)
+    exprs_data <- do.call(cbind, expr_blocks)
   }
-  
-  # if (!is.null(branch_labels))
-  #   pData$Branch <- as.factor(branch_map[as.character(pData$State)])
-  # else
-  #   pData$Branch <- as.factor(pData$State)
+  else if(progenitor_method == 'sequential_split') {
+    pData$Branch <- names(paths_to_root)[1]
+    
+    branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[branchA], 'Branch'] <- names(paths_to_root)[1]
+    branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[branchB], 'Branch'] <- names(paths_to_root)[2]   
+    
+    # Duplicate the root cell to make sure both regression start at pseudotime zero:
+    zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
+    exprs_data <- cBind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
+    pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
+    row.names(pData)[nrow(pData)] <- 'duplicate_root'
+    pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
+    
+    weight_vec <- rep(1, nrow(pData))
+    
+    for (i in 1:length(paths_to_root)){
+      path_to_ancestor <- paths_to_root[[i]]
+      branch_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
+      pData[branch_cells,]$Branch <- names(paths_to_root)[i]
+    }
+  }
   
   pData$Branch <- as.factor(pData$Branch)
   
-  pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
-                        levels =levels(cds$State))
-  pData$weight <- weight_vec
+  pData$State <- factor(pData$State)
   Size_Factor <- pData$Size_Factor
   
   fData <- fData(cds)
