@@ -3,7 +3,6 @@
 \name{plot_spanning_tree}
 \alias{plot_spanning_tree}
 \title{Plots the minimum spanning tree on cells.
-
 This function is deprecated.}
 \usage{
 plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",
@@ -40,6 +39,10 @@ plot_spanning_tree(cds, x = 1, y = 2, color_by = "State",
 }
 \value{
 a ggplot2 plot object
+}
+\description{
+This function arranges all of the cells in the cds in a tree and
+predicts their location based on their pseudotime value
 }
 \examples{
 \dontrun{

@@ -6,6 +6,9 @@
 \usage{
 load_HSMM_markers()
 }
+\value{
+A CellDataSet object
+}
 \description{
 Return a CellDataSet of classic muscle genes
 }

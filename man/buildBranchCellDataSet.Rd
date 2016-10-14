@@ -19,8 +19,7 @@ when \code{\link{reduceDimension}()} is called with \code{reduction_method
 
 \item{branch_labels}{The names for each branching branch}
 
-\item{stretch}{A logical flag to determine whether or not the pseudotime
-trajectory for each branch should be stretched to the same range or not}
+\item{stretch}{A logical flag to determine whether or not the pseudotime trajectory for each branch should be stretched to the same range or not}
 }
 \value{
 a CellDataSet with the duplicated cells and stretched branches

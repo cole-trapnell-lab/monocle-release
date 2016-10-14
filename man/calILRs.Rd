@@ -53,7 +53,7 @@ a ggplot2 plot object
 This function is used to calculate the Instant Log Ratio between two branches which can be used to prepare the heatmap demonstrating the branch gene expression divergence hirearchy. If "stretch" is specifified, each  
 branch will be firstly stretched into maturation level from 0-100. Since the results when we use "stretching" are always better and 
 IRLs for non-stretched spline curves are often mismatched, we may only turn down "non-stretch" functionality in future versions. Then, we fit two separate nature spline curves for each 
-individual linages. The log-ratios of the value on each spline curve corresponding to each branchs are calculated, which can be  
+individual linages. The log-ratios of the value on each spline curve corresponding to each branch are calculated, which can be  
 used as a measure for the magnitude of divergence between two branching branchs.
 }
 

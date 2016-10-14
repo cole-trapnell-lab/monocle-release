@@ -18,6 +18,12 @@ want to exclude when testing for cell type dependent expression}
 
 \item{balanced}{Whether to downsample the cells so that there's an equal number of each type prior to performing the test}
 
+\item{reclassify_cells}{a boolean that indicates whether or not the cds and cth should be run through classifyCells again}
+
+\item{remove_ambig}{a boolean that indicates whether or not ambiguous cells should be removed the cds}
+
+\item{remove_unknown}{a boolean that indicates whether or not unknown cells should be removed from the cds}
+
 \item{verbose}{Whether to emit verbose output during the the search for cell-type dependent genes}
 
 \item{cores}{The number of cores to use when testing}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods-CellDataSet.R
 \name{reducedDimA}
 \alias{reducedDimA}
-\title{Retrieves the weights that transform the cells' coordinates in the reduced dimension space back to the full (whitened) space.}
+\title{Get the weights needed to lift cells back to high dimensional expression space.}
 \usage{
 reducedDimA(cds)
 }
@@ -14,7 +14,8 @@ A matrix that when multiplied by a reduced-dimension set of coordinates for the 
 recovers a matrix in the full (whitened) space
 }
 \description{
-Retrieves the weights that transform the cells' coordinates in the reduced dimension space back to the full (whitened) space.
+Retrieves the weights that transform the cells' coordinates in the reduced 
+dimension space back to the full (whitened) space.
 }
 \examples{
 \dontrun{

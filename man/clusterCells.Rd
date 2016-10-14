@@ -13,9 +13,13 @@ clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
 
 \item{num_clusters}{number of desired cell clusters}
 
+\item{cell_type_hierarchy}{the CellTypeHierarchy that divides the cells from cds into different types of cells}
+
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
-\item{max_components}{number of dimensions to project the data into via \code{\link{reduceDimensions}()}}
+\item{clustering_genes}{a vector of genes used to differentiate between the cell types in the CellTypeHierarchy}
+
+\item{max_components}{number of dimensions to project the data into via \code{\link{reduceDimension}()}}
 
 \item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
 

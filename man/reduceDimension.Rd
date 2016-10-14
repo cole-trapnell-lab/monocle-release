@@ -6,8 +6,8 @@
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
   "ICA"), norm_method = c("vstExprs", "log", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = NULL, verbose = FALSE,
-  ...)
+  residualModelFormulaStr = NULL, pseudo_expr = NULL,
+  relative_expr = TRUE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

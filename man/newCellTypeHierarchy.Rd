@@ -35,9 +35,9 @@ provide its name here}
 
 \item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
 
-\item{cds}{The CellDataSet containing the genes you want to calculate specificity for}
+\item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
-\item{cth}{The CellTypeHierarchy defining the cell types}
+\item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 

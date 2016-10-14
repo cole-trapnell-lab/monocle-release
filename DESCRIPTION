@@ -2,7 +2,7 @@ Package: monocle
 Type: Package
 Title: Clustering, differential expression, and trajectory analysis for single-
     cell RNA-Seq
-Version: 2.1.0
+Version: 2.1.1
 Date: 2016-06-06
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
@@ -16,14 +16,15 @@ Description: Monocle performs differential expression and time-series analysis
 License: Artistic-2.0
 Depends:
     R (>= 2.10.0),
+    methods,
     Matrix (>= 1.2-6),
     Biobase,
-    ggplot2(>= 1.0.0),
+    ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
-    DDRTree,
+    DDRTree (>= 0.1.4)
 Imports:
     parallel,
-    igraph(>= 1.0.0),
+    igraph (>= 1.0.1),
     BiocGenerics,
     HSMMSingleCell (>= 0.101.5),
     plyr,
@@ -31,17 +32,20 @@ Imports:
     combinat,
     fastICA,
     grid,
-    irlba,
+    irlba (>= 2.0.0),
     matrixStats,
+    MASS,
     reshape2,
     limma,
     dplyr,
+    qlcMatrix,
     pheatmap,
     stringr,
     proxy,
-    slam, 
     Rtsne,
-    densityClust
+    densityClust,
+    slam,
+    stats
 VignetteBuilder: knitr
 Suggests:
     knitr,

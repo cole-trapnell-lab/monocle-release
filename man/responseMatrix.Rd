@@ -5,7 +5,7 @@
 \title{Response values}
 \usage{
 responseMatrix(models, newdata = NULL, response_type = "response",
-  cores = detectCores())
+  cores = 1)
 }
 \arguments{
 \item{models}{a list of models, e.g. as returned by fitModels()}
