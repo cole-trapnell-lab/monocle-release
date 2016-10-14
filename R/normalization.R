@@ -131,7 +131,8 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))))) #avoid multiple output
 }
 
-#a function to calibrate the total: 
+#' Calibrate_per_cell_total_proposal 
+#' @importFrom stats ecdf
 calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
 
