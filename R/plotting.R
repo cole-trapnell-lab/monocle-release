@@ -620,7 +620,7 @@ plot_clusters<-function(cds,
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
   facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
-  
+
   m.melt <- melt(m, id.vars = c("ids", "cluster"))
   
   m.melt <- merge(m.melt, pData(cds), by.x="variable", by.y="row.names")

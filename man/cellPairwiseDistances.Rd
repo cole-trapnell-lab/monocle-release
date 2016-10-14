@@ -3,7 +3,7 @@
 \docType{methods}
 \name{cellPairwiseDistances}
 \alias{cellPairwiseDistances}
-\title{Retrieves a matrix capturing distances between each cell in the reduced-dimensionality space}
+\title{Get the matrix of pairwise distances between cells}
 \usage{
 cellPairwiseDistances(cds)
 }
@@ -14,7 +14,7 @@ cellPairwiseDistances(cds)
 A square, symmetric matrix containing the distances between each cell in the reduced-dimensionality space.
 }
 \description{
-Retrieves a matrix capturing distances between each cell in the reduced-dimensionality space
+Retrieves a matrix capturing distances between each cell used during cell ordering.
 }
 \examples{
 \dontrun{

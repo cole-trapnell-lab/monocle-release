@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods-CellDataSet.R
 \name{reducedDimA<-}
 \alias{reducedDimA<-}
-\title{Sets the weights transform the cells' coordinates in the reduced dimension space back to the full (whitened) space.}
+\title{Get the weights needed to lift cells back to high dimensional expression space.}
 \usage{
 reducedDimA(cds) <- value
 }
@@ -15,7 +15,8 @@ reducedDimA(cds) <- value
 An updated CellDataSet object
 }
 \description{
-Sets the weights transform the cells' coordinates in the reduced dimension space back to the full (whitened) space.
+Sets the weights transform the cells' coordinates in the reduced dimension 
+space back to the full (whitened) space.
 }
 \examples{
 \dontrun{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods-CellDataSet.R
 \name{reducedDimS<-}
 \alias{reducedDimS<-}
-\title{Sets the coordinates of each cell in the reduced-dimensionality space.  Not intended to be called directly.}
+\title{Set embedding coordinates of each cell in a CellDataSet.}
 \usage{
 reducedDimS(cds) <- value
 }
@@ -15,7 +15,8 @@ reducedDimS(cds) <- value
 An update CellDataSet object
 }
 \description{
-Sets the coordinates of each cell in the reduced-dimensionality space.  Not intended to be called directly.
+This function sets the coordinates of each cell in a new
+(reduced-dimensionality) space. Not intended to be called directly.
 }
 \examples{
 \dontrun{

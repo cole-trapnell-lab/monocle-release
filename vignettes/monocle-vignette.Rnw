@@ -37,7 +37,7 @@ set.seed(0)
 \maketitle
 
 \begin{abstract}
-Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package \Rpackage{monocle} provides tools for analyzing single-cell expression experiments. Monocle introduced the concept of \emph{pseudotime}, ordering cells along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of \Rpackage{monocle}, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Trapnell and Cacchiarelli \emph{et al}\cite{TRAPNELL_CACCHIARELLI}
+Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package \Rpackage{monocle} provides tools for analyzing single-cell expression experiments. Monocle introduced the strategy of ordering single cells in \emph{pseudotime}, placing them along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of \Rpackage{monocle}, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Trapnell and Cacchiarelli \emph{et al}\cite{TRAPNELL_CACCHIARELLI}
 \end{abstract}
 
 \tableofcontents
@@ -50,8 +50,8 @@ data(HSMM_gene_annotation)
 data(HSMM_sample_sheet)
 @ %def 
 
- \section{Introduction}
- 
+\section{Introduction}
+
  The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. 
  
  \textbf{Monocle 2} includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
@@ -346,7 +346,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                 cth, 
                                 residualModelFormulaStr="~Media",
-                                cores=detectCores())
+                                cores=1)
  @ %def
  The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
  
@@ -564,7 +564,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
  <<semi_sup_ordering_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
  marker_diff <- markerDiffTable(HSMM_myo[expressed_genes,], 
                                 cth, 
-                                cores=detectCores())
+                                cores=1)
  semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
  length(semisup_clustering_genes)
  @ %def
@@ -791,7 +791,7 @@ Here we can see that State 1 is the proliferative state on the basis high expres
  BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
  
  <<lung_beam_test, include=TRUE, eval=TRUE, warning=FALSE>>=
- BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
+ BEAM_res <- BEAM(lung, branch_point=1, cores = 1)
  BEAM_res <- BEAM_res[order(BEAM_res$qval),]
  BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
  @ %def 
