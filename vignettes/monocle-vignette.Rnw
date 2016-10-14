@@ -41,6 +41,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 \end{abstract}
 
 \tableofcontents
+
 <<init_monocle, include=FALSE, eval=TRUE>>=
 library(HSMMSingleCell)
 library(monocle)
@@ -50,7 +51,7 @@ data(HSMM_sample_sheet)
 @ %def 
 
 \section{Introduction}
- 
+
  The \Rpackage{monocle} package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings. 
  
  \textbf{Monocle 2} includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
