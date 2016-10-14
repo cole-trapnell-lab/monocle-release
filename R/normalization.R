@@ -132,6 +132,9 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 }
 
 #' Calibrate_per_cell_total_proposal 
+#' @param relative_exprs_matrix The matrix of relative TPM expression values
+#' @param t_estimate the TPM value that corresponds to 1 cDNA copy per cell
+#' @param expected_capture_rate The fraction of mRNAs captured as cDNAs
 #' @importFrom stats ecdf
 calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
