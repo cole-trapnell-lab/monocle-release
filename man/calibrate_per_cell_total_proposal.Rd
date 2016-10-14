@@ -7,6 +7,13 @@
 calibrate_per_cell_total_proposal(relative_exprs_matrix, t_estimate,
   expected_capture_rate)
 }
+\arguments{
+\item{relative_exprs_matrix}{The matrix of relative TPM expression values}
+
+\item{t_estimate}{the TPM value that corresponds to 1 cDNA copy per cell}
+
+\item{expected_capture_rate}{The fraction of mRNAs captured as cDNAs}
+}
 \description{
 Calibrate_per_cell_total_proposal
 }

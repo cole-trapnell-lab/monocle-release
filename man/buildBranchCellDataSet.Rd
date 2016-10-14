@@ -11,6 +11,8 @@ buildBranchCellDataSet(cds, progenitor_method = c("sequential_split",
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
+\item{progenitor_method}{The method to use for dealing with the cells prior to the branch}
+
 \item{branch_states}{The states for two branching branches}
 
 \item{branch_point}{The ID of the branch point to analyze. Can only be used

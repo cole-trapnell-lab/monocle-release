@@ -9,6 +9,7 @@
 #' table in the returned CellDataSet.
 #' 
 #' @param cds CellDataSet for the experiment
+#' @param progenitor_method The method to use for dealing with the cells prior to the branch
 #' @param branch_point The ID of the branch point to analyze. Can only be used
 #'   when \code{\link{reduceDimension}()} is called with \code{reduction_method
 #'   = "DDRTree"}.

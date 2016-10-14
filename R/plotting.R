@@ -1102,10 +1102,11 @@ plot_genes_branched_pseudotime <- function (cds,
   }
   if("Branch" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Branch is in the model formula we will duplicate the "progenitor" cells
     cds_subset <- buildBranchCellDataSet(cds = cds, 
-                                         progenitor_method = 'duplicate',
                                          branch_states = branch_states, 
                                          branch_point=branch_point,
-                                         branch_labels = branch_labels, ...)
+                                         branch_labels = branch_labels, 
+                                         progenitor_method = 'duplicate',
+                                         ...)
   }
   else {
     cds_subset <- cds
@@ -1437,6 +1438,7 @@ blue2green2red <- matlab.like2
 #' @param trend_formula A formula string specifying the model used in fitting the spline curve for each gene/feature.
 #' @param return_heatmap Whether to return the pheatmap object to the user. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
+#' @param ... Additional arguments passed to buildBranchCellDataSet
 #' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' @import pheatmap
@@ -1448,19 +1450,15 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         branch_point=1,
                                         branch_states=NULL,
                                         branch_labels = c("Cell fate 1", "Cell fate 2"), 
-                                        
                                         cluster_rows = TRUE,
                                         hclust_method = "ward.D2", 
                                         num_clusters = 6,
-                                        
                                         hmcols = NULL, 
                                         branch_colors = c('#979797', '#F05662', '#7990C8'), 
-                                        
                                         add_annotation_row = NULL,
                                         add_annotation_col = NULL,
                                         show_rownames = FALSE, 
                                         use_gene_short_name = TRUE,
-                                        
                                         scale_max=3, 
                                         scale_min=-3, 
                                         norm_method = c("vstExprs", "log"), 
@@ -1472,9 +1470,10 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   cds <- NA
   new_cds <- buildBranchCellDataSet(cds_subset, 
-                                    progenitor_method = 'duplicate',
                                     branch_states=branch_states, 
-                                    branch_point=branch_point, ...)
+                                    branch_point=branch_point, 
+                                    progenitor_method = 'duplicate',
+                                    ...)
   
   new_cds@dispFitInfo <- cds_subset@dispFitInfo
   

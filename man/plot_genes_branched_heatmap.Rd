@@ -52,6 +52,8 @@ plot_genes_branched_heatmap(cds_subset, branch_point = 1,
 \item{return_heatmap}{Whether to return the pheatmap object to the user.}
 
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
+
+\item{...}{Additional arguments passed to buildBranchCellDataSet}
 }
 \value{
 A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
