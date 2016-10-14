@@ -1040,6 +1040,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
 }
 
+
 #' Plot the branch genes in pseduotime with separate branch curves.
 #' 
 #' This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
@@ -1091,157 +1092,159 @@ plot_genes_branched_pseudotime <- function (cds,
 {
   Branch <- NA  
   if (is.null(reducedModelFormulaStr) == FALSE) {
-        pval_df <- branchTest(cds, 
-                              branch_states=branch_states,
-                              branch_point=branch_point,
-                              fullModelFormulaStr = trend_formula,
-                              reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)", 
-                              ...)
-        fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
+    pval_df <- branchTest(cds, 
+                          branch_states=branch_states,
+                          branch_point=branch_point,
+                          fullModelFormulaStr = trend_formula,
+                          reducedModelFormulaStr = "~ sm.ns(Pseudotime, df=3)", 
+                          ...)
+    fData(cds)[, "pval"] <- pval_df[row.names(cds), 'pval']
+  }
+  if("Branch" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Branch is in the model formula we will duplicate the "progenitor" cells
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                         branch_states = branch_states, 
+                                         branch_point=branch_point,
+                                         branch_labels = branch_labels, 
+                                         progenitor_method = 'duplicate',
+                                         ...)
+  }
+  else {
+    cds_subset <- cds
+    pData(cds_subset)$Branch <- pData(cds_subset)$State
+  }
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+    integer_expression <- TRUE
+  }
+  else {
+    integer_expression <- FALSE
+  }
+  if (integer_expression) {
+    CM <- exprs(cds_subset)
+    if (relative_expr){
+      if (is.null(sizeFactors(cds_subset))) {
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+      }
+      CM <- Matrix::t(Matrix::t(CM)/sizeFactors(cds_subset))
     }
-    if("Branch" %in% all.vars(terms(as.formula(trend_formula)))) { #only when Branch is in the model formula we will duplicate the "progenitor" cells
-        cds_subset <- buildBranchCellDataSet(cds = cds, 
-                                                    branch_states = branch_states, 
-                                                    branch_point=branch_point,
-                                                    branch_labels = branch_labels)
-    }
-    else {
-        cds_subset <- cds
-        pData(cds_subset)$Branch <- pData(cds_subset)$State
-    }
-    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
-        integer_expression <- TRUE
-    }
-    else {
-        integer_expression <- FALSE
-    }
-    if (integer_expression) {
-        CM <- exprs(cds_subset)
-        if (relative_expr){
-          if (is.null(sizeFactors(cds_subset))) {
-            stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
-          }
-          CM <- Matrix::t(Matrix::t(CM)/sizeFactors(cds_subset))
-        }
-        cds_exprs <- reshape2::melt(round(as.matrix(CM)))
-    }
-    else {
-        cds_exprs <- reshape2::melt(exprs(cds_subset))
-    }
-    if (is.null(min_expr)) {
-        min_expr <- cds_subset@lowerDetectionLimit
-    }
-    colnames(cds_exprs) <- c("f_id", "Cell", "expression")
-    cds_pData <- pData(cds_subset)
-
-    cds_fData <- fData(cds_subset)
-    cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
-    cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
-    if (integer_expression) {
-        cds_exprs$adjusted_expression <- round(cds_exprs$expression)
-    }
-    else {
-        cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
-    }
-    if (label_by_short_name == TRUE) {
-        if (is.null(cds_exprs$gene_short_name) == FALSE) {
-            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
-            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
-        }
-        else {
-            cds_exprs$feature_label <- cds_exprs$f_id
-        }
+    cds_exprs <- reshape2::melt(round(as.matrix(CM)))
+  }
+  else {
+    cds_exprs <- reshape2::melt(exprs(cds_subset))
+  }
+  if (is.null(min_expr)) {
+    min_expr <- cds_subset@lowerDetectionLimit
+  }
+  colnames(cds_exprs) <- c("f_id", "Cell", "expression")
+  cds_pData <- pData(cds_subset)
+  
+  cds_fData <- fData(cds_subset)
+  cds_exprs <- merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
+  cds_exprs <- merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+  if (integer_expression) {
+    cds_exprs$adjusted_expression <- round(cds_exprs$expression)
+  }
+  else {
+    cds_exprs$adjusted_expression <- log10(cds_exprs$expression)
+  }
+  if (label_by_short_name == TRUE) {
+    if (is.null(cds_exprs$gene_short_name) == FALSE) {
+      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
     }
     else {
-        cds_exprs$feature_label <- cds_exprs$f_id
+      cds_exprs$feature_label <- cds_exprs$f_id
     }
-    cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
-    # trend_formula <- paste("adjusted_expression", trend_formula,
-    #     sep = "")
-    cds_exprs$Branch <- as.factor(cds_exprs$Branch) 
-
-    new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Branch = pData(cds_subset)$Branch)
- 
-    full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, 
-                        relative_expr = T, new_data = new_data)
-    colnames(full_model_expectation) <- colnames(cds_subset)
-    
-    cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
-    if(!is.null(reducedModelFormulaStr)){
-        reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
-                            relative_expr = T, new_data = new_data)
-        colnames(reduced_model_expectation) <- colnames(cds_subset)
-        cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
-    }
-
-    # FIXME: If you want to show the bifurcation time for each gene, this function
-    # should just compute it. Passing it in as a dataframe is just too complicated
-    # and will be hard on the user. 
-    # if(!is.null(bifurcation_time)){
-    #     cds_exprs$bifurcation_time <- bifurcation_time[as.vector(cds_exprs$gene_short_name)]
-    # }
-    if (method == "loess")
-        cds_exprs$expression <- cds_exprs$expression + cds@lowerDetectionLimit
-    if (label_by_short_name == TRUE) {
-        if (is.null(cds_exprs$gene_short_name) == FALSE) {
-            cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
-            cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
-        }
-        else {
-            cds_exprs$feature_label <- cds_exprs$f_id
-        }
+  }
+  else {
+    cds_exprs$feature_label <- cds_exprs$f_id
+  }
+  cds_exprs$feature_label <- as.factor(cds_exprs$feature_label)
+  # trend_formula <- paste("adjusted_expression", trend_formula,
+  #     sep = "")
+  cds_exprs$Branch <- as.factor(cds_exprs$Branch) 
+  
+  new_data <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, Branch = pData(cds_subset)$Branch)
+  
+  full_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = trend_formula, 
+                                            relative_expr = T, new_data = new_data)
+  colnames(full_model_expectation) <- colnames(cds_subset)
+  
+  cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
+  if(!is.null(reducedModelFormulaStr)){
+    reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
+                                                 relative_expr = T, new_data = new_data)
+    colnames(reduced_model_expectation) <- colnames(cds_subset)
+    cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
+  }
+  
+  # FIXME: If you want to show the bifurcation time for each gene, this function
+  # should just compute it. Passing it in as a dataframe is just too complicated
+  # and will be hard on the user. 
+  # if(!is.null(bifurcation_time)){
+  #     cds_exprs$bifurcation_time <- bifurcation_time[as.vector(cds_exprs$gene_short_name)]
+  # }
+  if (method == "loess")
+    cds_exprs$expression <- cds_exprs$expression + cds@lowerDetectionLimit
+  if (label_by_short_name == TRUE) {
+    if (is.null(cds_exprs$gene_short_name) == FALSE) {
+      cds_exprs$feature_label <- as.character(cds_exprs$gene_short_name)
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)] <- cds_exprs$f_id
     }
     else {
-        cds_exprs$feature_label <- cds_exprs$f_id
+      cds_exprs$feature_label <- cds_exprs$f_id
     }
-    cds_exprs$feature_label <- factor(cds_exprs$feature_label)
-    if (is.null(panel_order) == FALSE) {
-        cds_exprs$feature_label <- factor(cds_exprs$feature_label,
-            levels = panel_order)
-    }
-    cds_exprs$expression[is.na(cds_exprs$expression)] <- min_expr
-    cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
-    cds_exprs$full_model_expectation[is.na(cds_exprs$full_model_expectation)] <- min_expr
-    cds_exprs$full_model_expectation[cds_exprs$full_model_expectation < min_expr] <- min_expr
-    
-    if(!is.null(reducedModelFormulaStr)){
-        cds_exprs$reduced_model_expectation[is.na(cds_exprs$reduced_model_expectation)] <- min_expr
-        cds_exprs$reduced_model_expectation[cds_exprs$reduced_model_expectation < min_expr] <- min_expr
-    }
-
-    cds_exprs$State <- as.factor(cds_exprs$State)
-    cds_exprs$Branch <- as.factor(cds_exprs$Branch)
-
-    q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
-    # if (!is.null(bifurcation_time)) {
-    #   q <- q + geom_vline(aes(xintercept = bifurcation_time),
-    #                       color = "black", linetype = "longdash")
-    # }
-    if (is.null(color_by) == FALSE) {
-        q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
-    }
-    if (is.null(reducedModelFormulaStr) == FALSE)
-        q <- q + scale_y_log10() + facet_wrap(~feature_label +
-            pval, nrow = nrow, ncol = ncol, scales = "free_y")
-    else q <- q + scale_y_log10() + facet_wrap(~feature_label,
-        nrow = nrow, ncol = ncol, scales = "free_y")
-    if (method == "loess")
-        q <- q + stat_smooth(aes(fill = Branch, color = Branch),
-            method = "loess")
-    else if (method == "fitting") {
-        q <- q + geom_line(aes_string(x = "Pseudotime", y = "full_model_expectation",
-            linetype = "Branch"), data = cds_exprs) #+ scale_color_manual(name = "Type", values = c(colour_cell, colour), labels = c("Pre-branch", "AT1", "AT2", "AT1", "AT2")
-    }
-
-    if(!is.null(reducedModelFormulaStr)) {
-        q <- q + geom_line(aes_string(x = "Pseudotime", y = "reduced_model_expectation"),
-            color = 'black', linetype = 2, data =  cds_exprs)   
-    }
-
-    q <- q + ylab("Expression") + xlab("Pseudotime (stretched)")
-
-    q <- q + monocle_theme_opts()
-    q + expand_limits(y = min_expr)
+  }
+  else {
+    cds_exprs$feature_label <- cds_exprs$f_id
+  }
+  cds_exprs$feature_label <- factor(cds_exprs$feature_label)
+  if (is.null(panel_order) == FALSE) {
+    cds_exprs$feature_label <- factor(cds_exprs$feature_label,
+                                      levels = panel_order)
+  }
+  cds_exprs$expression[is.na(cds_exprs$expression)] <- min_expr
+  cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
+  cds_exprs$full_model_expectation[is.na(cds_exprs$full_model_expectation)] <- min_expr
+  cds_exprs$full_model_expectation[cds_exprs$full_model_expectation < min_expr] <- min_expr
+  
+  if(!is.null(reducedModelFormulaStr)){
+    cds_exprs$reduced_model_expectation[is.na(cds_exprs$reduced_model_expectation)] <- min_expr
+    cds_exprs$reduced_model_expectation[cds_exprs$reduced_model_expectation < min_expr] <- min_expr
+  }
+  
+  cds_exprs$State <- as.factor(cds_exprs$State)
+  cds_exprs$Branch <- as.factor(cds_exprs$Branch)
+  
+  q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
+  # if (!is.null(bifurcation_time)) {
+  #   q <- q + geom_vline(aes(xintercept = bifurcation_time),
+  #                       color = "black", linetype = "longdash")
+  # }
+  if (is.null(color_by) == FALSE) {
+    q <- q + geom_point(aes_string(color = color_by), size = I(cell_size))
+  }
+  if (is.null(reducedModelFormulaStr) == FALSE)
+    q <- q + scale_y_log10() + facet_wrap(~feature_label +
+                                            pval, nrow = nrow, ncol = ncol, scales = "free_y")
+  else q <- q + scale_y_log10() + facet_wrap(~feature_label,
+                                             nrow = nrow, ncol = ncol, scales = "free_y")
+  if (method == "loess")
+    q <- q + stat_smooth(aes(fill = Branch, color = Branch),
+                         method = "loess")
+  else if (method == "fitting") {
+    q <- q + geom_line(aes_string(x = "Pseudotime", y = "full_model_expectation",
+                                  linetype = "Branch"), data = cds_exprs) #+ scale_color_manual(name = "Type", values = c(colour_cell, colour), labels = c("Pre-branch", "AT1", "AT2", "AT1", "AT2")
+  }
+  
+  if(!is.null(reducedModelFormulaStr)) {
+    q <- q + geom_line(aes_string(x = "Pseudotime", y = "reduced_model_expectation"),
+                       color = 'black', linetype = 2, data =  cds_exprs)   
+  }
+  
+  q <- q + ylab("Expression") + xlab("Pseudotime (stretched)")
+  
+  q <- q + monocle_theme_opts()
+  q + expand_limits(y = min_expr)
 }
 
 #' Not sure we're ready to release this one quite yet:
@@ -1435,6 +1438,7 @@ blue2green2red <- matlab.like2
 #' @param trend_formula A formula string specifying the model used in fitting the spline curve for each gene/feature.
 #' @param return_heatmap Whether to return the pheatmap object to the user. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
+#' @param ... Additional arguments passed to buildBranchCellDataSet
 #' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
 #' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
 #' @import pheatmap
@@ -1446,19 +1450,15 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         branch_point=1,
                                         branch_states=NULL,
                                         branch_labels = c("Cell fate 1", "Cell fate 2"), 
-                                        
                                         cluster_rows = TRUE,
                                         hclust_method = "ward.D2", 
                                         num_clusters = 6,
-                                        
                                         hmcols = NULL, 
                                         branch_colors = c('#979797', '#F05662', '#7990C8'), 
-                                        
                                         add_annotation_row = NULL,
                                         add_annotation_col = NULL,
                                         show_rownames = FALSE, 
                                         use_gene_short_name = TRUE,
-                                        
                                         scale_max=3, 
                                         scale_min=-3, 
                                         norm_method = c("vstExprs", "log"), 
@@ -1466,12 +1466,14 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
                                         return_heatmap=FALSE,
-                                        cores = 1) {
+                                        cores = 1, ...) {
   
   cds <- NA
   new_cds <- buildBranchCellDataSet(cds_subset, 
                                     branch_states=branch_states, 
-                                    branch_point=branch_point)
+                                    branch_point=branch_point, 
+                                    progenitor_method = 'duplicate',
+                                    ...)
   
   new_cds@dispFitInfo <- cds_subset@dispFitInfo
   
