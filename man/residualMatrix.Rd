@@ -4,7 +4,7 @@
 \alias{residualMatrix}
 \title{Response values}
 \usage{
-residualMatrix(models, residual_type = "response", cores = detectCores())
+residualMatrix(models, residual_type = "response", cores = 1)
 }
 \arguments{
 \item{models}{a list of models, e.g. as returned by fitModels()}

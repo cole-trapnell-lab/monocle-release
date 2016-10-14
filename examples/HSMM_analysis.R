@@ -14,7 +14,6 @@ expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
 # Test the above genes for differential expression in response from switch from GM to DM
 # Note: this step can take several hours on a single core, so you might want to parallelize it
 # with the 'cores' argument 
-
 diff_test_res <- differentialGeneTest(HSMM[expressed_genes,], fullModelFormulaStr="~Media", cores=24)
 
 # Use the differentially expressed genes as the basis for ordering the cells

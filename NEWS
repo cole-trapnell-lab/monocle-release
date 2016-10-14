@@ -68,13 +68,6 @@ CHANGES in monocle 1.1.5:
 CHANGES in monocle 1.1.1:
 
 * Fixed a bug in responseMatrix() that occurs when you don't have any genes that fail VGAM fitting
-
-CHANGES in monocle 0.99.6:
-
-* plot_genes_jitter, plot_genes_in_pseudotime, and plot_genes_positive_cells now accept a new parameter, labe_by_short_name, to help control faceting 
-
-* orderCells() now accepts the name of the root cell, so you can fix the beginning of the pseudotime trajectory
-
 * CellDataSet objects accept an argument for the VGAM family to be used for the distribution of expression values (e.g. negbinomial())
 
 * Dimensionality reduction, plotting, model fitting, and differential analyis routines now recognize CellDataSet expression families and alter their behavior when expression is count based.  Allows analysis of absolute, as opposed to relative, single cell expression data. 

@@ -6,7 +6,7 @@
 \usage{
 detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
   detect_all = T, cds = cds, Branch = "Branch", branch_point = NULL,
-  branch_states = c(2, 3), stretch = T, cores = detectCores(),
+  branch_states = c(2, 3), stretch = T, cores = 1,
   trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
   relative_expr = TRUE, label_by_short_name = TRUE, useVST = FALSE,
   round_exprs = FALSE, output_type = "all", return_cross_point = T,
