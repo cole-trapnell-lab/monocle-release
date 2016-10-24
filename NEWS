@@ -59,6 +59,7 @@ Version 1.99.0
     new features and changes, please see: 
     http://cole-trapnell-lab.github.io/monocle-release/features/
 
+
 CHANGES in monocle 1.1.5:
 
 * After grappling with Bioconductor build issues in HSMMSingleCell related to

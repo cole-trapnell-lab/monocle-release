@@ -39,6 +39,6 @@ setClass( "CellDataSet",
                     dim_reduce_type="character",
                     auxOrderingData = "environment"),
           prototype = prototype( new( "VersionedBiobase",
-                    versions = c( classVersion("ExpressionSet"), CellDataSet = "1.2.0" ) ))
+                                      versions = c( classVersion("ExpressionSet"), CellDataSet = "1.2.0" ) ))
 )
 

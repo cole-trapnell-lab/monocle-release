@@ -13,8 +13,13 @@ RnwWeave: knitr
 LaTeX: pdfLaTeX
 
 BuildType: Package
+<<<<<<< HEAD
 PackageUseDevtools: Yes
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageBuildArgs: --no-build-vignettes
 PackageCheckArgs: --no-build-vignettes --install-args="--library=$HOME/tmp"
+=======
+PackageInstallArgs: --no-multiarch --with-keep.source
+PackageCheckArgs: --no-build-vignettes
+>>>>>>> monocle2
 PackageRoxygenize: rd
