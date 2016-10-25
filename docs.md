@@ -22,7 +22,7 @@ tags: [monocle, manual, vignette]
 </style>
 
 
-Here, you'll find a detailed user guide and an API reference manual for Monocle. 
+Here, you'll find a detailed user guide and an API reference manual for Monocle. The links here point to the latest release available through either Bioconductor or GitHub, whichever is more recent. Bioconductor releases happen every six months, so sometimes it takes a little while for the official Bioconductor release to catch up with whats in GitHub. Older versions can be found below.
 
 <h1 style="text-align:center">Documentation for Monocle 2</h1>
 
@@ -31,7 +31,8 @@ Here, you'll find a detailed user guide and an API reference manual for Monocle.
         <div markdown="0"><a href="http://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf" class="btn">Manual (PDF)</a></div>
     </div>
     <div id="right_col" align="center">
-        <div markdown="0"><a href="{{site.url}}/downloads/monocle-vignette.pdf" class="btn">Vignette (PDF)</a></div>
+        <!-- <div markdown="0"><a href="{{site.url}}/downloads/monocle-vignette.pdf" class="btn">Vignette (PDF)</a></div> -->
+        <div markdown="0"><a href="http://www.bioconductor.org/packages/release/bioc/vignettes/monocle/inst/doc/monocle-vignette.pdf" class="btn">Vignette (PDF)</a></div>
     </div>
 </div>
 
@@ -46,11 +47,16 @@ Here, you'll find a detailed user guide and an API reference manual for Monocle.
   
 <p>   
 
-<h3 style="text-align:center">Documentation for older versions</h1>
+<h3 style="text-align:center">Documentation for older versions</h3>
 <ul class="post-list">
-  <li><article>Version 1.3.0 
-  <a href="http://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf">Manual</a> 
-  <a href="http://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf">Vignette </a>
+  <li><article>Version 1.4.0 (in BioC 3.2)
+  <a href="http://www.bioconductor.org/packages/3.2/bioc/manuals/monocle/man/monocle.pdf">Manual</a> 
+  <a href="http://www.bioconductor.org/packages/3.2/bioc/vignettes/monocle/inst/doc/monocle-vignette.pdf">Vignette </a>
+  </article>
+  </li>
+    <li><article>Version 1.0.0 (in BioC 3.2)
+  <a href="http://www.bioconductor.org/packages/3.0/bioc/manuals/monocle/man/monocle.pdf">Manual</a> 
+  <a href="http://www.bioconductor.org/packages/3.0/bioc/vignettes/monocle/inst/doc/monocle-vignette.pdf">Vignette </a>
   </article>
   </li>
 </ul>
