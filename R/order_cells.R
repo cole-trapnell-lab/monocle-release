@@ -1128,6 +1128,10 @@ orderCells <- function(cds,
     minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree 
     
     root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
+    if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
+      cells_mapped_to_graph_root <- root_cell_idx
+    }
+
     cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
     cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
     
