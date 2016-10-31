@@ -5,9 +5,9 @@
 \title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA"), norm_method = c("vstExprs", "log", "none"),
+  "ICA", "tSNE"), norm_method = c("vstExprs", "log", "none"),
   residualModelFormulaStr = NULL, pseudo_expr = NULL,
-  relative_expr = TRUE, verbose = FALSE, ...)
+  relative_expr = TRUE, auto_param_selection = TRUE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

@@ -5,7 +5,8 @@
 \title{Cluster cells into a specified number of groups.}
 \usage{
 clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
-  frequency_thresh = 0.1, clustering_genes = NULL, max_components = 10,
+  frequency_thresh = NULL, enrichment_thresh = NULL,
+  clustering_genes = NULL, max_components = 10,
   residualModelFormulaStr = NULL, param.gamma = 100, verbose = F, ...)
 }
 \arguments{

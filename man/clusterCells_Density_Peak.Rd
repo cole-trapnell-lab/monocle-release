@@ -4,27 +4,36 @@
 \alias{clusterCells_Density_Peak}
 \title{Cluster cells into a specified number of groups based on .}
 \usage{
-clusterCells_Density_Peak(cds, variance_explained = 0.8,
-  inspect_rho_sigma = F, num_clusters = NULL, cell_type_hierarchy = NULL,
-  frequency_thresh = 0.1, clustering_genes = NULL, max_components = 2,
-  residualModelFormulaStr = NULL, param.gamma = 100, verbose = F, ...)
+clusterCells_Density_Peak(cds, skip_rho_sigma = F, number_clusters = NULL,
+  inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
+  peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
+  frequency_thresh = NULL, enrichment_thresh = NULL,
+  clustering_genes = NULL, verbose = F, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
-\item{variance_explained}{Variance explained by the PCA components, used to select the component numbers for tSNE}
+\item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
+
+\item{number_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters}
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
 
+\item{rho_threshold}{The threshold of local density (rho) used to select the density peaks}
+
+\item{delta_threshold}{The threshold of local distance (delta) used to select the density peaks}
+
+\item{peaks}{A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.
+will automatically calculated based on the top num_cluster product of rho and sigma.}
+
+\item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
+
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
-
-\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
-
-\item{param.gamma}{gamma parameter for DDRTree}
 
 \item{verbose}{Verbose parameter for DDRTree}
 
-\item{...}{Additional arguments passed to \code{\link{reduceDimension}()}}
+\item{...}{Additional arguments passed to \code{\link{densityClust}()}}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell

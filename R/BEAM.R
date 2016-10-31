@@ -368,6 +368,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
+#' @export 
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
                     branch_point = 1,
@@ -517,6 +518,7 @@ calABCs <- function(cds,
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @importFrom reshape2 melt
+#' @export 
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
           branch_point = 1,
@@ -677,6 +679,7 @@ calILRs <- function (cds,
 #' @import methods
 #' @importFrom reshape2 melt
 #' @importFrom parallel detectCores
+#' @export 
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,
