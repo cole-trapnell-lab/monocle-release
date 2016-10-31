@@ -887,7 +887,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 #' @import methods
 #' @importFrom Biobase fData
 #' @export
-GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length = round(ncol(cds) / 10), cores = 1, verbose = F, ...) {
+GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length = round(ncol(cds) / 25), cores = 1, verbose = F, ...) {
   if(is.null(cth)) {
     if(verbose)
       message('Running graph based test ...')
@@ -949,10 +949,11 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
       bp_tip_adj_mat[major_bp, direct_major_bp] <- 1
 
       #regular BEAM on the major branch points: 
+      branchpoint <- which(cds@auxOrderingData[['DDRTree']]$branch_points %in% major_bp)
       regular_major_BEAM_res[[major_bp_ind]] <- BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
                                                     reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
                                                     branch_states = NULL,
-                                                    branch_point=major_bp_ind,
+                                                    branch_point=branchpoint,
                                                     cores = cores, ...)
     }
 
@@ -962,14 +963,15 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
     major_bp_tip_graph <- graph_from_adjacency_matrix(bp_tip_adj_mat, mode = 'undirected', diag = F)
 
     #retrieve only the connected graph 
-    major_bp_tip_graph <- decompose.graph(major_bp_tip_graph)[[1]] 
+    graph_decompose <- decompose.graph(major_bp_tip_graph)
+    conn_comp_id <- which(unlist(lapply(graph_decompose, function(x) length(V(x)$name))) > 1)
+    major_bp_tip_graph <- graph_decompose[[conn_comp_id]]
     plot(major_bp_tip_graph)
 
     #perform branch test / two graph test on the branchpoint: 
     graph_res <-  matrix(list(), nrow = length(V(major_bp_tip_graph)), ncol = length(V(major_bp_tip_graph)), dimnames = list(V(major_bp_tip_graph)$name, V(major_bp_tip_graph)$name)) #data.frame of data.frame
 
     #BEAM only on the neighbor trunk segment to the next major branch point
-    #pseduotime test on the transition path between major branch points
     for(i in V(major_bp_tip_graph)$name) {
       print(i)
       out_nodes <- neighborhood(major_bp_tip_graph, nodes = i, order = 1)[[1]]$name
@@ -986,18 +988,19 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
         
         cds_subset <- SubSet_cds(cds, cells)
         
+        print(cds_subset)
         #perform BEAM on the subset cds: 
-        for(i in major_bps){
-          #find the branch point 
-          bp_ind <- which(cds_subset@auxOrderingData[['DDRTree']]$branch_points %in% out_nodes)
-          BEAM_test_res <- BEAM(cds_subset, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch", 
-                                reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
-                                branch_states = NULL,
-                                branch_point = bp_ind, 
-                                cores = cores, ...)
-          graph_res[[i, i]] <- BEAM_test_res   
-        }
+        bp_ind <- which(cds_subset@auxOrderingData[['DDRTree']]$branch_points %in% out_nodes)
+        #find the branch point 
+        bp_cell <- cds_subset@auxOrderingData[['DDRTree']]$branch_points[[bp_ind]]
+        BEAM_test_res <- BEAM(cds_subset, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch", 
+                              reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
+                              branch_states = NULL,
+                              branch_point = bp_ind, 
+                              cores = cores, ...)
+        graph_res[[bp_cell, bp_cell]] <- BEAM_test_res   
       }
+      #pseduotime test on the transition path between major branch points
       else {
         cells <- shortest_paths(mst, i, out_nodes[2])$vpath[[1]]$name
         cds_subset <- cds[, cells]
@@ -1098,8 +1101,8 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
         #branch test:     
         nb_ct_tmp <- neighborhood(g, nodes = i, order = 1, mode = 'out')[[1]]$name
         nb_ct <- nb_ct_tmp[-1]
-        if(all(nb_ct %in% pData(cds)$Cell_Type)){
-          branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$Cell_Type %in% nb_ct], fullModelFormulaStr = "~CellType", reducedModelFormulaStr = "~1", cores =cores)
+        if(all(nb_ct %in% pData(cds)$CellType)){
+          branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$CellType %in% nb_ct], fullModelFormulaStr = "~CellType", reducedModelFormulaStr = "~1", cores =cores)
         }
         else branchpoint_test_res <- data.frame()
         graph_res[[i, i]] <- branchpoint_test_res
@@ -1109,7 +1112,7 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
           nb_ct <- shortest_paths(g, i, out_nodes_names)$vpath[[1]]$name
           
           if(length(nb_ct) > 2) {
-            branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$Cell_Type %in% nb_ct], fullModelFormulaStr = "~Cell_Type", reducedModelFormulaStr = "~1",, cores =cores)
+            branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$CellType %in% nb_ct], fullModelFormulaStr = "~CellType", reducedModelFormulaStr = "~1", cores =cores)
             graph_res[[i, out_nodes_names]] <- branchpoint_test_res   
             # top_gene_lists[[list_ind]] <- row.names(branchpoint_test_res[order(branchpoint_test_res$qval), ])[1:(4 * top_num)]; list_ind <- list_ind + 1
           }
@@ -1123,7 +1126,6 @@ GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length
     #   top_gene_vec <-  c(top_gene_vec, setdiff(top_gene_lists[[i]], unlist(top_gene_lists[-i]))[1:top_num])
     # }
     # 
-    list(graph_res = graph_res, major_bp_tip_graph = major_bp_tip_graph, regular_major_BEAM_res = regular_major_BEAM_res)
     res <- list(GraphTest_g = graph_test_g, GraphTest_res = graph_res, RegularTest_res = regular_group_res)
   }
   #return the results as a graph: 

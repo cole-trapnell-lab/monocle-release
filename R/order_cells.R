@@ -1321,6 +1321,7 @@ reduceDimension <- function(cds,
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             relative_expr=TRUE,
+                            auto_param_selection = TRUE,
                             verbose=FALSE,
                             ...){
  
@@ -1399,8 +1400,13 @@ reduceDimension <- function(cds,
         message("Learning principal graph with DDRTree")
 
       # TODO: DDRTree should really work with sparse matrices.
-      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
-                             ...)
+      if(auto_param_selection){
+        ncenter <- cal_ncenter(ncol(FM))
+        #add other parameters...
+        ddrtree_res <- DDRTree(FM, max_components, ncenter = ncenter, verbose = verbose)
+      } else{
+        ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, ...)
+      }
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       else
@@ -1690,4 +1696,13 @@ reverseEnbedingCDS <- function(cds) {
   exprs(cds_subset) <- reverse_embedding_data
   
   return(cds_subset)
+}
+
+#' Function to decide a good number of centers for running DDRTree on big datasets 
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
+#' @export
+cal_ncenter <- function(ncells, ncells_limit = 100){
+  round(2 * ncells_limit * log(ncol(ncells))/ (log(ncol(ncells)) + log(ncells_limit)))
 }
