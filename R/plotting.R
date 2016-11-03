@@ -1862,10 +1862,6 @@ plot_ordering_genes <- function(cds){
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param show_density_peak A logic flag to determine whether or not the density peak in the plot should be plotted
-#' @param show_density A logic flag to determine whether or not the density of the samples in the plot is plot
-#' @param rho_threshold The threshold of rho used to determine the density peaks plotted
-#' @param delta_threshold The threshold for delta to determine used to determine the density peaks plotted
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
@@ -1885,14 +1881,15 @@ plot_cell_clusters <- function(cds,
                                x=1, 
                                y=2, 
                                color_by="Cluster", 
-                               show_density_peak=TRUE, 
-                               show_density=FALSE, 
-                               rho_threshold=NULL,
-                               delta_threshold=NULL, 
+                               # show_tree=TRUE, 
+                               # show_backbone=TRUE, 
+                               # backbone_color="black", 
                                markers=NULL, 
                                show_cell_names=FALSE, 
                                cell_size=1.5,
+                               # cell_link_size=0.75,
                                cell_name_size=2, ...
+                               # show_branch_points=TRUE
 ){
   if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
@@ -1930,11 +1927,6 @@ plot_cell_clusters <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   
-  if (show_density){
-    g <- g + stat_density2d(geom="raster", aes(fill = ..density..), contour = FALSE) + 
-      scale_fill_gradient(low="white", high="red") 
-  }
-
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
@@ -1943,25 +1935,6 @@ plot_cell_clusters <- function(cds,
     g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
   }
   
-  if (show_density_peak && cds@dim_reduce_type == 'tSNE'){
-    if(is.null(rho_threshold) & is.null(delta_threshold)){
-      density_peak_df <- subset(data_df, peaks == TRUE)[,c("sample_name", "data_dim_1", "data_dim_2")]
-    }
-    else if (!is.null(rho_threshold) & !is.null(delta_threshold)){
-      density_peak_df <- subset(data_df, rho >= rho_threshold & delta >= delta_threshold)[,c("sample_name", "data_dim_1", "data_dim_2")]
-    }
-    else{
-      stop('If you want to plot the density peaks based on parmaters rho and delta, please set the threshold for both of them')
-    }
-    density_peak_df$density_peak_idx <- match(density_peak_df$sample_name, colnames(cds))
-    density_peak_df <- density_peak_df[!duplicated(density_peak_df$density_peak_idx), ]
-    
-    g <- g + geom_point(aes_string(x="data_dim_1", y="data_dim_2"), 
-                        size=5, na.rm=TRUE, data=density_peak_df) +
-      geom_text(aes_string(x="data_dim_1", y="data_dim_2", label="density_peak_idx"), 
-                size=4, color="white", na.rm=TRUE, data=density_peak_df)
-  }
-
   g <- g + 
     #scale_color_brewer(palette="Set1") +
     monocle_theme_opts() + 
@@ -1973,122 +1946,3 @@ plot_cell_clusters <- function(cds,
     theme(panel.background = element_rect(fill='white'))
   g
 }
-
-#' Plots the decision map of density clusters .
-#'
-#' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
-#' @param rho_threshold The threshold of local density (rho) used to select the density peaks for plotting 
-#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting 
-#' @export
-#' @examples
-#' \dontrun{
-#' data(HSMM)
-#' plot_rho_delta(HSMM)
-#' }
-
-plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
-    if(!is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
-    & !is.null(pData(cds)$Cluster)
-    & !is.null(pData(cds)$peaks)
-    & !is.null(pData(cds)$halo)
-    & !is.null(pData(cds)$delta)
-    & !is.null(pData(cds)$rho)) {
-
-    # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
-    #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
-    if(!is.null(rho_threshold) & !is.null(delta_threshold)){
-      peaks <- pData(cds)$rho >= rho_threshold & pData(cds)$delta >= delta_threshold
-    }
-    else
-      peaks <- pData(cds)$peaks
-
-    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta, peaks = peaks)
-
-    g <- qplot(rho, delta, data = df, alpha = I(0.5), color = peaks) +  monocle_theme_opts() + 
-      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
-      scale_color_manual(values=c("grey","black")) + 
-      theme(legend.key = element_blank()) +
-      theme(panel.background = element_rect(fill='white'))
-  }
-  else {
-    stop('Please run clusterCells_Density_Peak before using this plotting function')
-  }
-  g
-}
-
-#' Plots the percentage of variance explained by the each component based on PCA from the normalized expression
-#' data using the same procedure used in reduceDimension function.
-#'
-#' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
-#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
-#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
-#' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param return_all A logical argument to determine whether or not the variance of each component is returned
-#' @param verbose Whether to emit verbose output during dimensionality reduction
-#' @export
-#' @examples
-#' \dontrun{
-#' data(HSMM)
-#' plot_pc_variance_explained(HSMM)
-#' }
-plot_pc_variance_explained <- function(cds, 
-                            # max_components=2, 
-                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                            norm_method = c("vstExprs", "log", "none"), 
-                            residualModelFormulaStr=NULL,
-                            pseudo_expr=NULL, 
-                            return_all = F, 
-                            verbose=FALSE,
-                            ...){
-  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
-    prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
-  }
-  else{
-    extra_arguments <- list(...)
-    FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
-    
-    #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
-    xm <- Matrix::rowMeans(FM)
-    xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
-    FM <- FM[xsd > 0,]
-    
-    if (is.null(residualModelFormulaStr) == FALSE) {
-      if (verbose) 
-        message("Removing batch effects")
-      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
-                                         data = pData(cds), drop.unused.levels = TRUE)
-
-      fit <- limma::lmFit(FM, X.model_mat, ...)
-      beta <- fit$coefficients[, -1, drop = FALSE]
-      beta[is.na(beta)] <- 0
-      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-    }else{
-      X.model_mat <- NULL
-    }
-    
-    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-    
-    if (nrow(FM) == 0) {
-      stop("Error: all rows have standard deviation zero")
-    }
-
-    # FM <- convert2DRData(cds, norm_method = 'log') 
-    FM <- FM[!is.na(row.names(FM)), ]
-    pca_res <- prcomp(t(FM), center = T, scale = T)
-    std_dev <- pca_res$sdev 
-    pr_var <- std_dev^2
-    prop_varex <- pr_var/sum(pr_var)
-  }
-  
-  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
-      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
-      theme(panel.background = element_rect(fill='white')) + xlab('components') + 
-      ylab('variance explained by each component')
-  # return(prop_varex = prop_varex, p = p)
-  if(return_all) {
-    return(list(variance_explained = prop_varex, p = p))
-  }
-  else
-    return(p)  
-}
-

@@ -1250,7 +1250,7 @@ normalize_expr_data <- function(cds,
       stop("Error: the only normalization method supported with gaussian data is 'none'")
     }
   }
-  if(norm_method != "none")
+  # if(norm_method != "none")
     #normalize_expr_data
   return (FM)
 }
@@ -1323,6 +1323,7 @@ reduceDimension <- function(cds,
                             relative_expr=TRUE,
                             auto_param_selection = TRUE,
                             verbose=FALSE,
+                            scaling = TRUE,
                             ...){
   extra_arguments <- list(...)
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
@@ -1346,9 +1347,11 @@ reduceDimension <- function(cds,
     X.model_mat <- NULL
   }
   
-  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-  FM <- FM[!is.na(row.names(FM)), ]
-  
+  if(scaling){
+    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+    FM <- FM[!is.na(row.names(FM)), ]
+  } else FM <- as.matrix(FM)
+
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
