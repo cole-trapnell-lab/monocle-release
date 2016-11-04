@@ -1393,6 +1393,7 @@ reduceDimension <- function(cds,
       if (verbose) 
           message("Reduce dimension by tSNE ...")
 
+      set.seed(2016) #ensure Rtsne return the same results everytime
       tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
       
       tsne_data <- tsne_res$Y[, 1:max_components]
