@@ -52,7 +52,8 @@ plot_cell_trajectory <- function(cds,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
-                               show_branch_points=TRUE){
+                               show_branch_points=TRUE, 
+                               theta = 0){
   gene_short_name <- NA
   sample_name <- NA
   data_dim_1 <- NA
@@ -103,6 +104,23 @@ plot_cell_trajectory <- function(cds,
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  
+  return_rotation_mat <- function(theta) {
+    theta <- theta / 180 * pi
+    matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
+  }
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(data_df[, c(2, 3)]))
+  data_df$data_dim_1 <- tmp[1, ]
+  data_df$data_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta = theta) %*% t(as.matrix(edge_df[, c('source_prin_graph_dim_1', 'source_prin_graph_dim_2')]))
+  edge_df$source_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$source_prin_graph_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(edge_df[, c('target_prin_graph_dim_1', 'target_prin_graph_dim_2')]))
+  edge_df$target_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$target_prin_graph_dim_2 <- tmp[2, ]
   
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
@@ -1946,3 +1964,122 @@ plot_cell_clusters <- function(cds,
     theme(panel.background = element_rect(fill='white'))
   g
 }
+
+#' Plots the decision map of density clusters .
+#'
+#' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
+#' @param rho_threshold The threshold of local density (rho) used to select the density peaks for plotting 
+#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting 
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_rho_delta(HSMM)
+#' }
+
+plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
+    if(!is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
+    & !is.null(pData(cds)$Cluster)
+    & !is.null(pData(cds)$peaks)
+    & !is.null(pData(cds)$halo)
+    & !is.null(pData(cds)$delta)
+    & !is.null(pData(cds)$rho)) {
+
+    # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
+    #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
+    if(!is.null(rho_threshold) & !is.null(delta_threshold)){
+      peaks <- pData(cds)$rho >= rho_threshold & pData(cds)$delta >= delta_threshold
+    }
+    else
+      peaks <- pData(cds)$peaks
+
+    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta, peaks = peaks)
+
+    g <- qplot(rho, delta, data = df, alpha = I(0.5), color = peaks) +  monocle_theme_opts() + 
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      scale_color_manual(values=c("grey","black")) + 
+      theme(legend.key = element_blank()) +
+      theme(panel.background = element_rect(fill='white'))
+  }
+  else {
+    stop('Please run clusterCells_Density_Peak before using this plotting function')
+  }
+  g
+}
+
+#' Plots the percentage of variance explained by the each component based on PCA from the normalized expression
+#' data using the same procedure used in reduceDimension function.
+#'
+#' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
+#' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param return_all A logical argument to determine whether or not the variance of each component is returned
+#' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_pc_variance_explained(HSMM)
+#' }
+plot_pc_variance_explained <- function(cds, 
+                            # max_components=2, 
+                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                            norm_method = c("vstExprs", "log", "none"), 
+                            residualModelFormulaStr=NULL,
+                            pseudo_expr=NULL, 
+                            return_all = F, 
+                            verbose=FALSE,
+                            ...){
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+    prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
+  }
+  else{
+    extra_arguments <- list(...)
+    FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+    
+    #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+    xm <- Matrix::rowMeans(FM)
+    xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+    FM <- FM[xsd > 0,]
+    
+    if (is.null(residualModelFormulaStr) == FALSE) {
+      if (verbose) 
+        message("Removing batch effects")
+      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                         data = pData(cds), drop.unused.levels = TRUE)
+
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    }else{
+      X.model_mat <- NULL
+    }
+    
+    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+    
+    if (nrow(FM) == 0) {
+      stop("Error: all rows have standard deviation zero")
+    }
+
+    # FM <- convert2DRData(cds, norm_method = 'log') 
+    FM <- FM[!is.na(row.names(FM)), ]
+    pca_res <- prcomp(t(FM), center = T, scale = T)
+    std_dev <- pca_res$sdev 
+    pr_var <- std_dev^2
+    prop_varex <- pr_var/sum(pr_var)
+  }
+  
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      theme(panel.background = element_rect(fill='white')) + xlab('components') + 
+      ylab('variance explained by each component')
+  # return(prop_varex = prop_varex, p = p)
+  if(return_all) {
+    return(list(variance_explained = prop_varex, p = p))
+  }
+  else
+    return(p)  
+}
+
