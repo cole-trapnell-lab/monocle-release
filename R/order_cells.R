@@ -1090,7 +1090,7 @@ orderCells <- function(cds,
     dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- dp_mst
     # Build the PQ tree
-    next_node <- 0
+    next_node <<- 0
     res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
 
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
