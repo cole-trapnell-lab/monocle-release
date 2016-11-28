@@ -503,6 +503,14 @@ calILRs <- function (cds,
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
+  else{
+    trajectory_states_tmp <- trajectory_states
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), State == trajectory_states_tmp[1])), 'Branch'])
+    trajectory_states[1] <- names(which.max(branch_stats))
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), State == trajectory_states_tmp[2])), 'Branch'])
+    trajectory_states[2] <- names(which.max(branch_stats))
+  }
+      
   cds_branchA <- cds_subset[, pData(cds_subset)[, "Branch"] ==
                               trajectory_states[1]]
   cds_branchB <- cds_subset[, pData(cds_subset)[, "Branch"] ==
