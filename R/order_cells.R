@@ -1575,3 +1575,12 @@ project_point_to_line_segment <- function(p, df){
   }
   return(q)
 }
+
+#' Function to decide a good number of centers for running DDRTree on big datasets 
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
+#' @export
+cal_ncenter <- function(ncells, ncells_limit = 100){
+  round(2 * ncells_limit * log(ncells)/ (log(ncells) + log(ncells_limit)))
+}
