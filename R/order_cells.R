@@ -1247,13 +1247,16 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            reduction_method=c("DDRTree", "ICA"),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE'),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
+                            relative_expr=TRUE,
+                            auto_param_selection = TRUE,
                             verbose=FALSE,
+                            scaling = TRUE,
                             ...){
- 
+  extra_arguments <- list(...)
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
   
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
@@ -1275,8 +1278,11 @@ reduceDimension <- function(cds,
     X.model_mat <- NULL
   }
   
-  FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-  
+  if(scaling){
+    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+    FM <- FM[!is.na(row.names(FM)), ]
+  } else FM <- as.matrix(FM)
+
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
@@ -1297,7 +1303,60 @@ reduceDimension <- function(cds,
   }
   else{
     reduction_method <- match.arg(reduction_method)
-    if (reduction_method == "ICA") {
+    if (reduction_method == "tSNE") {
+    #first perform PCA 
+    if (verbose) 
+        message("Remove noise by PCA ...")
+
+      pca_res <- prcomp(t(FM), center = T, scale = T)
+      std_dev <- pca_res$sdev 
+      pr_var <- std_dev^2
+      prop_varex <- pr_var/sum(pr_var)
+
+      if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- extra_arguments$num_dim #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
+      topDim_pca <- pca_res$x[, 1:num_dim]
+      
+      # #perform the model formula transformation right before tSNE: 
+      # if (is.null(residualModelFormulaStr) == FALSE) {
+      #   if (verbose) 
+      #     message("Removing batch effects")
+      #   X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+      #                                      data = pData(cds), drop.unused.levels = TRUE)
+        
+      #   fit <- limma::lmFit(topDim_pca, X.model_mat, ...)
+      #   beta <- fit$coefficients[, -1, drop = FALSE]
+      #   beta[is.na(beta)] <- 0
+      #   topDim_pca <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+      # }else{
+      #   X.model_mat <- NULL
+      # }
+
+      #then run tSNE 
+      if (verbose) 
+          message("Reduce dimension by tSNE ...")
+
+      set.seed(2016) #ensure Rtsne return the same results everytime
+      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
+      
+      tsne_data <- tsne_res$Y[, 1:max_components]
+      row.names(tsne_data) <- colnames(tsne_data)
+
+      reducedDimA(cds) <- t(tsne_data) #this may move to the auxClusteringData environment
+
+      #set the important information from densityClust to certain part of the cds object: 
+      cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
+      cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data) 
+      cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex 
+
+      cds@dim_reduce_type <- "tSNE"
+    }
+
+    else if (reduction_method == "ICA") {
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
@@ -1329,16 +1388,24 @@ reduceDimension <- function(cds,
         message("Learning principal graph with DDRTree")
 
       # TODO: DDRTree should really work with sparse matrices.
-      ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, 
-                             ...)
+      if(auto_param_selection){
+        ncenter <- cal_ncenter(ncol(FM))
+        #add other parameters...
+        ddrtree_res <- DDRTree(FM, max_components, ncenter = ncenter, verbose = verbose)
+      } else{
+        ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, ...)
+      }
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       else
         colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       
       colnames(ddrtree_res$Z) <- colnames(FM)
+      reducedDimW(cds) <- ddrtree_res$W       
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- ddrtree_res$objective_vals
+
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
       cellPairwiseDistances(cds) <- dp
