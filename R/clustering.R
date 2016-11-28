@@ -56,7 +56,8 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 clusterCells <- function(cds, 
                          num_clusters, 
                          cell_type_hierarchy=NULL,
-                         frequency_thresh=0.10,
+                         frequency_thresh=NULL,
+                         enrichment_thresh=NULL,
                          clustering_genes=NULL,
                          max_components=10, 
                          residualModelFormulaStr=NULL,
@@ -90,7 +91,7 @@ clusterCells <- function(cds,
     cds <- setOrderingFilter(cds, old_ordering_genes)
   
   if (is.null(cell_type_hierarchy) == FALSE)
-    cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, "Cluster")
+    cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
   
   return(cds)
 }

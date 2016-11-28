@@ -74,7 +74,7 @@ scale_pseudotime <- function(cds, verbose = F) {
     
     pd[row.names(pd_subset), 'ori_pseudotime'] <- pd[row.names(pd_subset), 'Pseudotime']
     pd[row.names(pd_subset), 'Pseudotime'] <- pseudotime_scaled
-  }	
+  } 
   scale_pseudotime <- (pd_subset$Pseudotime - subset_min_pseudo) * scaling_factor + scale_pseudotime_ini
   message(i, '\t', range(scale_pseudotime)[1],'\t', range(scale_pseudotime)[2])
   pd[row.names(pd_subset), 'scale_pseudotime'] <- scale_pseudotime
@@ -179,9 +179,9 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
       #print (V(nb))
       for (n_i in V(nb))
       {
-        n <- V(nb)[n_i]$name			
+        n <- V(nb)[n_i]$name      
         if (n %in% V(mst_no_backbone)$name)
-        {	
+        { 
           #print (n)
           
           sc <- subcomponent(mst_no_backbone, n)
@@ -191,7 +191,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
           
           if (ecount(sg) > 0)
           {
-            #print (E(sg))	
+            #print (E(sg))  
             sub_pq <- pq_helper(sg, use_weights)
             
             
@@ -205,7 +205,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
             for (i in 1:nrow(edge_list))
             {
               new_subtree <- new_subtree + edge(V(sub_pq$subtree)[edge_list[i, 1]]$name, V(sub_pq$subtree)[edge_list[i, 2]]$name)
-            }   					
+            }             
             #plot (new_subtree)
             
             new_subtree <- new_subtree + edge(new_p_id, V(sub_pq$subtree)[sub_pq$root]$name)  
@@ -656,7 +656,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
       for (i in 1:nrow(edge_list))
       {
         cell_ordering_tree <- cell_ordering_tree + edge(V(cell_ordering_tree)[edge_list[i, 1]]$name, V(cell_ordering_tree)[edge_list[i, 2]]$name)
-      }   					
+      }             
       
       if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
       {
@@ -711,7 +711,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     ordering_tree_res$subtree <- cell_tree
     children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
     
-    for (child in children)	{
+    for (child in children) {
       next_node <- V(cell_tree)[child]$name
       delta_pseudotime <- dist_matrix[curr_cell, next_node]
       ordering_tree_res <- assign_pseudotime_helper(ordering_tree_res, dist_matrix, last_pseudotime + delta_pseudotime, next_node)
@@ -1072,6 +1072,7 @@ orderCells <- function(cds,
     if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
       cells_mapped_to_graph_root <- root_cell_idx
     }
+
     cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
     
     tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
@@ -1110,7 +1111,8 @@ orderCells <- function(cds,
 # reduction
 normalize_expr_data <- function(cds, 
                                 norm_method = c("vstExprs", "log", "none"), 
-                                pseudo_expr = NULL){
+                                pseudo_expr = NULL,
+                                relative_expr = TRUE){
   FM <- exprs(cds)
   use_for_ordering <- NULL
   # If the user has selected a subset of genes for use in ordering the cells
@@ -1135,6 +1137,9 @@ normalize_expr_data <- function(cds,
     checkSizeFactors(cds)
     
     if (norm_method == "vstExprs") {
+      if (relative_expr == FALSE)
+        message("Warning: relative_expr is ignored when using norm_method == 'vstExprs'")
+      
       if (is.null(fData(cds)$use_for_ordering) == FALSE && 
           nrow(subset(fData(cds), use_for_ordering == TRUE)) > 0) {
         VST_FM <- vstExprs(cds[fData(cds)$use_for_ordering,], round_vals = FALSE)
@@ -1150,7 +1155,9 @@ normalize_expr_data <- function(cds,
       }
     }else if (norm_method == "log") {
       # If we are using log, normalize by size factor before log-transforming
-      FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+      if (relative_expr)
+        FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
+        
       FM <- FM + pseudo_expr
       FM <- log2(FM)
     }else if (norm_method == "none"){
@@ -1183,6 +1190,8 @@ normalize_expr_data <- function(cds,
       stop("Error: the only normalization method supported with gaussian data is 'none'")
     }
   }
+  # if(norm_method != "none")
+    #normalize_expr_data
   return (FM)
 }
 
@@ -1574,6 +1583,116 @@ project_point_to_line_segment <- function(p, df){
     }
   }
   return(q)
+}
+
+#' traverse from one cell to another cell 
+#'
+#' @param g the tree graph learned from monocle 2 during trajectory reconstruction 
+#' @param starting_cell the initial vertex for traversing on the graph 
+#' @param end_cells the terminal vertex for traversing on the graph 
+#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+#' @import igraph
+#' @export
+
+traverseTree <- function(g, starting_cell, end_cells){ 
+  distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
+  branchPoints <- which(degree(g) == 3)
+  path <- shortest_paths(g, from = initial_vertex, terminal_vertex)
+  
+  return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
+}
+
+#' Make a cds by traversing from one cell to another cell 
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @param starting_cell the initial vertex for traversing on the graph 
+#' @param end_cells the terminal vertex for traversing on the graph 
+#' @return a new cds containing only the cells traversed from the intial cell to the end cell 
+#' @import igraph
+#' @export
+traverseTreeCDS <- function(cds, starting_cell, end_cells){
+  subset_cell <- c()
+  dp_mst <- cds@minSpanningTree
+  
+  for(end_cell in end_cells) {
+    traverse_res <- traverseTree(g, starting_cell, end_cell)
+    path_cells <- names(traverse_res$shortest_path[[1]])
+    
+    subset_cell <- c(subset_cell, path_cells)
+  }
+  
+  subset_cell <- unique(subset_cell)
+  cds_subset <- SubSet_cds(cds, subset_cell)
+  
+  root_state <- pData(cds_subset[, starting_cell])[, 'State']
+  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
+  
+  return(cds_subset)
+}
+
+#' Subset a cds which only includes cells provided with the argument cells 
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @param cells a vector contains all the cells you want to subset 
+#' @return a new cds containing only the cells from the cells argument
+#' @import igraph
+#' @export
+SubSet_cds <- function(cds, cells){
+  cells <- unique(cells)
+  if(ncol(reducedDimK(cds)) != ncol(cds))
+    stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
+    
+  exprs_mat <- as(as.matrix(cds[, cells]), "sparseMatrix")
+  cds_subset <- newCellDataSet(exprs_mat, 
+                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]), 
+                                 featureData = new("AnnotatedDataFrame", data = fData(cds)), 
+                                 expressionFamily=negbinomial.size(), 
+                                 lowerDetectionLimit=1)
+  sizeFactors(cds_subset) <- sizeFactors(cds[, cells])
+  cds_subset@dispFitInfo <- cds@dispFitInfo
+
+  cds_subset@reducedDimW <- cds@reducedDimW   
+  cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+  cds_subset@reducedDimK <- cds@reducedDimK[, cells]
+  
+  cds_subset@cellPairwiseDistances <- cds@cellPairwiseDistances[cells, cells]
+  
+  adjusted_K <- Matrix::t(reducedDimK(cds_subset))
+  dp <- as.matrix(dist(adjusted_K))
+  cellPairwiseDistances(cds_subset) <- dp
+  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+  dp_mst <- minimum.spanning.tree(gp)
+  minSpanningTree(cds_subset) <- dp_mst
+  cds_subset@dim_reduce_type <- "DDRTree"
+  cds_subset <- findNearestPointOnMST(cds_subset)
+  
+  cds_subset <- orderCells(cds_subset)
+} 
+
+#' Reverse enbedding latent graph coordinates back to the high dimension  
+#'
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
+#' @export
+reverseEnbedingCDS <- function(cds) {
+  if(nrow(cds@reducedDimW) < 1)
+    stop('You need to first apply reduceDimension function on your cds before the reverse embedding')
+  
+  FM <- normalize_expr_data(cds, norm_method = 'log')
+
+  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+  xm <- Matrix::rowMeans(FM)
+  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  FM <- FM[xsd > 0,]
+  
+  reverse_embedding_data <- reducedDimW(cds) %*% reducedDimK(cds)
+  row.names(reverse_embedding_data) <- row.names(FM)
+
+  cds_subset <- cds[row.names(FM), ]
+  
+  exprs(cds_subset) <- reverse_embedding_data
+  
+  return(cds_subset)
 }
 
 #' Function to decide a good number of centers for running DDRTree on big datasets 

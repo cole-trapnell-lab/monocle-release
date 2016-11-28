@@ -12,7 +12,8 @@ newCellTypeHierarchy()
 addCellType(cth, cell_type_name, classify_func,
   parent_cell_type_name = "root")
 
-classifyCells(cds, cth, frequency_thresh = NULL, ...)
+classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL,
+  ...)
 
 calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)

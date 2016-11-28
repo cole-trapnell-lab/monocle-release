@@ -369,9 +369,11 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
+#' @export 
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-                    trajectory_states = c(2, 3),
+                    branch_point = 1,
+                    trajectory_states = NULL,
                     relative_expr = TRUE, 
                     stretch = TRUE, 
                     cores = 1, 
@@ -382,20 +384,26 @@ calABCs <- function(cds,
                     branch_labels = NULL,
                     ...){
   ABC_method = "integral"
-  if (length(trajectory_states) != 2)
-    stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  if(!is.null(trajectory_states)){
+    if (length(trajectory_states) != 2)
+      stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  }
   
-  
-    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states, progenitor_method = 'duplicated', 
-                                                branch_labels = branch_labels, stretch = stretch)
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                progenitor_method = 'duplicate',
+                                                branch_point = branch_point, 
+                                                branch_states = trajectory_states,
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
  
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two branches")
-  if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
-    stop("state(s) in trajectory_states are not included in 'Branch'")
-  
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two branches")
+  # if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
+  #   stop("state(s) in trajectory_states are not included in 'Branch'")
+  # 
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
@@ -511,9 +519,11 @@ calABCs <- function(cds,
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @importFrom reshape2 melt
+#' @export 
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-          trajectory_states = c(2, 3), 
+          branch_point = 1,
+          trajectory_states = NULL, 
           relative_expr = TRUE, 
           stretch = TRUE, 
           cores = 1, 
@@ -527,21 +537,28 @@ calILRs <- function (cds,
           return_all = F, 
           verbose = FALSE, 
           ...){
-  
- 
-    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states, progenitor_method = 'duplicate', 
-                                                branch_labels = branch_labels, stretch = stretch)
+    if(!is.null(trajectory_states)){
+      if (length(trajectory_states) != 2)
+        stop("Sorry, this function only supports the calculation of ILRs between TWO branch trajectories")
+    }
+
+    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states,
+                                                branch_point = branch_point,
+                                                progenitor_method = 'duplicate',
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
 
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two Branches")
-  if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
-      stop("state(s) in trajectory_states are not included in 'Branch'")
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two Branches")
+  # if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
+  #     stop("state(s) in trajectory_states are not included in 'Branch'")
     
-  if(verbose)
-    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+  # if(verbose)
+  #   message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
@@ -664,6 +681,7 @@ calILRs <- function (cds,
 #' @import methods
 #' @importFrom reshape2 melt
 #' @importFrom parallel detectCores
+#' @export 
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,
@@ -829,4 +847,292 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
    message('return results')
 
 	return(cmbn_df)
+}
+
+#' Graph based differential gene expression test 
+#'
+#' Identify genes with branch-dependent expression or differential expression based on a graph either from CellTypeHiearchy or the principal graph learnt from DDRTree algorithm 
+#'
+#' Development processes (potentially other complex biological process like cancer evolution) are often hiearchical branching process (HBP) with multiple branch decisions. 
+#' HBP often can be represented as a graph. Monocle 2 uses DDRTree algorithm which tries to learn the principal graph corresponding the HBP. On the other hand, monocle 2 
+#' also uses algorithms combining tSNE and density peak to identify cell types involved in HBP and thus the continuous development process can be abstracted as a graph in 
+#' terms of CellTypeHiearchy (cth) where the cell type in the cth corresponding to the clusters obtained through monocle 2's cell type classification algorithm through 
+#' classifyCells function. Branch points (or intermediate cell typess) in the principal graph (or cth) as well as tip cells (or tip cell type) are then detected and used 
+#' to build a helper graph which only involved the branch points (intermediate cells) and tip cells (tip cell types). For the first case, this function will then perform 
+#' on only the cells traverse in the original principal graph from the starting root cell (or a higher level branch point) to each of the branch point's neighbor cell as 
+#' recorded in the helper graph. Similarly, for the second case, this function will perform two-group test on only the cell types traverse in the original cth from root 
+#' cell type (or a higher level intermediate cell type)) to each of the intermediate cell types' neighbor cell type as recorded in the helper graph. In addition, pseudotime 
+#' test or group-test on from cells based on each trunk of the helper cell will be performed. Finally, we will take each branch point (intermediate cell type) 
+#' on the helper function and collect all the cells downstream from each direction of the branch point (intermediate cell) as a single branch (group) and perform a BEAM test
+#' (group test) as before. This test is similar to what we implemented before. We hope to detect genes which are repurposed at different developmental stage by performing 
+#' BEAM, pseudotime or group test conditioned on the graph as well as comparing those test results. Note that we use the helper graph to identify the starting nodes or end 
+#' nodes which is used to retrieve cells based on the original principal graph or cth. 
+#' 
+#' \code{GraphTest()} Takes a CellDataSet and either a CellTypeHiearchy or a vector specified major branch points (with large branch coming off).
+#' If a CellTypeHiearchy is provided, the function will perform graph based group test based on the CellTypeHiearchy. 
+#' If no CellTypeHiearchy is provided but major branch points are provided, the function will perform graph based BEAM test and pseudotime test based on the learnt principal graph at those major branch points. 
+#' If neither CellTypeHiearchy or major branch points provide, the function will first find the major branch points based on a branch length threshold and then perform BEAM test and pseudotime test based on the learnt principal graph. 
+#' 
+#' \code{GraphTest()} returns a list of three elements: 
+#' (1) The first is the helper graph created for graph based test based on CellTypeHiearchy or the principal graph. 
+#' (2) The second is a list of the BEAM (including pseudotime) test (or two-group test) for the list of major branch points (or intermediate states) on the principal graph (or CellTypeHiearchy). 
+#' Each element of the list contains a data.frame includes the test result and is ordered as that of the vertex of the helper graph. 
+#' (3) the third one is the result of the graph-based BEAM (including pseudotime) test or two-group test for the list of major branch points (or intermediate states) based on the helper graph. 
+#' The data is stored in a matrix  of list where each row and column corresponding to an vertex from the helper graph. Diagonal element stores the corresponding BEAM test corresponding to the vertex from the helper graph.
+#' And the off-diagonal element corresponding to the test result based on cells transition from the cell or (cell type) to another cell (cell type), both corresponding to the helper graph, in the full CDS. 
+#'
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param cth a CellTypeHiearchy. When this used, CellType column from the pData of input cds should exist and include cell types from the CellTypeHiearchy
+#' @param major_branch_points A vector of branch points which lead to relatively long branches. 
+#' @param branch_length Threshold for number of cells which can be used to define as the major branch points
+#' @param verbose Whether to generate verbose output
+#' @param cores the number of cores to be used while testing each gene for differential expression
+#' @param ... additional arguments to be passed to differentialGeneTest
+#' @return a list with three elements
+#' @import methods
+#' @importFrom Biobase fData
+#' @export
+GraphTest <- function(cds, cth = NULL, major_branch_points = NULL, branch_length = round(ncol(cds) / 25), cores = 1, verbose = F, ...) {
+  if(is.null(cth)) {
+    if(verbose)
+      message('Running graph based test ...')
+    ####################################################################################################################################################################################
+    #perform DEG test based on the principal graph 
+    ####################################################################################################################################################################################
+    #retrieve all the branch points and tips 
+    root_cell <- row.names(subset(pData(cds), Pseudotime == 0))
+    mst <- minSpanningTree(cds)
+    all_bps <-  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points #V(mst)[which(degree(mst) > 2)]$name
+    all_tips <- V(mst)[which(degree(mst) == 1)]$name
+
+    #convert to directed graph:  
+    #which(colnames(cds) %in% c('H7hESC.p7c12r7', 'APS.p1c6r3'))
+    mst_adj <- get.adjacency(mst, type = 'lower')
+    directed_mst <- graph.adjacency(mst_adj, mode=c("directed"), weighted=T)
+    shortest_path_df <- shortest.paths(directed_mst, all_bps, all_tips, weights = NULL)
+
+    #identify major branch points: 
+    is_major_bp <- rep(rep(TRUE, length(all_bps)))
+    names(is_major_bp) <- all_bps
+
+    #create a graph for the major bps and the the corresponding direct tips: 
+    bp_tip_adj_mat <- matrix(rep(0, (length(all_bps) +  length(all_tips))^2 ), 
+      nrow = length(all_bps) +  length(all_tips), 
+      dimnames = list(c(all_bps, all_tips), 
+        c(all_bps, all_tips) ))
+    
+    #detect the major branch point: 
+    direct_tip <- c()
+    for(branch_point_ind in 1:length(all_bps)) {
+      branch_point <- all_bps[branch_point_ind]
+      shortest_paths_list <- all_shortest_paths(mst, branch_point, all_tips, weights = NULL)$res
+      overlap_list <- lapply(shortest_paths_list, function(x) length(intersect(all_bps, x$name)))
+      direct_tip_tmp <- all_tips[which(unlist(overlap_list) == 1)]
+      direct_tip[branch_point_ind] <- direct_tip_tmp
+      is_major_bp[branch_point_ind] <- shortest_path_df[branch_point, direct_tip[branch_point_ind]] > branch_length
+
+      print(is_major_bp)
+      if(is_major_bp[branch_point_ind])
+        bp_tip_adj_mat[branch_point, direct_tip_tmp] <- 1
+    }
+
+    #connect the major branch point: 
+    major_bps <- names(is_major_bp[is_major_bp])
+    
+    #add the link between root cell to the first major branch point: 
+    first_major_branch_point <- major_bps[which(pData(cds[, major_bps])$Pseudotime == min(pData(cds[, major_bps])$Pseudotime))]
+    bp_tip_adj_mat[root_cell, first_major_branch_point] <- 1
+    
+    #store the regular BEAM results of the major bps: 
+    regular_major_BEAM_res <- list()
+
+    for(major_bp_ind in 1:length(major_bps)){
+      major_bp <- major_bps[major_bp_ind]
+      shortest_paths_list <- all_shortest_paths(mst, major_bp, major_bps)$res
+      overlap_list <- lapply(shortest_paths_list, function(x) length(intersect(major_bps, x$name)))
+      direct_major_bp <- major_bps[which(unlist(overlap_list) == 2)]
+      bp_tip_adj_mat[major_bp, direct_major_bp] <- 1
+
+      #regular BEAM on the major branch points: 
+      branchpoint <- which(cds@auxOrderingData[['DDRTree']]$branch_points %in% major_bp)
+      regular_major_BEAM_res[[major_bp_ind]] <- BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
+                                                    reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
+                                                    branch_states = NULL,
+                                                    branch_point=branchpoint,
+                                                    cores = cores, ...)
+    }
+
+    #create a major bps and tips graph: 
+    diag(bp_tip_adj_mat) <- 0
+
+    major_bp_tip_graph <- graph_from_adjacency_matrix(bp_tip_adj_mat, mode = 'undirected', diag = F)
+
+    #retrieve only the connected graph 
+    graph_decompose <- decompose.graph(major_bp_tip_graph)
+    conn_comp_id <- which(unlist(lapply(graph_decompose, function(x) length(V(x)$name))) > 1)
+    major_bp_tip_graph <- graph_decompose[[conn_comp_id]]
+    plot(major_bp_tip_graph)
+
+    #perform branch test / two graph test on the branchpoint: 
+    graph_res <-  matrix(list(), nrow = length(V(major_bp_tip_graph)), ncol = length(V(major_bp_tip_graph)), dimnames = list(V(major_bp_tip_graph)$name, V(major_bp_tip_graph)$name)) #data.frame of data.frame
+
+    #BEAM only on the neighbor trunk segment to the next major branch point
+    for(i in V(major_bp_tip_graph)$name) {
+      print(i)
+      out_nodes <- neighborhood(major_bp_tip_graph, nodes = i, order = 1)[[1]]$name
+      
+      if(length(out_nodes) > 2) {
+        #branch test:     
+        nb_ct <- out_nodes[-1]
+        cells <- c()
+        
+        for(nb_ct_tmp in out_nodes) {
+          cells_1 <- shortest_paths(mst, out_nodes[1], nb_ct_tmp)$vpath[[1]]$name
+          cells <- unique(c(cells, cells_1)) 
+        }
+        
+        cds_subset <- SubSet_cds(cds, cells)
+        
+        print(cds_subset)
+        #perform BEAM on the subset cds: 
+        bp_ind <- which(cds_subset@auxOrderingData[['DDRTree']]$branch_points %in% out_nodes)
+        #find the branch point 
+        bp_cell <- cds_subset@auxOrderingData[['DDRTree']]$branch_points[[bp_ind]]
+        BEAM_test_res <- BEAM(cds_subset, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch", 
+                              reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", 
+                              branch_states = NULL,
+                              branch_point = bp_ind, 
+                              cores = cores, ...)
+        graph_res[[bp_cell, bp_cell]] <- BEAM_test_res   
+      }
+      #pseduotime test on the transition path between major branch points
+      else {
+        cells <- shortest_paths(mst, i, out_nodes[2])$vpath[[1]]$name
+        cds_subset <- cds[, cells]
+        
+        #checked the pval when subtract the smallest pseudotime: the same     
+        pseudotime_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)", reducedModelFormulaStr = "~1", cores =cores)
+        graph_res[[i, out_nodes[2]]] <- pseudotime_test_res   
+        # top_gene_lists[[list_ind]] <- row.names(branchpoint_test_res[order(branchpoint_test_res$qval), ])[1:(4 * top_num)]; list_ind <- list_ind + 1
+      }
+    }
+    res <- list(GraphTest_g = major_bp_tip_graph, GraphTest_res = graph_res,  RegularTest_res = regular_major_BEAM_res)
+  }
+  else {
+  ####################################################################################################################################################################################
+  #perform DEG test based on the cth
+  ####################################################################################################################################################################################
+    if(verbose)
+      message('Running regular test ...')
+    g <- cth@classificationTree
+    branchpoints <- which(degree(g) == 3)
+    tips <- which(degree(g) == 1)[-1]
+    
+    adj_mat <- matrix(rep(0, (length(branchpoints) +  length(tips))^2 ), nrow = length(branchpoints) +  length(tips), dimnames = list(c(names(branchpoints), names(tips)), c(names(branchpoints), names(tips)) ))
+    
+    adj_g <- get.adjacency(g)
+    
+    #store the regular BEAM results of the major bps: 
+    regular_group_res <- list()
+    #create the graph for the deg tests based on the cth: 
+    for(index in 1:length(branchpoints)) {
+      i <- names(branchpoints)[index]
+      print(i)
+      s_paths <- shortest_paths(g, i, c(tips, branchpoints))
+      adj_mat[i, names(c(tips, branchpoints))] <- as.numeric(unlist(lapply(s_paths$vpath, length)) > 0 & 
+              unlist(lapply(s_paths$vpath, function(x) if(length(x) > 1) { #not consider paths pass through another branch point: 
+                !any(setdiff(names(branchpoints), i) %in% x$name[1:(length(x)- 1)])
+                } else TRUE )))
+      
+      #regular group test on the branch points (intermediate states): 
+      #separate cells into multiple groups based on CellTypeHiearchy:  
+      first_branch_cell <- which(degree(g) > 2)[1]
+      states <- rep(1, length(g) - first_branch_cell)
+      names(states) <- V(g)$name[-(1:first_branch_cell)]
+      root_cell <- V(g)[first_branch_cell]$name
+      root_cells_nei <- neighbors(g, root_cell)$name
+      cell_type_traversal <- names(states)
+
+      mst_traversal <- graph.dfs(g, 
+                             root=root_cell, 
+                             neimode = "out", 
+                             unreachable=FALSE, 
+                             father=TRUE)
+      curr_state <- 0
+      # avoid this
+      #      names(mst_traversal$order)
+      # [1] "H7hESC"          "APS"             "DLL1PXM"         "D2_25somitomere"
+      # [5] "Earlysomite"     "cDM"             "Sclerotome"      "MPS3"
+      # [9] "LatM"            NA
+      valid_ids <- 2:sum((!is.na(names(mst_traversal$order))))
+      for (valid_ids_ind in 1:length(valid_ids)){
+        i <- valid_ids[valid_ids_ind]
+        curr_node = mst_traversal$order[i]
+        curr_node_name = V(dp_mst)[curr_node]$name
+        
+        ####already avoid above? 
+        if (is.na(mst_traversal$father[curr_node]) == FALSE){ 
+          if (curr_node$name %in% root_cells_nei){
+            curr_state <- curr_state + 1
+          }
+        }else{}
+        
+        states[valid_ids_ind] <- curr_state
+      }
+
+      cds_subset <- cds[, pData(cds)$CellType %in% cell_type_traversal]
+      pData(cds_subset)$cth_state <- "0"
+      for(i in names(states)){
+          pData(cds_subset)[pData(cds_subset)$CellType == i, 'cth_state'] <- as.character(states[i])
+      }
+      regular_group_res[[index]] <- differentialGeneTest(cds_subset, fullModelFormulaStr = "~cth_state", reducedModelFormulaStr = "~1", cores =cores)
+    }
+    diag(adj_mat) <- 0
+    graph_test_g <- graph_from_adjacency_matrix(adj_mat, mode = 'directed', diag = F)
+    plot(graph_test_g)
+    
+    #assign the deg test to the edge of the graph: 
+    tip_branch_names <- c(names(branchpoints), names(tips))
+    tip_branch_len <- length(tip_branch_names)
+    graph_res <-  matrix(list(), nrow = tip_branch_len, ncol = tip_branch_len, dimnames = list(tip_branch_names, tip_branch_names )) #data.frame of data.frame
+    # top_gene_lists <- list(); list_ind <- 1
+    
+    #perform branch test / two graph test on the branchpoint: 
+    for(i in V(graph_test_g)$name) {
+      out_nodes <- neighborhood(graph_test_g, nodes = i, order = 1, mode = 'out')[[1]]$name
+      in_nodes <- neighborhood(graph_test_g, nodes = i, order = 1, mode = 'in')[[1]]$name
+
+      if(length(out_nodes) > 2) {
+        #branch test:     
+        nb_ct_tmp <- neighborhood(g, nodes = i, order = 1, mode = 'out')[[1]]$name
+        nb_ct <- nb_ct_tmp[-1]
+        if(all(nb_ct %in% pData(cds)$CellType)){
+          branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$CellType %in% nb_ct], fullModelFormulaStr = "~CellType", reducedModelFormulaStr = "~1", cores =cores)
+        }
+        else branchpoint_test_res <- data.frame()
+        graph_res[[i, i]] <- branchpoint_test_res
+        # top_gene_lists[[list_ind]] <- row.names(branchpoint_test_res[order(branchpoint_test_res$qval), ])[1:(4 * top_num)]; list_ind <- list_ind + 1
+        #perform trunk test
+        for(out_nodes_names in out_nodes[-1]) {
+          nb_ct <- shortest_paths(g, i, out_nodes_names)$vpath[[1]]$name
+          
+          if(length(nb_ct) > 2) {
+            branchpoint_test_res <- differentialGeneTest(cds[, pData(cds)$CellType %in% nb_ct], fullModelFormulaStr = "~CellType", reducedModelFormulaStr = "~1", cores =cores)
+            graph_res[[i, out_nodes_names]] <- branchpoint_test_res   
+            # top_gene_lists[[list_ind]] <- row.names(branchpoint_test_res[order(branchpoint_test_res$qval), ])[1:(4 * top_num)]; list_ind <- list_ind + 1
+          }
+        }
+      }
+    }
+    
+    # #obtain unique top 250 deg genes from each test
+    # top_gene_vec <- c()
+    # for(i in 1:length(top_gene_lists)) {
+    #   top_gene_vec <-  c(top_gene_vec, setdiff(top_gene_lists[[i]], unlist(top_gene_lists[-i]))[1:top_num])
+    # }
+    # 
+    res <- list(GraphTest_g = graph_test_g, GraphTest_res = graph_res, RegularTest_res = regular_group_res)
+  }
+  #return the results as a graph: 
+  return(res)
 }

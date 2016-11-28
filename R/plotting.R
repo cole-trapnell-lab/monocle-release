@@ -52,7 +52,8 @@ plot_cell_trajectory <- function(cds,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
-                               show_branch_points=TRUE){
+                               show_branch_points=TRUE, 
+                               theta = 0){
   gene_short_name <- NA
   sample_name <- NA
   data_dim_1 <- NA
@@ -104,6 +105,23 @@ plot_cell_trajectory <- function(cds,
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   
+  return_rotation_mat <- function(theta) {
+    theta <- theta / 180 * pi
+    matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
+  }
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(data_df[, c(2, 3)]))
+  data_df$data_dim_1 <- tmp[1, ]
+  data_df$data_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta = theta) %*% t(as.matrix(edge_df[, c('source_prin_graph_dim_1', 'source_prin_graph_dim_2')]))
+  edge_df$source_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$source_prin_graph_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(edge_df[, c('target_prin_graph_dim_1', 'target_prin_graph_dim_2')]))
+  edge_df$target_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$target_prin_graph_dim_2 <- tmp[2, ]
+  
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -124,7 +142,7 @@ plot_cell_trajectory <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=cell_link_size, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
   # FIXME: setting size here overrides the marker expression funtionality. 
@@ -1470,6 +1488,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   cds <- NA
   new_cds <- buildBranchCellDataSet(cds_subset, 
+                                    progenitor_method = 'duplicate',
                                     branch_states=branch_states, 
                                     branch_point=branch_point, 
                                     progenitor_method = 'duplicate',
@@ -1632,6 +1651,203 @@ plot_genes_branched_heatmap <- function(cds_subset,
   }
 }
 
+# Modified function: Plot heatmap of 3 branches with the same coloring. Each CDS subset has to have the same set of genes.
+#'  Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches
+#'
+#' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
+#' @param branches The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".
+#' @param branches_name The two states to compare in the heatmap. Mutually exclusive with branch_point. 
+#' @param cluster_rows Whether to cluster the rows of the heatmap.
+#' @param hclust_method The method used by pheatmap to perform hirearchical clustering of the rows. 
+#' @param num_clusters Number of clusters for the heatmap of branch genes
+#' @param hmcols The color scheme for drawing the heatmap.
+#' @param add_annotation_row Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.
+#' @param add_annotation_col Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.
+#' @param show_rownames Whether to show the names for each row in the table.
+#' @param use_gene_short_name Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.
+#' @param scale_max The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.
+#' @param scale_min The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.
+#' @param norm_method Determines how to transform expression values prior to rendering
+#' @param trend_formula A formula string specifying the model used in fitting the spline curve for each gene/feature.
+#' @param return_heatmap Whether to return the pheatmap object to the user. 
+#' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
+#' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
+#' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
+#' @import pheatmap
+#' @export
+#'
+plot_multiple_branches_heatmap <- function(cds, 
+                                           branches, 
+                                           branches_name = NULL, 
+                                           cluster_rows = TRUE,
+                                           hclust_method = "ward.D2", 
+                                           num_clusters = 6,
+                                           
+                                           hmcols = NULL, 
+                                           
+                                           add_annotation_row = NULL,
+                                           add_annotation_col = NULL,
+                                           show_rownames = FALSE, 
+                                           use_gene_short_name = TRUE,
+                                           
+                                           norm_method = c("vstExprs", "log"), 
+                                           scale_max=3, 
+                                           scale_min=-3, 
+                                           
+                                           trend_formula = '~sm.ns(Pseudotime, df=3)',
+                                           
+                                           return_heatmap=FALSE,
+                                           cores=1){
+  if(!(all(branches %in% pData(cds)$State)) & length(branches) == 1){
+    stop('This function only allows to make multiple branch plots where branches is included in the pData')
+  }
+  
+  branch_label <- branches
+  if(!is.null(branches_name)){
+    if(length(branches) != length(branches_name)){
+      stop('branches_name should have the same length as branches')
+    }
+    branch_label <- branches_name
+  }
+  
+  #test whether or not the states passed to branches are true branches (not truncks) or there are terminal cells 
+  g <- cds@minSpanningTree
+  m <- NULL
+  # branche_cell_num <- c()
+  for(branch_in in branches) {
+    branches_cells <- row.names(subset(pData(cds), State == branch_in))
+    root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
+    root_state_cells <- row.names(subset(pData(cds), State == root_state))
+    
+    root_cell <- root_state_cells[which(degree(g, v = root_state_cells) == 1)]
+    tip_cell <- branches_cells[which(degree(g, v = branches_cells) == 1)]
+    
+    traverse_res <- traverseTree(g, root_cell, tip_cell)
+    path_cells <- names(traverse_res$shortest_path[[1]])
+    cds_subset <- cds[, path_cells]
+    
+    newdata <- data.frame(Pseudotime = seq(0, max(pData(cds_subset)$Pseudotime),length.out = 100)) 
+  
+    tmp <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
+                          relative_expr = T, new_data = newdata)
+    if(is.null(m))
+      m <- tmp
+    else
+      m <- cbind(m, tmp)
+  }
+  
+  #remove genes with no expression in any condition
+  m=m[!apply(m,1,sum)==0,]
+  
+  norm_method <- match.arg(norm_method)
+  
+  # FIXME: this needs to check that vst values can even be computed. (They can only be if we're using NB as the expressionFamily)
+  if(norm_method == 'vstExprs' && is.null(cds@dispFitInfo[["blind"]]$disp_func) == FALSE) {
+    m = vstExprs(cds, expr_matrix=m)
+  }     
+  else if(norm_method == 'log') {
+    m = log10(m+pseudocount)
+  }
+  
+  # Row-center the data.
+  m=m[!apply(m,1,sd)==0,]
+  m=Matrix::t(scale(Matrix::t(m),center=TRUE))
+  m=m[is.na(row.names(m)) == FALSE,]
+  m[is.nan(m)] = 0
+  m[m>scale_max] = scale_max
+  m[m<scale_min] = scale_min
+  
+  heatmap_matrix <- m
+  
+  row_dist <- as.dist((1 - cor(Matrix::t(heatmap_matrix)))/2)
+  row_dist[is.na(row_dist)] <- 1
+  
+  if(is.null(hmcols)) {
+    bks <- seq(-3.1,3.1, by = 0.1)
+    hmcols <- blue2green2red(length(bks) - 1)
+  }
+  else {
+    bks <- seq(-3.1,3.1, length.out = length(hmcols))
+  } 
+  
+  ph <- pheatmap(heatmap_matrix, 
+                 useRaster = T,
+                 cluster_cols=FALSE, 
+                 cluster_rows=cluster_rows, 
+                 show_rownames=F, 
+                 show_colnames=F, 
+                 clustering_distance_rows=row_dist,
+                 clustering_method = hclust_method,
+                 cutree_rows=num_clusters,
+                 silent=TRUE,
+                 filename=NA,
+                 breaks=bks,
+                 color=hmcols)
+  
+  annotation_col <- data.frame(Branch=factor(rep(rep(branch_label, each = 100))))
+  annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
+  gaps_col <- c(1:length(branches) - 1) * 100
+  
+  if(!is.null(add_annotation_row)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
+  
+  
+  if (use_gene_short_name == TRUE) {
+    if (is.null(fData(cds)$gene_short_name) == FALSE) {
+      feature_label <- as.character(fData(cds)[row.names(heatmap_matrix), 'gene_short_name'])
+      feature_label[is.na(feature_label)] <- row.names(heatmap_matrix)
+      
+      row_ann_labels <- as.character(fData(cds)[row.names(annotation_row), 'gene_short_name'])
+      row_ann_labels[is.na(row_ann_labels)] <- row.names(annotation_row)
+    }
+    else {
+      feature_label <- row.names(heatmap_matrix)
+      row_ann_labels <- row.names(annotation_row)
+    }
+  }
+  else {
+    feature_label <- row.names(heatmap_matrix)
+    row_ann_labels <- row.names(annotation_row)
+  }
+  
+  row.names(heatmap_matrix) <- feature_label
+  row.names(annotation_row) <- row_ann_labels
+  
+  
+  colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
+  
+  ph_res <- pheatmap(heatmap_matrix[, ], #ph$tree_row$order
+                     useRaster = T,
+                     cluster_cols = FALSE, 
+                     cluster_rows = cluster_rows, 
+                     show_rownames=show_rownames, 
+                     show_colnames=F, 
+                     #scale="row",
+                     clustering_distance_rows=row_dist, #row_dist
+                     clustering_method = hclust_method, #ward.D2
+                     cutree_rows=num_clusters,
+                     # cutree_cols = 2,
+                     annotation_row=annotation_row,
+                     annotation_col=annotation_col,
+                     gaps_col = c(100, 200),
+                     treeheight_row = 20, 
+                     breaks=bks,
+                     fontsize = 12,
+                     color=hmcols, 
+                     silent=TRUE,
+                     filename=NA
+  )
+  
+  grid::grid.rect(gp=grid::gpar("fill", col=NA))
+  grid::grid.draw(ph_res$gtable)
+  if (return_heatmap){
+    return(ph_res)
+  }
+}
 #' Plots genes by mean vs. dispersion, highlighting those selected for ordering
 #' 
 #' Each gray point in the plot is a gene. The black dots are those that were included
@@ -1659,4 +1875,212 @@ plot_ordering_genes <- function(cds){
   g
 }
 
+#' Plots clusters of cells .
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_name_size the size of cell name labels
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_cell_clusters(HSMM)
+#' plot_cell_clusters(HSMM, color_by="Pseudotime")
+#' plot_cell_clusters(HSMM, markers="MYH3")
+#' }
+plot_cell_clusters <- function(cds, 
+                               x=1, 
+                               y=2, 
+                               color_by="Cluster", 
+                               # show_tree=TRUE, 
+                               # show_backbone=TRUE, 
+                               # backbone_color="black", 
+                               markers=NULL, 
+                               show_cell_names=FALSE, 
+                               cell_size=1.5,
+                               # cell_link_size=0.75,
+                               cell_name_size=2, ...
+                               # show_branch_points=TRUE
+){
+  if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
+    stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
+  }
+
+  gene_short_name <- NULL
+  sample_name <- NULL
+  
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info <- pData(cds)
+  
+  tSNE_dim_coords <- reducedDimA(cds)
+  data_df <- data.frame(t(tSNE_dim_coords[c(x,y),]))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- colnames(cds)
+  data_df <- merge(data_df, lib_info, by.x="sample_name", by.y="row.names")
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
+    #print (head(edge_df))
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+  }else{
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
+  }
+  
+  # FIXME: setting size here overrides the marker expression funtionality. 
+  # Don't do it!
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  }else {
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+  }
+  
+  g <- g + 
+    #scale_color_brewer(palette="Set1") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    #guides(color = guide_legend(label.position = "top")) +
+    theme(legend.key = element_blank()) +
+    theme(panel.background = element_rect(fill='white'))
+  g
+}
+
+#' Plots the decision map of density clusters .
+#'
+#' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
+#' @param rho_threshold The threshold of local density (rho) used to select the density peaks for plotting 
+#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting 
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_rho_delta(HSMM)
+#' }
+
+plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
+    if(!is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
+    & !is.null(pData(cds)$Cluster)
+    & !is.null(pData(cds)$peaks)
+    & !is.null(pData(cds)$halo)
+    & !is.null(pData(cds)$delta)
+    & !is.null(pData(cds)$rho)) {
+
+    # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
+    #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
+    if(!is.null(rho_threshold) & !is.null(delta_threshold)){
+      peaks <- pData(cds)$rho >= rho_threshold & pData(cds)$delta >= delta_threshold
+    }
+    else
+      peaks <- pData(cds)$peaks
+
+    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta, peaks = peaks)
+
+    g <- qplot(rho, delta, data = df, alpha = I(0.5), color = peaks) +  monocle_theme_opts() + 
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      scale_color_manual(values=c("grey","black")) + 
+      theme(legend.key = element_blank()) +
+      theme(panel.background = element_rect(fill='white'))
+  }
+  else {
+    stop('Please run clusterCells_Density_Peak before using this plotting function')
+  }
+  g
+}
+
+#' Plots the percentage of variance explained by the each component based on PCA from the normalized expression
+#' data using the same procedure used in reduceDimension function.
+#'
+#' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
+#' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param return_all A logical argument to determine whether or not the variance of each component is returned
+#' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_pc_variance_explained(HSMM)
+#' }
+plot_pc_variance_explained <- function(cds, 
+                            # max_components=2, 
+                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                            norm_method = c("vstExprs", "log", "none"), 
+                            residualModelFormulaStr=NULL,
+                            pseudo_expr=NULL, 
+                            return_all = F, 
+                            verbose=FALSE,
+                            ...){
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+    prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
+  }
+  else{
+    extra_arguments <- list(...)
+    FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+    
+    #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+    xm <- Matrix::rowMeans(FM)
+    xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+    FM <- FM[xsd > 0,]
+    
+    if (is.null(residualModelFormulaStr) == FALSE) {
+      if (verbose) 
+        message("Removing batch effects")
+      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                         data = pData(cds), drop.unused.levels = TRUE)
+
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    }else{
+      X.model_mat <- NULL
+    }
+    
+    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+    
+    if (nrow(FM) == 0) {
+      stop("Error: all rows have standard deviation zero")
+    }
+
+    # FM <- convert2DRData(cds, norm_method = 'log') 
+    FM <- FM[!is.na(row.names(FM)), ]
+    pca_res <- prcomp(t(FM), center = T, scale = T)
+    std_dev <- pca_res$sdev 
+    pr_var <- std_dev^2
+    prop_varex <- pr_var/sum(pr_var)
+  }
+  
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      theme(panel.background = element_rect(fill='white')) + xlab('components') + 
+      ylab('variance explained by each component')
+  # return(prop_varex = prop_varex, p = p)
+  if(return_all) {
+    return(list(variance_explained = prop_varex, p = p))
+  }
+  else
+    return(p)  
+}
 
