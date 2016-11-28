@@ -386,7 +386,7 @@ calABCs <- function(cds,
     stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
   
   
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
+    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states, progenitor_method = 'duplicated', 
                                                 branch_labels = branch_labels, stretch = stretch)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
@@ -529,7 +529,7 @@ calILRs <- function (cds,
           ...){
   
  
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
+    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states, progenitor_method = 'duplicate', 
                                                 branch_labels = branch_labels, stretch = stretch)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
