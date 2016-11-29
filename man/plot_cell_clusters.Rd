@@ -5,9 +5,8 @@
 \title{Plots clusters of cells .}
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
-  show_density_peak = TRUE, show_density = FALSE, rho_threshold = NULL,
-  delta_threshold = NULL, markers = NULL, show_cell_names = FALSE,
-  cell_size = 1.5, cell_name_size = 2, ...)
+  markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
+  cell_name_size = 2, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -17,14 +16,6 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 \item{y}{the column of reducedDimS(cds) to plot on the vertical axis}
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
-
-\item{show_density_peak}{A logic flag to determine whether or not the density peak in the plot should be plotted}
-
-\item{show_density}{A logic flag to determine whether or not the density of the samples in the plot is plot}
-
-\item{rho_threshold}{The threshold of rho used to determine the density peaks plotted}
-
-\item{delta_threshold}{The threshold for delta to determine used to determine the density peaks plotted}
 
 \item{markers}{a gene name or gene id to use for setting the size of each cell in the plot}
 

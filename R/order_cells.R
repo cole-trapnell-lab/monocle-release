@@ -1317,18 +1317,42 @@ reduceDimension <- function(cds,
     if (verbose) 
         message("Remove noise by PCA ...")
 
-      pca_res <- prcomp(t(FM), center = T, scale = T)
-      std_dev <- pca_res$sdev 
-      pr_var <- std_dev^2
-      prop_varex <- pr_var/sum(pr_var)
-
+      # Calculate the variance across genes without converting to a dense
+      # matrix:
+      expression_means <- Matrix::colMeans(FM)
+      expression_vars <- Matrix::colMeans((FM - expression_means)^2)
+      # Filter out genes that are constant across all cells:
+      #genes_to_keep <- expression_vars > 0
+      #FM <- FM[genes_to_keep,]
+      #expression_means <- expression_means[genes_to_keep]
+      #expression_vars <- expression_vars[genes_to_keep]
+      # Here✬s how to take the top PCA loading genes, but using
+      # sparseMatrix operations the whole time, using irlba.
+      
+      
       if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
         num_dim <- extra_arguments$num_dim #variance_explained
       }
       else{
         num_dim <- 50
       }
-      topDim_pca <- pca_res$x[, 1:num_dim]
+      
+      irlba_res <- irlba(FM,
+                         nv=min(num_dim, min(dim(FM)) - 1),
+                             nu=0,
+                             center=expression_means,
+                             scale=sqrt(expression_vars),
+                             right_only=TRUE)
+      irlba_pca_res <- irlba_res$v
+      #row.names(irlba_pca_res) <- genes_to_keep
+      
+      # pca_res <- prcomp(t(FM), center = T, scale = T)
+      # std_dev <- pca_res$sdev 
+      # pr_var <- std_dev^2
+      # prop_varex <- pr_var/sum(pr_var)
+      prop_varex <- irlba_res$d / sum(irlba_res$d)
+      
+      topDim_pca <- irlba_pca_res#[, 1:num_dim]
       
       # #perform the model formula transformation right before tSNE: 
       # if (is.null(residualModelFormulaStr) == FALSE) {
@@ -1366,6 +1390,9 @@ reduceDimension <- function(cds,
     }
 
     else if (reduction_method == "ICA") {
+      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      FM <- FM[!is.na(row.names(FM)), ]
+      
       if (verbose) 
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components, 
@@ -1392,6 +1419,8 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "ICA"
     }
     else if (reduction_method == "DDRTree") {
+      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      FM <- FM[!is.na(row.names(FM)), ]
       
       if (verbose) 
         message("Learning principal graph with DDRTree")

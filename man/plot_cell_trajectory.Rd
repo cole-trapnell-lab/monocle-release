@@ -7,7 +7,8 @@
 plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE)
+  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE,
+  theta = 0)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
