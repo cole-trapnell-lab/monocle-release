@@ -1488,7 +1488,6 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   cds <- NA
   new_cds <- buildBranchCellDataSet(cds_subset, 
-                                    progenitor_method = 'duplicate',
                                     branch_states=branch_states, 
                                     branch_point=branch_point, 
                                     progenitor_method = 'duplicate',

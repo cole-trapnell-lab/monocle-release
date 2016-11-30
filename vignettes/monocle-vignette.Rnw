@@ -381,17 +381,13 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
  
  <<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
- HSMM <- reduceDimension(HSMM, reduction_method="tSNE", residualModelFormulaStr="~Media + num_genes_expressed")
- 
  HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
-                      #frequency_thresh=0.1,
+                      frequency_thresh=0.1,
                       enrichment_thresh=1,
                       cell_type_hierarchy=cth,
                       clustering_genes=row.names(subset(marker_diff, qval < 0.05)),
                       residualModelFormulaStr="~Media + num_genes_expressed")
- #plot_cell_clusters(HSMM, color_by = 'as.factor(CellType)', show_density = F)
 
  plot_cell_trajectory(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
  @ %def

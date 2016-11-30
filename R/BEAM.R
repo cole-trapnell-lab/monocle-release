@@ -340,8 +340,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         verbose=verbose,
-                                         ...)
+                                         verbose=verbose)
   
   return(branchTest_res)
 }

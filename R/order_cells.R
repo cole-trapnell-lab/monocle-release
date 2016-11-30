@@ -1426,7 +1426,7 @@ reduceDimension <- function(cds,
         message("Learning principal graph with DDRTree")
 
       # TODO: DDRTree should really work with sparse matrices.
-      if(auto_param_selection){
+      if(auto_param_selection & ncol(cds) >= 100){
         ncenter <- cal_ncenter(ncol(FM))
         #add other parameters...
         ddrtree_res <- DDRTree(FM, max_components, ncenter = ncenter, verbose = verbose)
