@@ -416,13 +416,13 @@ calABCs <- function(cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[1])))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   if (verbose)
     print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                 sort(pData(cds_branchA)$Pseudotime)))
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[2])))
   colnames(str_new_cds_branchB)[2] <- formula_all_variables[2]
   
   if (verbose)
@@ -581,14 +581,14 @@ calILRs <- function (cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[1])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchA)$Pseudotime)))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[2])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchB)$Pseudotime)))
