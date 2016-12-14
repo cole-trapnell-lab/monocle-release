@@ -1469,7 +1469,7 @@ findNearestPointOnMST <- function(cds){
   tip_leaves <- names(which(degree(dp_mst) == 1))
   
   distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
-  closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) ) } )
+  closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   
   #closest_vertex <- as.vector(closest_vertex)

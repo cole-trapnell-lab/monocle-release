@@ -555,13 +555,13 @@ calILRs <- function (cds,
     
   # if(verbose)
   #   message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
-  
-  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+  if(is.null(trajectory_states))
+    trajectory_states <- unique(pData(cds_subset)[, "Branch"])
 
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
-  else{
+  else if(is.null(trajectory_states)){
     trajectory_states_tmp <- as.character(trajectory_states)
     branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), as.character(State) == trajectory_states_tmp[1])), 'Branch'])
     trajectory_states[1] <- names(which.max(branch_stats))
