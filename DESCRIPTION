@@ -35,6 +35,8 @@ Imports:
     irlba (>= 2.0.0),
     matrixStats,
     MASS,
+    Rtsne,
+    densityClust,
     reshape2,
     limma,
     dplyr,
