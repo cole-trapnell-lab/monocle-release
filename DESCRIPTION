@@ -34,9 +34,9 @@ Imports:
     grid,
     irlba (>= 2.0.0),
     matrixStats,
-    MASS,
-    Rtsne,
     densityClust,
+    Rtsne,
+    MASS,
     reshape2,
     limma,
     dplyr,
@@ -44,8 +44,6 @@ Imports:
     pheatmap,
     stringr,
     proxy,
-    Rtsne,
-    densityClust,
     slam,
     stats
 VignetteBuilder: knitr

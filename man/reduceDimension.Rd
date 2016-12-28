@@ -23,7 +23,13 @@ reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
 
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
+\item{relative_expr}{includeDescrip}
+
+\item{auto_param_selection}{includeDescrip}
+
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
+
+\item{scaling}{includeDescrip}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 }

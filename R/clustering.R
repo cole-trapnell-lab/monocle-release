@@ -49,6 +49,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param param.gamma gamma parameter for DDRTree
 #' @param verbose Verbose parameter for DDRTree
+#' @param enrichment_thresh includeDescrip
 #' @param ... Additional arguments passed to \code{\link{reduceDimension}()}
 #' @importFrom Biobase fData pData pData<-
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell

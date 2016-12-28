@@ -36,6 +36,8 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 \item{cell_name_size}{the size of cell name labels}
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
+
+\item{theta}{includeDescrip}
 }
 \value{
 a ggplot2 plot object

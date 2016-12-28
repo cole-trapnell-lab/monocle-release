@@ -14,6 +14,8 @@ calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
 
 \item{trend_formula}{a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
+\item{branch_point}{includeDescrip}
+
 \item{trajectory_states}{States corresponding to two branches}
 
 \item{relative_expr}{a logic flag to determine whether or not the relative gene expression should be used}

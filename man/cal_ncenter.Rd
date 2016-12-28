@@ -4,9 +4,13 @@
 \alias{cal_ncenter}
 \title{Function to decide a good number of centers for running DDRTree on big datasets}
 \usage{
-cal_ncenter(ncells, ncells_limit = 100)
+cds includeDescrip will place a better description when warnings no longer appear
 }
 \arguments{
+\item{ncells}{includeDescrip}
+
+\item{ncells_limit}{includeDescrip}
+
 \item{cds}{a cell dataset after trajectory reconstruction}
 }
 \value{

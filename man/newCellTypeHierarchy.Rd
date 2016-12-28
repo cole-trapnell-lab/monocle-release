@@ -34,6 +34,8 @@ provide its name here}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 
+\item{enrichment_thresh}{includeDescrip}
+
 \item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
 
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}

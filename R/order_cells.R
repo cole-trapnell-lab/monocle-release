@@ -1243,6 +1243,9 @@ normalize_expr_data <- function(cds,
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param relative_expr includeDescrip
+#' @param auto_param_selection includeDescrip
+#' @param scaling includeDescrip
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
@@ -1252,6 +1255,7 @@ normalize_expr_data <- function(cds,
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
+#' @import Rtsne
 #' @importFrom stats dist
 #' @export
 reduceDimension <- function(cds, 
@@ -1727,6 +1731,9 @@ reverseEnbedingCDS <- function(cds) {
 #' Function to decide a good number of centers for running DDRTree on big datasets 
 #'
 #' @param cds a cell dataset after trajectory reconstruction 
+#' @param ncells includeDescrip
+#' @param ncells_limit includeDescrip
+#' @usage cds includeDescrip will place a better description when warnings no longer appear
 #' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
 #' @export
 cal_ncenter <- function(ncells, ncells_limit = 100){

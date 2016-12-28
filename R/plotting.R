@@ -29,6 +29,7 @@ monocle_theme_opts <- function()
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param theta includeDescrip
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1653,7 +1654,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 # Modified function: Plot heatmap of 3 branches with the same coloring. Each CDS subset has to have the same set of genes.
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches
 #'
-#' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
+#' @param cds CellDataSet for the experiment (normally only the branching genes detected with branchTest)
 #' @param branches The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".
 #' @param branches_name The two states to compare in the heatmap. Mutually exclusive with branch_point. 
 #' @param cluster_rows Whether to cluster the rows of the heatmap.
