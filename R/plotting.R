@@ -6,8 +6,14 @@ monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
     theme(panel.border = element_blank()) +
-    theme(axis.line.x = element_line(size=0.25, color="black")) +
-    theme(axis.line.y = element_line(size=0.25, color="black")) +
+    theme(strip.text = element_text(size=28, face="bold")) +
+    theme(axis.title = element_text(size=20,face="bold")) +
+    theme(axis.text.x = element_text(size=17, color="black")) +
+    theme(axis.text.y = element_text(size=17, color="black")) +
+    theme(legend.text=element_text(size=15, color="black")) +
+    theme(legend.title=element_text(size=18, color="black")) +
+    theme(axis.line.x = element_line(size=0.55, color="black")) +
+    theme(axis.line.y = element_line(size=0.55, color="black")) +
     theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
     theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) +
     theme(panel.background = element_rect(fill='white')) +
@@ -52,7 +58,8 @@ plot_cell_trajectory <- function(cds,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
-                               show_branch_points=TRUE){
+                               show_branch_points=TRUE
+                               line_width = 1){
   gene_short_name <- NA
   sample_name <- NA
   data_dim_1 <- NA
@@ -124,7 +131,7 @@ plot_cell_trajectory <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2))
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=line_width, linetype="solid", na.rm=TRUE, data=edge_df)
   }
 
   # FIXME: setting size here overrides the marker expression funtionality.
