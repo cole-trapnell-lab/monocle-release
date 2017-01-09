@@ -1296,6 +1296,7 @@ reduceDimension <- function(cds,
     stop("Error: all rows have standard deviation zero")
   }
 
+  FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {   
     reducedDim <- reduction_method(FM, ...)
     colnames(reducedDim) <- colnames(FM)
@@ -1390,8 +1391,8 @@ reduceDimension <- function(cds,
     }
 
     else if (reduction_method == "ICA") {
-      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-      FM <- FM[!is.na(row.names(FM)), ]
+      # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      # FM <- FM[!is.na(row.names(FM)), ]
       
       if (verbose) 
         message("Reducing to independent components")
@@ -1419,8 +1420,8 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "ICA"
     }
     else if (reduction_method == "DDRTree") {
-      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-      FM <- FM[!is.na(row.names(FM)), ]
+      # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      # FM <- FM[!is.na(row.names(FM)), ]
       
       if (verbose) 
         message("Learning principal graph with DDRTree")
