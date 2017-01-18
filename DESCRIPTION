@@ -21,7 +21,9 @@ Depends:
     Biobase,
     ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
-    DDRTree (>= 0.1.4)
+    DDRTree (>= 0.1.4),
+    simplePPT (>= 0.1.0),
+    destiny (>= 2.0.3)
 Imports:
     parallel,
     igraph (>= 1.0.1),

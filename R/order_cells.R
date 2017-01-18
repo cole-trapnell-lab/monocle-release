@@ -1,3 +1,35 @@
+#' Run dpt for dimension reduction 
+#' 
+#' This function perform dimension reduction with dpt 
+#' 
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param branching A logic argument to determine whether or not branch detection should turn on in DPT function
+#' @param norm_method A character argument to determine which normalization method used for preprocessing the data
+#' @param root Index to the root cell, if no root cell set, a random cell will be picked up
+#' @param verbose A logic argument to determine whether or not to print running message
+#' @return a list 
+run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
+  if(verbose)
+    message('root should be the id to the cell not the cell name ....')
+  
+  data <- data[!duplicated(data), ]  
+  dm <- DiffusionMap(as.matrix(data))
+  dpt <- DPT(dm, branching = branching)
+  
+  ts <- dm@transitions
+  M <- destiny:::accumulated_transitions(dm)
+  
+  branch <- dpt@branch
+  row.names(branch) <- row.names(data[!duplicated(data), ])
+  
+  if(is.null(root))
+    root <- random_root(dm)[1]
+  pt <- dpt[root, ]
+  dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
+  
+  return(dp_res)
+}
+
 #' Scale pseudotime to be in the range from 0 to 100 
 #' 
 #' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
@@ -1095,6 +1127,16 @@ orderCells <- function(cds,
     reducedDimW(cds) <- old_W
   
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } else if (cds@dim_reduce_type == "simplePPT"){
+    if (is.null(num_paths) == FALSE){
+      message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
+    }
+    cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
+
+    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
+    pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state 
+ 
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } 
   
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
@@ -1256,7 +1298,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT"),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
@@ -1454,7 +1496,39 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }
-    else {
+  else if(reduction_method == "simplePPT") {
+      if(verbose)
+        message('running DPT ...')
+      dpt_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+
+      if(verbose)
+        message('running simplePPT ...')
+      simplePPT_res <- principal_tree(t(dpt_res$dm@eigenvectors[, 1:2]), MU = NULL, lambda = 1, bandwidth = 30, maxIter = 10, verbose = verbose)
+
+      colnames(simplePPT_res$MU) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      DCs <- t(dpt_res$dm@eigenvectors)
+      colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+
+      reducedDimW(cds) <- DCs
+      reducedDimS(cds) <- simplePPT_res$MU
+      reducedDimK(cds) <- simplePPT_res$MU
+      cds@auxOrderingData[["simplePPT"]]$objective_vals <- tail(HSMM_seq_pt_res$history$objs, 1)
+
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- dp_mst
+      cds@dim_reduce_type <- "simplePPT"
+    }
+  else if(reduction_method == "L1") {
+      message('This option is not ready yet')
+    }
+  else if(reduction_method == "spl"){
+      message('This option is not ready yet')
+    }
+  else {
       stop("Error: unrecognized dimensionality reduction method")
     }
   }
