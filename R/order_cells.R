@@ -27,7 +27,7 @@ run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbo
   pt <- dpt[root, ]
   dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
   
-  return(dp_res)
+  return(dm@eigenvectors)
 }
 
 #' Scale pseudotime to be in the range from 0 to 100 
@@ -1497,22 +1497,34 @@ reduceDimension <- function(cds,
       cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "simplePPT") {
-      if(verbose)
-        message('running DPT ...')
-      dpt_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+      if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want 
+        tryCatch({
+          reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+        reduced_dim_res
+        }, error = function(e) { 
+          error('Your initial method throws numerical errors!')
+        })
+      }
+      else{
+        if(verbose)
+          message('running DPT ...')
+        reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+      }
+      if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
+        error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
 
       if(verbose)
         message('running simplePPT ...')
-      simplePPT_res <- principal_tree(t(dpt_res$dm@eigenvectors[, 1:2]), MU = NULL, lambda = 1, bandwidth = 30, maxIter = 10, verbose = verbose)
+      simplePPT_res <- principal_tree(t(reduced_dim_res[, 1:max_components]), MU = NULL, lambda = 1, bandwidth = 30, maxIter = 10, verbose = verbose)
 
       colnames(simplePPT_res$MU) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      DCs <- t(dpt_res$dm@eigenvectors)
+      DCs <- t(reduced_dim_res[, 1:max_components])
       colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
 
       reducedDimW(cds) <- DCs
       reducedDimS(cds) <- simplePPT_res$MU
       reducedDimK(cds) <- simplePPT_res$MU
-      cds@auxOrderingData[["simplePPT"]]$objective_vals <- tail(HSMM_seq_pt_res$history$objs, 1)
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(simplePPT_res$history$objs, 1)
 
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
@@ -1520,7 +1532,8 @@ reduceDimension <- function(cds,
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
       dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- dp_mst
-      cds@dim_reduce_type <- "simplePPT"
+      cds@dim_reduce_type <- "DDRTree"
+      cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "L1") {
       message('This option is not ready yet')
