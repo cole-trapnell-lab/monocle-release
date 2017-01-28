@@ -837,7 +837,8 @@ graph embedding for single-cell trajectory analysis will be forthcoming
 when you use Monocle or discuss single-cell pseudotemporal ordering in your work.
  
 \section{Theory behind Monocle}\label{theory}
- 
+
+\subsection{Reverse graph embedding}\label{RGE}
 Single-cell expression datasets are some of the largest and most complex encountered
 in genomics. Even the smallest single-cell RNA-Seq experiments sample hundreds of cells, measuring the
 expression level of the more than 20,000 genes in each cell. Visualizing these
@@ -1008,6 +1009,56 @@ coordinates and branch assignments using this manifold. Monocle also uses the
 manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reverse graph embedding for single-cell trajectory
 analysis will be forthcoming (Qiu et al, in preparation).
+
+\subsection{Census}\label{Census}
+In \cite{qiu2017single}, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with negative binomial distribution can dramatically improve the differential expression test. We also introduced BEAM (Branch Expression Analysis Models), an new statistical test to identify genes significantly change between two different branches We will give briefly description on Census and BEAM as following. 
+
+Census aims to convert relative abundances $X_{ij}$ into lysate transcript counts $Y_{ij}$. Without loss of generality, we consider relative abundances is on the TPM scale, and assume that a gene's TPM value is proportional to the relative frequencies of its mRNA within the total pool of mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j = 1}Y_{ij}}$.  The generative model discussed in the main text predicts that when only a minority of the transcripts in a cell is captured in the library, signal from most detectably expressed genes will originate from a single mRNA.  Because the number of sequencing reads per transcript is proportionate to molecular frequency after normalizing for length (i.e. TPM or FPKM), all such genes in a given cell should have similar TPM values.  
+
+Census works by first identifying the (log-transformed) TPM value in each cell $i$, written as $x_i^*$, that corresponds to genes from which signal originates from a single transcript. Because our generative model predicts that these most detectable genes should fall into this category, we simply estimate $x_i^*$ as the mode of the log-transformed TPM distribution for cell $i$. This mode is obtained by log-transforming the TPM values, performing a Gaussian kernel density estimation and then identifying the peak of the distribution. Given the TPM value for a single transcript in cell $i$, it is straightforward to convert all relative abundances to their lysate transcript counts. The total number of mRNAs captured for cell $i$ can be estimated as:
+
+\begin{equation}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,j}dX}
+\end{equation}
+
+where $\epsilon$ is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of the total TPM of all expressed genes in a single cell. That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes. However, cDNA and PCR amplification steps during library prep can lead to superlinear growth in the relative abundance of a transcript as a function of copy number. In practice, the above formula often over-estimates total mRNAs in the lysate. To alleviate this issue, we used an alternative formula in Census:
+
+\begin{equation}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}
+\end{equation}
+
+where $F_X$ represents the cumulative distribution function for the TPM values for cell $i$ (we used the ecdf() function in R). Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above . Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in \cite{qiu2017single}), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by $\frac{1}{\theta}$ to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate $\theta$ a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study \cite{qiu2017single}, we assume a value of $0.25$, which is close to the lung and neuron experiments of Truetlein et al. 
+
+With an estimate of the total lysate mRNAs $M_i$ in cell $i$, we simply rescale its TPM values into mRNA counts for each gene:
+
+\begin{equation}
+\hat{Y}_{ij} = X_{ij} \cdot \frac{M_i} {10^6}
+\end{equation}
+
+For more details about Census, including a generalitive model of single-cell RNA-seq process, and Census's limitation, please see the original study (\cite{qiu2017single}). 
+
+\subsection{BEAM}\label{BEAM}
+Monocle 2 assigns each cell a pseudotime value and a "State" encoding the segment of the trajectory it resides upon based on a trajectory learning algorithm (See below). 
+In Monocle 2, we develop BEAM to test for branch-dependent gene expression by formulating the problem as a contrast between two negative binomial GLMs. 
+
+The null model 
+\begin{equation}
+expression \sim sm.ns(Pseudotime)
+\end{equation}
+for the test assumes the gene being tested is not a branch specific gene, whereas the alternative model: 
+\begin{equation}
+expression \sim sm.ns(Pseudotime) + Branch + sm.ns(Pseudotime) : Branch 
+\end{equation}
+
+assumes that the gene is a branch specific gene where $:$  represents an interaction term between branch and transformed pseudotime. Each model includes a natural spline (here with three degrees of freedom) describing smooth changes in mean expression as a function of pseudotime. The null model fits only a single curve, whereas the alternative will fit a distinct curve for each branch. Our current implementation of Monocle 2 relies on VGAM's "smart" spline fitting functionality, hence the use of the sm.ns() function instead of the more widely used ns() function from the splines package in R. Likelihood ratio testing was performed with the VGAM lrtest() function, similar to Monocle's other differential expression tests. A significant branch-dependent genes means that the gene has distinct expression dynamics along each branch, with smoothed curves that have different shapes.
+
+To fit the full model, each cell must be assigned to the appropriate branch, which is coded through the factor "Branch" in the above model formula. Monocle's function for testing branch dependence accepts an argument specifying which branches are to be compared. These arguments are specified using the 'State' attribute assigned by Monocle during trajectory reconstructions. For example, in our analysis of the Truetlein et al data, Monocle 2 reconstructed a trajectory with two branches ($L_{AT1}, L_{AT2}$ for AT1 and AT2 lineages, respectively), and three states ($S_{BP}, S_{AT1}, S_{AT2}$ for progenitor, AT1, or AT2 cells). The user specifies that he or she wants to compare $L_{AT1}$ and $L_{AT2}$ by providing $S_{AT1}$ and $S_{AT2}$ as arguments to the function. Alternatively, the user can specify a branch point leading to the two states. Monocle then assigns all the cells with state $S_{AT1}$ to branch $L_{AT1}$ and similarly for the $AT2$ cells. However, the cells with $S_{BP}$ must be members of both branches, because they are on the path from each branch back to the root of the tree. In order to ensure the independence of data points required for the LRT as well as the robustness and stability of our algorithm, we implemented a strategy to partition the progenitor cells into two groups, with each branch receiving a group. The groups are computed by simply ranking the progenitor cells by pseudotime and assigning the odd-numbered cells to one group and the even numbered cells to the other. We assign the first progenitor to both branches to ensure they start at the same time which is required for spline fitting involved in the test. 
+
+In order to facilitate  downstream branch kinetic curve clusterin as well as branch time point detection. In the current implmentation of monocle 2, we duplicate the progenitor cells and assign it to both lineage before spline fitting. The branch plots in section \emph{Analyzing branches in single-cell trajectories} use this method.
+
+\subsection{Branch time point detection}\label{branchtime}
+The branching time point for each gene can be quantified by fitting a separate spline curves for each branch from all the progenitor to each cell fate. To robustly detect the pseudotime point ($t_\beta^i$) when a gene $i$ with a branching expression pattern starts to diverge between two cell fates $L_1, L_2$, we developed the branch time point detection algorithm. The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the \emph{supplementary note 1} for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene $i$'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, $t_{\beta}^i$ , for that particular gene $i$.  
+
 %  
 % \section{Using Monocle with other data types}
 %  
