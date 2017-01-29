@@ -30,6 +30,7 @@ setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric")
 #' @param locfunc A function applied to the geometric-mean-scaled expression values to derive the size factor.
 #' @param ... Additional arguments to be passed to estimateSizeFactorsForMatrix
 #' @importFrom BiocGenerics sizeFactors<-
+#' @importFrom BiocGenerics estimateSizeFactors
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("estimateSizeFactors", 
           signature(object="CellDataSet"),
@@ -48,6 +49,7 @@ function( object, locfunc=median, ... )
 #' @param cores The number of cores to use for computing dispersions
 #' @aliases CellDataSet,ANY,ANY-method
 #' @importFrom BiocGenerics sizeFactors
+#' @importFrom BiocGenerics estimateDispersions
 setMethod("estimateDispersions", 
           signature(object="CellDataSet"), 
 function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1, remove_outliers=TRUE, cores=1,...)
@@ -309,4 +311,5 @@ cellPairwiseDistances <- function( cds ) {
   validObject( cds )
   cds
 }   
+
 
