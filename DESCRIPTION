@@ -23,6 +23,7 @@ Depends:
     VGAM (>= 1.0-1),
     DDRTree (>= 0.1.4),
     simplePPT (>= 0.1.0),
+    L1Graph (>= 0.1.0),
     destiny (>= 2.0.3)
 Imports:
     parallel,

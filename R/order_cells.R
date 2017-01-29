@@ -1298,7 +1298,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds, 
                             max_components=2, 
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT"),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT", 'L1-graph', 'L1-span-tree'),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
@@ -1535,8 +1535,109 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }
-  else if(reduction_method == "L1") {
-      message('This option is not ready yet')
+  else if(reduction_method == "L1-graph") {
+    if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want 
+      tryCatch({
+        reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+        reduced_dim_res
+      }, error = function(e) { 
+        error('Your initial method throws numerical errors!')
+      })
+    }
+    else{
+      if(verbose)
+        message('running DPT ...')
+      reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+    }
+    if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
+      error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
+    
+    if(verbose)
+      message('running L1-graph ...')
+
+    X <- t(reduced_dim_res[, 1:max_components])
+    D <- nrow(X); N <- ncol(X)
+    Z <- X
+    C0 <- Z
+    Nz <- ncol(C0)
+    
+    if('K' %in% names(extra_arguments))
+      G <- get_knn(C0, K = extra_arguments$K)
+    else
+      G <- get_knn(C0, K = 5)
+
+    l1_graph_res <- principal_graph(t(reduced_dim_res[, 1:max_components]), C0, G$G, gstruct = 'l1-graph', verbose = T, ...)
+    colnames(l1_graph_res$C) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    DCs <- t(reduced_dim_res[, 1:max_components])
+    colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    
+    reducedDimW(cds) <- DCs
+    reducedDimS(cds) <- DCs
+    reducedDimK(cds) <- l1_graph_res$C
+    cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+    cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
+    cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
+    
+    adjusted_K <- Matrix::t(reducedDimK(cds))
+    dp <- as.matrix(dist(adjusted_K))
+    cellPairwiseDistances(cds) <- dp
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+    cds@dim_reduce_type <- "DDRTree"
+    cds <- findNearestPointOnMST(cds)
+    }
+  else if(reduction_method == "L1-span-tree") {
+    if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want 
+      tryCatch({
+        reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+        reduced_dim_res
+      }, error = function(e) { 
+        error('Your initial method throws numerical errors!')
+      })
+    }
+    else{
+      if(verbose)
+        message('running DPT ...')
+      reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+    }
+    if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
+      error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
+    
+    if(verbose)
+      message('running L1-span tree ...')
+    
+    X <- t(reduced_dim_res[, 1:max_components])
+    D <- nrow(X); N <- ncol(X)
+    Z <- X
+    C0 <- Z
+    Nz <- ncol(C0)
+    
+    if('K' %in% names(extra_arguments))
+      G <- get_knn(C0, K = extra_arguments$K)
+    else
+      G <- get_knn(C0, K = 5)
+    
+    l1_graph_res <- principal_graph(t(reduced_dim_res[, 1:max_components]), C0, G$G, gstruct = 'span-tree', verbose = T, ...)
+    colnames(l1_graph_res$C) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    DCs <- t(reduced_dim_res[, 1:max_components])
+    colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    
+    reducedDimW(cds) <- DCs
+    reducedDimS(cds) <- DCs #1_graph_res$X
+    reducedDimK(cds) <- l1_graph_res$C
+    cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+    cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
+    cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
+    
+    adjusted_K <- Matrix::t(reducedDimK(cds))
+    dp <- as.matrix(dist(adjusted_K))
+    cellPairwiseDistances(cds) <- dp
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    minSpanningTree(cds) <- dp_mst
+    cds@dim_reduce_type <- "DDRTree"
+    cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "spl"){
       message('This option is not ready yet')
