@@ -301,8 +301,7 @@ relative2abs <- function(relative_cds,
 }
 #' Spike-in transcripts data.
 #'
-#' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
-#'  Nature paper from Stephen Quake group)
+#' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from Truetlein et al. (2014)
 #' @name spike_df
 #' @docType data
 #' @keywords datasets
