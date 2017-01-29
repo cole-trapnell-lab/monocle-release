@@ -6,11 +6,11 @@ monocle_theme_opts <- function()
 {
     theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
     theme(panel.border = element_blank()) +
-    theme(strip.text = element_text(size=30, face="bold")) +
-    theme(axis.title = element_text(size=22,face="bold")) +
-    theme(axis.text.x = element_text(size=18, color="black")) +
-    theme(axis.text.y = element_text(size=18, color="black")) +
-    theme(legend.text=element_text(size=17, color="black")) +
+    theme(strip.text = element_text(size=31, face="bold")) +
+    theme(axis.title = element_text(size=24, face="bold")) +
+    theme(axis.text.x = element_text(size=16, color="black", face="bold")) +
+    theme(axis.text.y = element_text(size=16, color="black", face="bold")) +
+    theme(legend.text=element_text(size=18, color="black")) +
     theme(legend.title=element_text(size=19, color="black")) +
     theme(axis.line.x = element_line(size=0.65, color="black")) +
     theme(axis.line.y = element_line(size=0.65, color="black")) +
