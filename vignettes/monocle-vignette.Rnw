@@ -1009,7 +1009,6 @@ coordinates and branch assignments using this manifold. Monocle also uses the
 manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reverse graph embedding for single-cell trajectory
 analysis will be forthcoming (Qiu et al, in preparation).
-
 \subsection{Census}\label{Census}
 In \cite{qiu2017single}, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with negative binomial distribution can dramatically improve the differential expression test. We also introduced BEAM (Branch Expression Analysis Models), an new statistical test to identify genes significantly change between two different branches We will give briefly description on Census and BEAM as following. 
 
@@ -1024,10 +1023,13 @@ M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,
 where $\epsilon$ is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of the total TPM of all expressed genes in a single cell. That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes. However, cDNA and PCR amplification steps during library prep can lead to superlinear growth in the relative abundance of a transcript as a function of copy number. In practice, the above formula often over-estimates total mRNAs in the lysate. To alleviate this issue, we used an alternative formula in Census:
 
 \begin{equation}
-M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}
+%\begin{align*}\textsc{}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}  
+= \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*)} (x \geq \epsilon)
+%\end{align*}
 \end{equation}
 
-where $F_X$ represents the cumulative distribution function for the TPM values for cell $i$ (we used the ecdf() function in R). Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above . Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in \cite{qiu2017single}), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by $\frac{1}{\theta}$ to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate $\theta$ a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study \cite{qiu2017single}, we assume a value of $0.25$, which is close to the lung and neuron experiments of Truetlein et al. 
+where $F_X$ represents the cumulative distribution function for the TPM values for all genes with expression value larger than $\epsilon$ in cell $i$ (we used the ecdf() function in R). Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed in each cell, which correlates with the total number of transcripts counts in that cell. Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in \cite{qiu2017single}), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by $\frac{1}{\theta}$ to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate $\theta$ a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study \cite{qiu2017single}, we assume a value of $0.25$, which is close to the lung and neuron experiments of Truetlein et al. 
 
 With an estimate of the total lysate mRNAs $M_i$ in cell $i$, we simply rescale its TPM values into mRNA counts for each gene:
 
