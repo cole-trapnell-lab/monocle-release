@@ -1024,7 +1024,7 @@ where $\epsilon$ is a TPM value below which no mRNA is believed to be present (b
 \begin{equation}
 %\begin{align*}\textsc{}
 M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}  
-= \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*)} (x \geq \epsilon)
+= \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*)}\quad\quad\quad\quad (x \geq \epsilon)
 %\end{align*}
 \end{equation}
 
