@@ -1583,15 +1583,16 @@ reduceDimension <- function(cds,
 
     l1_graph_res <- do.call(principal_graph, l1graph_args)
 
-    colnames(l1_graph_res$C) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    colnames(l1_graph_res$C) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
     DCs <- t(reduced_dim_res[, 1:max_components])
     colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
 
-    colnames(l1_graph_res$W) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-    rownames(l1_graph_res$W) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    colnames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+    rownames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
 
+    row.names(l1_graph_res$X) <- colnames(cds)
     reducedDimW(cds) <- l1_graph_res$W
-    reducedDimS(cds) <- DCs
+    reducedDimS(cds) <- l1_graph_res$X
     reducedDimK(cds) <- l1_graph_res$C
     cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
     cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
@@ -1600,7 +1601,11 @@ reduceDimension <- function(cds,
     adjusted_K <- Matrix::t(reducedDimK(cds))
     dp <- as.matrix(dist(adjusted_K))
     cellPairwiseDistances(cds) <- dp
-    gp <- graph.adjacency(l1_graph_res$W, mode = "undirected", weighted = TRUE)
+
+    dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
+    W <- l1_graph_res$W
+    W[W < 1e-5] <- 0
+    gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     cds@dim_reduce_type <- "DDRTree"

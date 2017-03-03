@@ -145,7 +145,7 @@ clusterCells_Density_Peak <- function(cds,
 #' @import densityClust
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 #' @export
-selectFeatureByDP <- function(cds, num_cells_expressed = 5, num_dim = 5, rho_threshold = NULL, delta_threshold = NULL, qval_threshold = 0.01, verbose = F){
+dpFeature <- function(cds, num_cells_expressed = 5, num_dim = 5, rho_threshold = NULL, delta_threshold = NULL, qval_threshold = 0.01, verbose = F){
   #1. determine how many pca dimension you want:
   cds <- detectGenes(cds)
   fData(cds)$use_for_ordering[fData(cds)$num_cells_expressed > num_cells_expressed] <- T
