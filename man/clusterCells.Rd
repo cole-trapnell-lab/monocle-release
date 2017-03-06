@@ -2,35 +2,48 @@
 % Please edit documentation in R/clustering.R
 \name{clusterCells}
 \alias{clusterCells}
-\title{Cluster cells into a specified number of groups.}
+\title{Cluster cells into a specified number of groups based on .}
 \usage{
-clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
+clusterCells(cds, skip_rho_sigma = F, number_clusters = NULL,
+  inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
+  peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
   frequency_thresh = NULL, enrichment_thresh = NULL,
-  clustering_genes = NULL, max_components = 10,
-  residualModelFormulaStr = NULL, param.gamma = 100, verbose = F, ...)
+  clustering_genes = NULL, method = c("densityPeak", "DDRTree"),
+  verbose = F, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
-\item{num_clusters}{number of desired cell clusters}
+\item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
 
-\item{cell_type_hierarchy}{the CellTypeHierarchy that divides the cells from cds into different types of cells}
+\item{number_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters}
+
+\item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
+
+\item{rho_threshold}{The threshold of local density (rho) used to select the density peaks}
+
+\item{delta_threshold}{The threshold of local distance (delta) used to select the density peaks}
+
+\item{peaks}{A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.
+will automatically calculated based on the top num_cluster product of rho and sigma.}
+
+\item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
+
+\item{cell_type_hierarchy}{includeDescrip}
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
 \item{enrichment_thresh}{includeDescrip}
 
-\item{clustering_genes}{a vector of genes used to differentiate between the cell types in the CellTypeHierarchy}
+\item{clustering_genes}{includeDescrip}
 
-\item{max_components}{number of dimensions to project the data into via \code{\link{reduceDimension}()}}
-
-\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
-
-\item{param.gamma}{gamma parameter for DDRTree}
+\item{method}{method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
+The other method is based on DDRTree.}
 
 \item{verbose}{Verbose parameter for DDRTree}
 
-\item{...}{Additional arguments passed to \code{\link{reduceDimension}()}}
+\item{...}{Additional arguments passed to \code{\link{densityClust}()}}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
@@ -41,6 +54,12 @@ workflows. In an experiment containing a mixture of cell types, each cluster mig
 correspond to a different cell type. This method takes a CellDataSet as input
 along with a requested number of clusters, clusters them with an unsupervised 
 algorithm, and then returns the CellDataSet with the cluster assignments stored in
-the pData table.
+the pData table. When number of clusters is set to NULL (num_clusters = NULL), 
+the decision plot as introduced in the above citation will be plotted and the 
+users are required to click on the decision plot to select the rho and delta 
+to determine the number of clusters to cluster.
+}
+\references{
+Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 }
 

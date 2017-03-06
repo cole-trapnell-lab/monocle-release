@@ -739,7 +739,7 @@ Monocle integrates several reversed graph embedding algorithms for reconstructin
 Result after applying SimplePPT: 
 <<run_SimplePPT, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
 #run SimplePPT
-lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'simplePPT') #
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SimplePPT') #
 lung <- orderCells(lung)
 plot_cell_trajectory(lung, color_by="Time")
 @ %def 
@@ -759,6 +759,65 @@ lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_meth
 plot_cell_trajectory(lung, color_by="Time", show_branch_points = F)
 @ %def 
 
+\subsection{Initialize RGE with other non-linear dimension reduction method}
+Recently, there are a few groups applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate the trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial_method} in \Rfunction{reduceDimension}. For example, we can use the nice package $destiny$ from Fabian group to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
+
+<<dpt_dm, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run L1 graph
+library(destiny)
+run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
+  if(verbose)
+    message('root should be the id to the cell not the cell name ....')
+
+  data <- data[!duplicated(data), ]
+  dm <- DiffusionMap(as.matrix(data))
+  return(dm@eigenvectors)
+}
+@ %def 
+
+Result after applying DDRTree: 
+<<run_DDRTree_dpt, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run DDRTree
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'DDRTree', initial_method = run_dpt) #
+lung <- orderCells(lung)
+plot_cell_trajectory(lung, color_by="Time")
+@ %def 
+
+Result after applying SimplePPT: 
+<<run_SimplePPT_dpt, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run SimplePPT
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SimplePPT', initial_method = run_dpt) #
+lung <- orderCells(lung)
+plot_cell_trajectory(lung, color_by="Time")
+@ %def 
+
+Result after applying SGL-tree: 
+<<run_SGL_tree_dpt, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run SGL-tree
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SGL-tree', initial_method = run_dpt) #
+lung <- orderCells(lung)
+plot_cell_trajectory(lung, color_by="Time")
+@ %def 
+
+Result after applying L1-graph: 
+<<run_L1_graph_dpt, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run L1 graph
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'L1-graph', initial_method = run_dpt) #
+plot_cell_trajectory(lung, color_by="Time", show_branch_points = F)
+@ %def 
+
+\subsection{Reverse embed the low dimension data back to high dimension data}
+DDRTree learns cell positions in the intrinsic low dimension space and a principal graph for those positions as well as a mapping function from low dimension back to the high dimension. We can apply this mapping function to those cell positions to recover the "de-noised" high dimension data point. Then we will scale up the de-noised data point to match up the expression in the original data. This can be directly achieved by using \Rfunction{reverseEnbeddingCDS}. 
+
+<<reverseEnbedingCDS, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center", fig.show='hold'>>=
+#run reverseEnbedingCDS
+lung <- load_lung() # rerun lung data with DDRTree
+RGE_cds <- reverseEnbeddingCDS(lung)
+plot_genes_in_pseudotime(RGE_cds[1, ])
+plot_genes_in_pseudotime(lung[1, ])
+@ %def 
+
+One observation we can immediately make is that reverse embedded data are smoother and the drop out in the original data are largely alleviated. Whether or not we can apply the denoised data for downstream analysis or for data imputation for dropout may be interesting future directions. 
 
 \section{Differential expression analysis}
  

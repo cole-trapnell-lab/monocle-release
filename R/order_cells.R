@@ -1136,7 +1136,7 @@ orderCells <- function(cds,
     reducedDimW(cds) <- old_W
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-  } else if (cds@dim_reduce_type == "simplePPT"){
+  } else if (cds@dim_reduce_type == "SimplePPT"){
     if (is.null(num_paths) == FALSE){
       message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
     }
@@ -1311,7 +1311,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("vstExprs", "log", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL,
@@ -1512,10 +1512,10 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }
-  else if(reduction_method == "simplePPT") {
+  else if(reduction_method == "SimplePPT") {
       if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
         tryCatch({
-          reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+          reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
         reduced_dim_res
         }, error = function(e) {
           error('Your initial method throws numerical errors!')
@@ -1530,7 +1530,7 @@ reduceDimension <- function(cds,
         error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
 
       if(verbose)
-        message('running simplePPT ...')
+        message('running SimplePPT ...')
       
       simplePPT_args <- c(list(X=t(reduced_dim_res[, 1:max_components]), verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("lambda", "bandwidth", "maxIter")])
@@ -1558,7 +1558,7 @@ reduceDimension <- function(cds,
   else if(reduction_method == "L1-graph") {
     if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
       tryCatch({
-        reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+        reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
         reduced_dim_res
       }, error = function(e) {
         error('Your initial method throws numerical errors!')
@@ -1629,7 +1629,7 @@ reduceDimension <- function(cds,
   else if(reduction_method == "SGL-tree") {
     if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
       tryCatch({
-        reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+        reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
         reduced_dim_res
       }, error = function(e) {
         error('Your initial method throws numerical errors!')
@@ -1933,26 +1933,34 @@ SubSet_cds <- function(cds, cells){
 #' Reverse enbedding latent graph coordinates back to the high dimension
 #'
 #' @param cds a cell dataset after trajectory reconstruction
-#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded.
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
 #' @export
-reverseEnbedingCDS <- function(cds) {
+
+reverseEnbeddingCDS <- function(cds) {
   if(nrow(cds@reducedDimW) < 1)
     stop('You need to first apply reduceDimension function on your cds before the reverse embedding')
-
-  FM <- normalize_expr_data(cds, norm_method = 'log')
-
+  
+  FM <- monocle:::normalize_expr_data(cds, norm_method = 'log')
+  
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
   xm <- Matrix::rowMeans(FM)
   xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
   FM <- FM[xsd > 0,]
-
-  reverse_embedding_data <- reducedDimW(cds) %*% reducedDimK(cds)
+  
+  reverse_embedding_data <- reducedDimW(cds) %*% reducedDimS(cds)
   row.names(reverse_embedding_data) <- row.names(FM)
-
+  
   cds_subset <- cds[row.names(FM), ]
+  
+  #make every value larger than 1: 
+  reverse_embedding_data <- t(apply(reverse_embedding_data, 1, function(x) x + abs(min(x))))
+  
+  #rescale to the original scale: 
+  raw_data <- as.matrix(exprs(cds)[row.names(FM), ]) 
+  reverse_embedding_data <- reverse_embedding_data * (apply(raw_data, 1, function(x) quantile(x, 0.99)) ) / apply(reverse_embedding_data, 1, max)
 
   exprs(cds_subset) <- reverse_embedding_data
-
+  
   return(cds_subset)
 }
 
