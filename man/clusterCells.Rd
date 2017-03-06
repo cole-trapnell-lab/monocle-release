@@ -18,6 +18,8 @@ clusterCells(cds, num_clusters, cell_type_hierarchy = NULL,
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
+\item{enrichment_thresh}{includeDescrip}
+
 \item{clustering_genes}{a vector of genes used to differentiate between the cell types in the CellTypeHierarchy}
 
 \item{max_components}{number of dimensions to project the data into via \code{\link{reduceDimension}()}}

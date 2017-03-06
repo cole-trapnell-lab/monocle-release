@@ -152,7 +152,6 @@ data(HSMM_sample_sheet)
  Other sparse matrix packages, such as \Rpackage{slam} or \Rpackage{SparseM} are not supported.
  
  
- 
  \subsection{Converting relative expression values into mRNA counts} \label{conv_rel2abs}
  
 If you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC). RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them. In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment. Monocle 2 includes an algorithm called \emph{Census} which performs this conversion (Qiu \emph{et al}, submitted). You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
@@ -265,13 +264,14 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  cth <- newCellTypeHierarchy()
  cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
- cth <- addCellType(cth, "Fibroblast", classify_func=function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+ cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+        {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
  @ %def
  
  The functions are organized into a small data structure called a \Robject{CellTypeHierarchy}, that Monocle uses to classify the cells. You first initialize a new CellTypeHierarchy object, then register your gating functions within it. Once the data strucure is set up, you can use it to classify all the cells in the experiment:
  
  <<count_cells_unsup, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- classifyCells(HSMM, cth)
+ HSMM <- classifyCells(HSMM, cth, 0.1)
  @ %def
  
  The function \Rfunction{classifyCells} applies each gating function to each cell, classifies the cells according to the gating functions, and returns the \Robject{CellDataSet} with a new column, \Robject{CellType} in its \Robject{pData} table. We can now count how many cells of each type there are in the experiment.
@@ -287,55 +287,6 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  
  Note that many cells are marked ``Unknown''. This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments. A cell might express a few \emph{MYF5} mRNAs, but we weren't lucky enough to capture one of them. When a cell doesn't meet any of the criteria specified in your classification functions, it's marked ``Unknown''. If it meets multiple functions' criteria, it's marked ``Ambiguous''. You could just exclude such cells, but you'd be throwing out a lot of your data. In this case, we'd lose more than half of the cells!
 
- \subsection{Unsupervised feature selection based on density peak clustering}
- 	An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{Trapnell2014-fv}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
-	
-	First, dpFeature filters genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the expressed genes and then users can decide the number of principal components (PCs) used for downstream analysis based on whether or not there is a significant drop in the variance explained at the selected component. These top PCs will be further used to initialize t-SNE which projects the cells into two-dimension t-SNE space. Third, dpFeature uses a recently developed density based clustering algorithm, called density peak clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and distance ($\delta$) of a cell to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called decision plot. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell to form clusters. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between a negative-binomial generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes, after Benjamini-Hochberg correction, as the ordering genes for the trajectory reconstruction. 
-
-#prepare your cds and set the clustering genes as genes expressed larger than 5 (you may need to adjust this based on your data)
- <<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
- fData(HSMM)$use_for_ordering <- fData(HSMM)$num_cells_expressed > 0.05 * ncol(HSMM)
-@ %def
- 
-#procedure to run density peak clustering 
-#1. determine how many pca dimension you want: 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-plot_pc_variance_explained(HSMM, return_all = F) #look at the plot and decide how many dimensions you need. It is determined by a huge drop of variance at that dimension. pass that number to num_dim in the next function. I used 10 there. 
-@ %def
-
-#2. run reduceDimension with tSNE as the reduction_method 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- reduceDimension(HSMM, max_components=2, norm_method = 'log', num_dim = 9, reduction_method = 'tSNE', verbose = T)
-@ %def
-
-#3. initial run of clusterCells_Density_Peak
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- clusterCells_Density_Peak(HSMM, verbose = T)
-@ %def
-
-#4. check the clusters 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
-plot_cell_clusters(HSMM, color_by = 'as.factor(Hours)', show_density = F)
-@ %def
-
-#5. also check the decision plot 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-plot_rho_delta(HSMM, rho_threshold = 2, delta_threshold = 10 )
-@ %def
-
-#6. re-run cluster and skipping calculating the rho_sigma 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- clusterCells_Density_Peak(HSMM, verbose = T,  rho_threshold = 2, delta_threshold = 10, skip_rho_sigma = T)
-@ %def
-
-#7. make the final clustering plot: 
-<<select_expressed_genes, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
-plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
-
-
-@ %def
-
  \subsection{Unsupervised cell clustering}
  Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithms, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
  
@@ -343,7 +294,8 @@ plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
  
  <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
  disp_table <- dispersionTable(HSMM)
- unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 & dispersion_empirical >= 1 * dispersion_fit)
+ unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 
+                                  & dispersion_empirical >= 1 * dispersion_fit)
  HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
  plot_ordering_genes(HSMM)
  @ %def
@@ -352,10 +304,16 @@ plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
  
  Now we're ready to try clustering the cells:
  
- <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- clusterCells(HSMM, num_clusters=2)
- 
- plot_cell_trajectory(HSMM, 1, 2, color="CellType")
+ <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
+# HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
+plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, 
+                        reduction_method = 'tSNE', verbose = T) 
+HSMM <- clusterCells(HSMM,
+  number_clusters=2,
+  clustering_genes=unsup_clustering_genes$gene_id) 
+
+plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
  
  As you can see, the cells fall into two different clusters. The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. Unfortunately, the cells don't cluster by type. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions. 
@@ -363,28 +321,37 @@ plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
  Moroever, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
  
  <<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- plot_cell_trajectory(HSMM, 1, 2, color="Media")
+ plot_cell_clusters(HSMM, 1, 2, color="Media")
  @ %def
 
  Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
  
- <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media", num_clusters=2)
- 
- plot_cell_trajectory(HSMM, 1, 2, color="Media")
+ <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
+                        residualModelFormulaStr="~Media", verbose = T)
+HSMM <- clusterCells(HSMM,
+                                  number_clusters=2,
+                                  clustering_genes=unsup_clustering_genes$gene_id)
+# HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media", num_clusters=2)
+#  
+ plot_cell_clusters(HSMM, 1, 2, color="Media")
  @ %def
  
  Now the culture media appears to play less of a role in the clustering. Another common \emph{technical} source of variation is the efficiency of the library construction reaction (particularly the cDNA synthesis steps). When library prep goes particularly well for a cell, we'll recover more mRNA and detect more genes from it.  We can control for this effect and the media effect at the same time by expanding the residual model:
  
  <<cluster_cells_unsup_control_for_media_and_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media + num_genes_expressed", num_clusters=2)
- plot_cell_trajectory(HSMM, 1, 2, color="num_genes_expressed")
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
+                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
+HSMM <- clusterCells(HSMM,
+                                  number_clusters=2,
+                                  clustering_genes=unsup_clustering_genes$gene_id)
+ plot_cell_clusters(HSMM, 1, 2, color="num_genes_expressed")
  @ %def
  
  Now that we've accounted for some unwanted sources of variation, we're ready to take another crack at classifying the cells by unsupervised clustering:
  
  <<cluster_cells_unsup_plot_by_cell_type, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- plot_cell_trajectory(HSMM, 1, 2, color="CellType")
+ plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
  
  Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both. However, we still see some cells of both types in each cluster. This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering. To help rule out the latter, let's try running \Rfunction{clusterCells} in its semi-supervised mode.  
@@ -417,12 +384,16 @@ plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
  
  Note that we've got a smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
  
- <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- clusterCells(HSMM,
-                      num_clusters=2, 
-                      clustering_genes=semisup_clustering_genes,
-                      residualModelFormulaStr="~Media + num_genes_expressed")
- plot_cell_trajectory(HSMM, 1, 2, color="CellType")
+ <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
+HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
+plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 4, reduction_method = 'tSNE', 
+                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
+HSMM <- clusterCells(HSMM,
+  number_clusters=2,
+  clustering_genes=semisup_clustering_genes) #
+
+plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
  
  \subsection{Imputing cell type}
@@ -430,15 +401,19 @@ plot_cell_clusters(HSMM, color_by = 'as.factor(Cluster)', show_density = F)
  Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
  
  <<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
- HSMM <- clusterCells(HSMM,
+HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
+          
+HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
+plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 4, reduction_method = 'tSNE', residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #norm_method = 'log'
+
+HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
                       frequency_thresh=0.1,
-                      enrichment_thresh=1,
                       cell_type_hierarchy=cth,
                       clustering_genes=row.names(subset(marker_diff, qval < 0.05)),
                       residualModelFormulaStr="~Media + num_genes_expressed")
-
- plot_cell_trajectory(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
+ plot_cell_clusters(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
  @ %def
  As you can see, the clusters are highly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
  
@@ -596,7 +571,84 @@ HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 @ %def
 
- 
+\subsection{Unsupervised feature selection based on density peak clustering}
+During our reanalysis of many sc RNA-seq data, we find that genes informative for biological 
+processes often form block structure among clusters of cells involved in the process. 
+We thus developed a unsupervised algorithm, DPfeature, to select those feature genes for reconstructing the trajectory. 
+
+DPfeature works as following:
+Firstly, we need to set the superset of feature genes as genes expressed at least $5\%$ among all the cells. 
+<<set_ordering_gene_dpfeature, fig.height=3, fig.width=3, fig.align="center", eval=TRUE, warning=FALSE>>=
+  fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo)
+@ %def
+Then we will perform a PCA analysis to identify the variance explained by each PC (principal component). 
+We can look at scree plot and determine how many pca dimensions you want based on whether or not there is a 
+significant gap between that component and the component after it. By selecting only the high loading PCs, 
+we effectively only focus on the more interesting biological variations.  
+<<plot_pc_variance, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
+  HSMM_myo@auxClusteringData[["tSNE"]]$variance_explained <- NULL
+plot_pc_variance_explained(HSMM_myo, return_all = F) #look at the plot and decide how many dimensions you need. It is determined by a huge drop of variance at that dimension. pass that number to num_dim in the next function. I used 10 there. 
+@ %def
+
+We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimension.  
+<<perform tSNE dimension reduction, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 4, reduction_method = 'tSNE', verbose = T)
+@ %def
+
+Then we can run density peak clustering to identify the clusters on the 2-D t-SNE space. Density peak algorithm clusters cells based on each 
+cell's local density ($\rho$) and the nearest distance $\delta$ of a cell to another cell with higher distance. We can set a threshold for 
+the $\rho, \delta$ and define any cells with higher local density and distance than the thresholds as the density peaks. Those peaks are then 
+used to define the clusters for all cells. By default, \Rfunction{clusterCells} choose $95\%$ of $\rho$ and $\delta$ to define 
+the thresholds. We can also set a number of clusters ($n$) we want to cluster. In this setting, we will find the top $n$ cells with high 
+$\delta$ with $\rho$ among the top $50\%$ range. The default setting often gives good clustering. 
+
+<<cluster cells, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+HSMM_myo <- clusterCells(HSMM_myo, verbose = F)
+@ %def
+
+After the clustering, we can check the clustering results. 
+<<check the clustering results, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)', show_density = F)
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)', show_density = F)
+@ %def
+
+We also provide the decision plot for users to check the $\rho, \delta$ for each cell and decide the threshold for defining the cell clusters. 
+<<plot_rho_delta, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 10 )
+@ %def
+
+We could then re-run clustering based on the user defined threshold. To facilitate the computation, we can set \Rfunction(skip\_rho\_sigma = T) 
+which enable us skipping the calculation of the $\rho, \sigma$.  
+<<recluster_cells_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+HSMM_myo <- clusterCells(HSMM_myo,  rho_threshold = 2, delta_threshold = 10, skip_rho_sigma = T, verbose = F)
+@ %def
+
+We can check the final clustering results as following: 
+<<check_clustering_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)', show_density = F)
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)', show_density = F)
+@ %def
+
+After we confirm the clustering makes sense, we can then perform differential gene expression test as a value to identify those block genes. 
+<<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+clustering_DEG_genes <- differentialGeneTest(HSMM_myo, fullModelFormulaStr = '~Cluster', cores = detectCores() - 2)
+clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo), ]
+@ %def
+
+Note that the DEG test is a heuristic approach to identify the genes with block structure, in future we may provide a more principled 
+approach to directly identify those genes with block expression. We will then select the top $1000$ significant genes as the ordering genes. 
+<<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] #1971
+
+HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
+HSMM_myo <- reduceDimension(HSMM_myo)
+HSMM_myo <- orderCells(HSMM_myo)
+
+plot_cell_trajectory(HSMM_myo, color_by="Hours")
+
+@ %def
+
+
  \subsection{Semi-supervised ordering with known marker genes}
  
  Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will often fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's ``semi-supervised'' ordering mode can help you focus on the aspects of the process you're interested in.
@@ -605,8 +657,8 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
  
  As we saw before, myoblasts begin differnentation by exiting the cell cycle and then proceed through a sequence of regulatory events that leads to expression of some key muscle-specific proteins needed for contraction. We can mark cycling cells with cyclin B2 (\emph{CCNB2}) and recognize myotubes as those cells expressed high levels of myosin heavy chain 3 (\emph{MYH3}).
  <<semi_sup_ordering_myoblast_cth, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
- CCNB2_id <- row.names(subset(fData(HSMM), gene_short_name == "CCNB2"))
- MYH3_id <- row.names(subset(fData(HSMM), gene_short_name == "MYH3"))
+ CCNB2_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "CCNB2"))
+ MYH3_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "MYH3"))
  
  cth <- newCellTypeHierarchy()
  cth <- addCellType(cth, "Cycling myoblast", classify_func=function(x) {x[CCNB2_id,] >= 1})
@@ -662,6 +714,7 @@ If however, we want to change the root of the tree, we first plot the trajectory
 plot_cell_trajectory(lung, color_by="State")
 lung <- orderCells(lung, root_state=3)
 plot_cell_trajectory(lung, color_by="Pseudotime")
+
 @ %def 
 
 If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
@@ -679,7 +732,35 @@ plot_genes_jitter(lung[lung_genes,], grouping="State")
 
 Here we can see that State 1 is the proliferative state on the basis high expression of Cyclin B2.
 
- \section{Differential expression analysis}
+\subsection{Applying other reversed graph embedding algorithms for trajectory reconstruction}
+
+Monocle integrates several reversed graph embedding algorithms for reconstructing the developmental trajectory. By default, monocle uses DDRTree for trajectory reconstruction which learns the principal graph and performs dimension reduction simulatenously. On the other hand, users may be interested in performing a dimension reduction first and then apply Monocle to learn the principal graph on the reduced dimension. For example, users of the destiny package (another nice method for pseudotime estimation and branch identification (\cite{})), can first apply diffusion map and then learn the prinicipal graph on the low dimension. By default, simplePPT, SGL-tree and  $\mathcal{L}_1$-graph use PCA as initial dimension reduction. It then learns the principal graph on the low dimensional PCA space. The following scripts show how can we run simplePPT and SGL-tree easily. Because $\mathcal{L}_1$-graph tries to learn a general graph which is a very difficult task, the graph learned from $\mathcal{L}_1$-graph captures the main structure of the data, the disconnected component from the graph often prevents us to have an easy solution to assign pseudotime for each cell. On the other hand, since L1-graph can learn arbitrary structure, it is promising to learn loop structure or other disconnected graph structure. Monocle users should expect more powerful methods based on L1-graph will be released soon. 
+
+Result after applying SimplePPT: 
+<<run_SimplePPT, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run SimplePPT
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'simplePPT') #
+lung <- orderCells(lung)
+plot_cell_trajectory(lung, color_by="Time")
+@ %def 
+
+Result after applying SGL-tree: 
+<<run_SGL_tree, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run SGL-tree
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SGL-tree') #
+lung <- orderCells(lung)
+plot_cell_trajectory(lung, color_by="Time")
+@ %def 
+
+Result after applying L1-graph: 
+<<run_L1_graph, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+#run L1 graph
+lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'L1-graph') #
+plot_cell_trajectory(lung, color_by="Time", show_branch_points = F)
+@ %def 
+
+
+\section{Differential expression analysis}
  
  Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the \Robject{phenoData} table of each \Robject{CellDataSet}.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
  
@@ -828,7 +909,7 @@ Here we can see that State 1 is the proliferative state on the basis high expres
    facet_wrap( ~ feature_label, scales="free_y")
  @ %def 
  
- \section{Analyzing branches in single-cell trajectories} \label{BEAM}
+ \section{Analyzing branches in single-cell trajectories} \label{BEAM_trajectory}
  
  Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
  
@@ -878,15 +959,20 @@ Monocle 2 is a near-complete re-write of Monocle 1. Monocle 2 is geared towards 
  
 Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree\cite{Mao2015-cs}, described below in section \ref{theory}. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1. The algorithm is also far less sensitive to outliers, so careful QC and selection of high quality cells is less critical.  Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment. Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
  
-Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings. 
+Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points\cite{qiu2017single}. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings. 
  
-A manuscript describing Monocle 2 and the general stragegy of using reverse 
+A manuscript describing Monocle 2 and the general stragegy of using reversed 
 graph embedding for single-cell trajectory analysis will be forthcoming 
 (Qiu et al, in preparation). Until it appears, please continue to cite \cite{TRAPNELL_CACCHIARELLI}
 when you use Monocle or discuss single-cell pseudotemporal ordering in your work.
  
 \section{Theory behind Monocle}\label{theory}
- 
+\subsection{DPfeature: feature selection by detecting DEGs across cluster of cells}
+An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{Trapnell2014-fv}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
+	
+First, dpFeature filters genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the expressed genes and then users can decide the number of principal components (PCs) used for downstream analysis based on whether or not there is a significant drop in the variance explained at the selected component. These top PCs will be further used to initialize t-SNE which projects the cells into two-dimension t-SNE space. Third, dpFeature uses a recently developed density based clustering algorithm, called density peak clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and distance ($\delta$) of a cell to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called decision plot. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell to form clusters. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between a negative-binomial generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes, after Benjamini-Hochberg correction, as the ordering genes for the trajectory reconstruction. 
+	
+\subsection{Reversed graph embedding}\label{RGE}
 Single-cell expression datasets are some of the largest and most complex encountered
 in genomics. Even the smallest single-cell RNA-Seq experiments sample hundreds of cells, measuring the
 expression level of the more than 20,000 genes in each cell. Visualizing these
@@ -909,7 +995,7 @@ first step. Conventional, dimensionality reduction approaches (for
 example, PCA, ICA, Isomap, LLE, etc.) are limited in their ability to explictly 
 recover the intrinisic structure from the data. 
 
-Monocle 2 uses a newly developed technique, called reverse graph embedding, 
+Monocle 2 uses a newly developed technique, called reversed graph embedding, 
 to simultaneously: 
 
 \begin{enumerate}
@@ -927,22 +1013,22 @@ linear and branched trajectories automatically. To our knowledge, Monocle 2 is t
 trajectory reconstruction algorithm to learn smooth tree-like manifolds without
 needing to know its high-level structure ahead of time.
 
-\subsection{Reverse graph embedding}
+\subsection{Reversed graph embedding}
 
-Monocle 2 uses a technique called \emph{reverse graph embedding}\cite{Mao_undated-xi} to learn the 
+Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao_undated-xi} to learn the 
 structure of the manifold that describes a single-cell experiment.
 
-Reverse graph embedding simultaneously learns a \emph{principal graph} that
+Reversed graph embedding simultaneously learns a \emph{principal graph} that
 approximates the manifold, as well as a function that maps points on the graph 
 (which is embedded in low dimensions) back to the original high dimensional space.
-Reverse graph embedding aims to learn both a set of \emph{latent points} 
+Reversed graph embedding aims to learn both a set of \emph{latent points} 
 $\mathcal{Z} = \{\mathbf{z}_1, ..., \mathbf{z}_M\}$ corresponding to the input data
 that reside in the low-dimensional space along with a graph $\mathcal{G}$ that
 connects them. This graph approximates the manifold. In order to map points on 
 the manifold back to the original high-dimensional input space, we also need to 
 learn a function $f_{\mathcal{G}}$.  
 
-Learning a good reverse graph embedding can be described as an optimization problem that 
+Learning a good reversed graph embedding can be described as an optimization problem that 
 joint captures the positions of the latent points $\mathbf{z}$, the graph $\mathcal{G}$, and the function
 $f_\mathcal{G}$.
 
@@ -972,7 +1058,7 @@ image under $f_\mathcal{G}$ (that is, their corresponding positions in the high-
 will be "close" to the input data. The second optimization aims to keep latent
 points that are close to one another in the low dimensional space close to one 
 another in the high dimensional space as well. These two goals must be balanced
-against one another. Reverse graph embedding achieves this through the parameter
+against one another. Reversed graph embedding achieves this through the parameter
 $\lambda$
 
 \begin{equation}
@@ -981,16 +1067,16 @@ $\lambda$
 b_{i,j}||f_g(\mathbf{z}_i) - f_g(\mathbf{z}_j)||^2
 \end{equation}
 
-Reverse graph embedding requires a feasible set $\hat{\mathcal{G}}_b$ of graph and a 
-mapping function $f_\mathcal{G}$. In practice, implementing reverse graph embedding
+Reversed graph embedding requires a feasible set $\hat{\mathcal{G}}_b$ of graph and a 
+mapping function $f_\mathcal{G}$. In practice, implementing reversed graph embedding
 requires that we place some constraints on $\hat{\mathcal{G}}_b$ and $f_\mathcal{G}$.
-As work on reverse graph embedding continues, we anticipate that more general 
+As work on reversed graph embedding continues, we anticipate that more general 
 schemes that consider a wider range of feasible graphs and mapping functions will
-become available. Monocle users should expect more general reverse graph embedding
+become available. Monocle users should expect more general reversed graph embedding
 schemes in future versions.
 
 Mao \emph{et al} initially described two specific ways to implement the general framework
-of reverse graph embedding. Both are briefly summarized below. See the original
+of reversed graph embedding. Both are briefly summarized below. See the original
 paper on DDRTree for more details. Monocle 2 uses the second scheme, but can easily be
 run in a mode that corresponds to the first.
 
@@ -1055,8 +1141,68 @@ a number of key performance optimizations. Monocle 2 calls DDRTree to learn the
 core manifold describing a \Robject{CellDataSet}, and then computes pseudotime
 coordinates and branch assignments using this manifold. Monocle also uses the 
 manifold in downstream analysis steps such as BEAM. A manuscript describing the
-general stragegy of using reverse graph embedding for single-cell trajectory
-analysis will be forthcoming (Qiu et al, in preparation).
+general stragegy of using reversed graph embedding for single-cell trajectory
+analysis has been posted on biorxiv (\cite{}).
+
+\subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
+SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
+
+\subsection{The principal $\mathcal{L}_1$ graph algorithm.}\label{L1}
+	Mao et al later proposed an extension of SimplePPT that can learn arbitrary graphs, rather than just trees, which describe large datasets embedded in the same space as the input \cite{Mao2016-ru}. An $\mathcal{L}_1$ graph is a sparse graph which is based on the assumption that each data point (or cell) has a small number of neighborhoods in which the minimum number of points that span a low-dimensional affine subspace \cite{Boyd2004-xw} passing through that point. In addition, there may exist noise in certain elements of $z_i$ and a natural idea is to estimate the edge weights by tolerating these errors. In general, a sparse solution is more robust and facilitates the consequent identification of test sample (or sequenced single-cell samples). Unlike SimplePPT, this method learns the graph by formulating the optimization as a linear programming problem. 
+	
+	In the same work\cite{Mao2016-ru}, they also proposed a generalization of SimplePPT, which we term as SGL-tree (Principal Graph and Structure Learning for tree),  to learn tree structure for large dataset by similarly considering clustering of data points as in DDRTree. Principal $\mathcal{L}_1$ graph and SGL-tree are all treated as SGL in this study. 
+	
+\subsection{Census}\label{Census}
+In \cite{qiu2017single}, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with the negative binomial distribution can dramatically improve the differential expression test compared to using the negative binomial with read counts or the Tobit with TPM/FPKM values. 
+
+Census aims to convert relative abundances $X_{ij}$ into lysate transcript counts $Y_{ij}$. Without loss of generality, we consider relative abundances is on the TPM scale, and assume that a gene's TPM value is proportional to the relative frequencies of its mRNA within the total pool of mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j = 1}Y_{ij}}$.  The generative model discussed in Qiu \emph{et al.} predicts that when only a minority of the transcripts in a cell is captured in the library, signal from most detectably expressed genes will originate from a single mRNA.  Because the number of sequencing reads per transcript is proportionate to molecular frequency after normalizing for length (i.e. TPM or FPKM), all such genes in a given cell should have similar TPM values.  
+
+Census works by first identifying the (log-transformed) TPM value in each cell $i$, written as $x_i^*$, that corresponds to genes from which signal originates from a single transcript. Because our generative model predicts that these most detectable genes should fall into this category, we simply estimate $x_i^*$ as the mode of the log-transformed TPM distribution for cell $i$. This mode is obtained by log-transforming the TPM values, performing a Gaussian kernel density estimation and then identifying the peak of the distribution. Given the TPM value for a single transcript in cell $i$, it is straightforward to convert all relative abundances to their lysate transcript counts. The total number of mRNAs captured for cell $i$ can be estimated as:
+
+\begin{equation}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,j}dX}
+\end{equation}
+
+where $\epsilon$ is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed genes in a single cell. That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes, as illustrated in Figure 1A of \cite{qiu2017single}. However, cDNA and PCR amplification steps during library prep can lead to superlinear growth in the relative abundance of a transcript as a function of copy number. In practice, the above formula often over-estimates total mRNAs in the lysate. To alleviate this issue, we used an alternative formula in Census:
+
+\begin{equation}
+%\begin{align*}\textsc{}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}  
+= \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*)}\quad\quad\quad\quad (x \geq \epsilon)
+%\end{align*}
+\end{equation}
+
+where $F_{X_i}$ represents the cumulative distribution function for the TPM values of genes expressed above $\epsilon$ for cell $i$. Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above $\epsilon$. Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in \cite{qiu2017single}), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by $\frac{1}{\theta}$ to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate $\theta$ a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study \cite{qiu2017single}, we assume a value of $0.25$, which is close to the lung and neuron experiments of Truetlein et al. 
+
+With an estimate of the total lysate mRNAs $M_i$ in cell $i$, we simply rescale its TPM values into mRNA counts for each gene:
+
+\begin{equation}
+\hat{Y}_{ij} = X_{ij} \cdot \frac{M_i} {10^6}
+\end{equation}
+
+For more details about Census, including a generative model of the single-cell RNA-seq process, and some discussion of Census's limitations, please see the original study \cite{qiu2017single}. Importantly, Census cannot control for non-linear amplification, and should therefore be considered as a simple but effective way to normalize relative expression levels so that they work better with the negative binomial distribution. Census counts should \emph{not} be treated as absolute transcript counts.
+
+\subsection{BEAM}\label{BEAM}
+Monocle 2 assigns each cell a pseudotime value and a "State" encoding the segment of the trajectory it resides upon based on a trajectory learning algorithm (See below). 
+In Monocle 2, we develop BEAM to test for branch-dependent gene expression by formulating the problem as a contrast between two negative binomial GLMs. 
+
+The null model 
+\begin{equation}
+expression \sim sm.ns(Pseudotime)
+\end{equation}
+for the test assumes the gene being tested is not a branch specific gene, whereas the alternative model: 
+\begin{equation}
+expression \sim sm.ns(Pseudotime) + Branch + sm.ns(Pseudotime) : Branch 
+\end{equation}
+
+assumes that the gene is a branch specific gene where $:$  represents an interaction term between branch and transformed pseudotime. Each model includes a natural spline (here with three degrees of freedom) describing smooth changes in mean expression as a function of pseudotime. The null model fits only a single curve, whereas the alternative will fit a distinct curve for each branch. Our current implementation of Monocle 2 relies on VGAM's "smart" spline fitting functionality, hence the use of the sm.ns() function instead of the more widely used ns() function from the splines package in R. Likelihood ratio testing was performed with the VGAM lrtest() function, similar to Monocle's other differential expression tests. A significant branch-dependent genes means that the gene has distinct expression dynamics along each branch, with smoothed curves that have different shapes.
+
+To fit the full model, each cell must be assigned to the appropriate branch, which is coded through the factor "Branch" in the above model formula. Monocle's function for testing branch dependence accepts an argument specifying which branches are to be compared. These arguments are specified using the 'State' attribute assigned by Monocle during trajectory reconstructions. For example, in our analysis of the Truetlein et al data, Monocle 2 reconstructed a trajectory with two branches ($L_{AT1}, L_{AT2}$ for AT1 and AT2 lineages, respectively), and three states ($S_{BP}, S_{AT1}, S_{AT2}$ for progenitor, AT1, or AT2 cells). The user specifies that he or she wants to compare $L_{AT1}$ and $L_{AT2}$ by providing $S_{AT1}$ and $S_{AT2}$ as arguments to the function. Alternatively, the user can specify a branch point leading to the two states. Monocle then assigns all the cells with state $S_{AT1}$ to branch $L_{AT1}$ and similarly for the $AT2$ cells. However, the cells with $S_{BP}$ must be members of both branches, because they are on the path from each branch back to the root of the tree. In order to ensure the independence of data points required for the LRT as well as the robustness and stability of our algorithm, we implemented a strategy to partition the progenitor cells into two groups, with each branch receiving a group. The groups are computed by simply ranking the progenitor cells by pseudotime and assigning the odd-numbered cells to one group and the even numbered cells to the other. We assign the first progenitor to both branches to ensure they start at the same time which is required for spline fitting involved in the test. 
+
+In order to facilitate  downstream branch kinetic curve clusterin as well as branch time point detection. In the current implmentation of monocle 2, we duplicate the progenitor cells and assign it to both lineage before spline fitting. The branch plots in section \emph{Analyzing branches in single-cell trajectories} use this method.
+
+\subsection{Branch time point detection}\label{branchtime}
+The branching time point for each gene can be quantified by fitting a separate spline curves for each branch from all the progenitor to each cell fate. To robustly detect the pseudotime point ($t_\beta^i$) when a gene $i$ with a branching expression pattern starts to diverge between two cell fates $L_1, L_2$, we developed the branch time point detection algorithm. The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the \emph{supplementary note 1} for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene $i$'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, $t_{\beta}^i$ , for that particular gene $i$.  
 %  
 % \section{Using Monocle with other data types}
 %  

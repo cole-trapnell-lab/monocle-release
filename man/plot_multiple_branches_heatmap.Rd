@@ -13,6 +13,8 @@ plot_multiple_branches_heatmap(cds, branches, branches_name = NULL,
   cores = 1)
 }
 \arguments{
+\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
+
 \item{branches}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
 
 \item{branches_name}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
@@ -44,8 +46,6 @@ plot_multiple_branches_heatmap(cds, branches, branches_name = NULL,
 \item{return_heatmap}{Whether to return the pheatmap object to the user.}
 
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
-
-\item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
 }
 \value{
 A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),

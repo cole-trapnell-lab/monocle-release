@@ -187,6 +187,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
 #' @param cds The CelllDataSet you want to classify
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
+#' @param enrichment_thresh includeDescrip
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
 #' @importFrom dplyr add_rownames select_ do group_by_ inner_join
 #' @importFrom Biobase pData pData<-

@@ -29,7 +29,13 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
+\item{cell_type_hierarchy}{includeDescrip}
+
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
+
+\item{enrichment_thresh}{includeDescrip}
+
+\item{clustering_genes}{includeDescrip}
 
 \item{verbose}{Verbose parameter for DDRTree}
 

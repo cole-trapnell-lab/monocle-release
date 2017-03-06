@@ -1,3 +1,8 @@
+run_pca <- function(data, ...) {
+  res <- prcomp(data, center = F, scale = F)
+  res$x
+}
+
 #' Run dpt for dimension reduction
 #'
 #' This function perform dimension reduction with dpt
@@ -8,6 +13,7 @@
 #' @param root Index to the root cell, if no root cell set, a random cell will be picked up
 #' @param verbose A logic argument to determine whether or not to print running message
 #' @return a list
+#' 
 run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
   if(verbose)
     message('root should be the id to the cell not the cell name ....')
@@ -1288,6 +1294,9 @@ normalize_expr_data <- function(cds,
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param relative_expr includeDescrip
+#' @param auto_param_selection includeDescrip
+#' @param scaling includeDescrip
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
@@ -1297,11 +1306,12 @@ normalize_expr_data <- function(cds,
 #' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
+#' @import Rtsne
 #' @importFrom stats dist
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT", 'L1-graph', 'L1-span-tree'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "simplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("vstExprs", "log", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL,
@@ -1430,7 +1440,7 @@ reduceDimension <- function(cds,
       #set the important information from densityClust to certain part of the cds object:
       cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
       cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data)
-      cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex
+      #cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex
 
       cds@dim_reduce_type <- "tSNE"
     }
@@ -1513,16 +1523,20 @@ reduceDimension <- function(cds,
       }
       else{
         if(verbose)
-          message('running DPT ...')
-        reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+          message('running PCA (no further scaling or center) ...')
+        reduced_dim_res <- run_pca(t(FM))
       }
       if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
         error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
 
       if(verbose)
         message('running simplePPT ...')
-      simplePPT_res <- principal_tree(t(reduced_dim_res[, 1:max_components]), MU = NULL, lambda = 1, bandwidth = 30, maxIter = 10, verbose = verbose)
-
+      
+      simplePPT_args <- c(list(X=t(reduced_dim_res[, 1:max_components]), verbose = verbose),
+                    extra_arguments[names(extra_arguments) %in% c("lambda", "bandwidth", "maxIter")])
+      #browser()
+      simplePPT_res <- do.call(principal_tree, simplePPT_args)
+      
       colnames(simplePPT_res$MU) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       DCs <- t(reduced_dim_res[, 1:max_components])
       colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
@@ -1552,8 +1566,8 @@ reduceDimension <- function(cds,
     }
     else{
       if(verbose)
-        message('running DPT ...')
-      reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+        message('running PCA (no further scaling or center) ...')
+      reduced_dim_res <- run_pca(t(FM))
     }
     if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
       error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
@@ -1572,13 +1586,13 @@ reduceDimension <- function(cds,
       C0 <- X
     Nz <- ncol(C0)
 
-    print(extra_arguments)
+    # print(extra_arguments)
     if('nn' %in% names(extra_arguments))
       G <- get_knn(C0, K = extra_arguments$nn)
     else
       G <- get_knn(C0, K = 5)
 
-    l1graph_args <- c(list(X = t(reduced_dim_res[, 1:max_components]), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = T),
+    l1graph_args <- c(list(X = t(reduced_dim_res[, 1:max_components]), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = verbose),
                          extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'lambda', 'gamma', 'sigma', 'nn')])
 
     l1_graph_res <- do.call(principal_graph, l1graph_args)
@@ -1590,9 +1604,10 @@ reduceDimension <- function(cds,
     colnames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
     rownames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
 
-    row.names(l1_graph_res$X) <- colnames(cds)
+    
+    # row.names(l1_graph_res$X) <- colnames(cds)
     reducedDimW(cds) <- l1_graph_res$W
-    reducedDimS(cds) <- l1_graph_res$X
+    reducedDimS(cds) <- DCs
     reducedDimK(cds) <- l1_graph_res$C
     cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
     cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
@@ -1602,8 +1617,8 @@ reduceDimension <- function(cds,
     dp <- as.matrix(dist(adjusted_K))
     cellPairwiseDistances(cds) <- dp
 
-    dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
     W <- l1_graph_res$W
+    dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
     W[W < 1e-5] <- 0
     gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
     # dp_mst <- minimum.spanning.tree(gp)
@@ -1611,7 +1626,7 @@ reduceDimension <- function(cds,
     cds@dim_reduce_type <- "DDRTree"
     cds <- findNearestPointOnMST(cds)
     }
-  else if(reduction_method == "L1-span-tree") {
+  else if(reduction_method == "SGL-tree") {
     if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
       tryCatch({
         reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
@@ -1622,14 +1637,14 @@ reduceDimension <- function(cds,
     }
     else{
       if(verbose)
-        message('running DPT ...')
-      reduced_dim_res <- run_dpt(t(FM), norm_method = norm_method, verbose = verbose)
+        message('running PCA (no further scaling or center) ...')
+      reduced_dim_res <- run_pca(t(FM))
     }
     if(dim(reduced_dim_res)[1] != ncol(FM) & dim(reduced_dim_res)[2] < max_components )
       error("Your initial method don't generate result match the required dimension nrow(FM) * > max_components")
 
     if(verbose)
-      message('running L1-span tree ...')
+      message('running SGL-tree ...')
 
     X <- t(reduced_dim_res[, 1:max_components])
     D <- nrow(X); N <- ncol(X)
@@ -1642,10 +1657,9 @@ reduceDimension <- function(cds,
     else
       G <- get_knn(C0, K = 5)
 
-    l1graph_args <- c(list(X = t(reduced_dim_res[, 1:max_components]), C0 = C0, G = G$G, gstruct = 'span-tree', verbose = T),
+    l1graph_args <- c(list(X = t(reduced_dim_res[, 1:max_components]), C0 = C0, G = G$G, gstruct = 'span-tree', verbose = verbose),
                          extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'lambda', 'gamma', 'sigma', 'nn')])
 
-    print(l1graph_args)
     l1_graph_res <- do.call(principal_graph, l1graph_args)
 
     colnames(l1_graph_res$C) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
@@ -1944,8 +1958,11 @@ reverseEnbedingCDS <- function(cds) {
 
 #' Function to decide a good number of centers for running DDRTree on big datasets
 #'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded.
+#' @param cds a cell dataset after trajectory reconstruction 
+#' @param ncells includeDescrip
+#' @param ncells_limit includeDescrip
+#' @usage cds includeDescrip will place a better description when warnings no longer appear
+#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded. 
 #' @export
 cal_ncenter <- function(ncells, ncells_limit = 100){
   round(2 * ncells_limit * log(ncells)/ (log(ncells) + log(ncells_limit)))
