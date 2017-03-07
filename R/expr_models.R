@@ -27,7 +27,7 @@ fit_model_helper <- function(x,
         }
         f_expression <- round(x)
         if (is.null(disp_func) == FALSE) {
-            disp_guess <- calulate_NB_dispersion_hint(disp_func,
+            disp_guess <- calculate_NB_dispersion_hint(disp_func,
                 round(orig_x))
             if (is.null(disp_guess) == FALSE && disp_guess >
                 0 && is.na(disp_guess) == FALSE) {
@@ -62,7 +62,7 @@ fit_model_helper <- function(x,
         #print(disp_guess)
         backup_expression_family <- NULL
         if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-            disp_guess <- calulate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
+            disp_guess <- calculate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
             backup_expression_family <- negbinomial()
         }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
           backup_expression_family <- NULL
@@ -240,7 +240,7 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
   
     if(cores > 1) {
       expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, new_data, fit_model_helper, responseMatrix, 
-                                                              calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
+                                                              calculate_NB_dispersion_hint, calculate_QP_dispersion_hint){
             environment(fit_model_helper) <- environment()
             environment(responseMatrix) <- environment()
             model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily, 
@@ -254,8 +254,8 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
             #return(expression_curve)
             }, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr"), cores=cores, 
             trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr, new_data = new_data, 
-            fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
-            calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
+            fit_model_helper = fit_model_helper, responseMatrix = responseMatrix, calculate_NB_dispersion_hint = calculate_NB_dispersion_hint,
+            calculate_QP_dispersion_hint = calculate_QP_dispersion_hint
             )
         expression_curve_matrix <- as.matrix(do.call(rbind, expression_curve_matrix))
         return(expression_curve_matrix)
@@ -302,7 +302,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
   
   if(cores > 1) {
     expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, fit_model_helper, residualMatrix, 
-                                                    calulate_NB_dispersion_hint, calulate_QP_dispersion_hint){
+                                                    calculate_NB_dispersion_hint, calculate_QP_dispersion_hint){
       environment(fit_model_helper) <- environment()
       environment(responseMatrix) <- environment()
       model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
@@ -316,8 +316,8 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
       #return(expression_curve)
     }, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr"), cores=cores, 
     trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr,
-    fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calulate_NB_dispersion_hint = calulate_NB_dispersion_hint,
-    calulate_QP_dispersion_hint = calulate_QP_dispersion_hint
+    fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calculate_NB_dispersion_hint = calculate_NB_dispersion_hint,
+    calculate_QP_dispersion_hint = calculate_QP_dispersion_hint
     )
     expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
     return(expression_curve_matrix)
@@ -559,7 +559,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
 }
 
 #' @importFrom stats var
-calulate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
+calculate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
 {
   expr_hint <- expr_selection_func(f_expression)
   if (expr_hint > 0 && is.null(expr_hint) == FALSE) {
@@ -580,9 +580,9 @@ calulate_NB_dispersion_hint <- function(disp_func, f_expression, expr_selection_
 
 # note that quasipoisson expects a slightly different format for the 
 # dispersion parameter, hence the differences in return value between
-# this function and calulate_NB_dispersion_hint
+# this function and calculate_NB_dispersion_hint
 #' @importFrom stats var
-calulate_QP_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
+calculate_QP_dispersion_hint <- function(disp_func, f_expression, expr_selection_func=mean)
 {
   expr_hint <- expr_selection_func(f_expression)
   if (expr_hint > 0 && is.null(expr_hint) == FALSE) {
