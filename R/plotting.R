@@ -2024,14 +2024,14 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' plot_pc_variance_explained(HSMM)
 #' }
 plot_pc_variance_explained <- function(cds, 
-                            # max_components=2, 
-                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                            norm_method = c("vstExprs", "log", "none"), 
-                            residualModelFormulaStr=NULL,
-                            pseudo_expr=NULL, 
-                            return_all = F, 
-                            verbose=FALSE,
-                            ...){
+                                       # max_components=2, 
+                                       # reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                                       norm_method = c("vstExprs", "log", "none"), 
+                                       residualModelFormulaStr=NULL,
+                                       pseudo_expr=NULL, 
+                                       return_all = F, 
+                                       verbose=FALSE,
+                                       ...){
   if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
   }
@@ -2049,7 +2049,7 @@ plot_pc_variance_explained <- function(cds,
         message("Removing batch effects")
       X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
                                          data = pData(cds), drop.unused.levels = TRUE)
-
+      
       fit <- limma::lmFit(FM, X.model_mat, ...)
       beta <- fit$coefficients[, -1, drop = FALSE]
       beta[is.na(beta)] <- 0
@@ -2083,9 +2083,9 @@ plot_pc_variance_explained <- function(cds,
   }
   
   p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
-      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
-      theme(panel.background = element_rect(fill='white')) + xlab('components') + 
-      ylab('variance explained by each component')
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    theme(panel.background = element_rect(fill='white')) + xlab('components') + 
+    ylab('variance explained by each component')
   # return(prop_varex = prop_varex, p = p)
   if(return_all) {
     return(list(variance_explained = prop_varex, p = p))

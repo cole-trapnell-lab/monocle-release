@@ -56,9 +56,9 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param gaussian A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
 #' @param verbose Verbose parameter for DDRTree
-#' @param cell_type_hierarchy includeDescrip
+#' @param cell_type_hierarchy A data structure used for organizing functions that can be used for organizing cells 
 #' @param enrichment_thresh includeDescrip
-#' @param clustering_genes includeDescrip
+#' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @param method method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
 #' The other method is based on DDRTree. 
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -83,7 +83,7 @@ clusterCells <- function(cds,
                           verbose = F, 
                           ...) {
 
-  if(method == 'method') {
+  if(method == 'DDRTree') {
     # disp_table <- dispersionTable(cds)
     # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
     # cds <- setOrderingFilter(cds, ordering_genes)

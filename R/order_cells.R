@@ -12,6 +12,7 @@ run_pca <- function(data, ...) {
 #' @param norm_method A character argument to determine which normalization method used for preprocessing the data
 #' @param root Index to the root cell, if no root cell set, a random cell will be picked up
 #' @param verbose A logic argument to determine whether or not to print running message
+#' @import destiny
 #' @return a list
 #' 
 run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
@@ -23,7 +24,7 @@ run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbo
   dpt <- DPT(dm, branching = branching)
 
   ts <- dm@transitions
-  M <- destiny:::accumulated_transitions(dm)
+  M <- destiny::accumulated_transitions(dm)
 
   branch <- dpt@branch
   row.names(branch) <- row.names(data[!duplicated(data), ])
@@ -1309,6 +1310,7 @@ normalize_expr_data <- function(cds,
 #' @import Rtsne
 #' @importFrom stats dist
 #' @export
+
 reduceDimension <- function(cds,
                             max_components=2,
                             reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),

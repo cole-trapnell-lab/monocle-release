@@ -26,6 +26,10 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 }
 \begin{document}
 
+
+
+\SweaveOpts{concordance=TRUE}
+
 <<package_loads, include=FALSE, eval=TRUE>>=
 library(Biobase)
 library(knitr)
@@ -80,14 +84,15 @@ data(HSMM_sample_sheet)
  \item \Robject{featureData}, an \Rpackage{AnnotatedDataFrame} object, where rows are features (e.g. genes), and columns are gene attributes, such as biotype, gc content, etc.
  \end{enumerate}
  
- The expression value matrix \emph{must} have the same number of columns as the \Robject{phenoData} has rows, and it must have the same number of rows as the \Robject{featureData} data frame has rows. Row names of the \Robject{phenoData} object should match the column names of the expression matrix. Row names of the \Robject{featureData} object should match row names of the expression matrix.
+ The expression value matrix \emph{must} have the same number of columns as the \Robject{phenoData} has rows, and it must have the same number of rows as the \Robject{featureData} data frame has rows. Row names of the \Robject{phenoData} object should match the column names of the expression matrix. Row names of the \Robject{featureData} object should match row names of the expression matrix. Also, one of the columns of the 
+ \Robject{featureData} must be named "gene\_short\_name".
  
  You can create a new \Rclass{CellDataSet} object as follows:  
  
  <<load_data_tables, eval=FALSE>>=
  #not run
  HSMM_expr_matrix <- read.table("fpkm_matrix.txt")
- HSMM_sample_sheet <- read.delim("cell_sample_sheet.txt")
+ HSMM_sample_sheet <- read.delim("cell_sample_sheet.txt") 
  HSMM_gene_annotation <- read.delim("gene_annotations.txt")
  @ %def
  
@@ -288,9 +293,9 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Note that many cells are marked ``Unknown''. This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments. A cell might express a few \emph{MYF5} mRNAs, but we weren't lucky enough to capture one of them. When a cell doesn't meet any of the criteria specified in your classification functions, it's marked ``Unknown''. If it meets multiple functions' criteria, it's marked ``Ambiguous''. You could just exclude such cells, but you'd be throwing out a lot of your data. In this case, we'd lose more than half of the cells!
 
  \subsection{Unsupervised cell clustering}
- Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithms, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
+ Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithm, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
  
- The first step is to decide which genes to use in clustering the cells. We could use all genes, but we'd be including a lot of genes that are not expressed at a high enough level to provide meaningful signal. Including them would just add noise to the system. We can filter genes based on average expression level, and we can additionally select genes that are unusually variable across cells. These genes tend to be highly informative about cell state.
+ The first step is to decide which genes to use in clustering the cells. We could use all genes, but we'd be including a lot of genes that are not expressed at a high enough level to provide a meaningful signal. Including them would just add noise to the system. We can filter genes based on average expression level, and we can additionally select genes that are unusually variable across cells. These genes tend to be highly informative about cell state.
  
  <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
  disp_table <- dispersionTable(HSMM)
@@ -307,10 +312,10 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
 # HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 7, 
                         reduction_method = 'tSNE', verbose = T) 
 HSMM <- clusterCells(HSMM,
-  number_clusters=2,
+  num_clusters=2,
   clustering_genes=unsup_clustering_genes$gene_id) 
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
@@ -330,7 +335,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
                         residualModelFormulaStr="~Media", verbose = T)
 HSMM <- clusterCells(HSMM,
-                                  number_clusters=2,
+                                  num_clusters=2,
                                   clustering_genes=unsup_clustering_genes$gene_id)
 # HSMM <- clusterCells(HSMM, residualModelFormulaStr="~Media", num_clusters=2)
 #  
@@ -343,7 +348,7 @@ HSMM <- clusterCells(HSMM,
 HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
                         residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
 HSMM <- clusterCells(HSMM,
-                                  number_clusters=2,
+                                  num_clusters=2,
                                   clustering_genes=unsup_clustering_genes$gene_id)
  plot_cell_clusters(HSMM, 1, 2, color="num_genes_expressed")
  @ %def
@@ -387,10 +392,10 @@ HSMM <- clusterCells(HSMM,
  <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
 HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 4, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, reduction_method = 'tSNE', 
                         residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
 HSMM <- clusterCells(HSMM,
-  number_clusters=2,
+  num_clusters=2,
   clustering_genes=semisup_clustering_genes) #
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
@@ -405,7 +410,7 @@ HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
           
 HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 4, reduction_method = 'tSNE', residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #norm_method = 'log'
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 7, reduction_method = 'tSNE', residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #norm_method = 'log'
 
 HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
@@ -572,17 +577,17 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 @ %def
 
 \subsection{Unsupervised feature selection based on density peak clustering}
-During our reanalysis of many sc RNA-seq data, we find that genes informative for biological 
-processes often form block structure among clusters of cells involved in the process. 
+During our reanalysis of many sc RNA-seq data, we find that informative genes for biological
+processes often form a block structure among clusters of cells involved in the process.
 We thus developed a unsupervised algorithm, DPfeature, to select those feature genes for reconstructing the trajectory. 
 
 DPfeature works as following:
-Firstly, we need to set the superset of feature genes as genes expressed at least $5\%$ among all the cells. 
+First, we need to set the superset of feature genes as genes expressed in at least $5\%$ of all the cells. 
 <<set_ordering_gene_dpfeature, fig.height=3, fig.width=3, fig.align="center", eval=TRUE, warning=FALSE>>=
   fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo)
 @ %def
 Then we will perform a PCA analysis to identify the variance explained by each PC (principal component). 
-We can look at scree plot and determine how many pca dimensions you want based on whether or not there is a 
+We can look at a scree plot and determine how many pca dimensions are wanted based on whether or not there is a 
 significant gap between that component and the component after it. By selecting only the high loading PCs, 
 we effectively only focus on the more interesting biological variations.  
 <<plot_pc_variance, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
@@ -590,14 +595,14 @@ we effectively only focus on the more interesting biological variations.
 plot_pc_variance_explained(HSMM_myo, return_all = F) #look at the plot and decide how many dimensions you need. It is determined by a huge drop of variance at that dimension. pass that number to num_dim in the next function. I used 10 there. 
 @ %def
 
-We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimension.  
+We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.  
 <<perform tSNE dimension reduction, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 4, reduction_method = 'tSNE', verbose = T)
+  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 8, reduction_method = 'tSNE', verbose = T)
 @ %def
 
 Then we can run density peak clustering to identify the clusters on the 2-D t-SNE space. Density peak algorithm clusters cells based on each 
 cell's local density ($\rho$) and the nearest distance $\delta$ of a cell to another cell with higher distance. We can set a threshold for 
-the $\rho, \delta$ and define any cells with higher local density and distance than the thresholds as the density peaks. Those peaks are then 
+the $\rho, \delta$ and define any cell with a higher local density and distance than the thresholds as the density peaks. Those peaks are then 
 used to define the clusters for all cells. By default, \Rfunction{clusterCells} choose $95\%$ of $\rho$ and $\delta$ to define 
 the thresholds. We can also set a number of clusters ($n$) we want to cluster. In this setting, we will find the top $n$ cells with high 
 $\delta$ with $\rho$ among the top $50\%$ range. The default setting often gives good clustering. 
@@ -614,13 +619,13 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)', show_density = F)
 
 We also provide the decision plot for users to check the $\rho, \delta$ for each cell and decide the threshold for defining the cell clusters. 
 <<plot_rho_delta, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 10 )
+plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 @ %def
 
 We could then re-run clustering based on the user defined threshold. To facilitate the computation, we can set \Rfunction(skip\_rho\_sigma = T) 
-which enable us skipping the calculation of the $\rho, \sigma$.  
+which enables us to skip the calculation of the $\rho, \sigma$.  
 <<recluster_cells_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_myo <- clusterCells(HSMM_myo,  rho_threshold = 2, delta_threshold = 10, skip_rho_sigma = T, verbose = F)
+HSMM_myo <- clusterCells(HSMM_myo,  rho_threshold = 2, delta_threshold = 4, skip_rho_sigma = T, verbose = F)
 @ %def
 
 We can check the final clustering results as following: 
@@ -734,7 +739,7 @@ Here we can see that State 1 is the proliferative state on the basis high expres
 
 \subsection{Applying other reversed graph embedding algorithms for trajectory reconstruction}
 
-Monocle integrates several reversed graph embedding algorithms for reconstructing the developmental trajectory. By default, monocle uses DDRTree for trajectory reconstruction which learns the principal graph and performs dimension reduction simulatenously. On the other hand, users may be interested in performing a dimension reduction first and then apply Monocle to learn the principal graph on the reduced dimension. For example, users of the destiny package (another nice method for pseudotime estimation and branch identification (\cite{})), can first apply diffusion map and then learn the prinicipal graph on the low dimension. By default, simplePPT, SGL-tree and  $\mathcal{L}_1$-graph use PCA as initial dimension reduction. It then learns the principal graph on the low dimensional PCA space. The following scripts show how can we run simplePPT and SGL-tree easily. Because $\mathcal{L}_1$-graph tries to learn a general graph which is a very difficult task, the graph learned from $\mathcal{L}_1$-graph captures the main structure of the data, the disconnected component from the graph often prevents us to have an easy solution to assign pseudotime for each cell. On the other hand, since L1-graph can learn arbitrary structure, it is promising to learn loop structure or other disconnected graph structure. Monocle users should expect more powerful methods based on L1-graph will be released soon. 
+Monocle integrates several reversed graph embedding algorithms for reconstructing the developmental trajectory. By default, monocle uses DDRTree for trajectory reconstruction which learns the principal graph and performs dimension reduction simulatenously. On the other hand, users may be interested in performing a dimension reduction first and then apply Monocle to learn the principal graph on the reduced dimension. For example, users of the destiny package (another nice method for pseudotime estimation and branch identification (\cite{})), can first apply diffusion map and then learn the prinicipal graph on the low dimension. By default, simplePPT, SGL-tree and  $\mathcal{L}_1$-graph use PCA for initial dimension reduction. It then learns the principal graph on the low dimensional PCA space. The following scripts show how can we run simplePPT and SGL-tree easily. Because $\mathcal{L}_1$-graph tries to learn a general graph, which is a very difficult task, the graph learned from $\mathcal{L}_1$-graph captures the main structure of the data, the disconnected component from the graph often prevents us from having an easy solution to assign the pseudotime for each cell. On the other hand, since an L1-graph can learn an arbitrary structures, it is promising to learn loop structures or other disconnected graph structures. Monocle users should expect more powerful methods based on L1-graph to be released soon. 
 
 Result after applying SimplePPT: 
 <<run_SimplePPT, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
@@ -760,7 +765,7 @@ plot_cell_trajectory(lung, color_by="Time", show_branch_points = F)
 @ %def 
 
 \subsection{Initialize RGE with other non-linear dimension reduction method}
-Recently, there are a few groups applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate the trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial_method} in \Rfunction{reduceDimension}. For example, we can use the nice package $destiny$ from Fabian group to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
+Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial\_method} in \Rfunction{reduceDimension}. For example, we can use the nice package $destiny$ , from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
 
 <<dpt_dm, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
 #run L1 graph
@@ -817,7 +822,7 @@ plot_genes_in_pseudotime(RGE_cds[1, ])
 plot_genes_in_pseudotime(lung[1, ])
 @ %def 
 
-One observation we can immediately make is that reverse embedded data are smoother and the drop out in the original data are largely alleviated. Whether or not we can apply the denoised data for downstream analysis or for data imputation for dropout may be interesting future directions. 
+One observation we can immediately make is that reverse embedded data are smoother and the drop out in the original data are largely alleviated. Whether or not we can apply the de-noised data for downstream analysis or for data imputation for dropout could be future directions worth exploring. 
 
 \section{Differential expression analysis}
  
