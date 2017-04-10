@@ -1483,7 +1483,7 @@ reduceDimension <- function(cds,
 
       # TODO: DDRTree should really work with sparse matrices.
       if(auto_param_selection & ncol(cds) >= 100){
-        if(names(ncenter %in% extra_arguments)) #avoid overwrite the ncenter parameter
+        if(names("ncenter" %in% extra_arguments)) #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
         else
           ncenter <- cal_ncenter(ncol(FM))
