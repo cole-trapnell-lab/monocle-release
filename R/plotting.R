@@ -2016,6 +2016,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @param return_all A logical argument to determine whether or not the variance of each component is returned
+#' @param use_existing_pc_variance Whether to plot existing results for variance explained by each PC
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @export
 #' @examples
@@ -2030,9 +2031,10 @@ plot_pc_variance_explained <- function(cds,
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             return_all = F, 
-                            verbose=FALSE,
+                            use_existing_pc_variance=FALSE,
+                            verbose=FALSE, 
                             ...){
-  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
   }
   else{
