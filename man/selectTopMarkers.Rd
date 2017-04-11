@@ -20,4 +20,3 @@ the most specific genes for each cell type. Convenient, for example, for
 selecting a balanced set of genes to be used in semi-supervised clustering 
 or ordering.
 }
-

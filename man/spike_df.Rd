@@ -18,7 +18,7 @@
 spike_df
 }
 \description{
-A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from Truetlein et al. (2014)
+A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
+ Nature paper from Stephen Quake group)
 }
 \keyword{datasets}
-

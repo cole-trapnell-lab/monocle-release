@@ -62,4 +62,3 @@ annotation_row (annotation data.frame for the row), annotation_col (annotation d
 \description{
 Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
 }
-

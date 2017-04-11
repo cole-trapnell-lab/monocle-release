@@ -16,4 +16,3 @@ pq_helper(mst, use_weights = TRUE, root_node = NULL)
 \description{
 Recursively builds and returns a PQ tree for the MST
 }
-

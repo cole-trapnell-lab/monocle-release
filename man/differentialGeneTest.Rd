@@ -34,4 +34,3 @@ lineage models as implemented by the \code{VGAM} package.
 \seealso{
 \code{\link[VGAM]{vglm}}
 }
-

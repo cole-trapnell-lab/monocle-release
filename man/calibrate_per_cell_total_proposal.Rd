@@ -5,7 +5,7 @@
 \title{Calibrate_per_cell_total_proposal}
 \usage{
 calibrate_per_cell_total_proposal(relative_exprs_matrix, t_estimate,
-  expected_capture_rate)
+  expected_capture_rate, method = c("num_genes", "tpm_fraction"))
 }
 \arguments{
 \item{relative_exprs_matrix}{The matrix of relative TPM expression values}
@@ -13,8 +13,9 @@ calibrate_per_cell_total_proposal(relative_exprs_matrix, t_estimate,
 \item{t_estimate}{the TPM value that corresponds to 1 cDNA copy per cell}
 
 \item{expected_capture_rate}{The fraction of mRNAs captured as cDNAs}
+
+\item{method}{the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)}
 }
 \description{
 Calibrate_per_cell_total_proposal
 }
-

@@ -22,4 +22,3 @@ a matrix where each row is a vector of response values for a particular feature'
 \description{
 Generates a matrix of response values for a set of fitted models
 }
-

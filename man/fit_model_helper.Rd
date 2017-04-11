@@ -25,4 +25,3 @@ fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr,
 \description{
 test
 }
-

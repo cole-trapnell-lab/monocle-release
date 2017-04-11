@@ -35,4 +35,3 @@ and returns a version where the cells are assigned to one of two branches.
 The branch for each cell is encoded in a new column, "Branch", in the pData
 table in the returned CellDataSet.
 }
-

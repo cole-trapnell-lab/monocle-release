@@ -30,4 +30,3 @@ Filter genes with extremely high or low negentropy
 reasonableNegentropy <- selectNegentropyGenes(HSMM, "07\%", "95\%", 1, 100)
 }
 }
-

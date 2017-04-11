@@ -38,4 +38,3 @@ HSMM_fpkm_matrix <- exprs(HSMM)
 t_estimate = estimate_t(HSMM_fpkm_matrix)
 }
 }
-

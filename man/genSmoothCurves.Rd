@@ -27,4 +27,3 @@ a data frame containing the data for the fitted spline curves.
 This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return
 the corresponding response matrix. This function is build on other functions (fit_models and responseMatrix) and used in calILRs and calABCs functions
 }
-

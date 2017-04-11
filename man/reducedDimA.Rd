@@ -22,4 +22,3 @@ dimension space back to the full (whitened) space.
 A <- reducedDimA(HSMM)
 }
 }
-
