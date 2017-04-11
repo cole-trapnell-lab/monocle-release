@@ -24,4 +24,3 @@ coordinates of your cells in the reduced space.
 S <- reducedDimS(HSMM)
 }
 }
-

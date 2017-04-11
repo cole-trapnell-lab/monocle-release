@@ -5,15 +5,18 @@
 \title{Calculate the Instantaneous Log Ratio between two branches}
 \usage{
 calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-  trajectory_states = c(2, 3), relative_expr = TRUE, stretch = TRUE,
-  cores = 1, ILRs_limit = 3, label_by_short_name = TRUE, useVST = FALSE,
-  round_exprs = FALSE, output_type = "all", branch_labels = NULL,
-  file = NULL, return_all = F, verbose = FALSE, ...)
+  branch_point = 1, trajectory_states = NULL, relative_expr = TRUE,
+  stretch = TRUE, cores = 1, ILRs_limit = 3, label_by_short_name = TRUE,
+  useVST = FALSE, round_exprs = FALSE, output_type = "all",
+  branch_labels = NULL, file = NULL, return_all = F, verbose = FALSE,
+  ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
 \item{trend_formula}{trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
+
+\item{branch_point}{includeDescrip}
 
 \item{trajectory_states}{states corresponding to two branches}
 
@@ -55,4 +58,3 @@ IRLs for non-stretched spline curves are often mismatched, we may only turn down
 individual linages. The log-ratios of the value on each spline curve corresponding to each branch are calculated, which can be  
 used as a measure for the magnitude of divergence between two branching branchs.
 }
-

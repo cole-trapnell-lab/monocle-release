@@ -36,4 +36,3 @@ fd <- new("AnnotatedDataFrame", data = gene_annotations_small)
 HSMM <- new("CellDataSet", exprs = as.matrix(fpkm_matrix_small), phenoData = pd, featureData = fd)
 }
 }
-

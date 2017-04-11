@@ -22,4 +22,3 @@ of Monocle\'s ordering.
 T <- minSpanningTree(HSMM)
 }
 }
-

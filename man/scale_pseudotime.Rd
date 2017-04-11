@@ -17,4 +17,3 @@ an updated CellDataSet object which an
 \description{
 This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
 }
-

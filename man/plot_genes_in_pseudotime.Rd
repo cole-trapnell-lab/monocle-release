@@ -48,4 +48,3 @@ cds_subset <- HSMM[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Time")
 }
 }
-

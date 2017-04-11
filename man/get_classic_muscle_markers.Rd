@@ -9,4 +9,3 @@ get_classic_muscle_markers()
 \description{
 Return the names of classic muscle genes
 }
-

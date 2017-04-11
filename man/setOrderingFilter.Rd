@@ -17,4 +17,3 @@ an updated CellDataSet object
 \description{
 Sets the features (e.g. genes) to be used for ordering cells in pseudotime.
 }
-

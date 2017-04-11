@@ -24,4 +24,3 @@ Function to calculate the size factor for the single-cell RNA-seq data
  
  @importFrom stats median
 }
-

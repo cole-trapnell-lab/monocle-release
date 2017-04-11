@@ -56,4 +56,3 @@ and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation
 bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  
 Then we fit two nature spline curves for each branchs using VGAM package.
 }
-

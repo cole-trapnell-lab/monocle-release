@@ -50,4 +50,3 @@ annotation_row (annotation data.frame for the row), annotation_col (annotation d
 \description{
 Plots a pseudotime-ordered, row-centered heatmap
 }
-

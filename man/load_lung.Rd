@@ -9,4 +9,3 @@ load_lung()
 \description{
 Build a CellDataSet from the data stored in inst/extdata directory
 }
-

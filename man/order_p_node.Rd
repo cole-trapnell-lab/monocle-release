@@ -14,4 +14,3 @@ order_p_node(q_level_list, dist_matrix)
 \description{
 Return an ordering for a P node in the PQ tree
 }
-

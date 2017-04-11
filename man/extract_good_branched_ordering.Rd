@@ -21,4 +21,3 @@ extract_good_branched_ordering(orig_pq_tree, curr_node, dist_matrix,
 \description{
 Extract a linear ordering of cells from a PQ tree
 }
-

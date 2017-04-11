@@ -28,4 +28,3 @@ diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
 \description{
 test
 }
-

@@ -23,4 +23,3 @@ estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
 \description{
 Helper function to estimate dispersions
 }
-

@@ -2,7 +2,7 @@ Package: monocle
 Type: Package
 Title: Clustering, differential expression, and trajectory analysis for single-
     cell RNA-Seq
-Version: 2.3.1
+Version: 2.3.2
 Date: 2016-06-06
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
@@ -21,7 +21,7 @@ Depends:
     Biobase,
     ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
-    DDRTree (>= 0.1.4)
+    DDRTree (>= 0.1.4),
 Imports:
     parallel,
     igraph (>= 1.0.1),
@@ -34,6 +34,8 @@ Imports:
     grid,
     irlba (>= 2.0.0),
     matrixStats,
+    densityClust,
+    Rtsne,
     MASS,
     reshape2,
     limma,
@@ -44,15 +46,15 @@ Imports:
     proxy,
     slam,
     stats
-VignetteBuilder: knitr
 Suggests:
     knitr,
     Hmisc,
     testthat
+VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true
 biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Infrastructure, DataImport, DataRepresentation, Visualization,
     Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
-RoxygenNote: 5.0.1.9000
+RoxygenNote: 6.0.1
