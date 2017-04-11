@@ -3,43 +3,49 @@ run_pca <- function(data, ...) {
   res$x
 }
 
-#' Run dpt for dimension reduction
+#' Run DPT for dimension reduction
 #'
-#' This function perform dimension reduction with dpt
+#' This function perform dimension reduction with DPT
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param branching A logic argument to determine whether or not branch detection should turn on in DPT function
 #' @param norm_method A character argument to determine which normalization method used for preprocessing the data
 #' @param root Index to the root cell, if no root cell set, a random cell will be picked up
 #' @param verbose A logic argument to determine whether or not to print running message
-#' @return a list
+#' @return a matrix containing the top 20 diffusion components returned by default of DPT 
 #' 
-run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
-  if (!requireNamespace("destiny", quietly = TRUE)) {
-    stop("destiny package needed for this function to work. Please install it.",
-         call. = FALSE)
-  }
-  
-  if(verbose)
-    message('root should be the id to the cell not the cell name ....')
-
+run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
+  data <- t(data) 
   data <- data[!duplicated(data), ]
   dm <- DiffusionMap(as.matrix(data))
-  dpt <- DPT(dm, branching = branching)
-
-  ts <- dm@transitions
-  M <- destiny::accumulated_transitions(dm)
-
-  branch <- dpt@branch
-  row.names(branch) <- row.names(data[!duplicated(data), ])
-
-  if(is.null(root))
-    root <- random_root(dm)[1]
-  pt <- dpt[root, ]
-  dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
-
   return(dm@eigenvectors)
 }
+# run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
+#   if (!requireNamespace("destiny", quietly = TRUE)) {
+#     stop("destiny package needed for this function to work. Please install it.",
+#          call. = FALSE)
+#   }
+#   
+#   if(verbose)
+#     message('root should be the id to the cell not the cell name ....')
+#   
+#   data <- t(data)
+#   data <- data[!duplicated(data), ]
+#   dm <- DiffusionMap(as.matrix(data))
+#   dpt <- DPT(dm, branching = branching)
+# 
+#  ts <- dm@transitions
+#  M <- destiny::accumulated_transitions(dm)
+#
+#  branch <- dpt@branch
+#  row.names(branch) <- row.names(data[!duplicated(data), ])
+#
+#  if(is.null(root))
+#    root <- random_root(dm)[1]
+#  pt <- dpt[root, ]
+#  dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
+# 
+#   return(dm@eigenvectors)
+# }
 
 #' Scale pseudotime to be in the range from 0 to 100
 #'
