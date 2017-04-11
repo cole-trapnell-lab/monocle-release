@@ -649,7 +649,7 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 After we confirm the clustering makes sense, we can then perform differential 
 gene expression test as a value to extract the genes that distinguish them. 
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-clustering_DEG_genes <- differentialGeneTest(HSMM_myo, 
+clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
                                              cores = detectCores())
 
@@ -658,7 +658,7 @@ clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_ex
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:750] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
@@ -701,13 +701,11 @@ plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
 
 To confirm that the ordering is correct, we can select a couple of markers of 
 myogenic progress. In this experiment, one of the branches corresponds to cells
-that successfully fuse to form myotubes (State 3), and the other to those that fail to 
-fully differentiate (State 1). We'll exclude the latter for now, but you can learn more 
+that successfully fuse to form myotubes (State 2), and the other to those that fail to 
+fully differentiate (State 3). We'll exclude the latter for now, but you can learn more 
 about tools for dealing with branched trajectories in section \cite{subsec:branch}.
  
-
 <<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
 HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
                           pData(HSMM_myo)$State %in% c(1,2)]
  
