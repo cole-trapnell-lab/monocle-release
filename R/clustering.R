@@ -170,14 +170,19 @@ clusterCells <- function(cds,
         rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
         delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
         threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]
-        delta_threshold <- delta_rho_df$delta[threshold_ind] 
-        rho_threshold <- delta_rho_df$rho[threshold_ind]
+        candidate_peaks <- subset(delta_rho_df, delta >= delta_rho_df$delta[threshold_ind])
+        #delta_threshold <- min(candidate_peaks$delta) - .Machine$double.eps
+        delta_threshold <- delta_rho_df$delta[threshold_ind] #- 10*.Machine$double.eps 
+        rho_threshold <- min(candidate_peaks$rho) - 10*.Machine$double.eps
+        #head(subset(delta_rho_df, delta > delta_threshold & rho > rho_threshold))
+        #delta_threshold <- delta_rho_df$delta[threshold_ind] - .Machine$double.eps 
+        #rho_threshold <- delta_rho_df$rho[threshold_ind] - .Machine$double.eps
       }
     }
     
     #automatically pick up the rho and delta values: 
     if(inspect_rho_sigma == F)
-      dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks)
+      dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks=peaks)
     else {
       if (verbose) 
         message("Please click on the decision plot to select rho and delta for density peak clustering...")
