@@ -14,4 +14,3 @@ Each gray point in the plot is a gene. The black dots are those that were includ
 in the last call to setOrderingFilter. The red curve shows the mean-variance 
 model learning by estimateDispersions().
 }
-

@@ -43,4 +43,3 @@ MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", 
 plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
 }
 }
-

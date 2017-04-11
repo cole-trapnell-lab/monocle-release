@@ -23,4 +23,3 @@ Sets the the whitening matrix during independent component analysis.
 cds <- reducedDimK(K)
 }
 }
-

@@ -135,16 +135,22 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' @param relative_exprs_matrix The matrix of relative TPM expression values
 #' @param t_estimate the TPM value that corresponds to 1 cDNA copy per cell
 #' @param expected_capture_rate The fraction of mRNAs captured as cDNAs
+#' @param method the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)
 #' @importFrom stats ecdf
-calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate){
+calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate, method = c('num_genes', 'tpm_fraction') ){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
 
   proposed_totals <- unlist(lapply(1:length(split_relative_exprs), function(ind) {
     x <- split_relative_exprs[[ind]]; 
     x <- x[x > 0.1]; 
-    P <- ecdf(x); 
+    if(method == 'num_genes') {
+      P <- ecdf(x); 
+      frac_x <- P(t_estimate[ind]); 
+    }
+    else if(method == 'tpm_fraction') {
+     frac_x <- sum(x[x < t_estimate[ind]]) / sum(x) 
+    }
     num_single_copy_genes <- sum(x <= t_estimate[ind]); 
-    frac_x <- P(t_estimate[ind]); 
     num_single_copy_genes / frac_x / expected_capture_rate
   }))
   return(proposed_totals)
@@ -175,6 +181,7 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
 #' @param return_all parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 #' in a list format
 #' @param cores number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.
+#' @param method the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)
 #' @param verbose a logical flag to determine whether or not we should print all the optimization details 
 #' @return an matrix of absolute count for isoforms or genes after the transformation.  
 #' @export
@@ -200,6 +207,7 @@ relative2abs <- function(relative_cds,
   expected_capture_rate = 0.25,
   verbose = FALSE, 
   return_all = FALSE, 
+  method = c('num_genes', 'tpm_fraction'),
   cores = 1) {
   
   relative_expr_matrix <- exprs(relative_cds)
@@ -285,7 +293,7 @@ relative2abs <- function(relative_cds,
       
       expected_total_mRNAs <- calibrate_per_cell_total_proposal(relative_expr_matrix, 
                                                                 t_estimate, 
-                                                                expected_capture_rate)
+                                                                expected_capture_rate, method = method)
       
       expr_probs <-  t(t(relative_expr_matrix)/ colSums(relative_expr_matrix))
       census_transcript_counts <- t(t(expr_probs) * expected_total_mRNAs)
@@ -301,7 +309,8 @@ relative2abs <- function(relative_cds,
 }
 #' Spike-in transcripts data.
 #'
-#' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from Truetlein et al. (2014)
+#' A dataset containing the information for the 92 ERCC spikein transcripts (This dataset is based on the data from the
+#'  Nature paper from Stephen Quake group)
 #' @name spike_df
 #' @docType data
 #' @keywords datasets

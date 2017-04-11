@@ -340,8 +340,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         verbose=verbose,
-                                         ...)
+                                         verbose=verbose)
   
   return(branchTest_res)
 }
@@ -356,6 +355,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param branch_point includeDescrip
 #' @param trajectory_states States corresponding to two branches 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
@@ -369,9 +369,11 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
+#' @export 
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-                    trajectory_states = c(2, 3),
+                    branch_point = 1,
+                    trajectory_states = NULL,
                     relative_expr = TRUE, 
                     stretch = TRUE, 
                     cores = 1, 
@@ -382,20 +384,26 @@ calABCs <- function(cds,
                     branch_labels = NULL,
                     ...){
   ABC_method = "integral"
-  if (length(trajectory_states) != 2)
-    stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  if(!is.null(trajectory_states)){
+    if (length(trajectory_states) != 2)
+      stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  }
   
-  
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
-                                                branch_labels = branch_labels, stretch = stretch)
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                progenitor_method = 'duplicate',
+                                                branch_point = branch_point, 
+                                                branch_states = trajectory_states,
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
  
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two branches")
-  if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
-    stop("state(s) in trajectory_states are not included in 'Branch'")
-  
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two branches")
+  # if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
+  #   stop("state(s) in trajectory_states are not included in 'Branch'")
+  # 
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
@@ -409,13 +417,13 @@ calABCs <- function(cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[1])))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   if (verbose)
     print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                 sort(pData(cds_branchA)$Pseudotime)))
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[2])))
   colnames(str_new_cds_branchB)[2] <- formula_all_variables[2]
   
   if (verbose)
@@ -490,6 +498,7 @@ calABCs <- function(cds,
 #'
 #' @param cds CellDataSet for the experiment
 #' @param trend_formula trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param branch_point includeDescrip
 #' @param trajectory_states states corresponding to two branches 
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
@@ -511,9 +520,11 @@ calABCs <- function(cds,
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @importFrom reshape2 melt
+#' @export 
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-          trajectory_states = c(2, 3), 
+          branch_point = 1,
+          trajectory_states = NULL, 
           relative_expr = TRUE, 
           stretch = TRUE, 
           cores = 1, 
@@ -527,24 +538,39 @@ calILRs <- function (cds,
           return_all = F, 
           verbose = FALSE, 
           ...){
-  
- 
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
-                                                branch_labels = branch_labels, stretch = stretch)
+    if(!is.null(trajectory_states)){
+      if (length(trajectory_states) != 2)
+        stop("Sorry, this function only supports the calculation of ILRs between TWO branch trajectories")
+    }
+
+    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states,
+                                                branch_point = branch_point,
+                                                progenitor_method = 'duplicate',
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
 
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two Branches")
-  if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
-      stop("state(s) in trajectory_states are not included in 'Branch'")
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two Branches")
+  # if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
+  #     stop("state(s) in trajectory_states are not included in 'Branch'")
     
-  if(verbose)
-    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
-  
+  # if(verbose)
+  #   message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+  if(is.null(trajectory_states))
+    trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
+  else if(is.null(trajectory_states)){
+    trajectory_states_tmp <- as.character(trajectory_states)
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), as.character(State) == trajectory_states_tmp[1])), 'Branch'])
+    trajectory_states[1] <- names(which.max(branch_stats))
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), as.character(State) == trajectory_states_tmp[2])), 'Branch'])
+    trajectory_states[2] <- names(which.max(branch_stats))
+  }
+      
   cds_branchA <- cds_subset[, pData(cds_subset)[, "Branch"] ==
                               trajectory_states[1]]
   cds_branchB <- cds_subset[, pData(cds_subset)[, "Branch"] ==
@@ -557,14 +583,14 @@ calILRs <- function (cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[1])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchA)$Pseudotime)))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[2])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchB)$Pseudotime)))
@@ -664,6 +690,7 @@ calILRs <- function (cds,
 #' @import methods
 #' @importFrom reshape2 melt
 #' @importFrom parallel detectCores
+#' @export 
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,

@@ -55,4 +55,3 @@ plot_cell_trajectory(HSMM, markers="MYH3")
 \seealso{
 plot_cell_trajectory
 }
-
