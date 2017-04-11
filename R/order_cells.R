@@ -1383,8 +1383,9 @@ reduceDimension <- function(cds,
 
       # Calculate the variance across genes without converting to a dense
       # matrix:
-      expression_means <- Matrix::colMeans(FM)
-      expression_vars <- Matrix::colMeans((FM - expression_means)^2)
+      FM_t <- Matrix::t(FM)
+      cell_means <- Matrix::rowMeans(FM_t)
+      cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
       # Filter out genes that are constant across all cells:
       #genes_to_keep <- expression_vars > 0
       #FM <- FM[genes_to_keep,]
@@ -1404,8 +1405,8 @@ reduceDimension <- function(cds,
       irlba_res <- irlba(FM,
                          nv=min(num_dim, min(dim(FM)) - 1),
                              nu=0,
-                             center=expression_means,
-                             scale=sqrt(expression_vars),
+                             center=cell_means,
+                             scale=sqrt(cell_vars),
                              right_only=TRUE)
       irlba_pca_res <- irlba_res$v
       #row.names(irlba_pca_res) <- genes_to_keep
@@ -1490,7 +1491,10 @@ reduceDimension <- function(cds,
 
       # TODO: DDRTree should really work with sparse matrices.
       if(auto_param_selection & ncol(cds) >= 100){
-        ncenter <- cal_ncenter(ncol(FM))
+        if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
+          ncenter <- extra_arguments$ncenter
+        else
+          ncenter <- cal_ncenter(ncol(FM))
         #add other parameters...
         ddr_args <- c(list(X=FM, dimensions=max_components, ncenter=ncenter, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])

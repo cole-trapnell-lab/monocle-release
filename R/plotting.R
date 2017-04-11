@@ -1819,6 +1819,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @param return_all A logical argument to determine whether or not the variance of each component is returned
+#' @param use_existing_pc_variance Whether to plot existing results for variance explained by each PC
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @export
 #' @examples
@@ -1827,15 +1828,16 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' plot_pc_variance_explained(HSMM)
 #' }
 plot_pc_variance_explained <- function(cds, 
-                                       # max_components=2, 
-                                       # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                                       norm_method = c("vstExprs", "log", "none"), 
-                                       residualModelFormulaStr=NULL,
-                                       pseudo_expr=NULL, 
-                                       return_all = F, 
-                                       verbose=FALSE,
-                                       ...){
-  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained)){
+                            # max_components=2, 
+                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                            norm_method = c("vstExprs", "log", "none"), 
+                            residualModelFormulaStr=NULL,
+                            pseudo_expr=NULL, 
+                            return_all = F, 
+                            use_existing_pc_variance=FALSE,
+                            verbose=FALSE, 
+                            ...){
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
   }
   else{
@@ -1861,21 +1863,22 @@ plot_pc_variance_explained <- function(cds,
       X.model_mat <- NULL
     }
     
-    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-    
     if (nrow(FM) == 0) {
       stop("Error: all rows have standard deviation zero")
     }
+    
+    FM_t <- Matrix::t(FM)
+    
     # FM <- convert2DRData(cds, norm_method = 'log') 
-    FM <- FM[!is.na(row.names(FM)), ]
-    expression_means <- Matrix::colMeans(FM)
-    expression_vars <- Matrix::colMeans((FM - expression_means)^2)
+    # FM <- FM[rowSums(is.na(FM)) == 0, ]
+    cell_means <- Matrix::rowMeans(FM_t)
+    cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
     
     irlba_res <- irlba(FM,
                        nv= min(dim(FM)) - 1,
                        nu=0,
-                       center=expression_means,
-                       scale=sqrt(expression_vars),
+                       center=cell_means,
+                       scale=sqrt(cell_vars),
                        right_only=TRUE)
     prop_varex <- irlba_res$d / sum(irlba_res$d)
     
