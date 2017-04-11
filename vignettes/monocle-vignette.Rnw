@@ -486,60 +486,23 @@ The genes we've chosen to use for ordering define the \emph{state space} of the 
  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
  @ %def
  
- Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below.  
- 
+Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
  <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo)
+ HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
  @ %def
  
- Once the cells are ordered, we can visualize the trajectory in the reducted 
- dimesional space.
+Once the cells are ordered, we can visualize the trajectory in the reduced 
+dimensional space.
  
  <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
  plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def 
  
- The trajectory has a simple tree-like structure. We can see that the cells 
- collected at time zero are located near one of the tips of the tree, while the 
- others are distributed amongst the two ``branches''.  Monocle doesn't know
- \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
- so we often have to call \Rfunction{orderCells} again using the 
- \Robject{root\_state} argument to specify the beginning. First, we plot the
- trajectory, this time coloring the cells by ``State'':
- 
- <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
- plot_cell_trajectory(HSMM_myo, color_by="State")
- @ %def 
- 
-<<plot_ordering_mst_with_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-HSMM_myo <- orderCells(HSMM_myo, root_state=1)
-plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
-@ %def 
+ To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
 
-If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
-
-<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
-plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State)
-@ %def 
-
-And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
-
-<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
-blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
-plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
-@ %def 
-
-To confirm that the ordering is correct, we can select a couple of markers of 
-myogenic progress. In this experiment, one of the branches corresponds to cells
-that successfully fuse to form myotubes (State 3), and the other to those that fail to 
-fully differentiate (State 1). We'll exclude the latter for now, but you can learn more 
-about tools for dealing with branched trajectories in section \cite{subsec:branch}.
- 
-Plotting these genes demonstrates that ordering looks good: 
-<<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+<<plot_markers_linear, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
-HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,2)]
+HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
  
 my_genes <- row.names(subset(fData(HSMM_filtered), 
                               gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
@@ -695,7 +658,7 @@ clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_ex
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:750] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
@@ -704,6 +667,56 @@ HSMM_myo <- orderCells(HSMM_myo)
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 @ %def
+
+ The trajectory has a simple tree-like structure. We can see that the cells 
+ collected at time zero are located near one of the tips of the tree, while the 
+ others are distributed amongst the two ``branches''.  Monocle doesn't know
+ \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
+ so we often have to call \Rfunction{orderCells} again using the 
+ \Robject{root\_state} argument to specify the beginning. First, we plot the
+ trajectory, this time coloring the cells by ``State'':
+ 
+ <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+ plot_cell_trajectory(HSMM_myo, color_by="State")
+ @ %def 
+ 
+<<plot_ordering_mst_with_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+HSMM_myo <- orderCells(HSMM_myo, root_state=1)
+plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
+@ %def 
+
+If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
+
+<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
+plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State)
+@ %def 
+
+And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
+
+<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
+blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
+plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
+@ %def 
+
+
+To confirm that the ordering is correct, we can select a couple of markers of 
+myogenic progress. In this experiment, one of the branches corresponds to cells
+that successfully fuse to form myotubes (State 3), and the other to those that fail to 
+fully differentiate (State 1). We'll exclude the latter for now, but you can learn more 
+about tools for dealing with branched trajectories in section \cite{subsec:branch}.
+ 
+
+<<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
+HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
+                          pData(HSMM_myo)$State %in% c(1,2)]
+ 
+my_genes <- row.names(subset(fData(HSMM_filtered), 
+                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
+ 
+cds_subset <- HSMM_filtered[my_genes,]
+plot_genes_in_pseudotime(cds_subset, color_by="Hours")
+@ %def 
 
 \subsection{Semi-supervised ordering with known marker genes}
 
