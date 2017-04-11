@@ -69,7 +69,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 
 clusterCells <- function(cds, 
                           skip_rho_sigma = F, 
-                          number_clusters = NULL, 
+                          num_clusters = NULL, 
                           inspect_rho_sigma = F, 
                           rho_threshold = NULL, 
                           delta_threshold = NULL, 
@@ -156,7 +156,7 @@ clusterCells <- function(cds,
     }
     else 
     {
-      if(is.null(number_clusters)) {
+      if(is.null(num_clusters)) {
         if(verbose)
           message('Use 0.95 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
         
@@ -165,11 +165,11 @@ clusterCells <- function(cds,
       }
       else {
         if(verbose)
-          message(paste('Use 0.5 of the rho as the cutoff and first', number_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
+          message(paste('Use 0.5 of the rho as the cutoff and first', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
         delta_rho_df <- data.frame(delta = dataClust$delta, rho = dataClust$rho)
         rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
         delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
-        threshold_ind <- order(delta_rho_df$delta, decreasing = T)[number_clusters + 1]
+        threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]
         delta_threshold <- delta_rho_df$delta[threshold_ind] 
         rho_threshold <- delta_rho_df$rho[threshold_ind]
       }
@@ -177,7 +177,7 @@ clusterCells <- function(cds,
     
     #automatically pick up the rho and delta values: 
     if(inspect_rho_sigma == F)
-      dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks, verbose = verbose)
+      dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks = peaks)
     else {
       if (verbose) 
         message("Please click on the decision plot to select rho and delta for density peak clustering...")

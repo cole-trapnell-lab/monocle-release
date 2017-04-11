@@ -53,10 +53,10 @@ test_that("clusterCells() properly validates its input",{
   HSMM_L1-graph <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'L1-graph', verbose = T)
   HSMM_SGL-tree <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'SGL-tree', verbose = T)
   
-  HSMM_DDRTree <- clusterCells(HSMM_DDRTree, number_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_ICA <- clusterCells(HSMM_ICA, number_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_tSNE <- clusterCells(HSMM_tSNE, number_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_SimplePPT <- clusterCells(HSMM_SimplePPT, number_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_L1-graph <- clusterCells(HSMM_L1-graph, number_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
+  HSMM_DDRTree <- clusterCells(HSMM_DDRTree, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
+  HSMM_ICA <- clusterCells(HSMM_ICA, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
+  HSMM_tSNE <- clusterCells(HSMM_tSNE, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
+  HSMM_SimplePPT <- clusterCells(HSMM_SimplePPT, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
+  HSMM_L1-graph <- clusterCells(HSMM_L1-graph, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
   
 })
