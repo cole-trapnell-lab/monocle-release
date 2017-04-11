@@ -1837,6 +1837,7 @@ plot_pc_variance_explained <- function(cds,
                             use_existing_pc_variance=FALSE,
                             verbose=FALSE, 
                             ...){
+  set.seed(2016)
   if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
   }
