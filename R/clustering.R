@@ -46,7 +46,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
-#' @param number_clusters Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+#' @param num_clusters Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
 #' corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters
 #' @param inspect_rho_sigma A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters
 #' @param rho_threshold The threshold of local density (rho) used to select the density peaks 

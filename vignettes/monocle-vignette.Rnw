@@ -657,8 +657,8 @@ HSMM_myo <- clusterCells(HSMM_myo, verbose = F)
 
 After the clustering, we can check the clustering results. 
 <<check the clustering results, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)', show_density = F)
-plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)', show_density = F)
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
 
 We also provide the decision plot for users to check the $\rho, \delta$ for each cell and decide the threshold for defining the cell clusters. 
@@ -679,8 +679,8 @@ HSMM_myo <- clusterCells(HSMM_myo,
 
 We can check the final clustering results as following: 
 <<check_clustering_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)', show_density = F)
-plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)', show_density = F)
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
+plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
 
 After we confirm the clustering makes sense, we can then perform differential 
@@ -748,7 +748,7 @@ plot_cell_trajectory(HSMM_myo, color_by="CellType")
 And we can see that kinetics of notable genes we examined before are largely the same.
 
 <<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_filtered <- HSMM_myo[expressed_genes, 
+HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
                           pData(HSMM_myo)$State %in% c(1,2,4)]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
@@ -795,43 +795,14 @@ plot_genes_jitter(lung[lung_genes,], grouping="State")
 
 Here we can see that State 1 is the proliferative state on the basis high expression of Cyclin B2.
 
-% \subsection{Applying other reversed graph embedding algorithms for trajectory reconstruction}
-% 
-% Monocle integrates several reversed graph embedding algorithms for reconstructing the developmental trajectory. By default, monocle uses DDRTree for trajectory reconstruction which learns the principal graph and performs dimension reduction simulatenously. On the other hand, users may be interested in performing a dimension reduction first and then apply Monocle to learn the principal graph on the reduced dimension. For example, users of the destiny package (another nice method for pseudotime estimation and branch identification (\cite{})), can first apply diffusion map and then learn the prinicipal graph on the low dimension. By default, simplePPT, SGL-tree and  $\mathcal{L}_1$-graph use PCA for initial dimension reduction. It then learns the principal graph on the low dimensional PCA space. The following scripts show how can we run simplePPT and SGL-tree easily. Because $\mathcal{L}_1$-graph tries to learn a general graph, which is a very difficult task, the graph learned from $\mathcal{L}_1$-graph captures the main structure of the data, the disconnected component from the graph often prevents us from having an easy solution to assign the pseudotime for each cell. On the other hand, since an L1-graph can learn an arbitrary structures, it is promising to learn loop structures or other disconnected graph structures. Monocle users should expect more powerful methods based on L1-graph to be released soon. 
-
-%' Result after applying SimplePPT: 
-%' <<run_SimplePPT, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
-%' #run SimplePPT
-%' lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SimplePPT') #
-%' lung <- orderCells(lung)
-%' plot_cell_trajectory(lung, color_by="Time")
-%' @ %def 
-%' 
-%' Result after applying SGL-tree: 
-%' <<run_SGL_tree, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
-%' #run SGL-tree
-%' lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'SGL-tree') #
-%' lung <- orderCells(lung)
-%' plot_cell_trajectory(lung, color_by="Time")
-%' @ %def 
-%' 
-%' Result after applying L1-graph: 
-%' <<run_L1_graph, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
-%' #run L1 graph
-%' lung <- reduceDimension(lung, norm_method="log", pseudo_expr = 1, reduction_method = 'L1-graph') #
-%' plot_cell_trajectory(lung, color_by="Time", show_branch_points = F)
-%' @ %def 
-
 % \subsection{Learning trajectories using other dimension reduction methods}
 % Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial\_method} in \Rfunction{reduceDimension}. For example, we can use the nice package destiny$ , from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
 % 
 % <<dpt_dm, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.align="center">>=
 % #run L1 graph
 % library(destiny)
-% run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
-%  if(verbose)
-%     message('root should be the id to the cell not the cell name ....')
-% 
+% run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
+%   data <- t(data) 
 %   data <- data[!duplicated(data), ]
 %   dm <- DiffusionMap(as.matrix(data))
 %   return(dm@eigenvectors)

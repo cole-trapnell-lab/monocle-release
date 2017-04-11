@@ -4,7 +4,7 @@
 \alias{clusterCells}
 \title{Cluster cells into a specified number of groups based on .}
 \usage{
-clusterCells(cds, skip_rho_sigma = F, number_clusters = NULL,
+clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
   frequency_thresh = NULL, enrichment_thresh = NULL,
@@ -16,7 +16,7 @@ clusterCells(cds, skip_rho_sigma = F, number_clusters = NULL,
 
 \item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
 
-\item{number_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
+\item{num_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
 corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters}
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}

@@ -1710,9 +1710,7 @@ plot_cell_clusters <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                # cell_link_size=0.75,
-                               cell_name_size=2, ...
-                               # show_branch_points=TRUE
-){
+                               cell_name_size=2){
   if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
   }
@@ -1835,14 +1833,12 @@ plot_pc_variance_explained <- function(cds,
                             pseudo_expr=NULL, 
                             return_all = F, 
                             use_existing_pc_variance=FALSE,
-                            verbose=FALSE, 
-                            ...){
+                            verbose=FALSE){
   set.seed(2016)
   if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
   }
   else{
-    extra_arguments <- list(...)
     FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
     
     #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
