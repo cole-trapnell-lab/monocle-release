@@ -1327,6 +1327,8 @@ reduceDimension <- function(cds,
                             scaling = TRUE,
                             ...){
   extra_arguments <- list(...)
+  set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
+  
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
 
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
@@ -1435,7 +1437,6 @@ reduceDimension <- function(cds,
       if (verbose)
           message("Reduce dimension by tSNE ...")
 
-      set.seed(2016) #ensure Rtsne return the same results everytime
       tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
 
       tsne_data <- tsne_res$Y[, 1:max_components]
