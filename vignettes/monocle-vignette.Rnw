@@ -342,6 +342,7 @@ HSMM <- clusterCells(HSMM,
                      num_clusters=2,
                      clustering_genes=unsup_clustering_genes$gene_id)
 plot_cell_clusters(HSMM, 1, 2, color="Cluster") + facet_wrap(~CellType)
+save.image('~/HSMM')
 @ %def
  
 Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both. However, we still see some cells of both types in each cluster. This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering. To help rule out the latter, let's try running \Rfunction{clusterCells} in its semi-supervised mode.  

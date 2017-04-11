@@ -116,6 +116,7 @@ clusterCells <- function(cds,
   }
 
   else if(method == 'densityPeak'){
+    set.seed(2017)
     tsne_data <- reducedDimA(cds)
     if(ncol(tsne_data) != ncol(cds))
       stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
