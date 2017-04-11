@@ -1826,7 +1826,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' plot_pc_variance_explained(HSMM)
 #' }
 plot_pc_variance_explained <- function(cds, 
-                            # max_components=2, 
+                            max_components=100, 
                             # reduction_method=c("DDRTree", "ICA", 'tSNE'),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
@@ -1872,7 +1872,7 @@ plot_pc_variance_explained <- function(cds,
     cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
     
     irlba_res <- irlba(FM,
-                       nv= min(dim(FM)) - 1,
+                       nv= min(max_components, min(dim(FM)) - 1), #avoid calculating components in the tail
                        nu=0,
                        center=cell_means,
                        scale=sqrt(cell_vars),
@@ -1885,10 +1885,10 @@ plot_pc_variance_explained <- function(cds,
     # prop_varex <- pr_var/sum(pr_var)
   }
   
-  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = I(0.5)) +  monocle_theme_opts() + 
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     theme(panel.background = element_rect(fill='white')) + xlab('components') + 
-    ylab('variance explained by each component')
+    ylab('Variance explained \n by each component')
   # return(prop_varex = prop_varex, p = p)
   if(return_all) {
     return(list(variance_explained = prop_varex, p = p))
