@@ -23,4 +23,3 @@ This function sets the coordinates of each cell in a new
 cds <- reducedDimS(S)
 }
 }
-

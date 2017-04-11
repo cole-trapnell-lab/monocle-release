@@ -39,4 +39,3 @@ plot_cell_clusters(HSMM, color_by="Pseudotime")
 plot_cell_clusters(HSMM, markers="MYH3")
 }
 }
-

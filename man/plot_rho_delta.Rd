@@ -22,4 +22,3 @@ data(HSMM)
 plot_rho_delta(HSMM)
 }
 }
-

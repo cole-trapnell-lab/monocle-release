@@ -22,4 +22,3 @@ Sets the matrix containing distances between each pair of cells used by Monocle 
 cds <- cellPairwiseDistances(D)
 }
 }
-

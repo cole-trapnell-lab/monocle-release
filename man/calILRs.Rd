@@ -58,4 +58,3 @@ IRLs for non-stretched spline curves are often mismatched, we may only turn down
 individual linages. The log-ratios of the value on each spline curve corresponding to each branch are calculated, which can be  
 used as a measure for the magnitude of divergence between two branching branchs.
 }
-

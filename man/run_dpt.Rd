@@ -24,4 +24,3 @@ a list
 \description{
 This function perform dimension reduction with dpt
 }
-

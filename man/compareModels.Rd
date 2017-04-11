@@ -17,4 +17,3 @@ a data frame containing the p values and q-values from the likelihood ratio test
 \description{
 Performs likelihood ratio tests on nested vector generalized additive models
 }
-

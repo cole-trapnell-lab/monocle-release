@@ -35,4 +35,3 @@ a ggplot2 plot object
 Not sure we're ready to release this one quite yet:
 Plot the branch genes in pseduotime with separate branch curves
 }
-

@@ -46,4 +46,3 @@ trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will
 then "walk" along the trajectory, and as it encounters additional cells, it
 will assign them increasingly large values of Pseudotime.
 }
-

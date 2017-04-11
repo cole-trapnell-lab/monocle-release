@@ -45,4 +45,3 @@ quantify the total magnitude of divergence between two branchs. By default, the 
 The ABC score can be used to rank gene divergence. When coupled with p-val calculated from the branchTest, it can be used to identify
 potential major regulators for branch bifurcation.
 }
-

@@ -12,10 +12,14 @@ run_pca <- function(data, ...) {
 #' @param norm_method A character argument to determine which normalization method used for preprocessing the data
 #' @param root Index to the root cell, if no root cell set, a random cell will be picked up
 #' @param verbose A logic argument to determine whether or not to print running message
-#' @import destiny
 #' @return a list
 #' 
 run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
+  if (!requireNamespace("destiny", quietly = TRUE)) {
+    stop("destiny package needed for this function to work. Please install it.",
+         call. = FALSE)
+  }
+  
   if(verbose)
     message('root should be the id to the cell not the cell name ....')
 
@@ -1515,6 +1519,10 @@ reduceDimension <- function(cds,
       cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "SimplePPT") {
+      if (!requireNamespace("simplePPT", quietly = TRUE)) {
+        stop("simplePPT package needed for this function to work. Please install it.",
+             call. = FALSE)
+      }
       if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
         tryCatch({
           reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
@@ -1558,6 +1566,10 @@ reduceDimension <- function(cds,
       cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "L1-graph") {
+    if (!requireNamespace("L1Graph", quietly = TRUE)) {
+      stop("L1Graph package needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
       tryCatch({
         reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
@@ -1629,6 +1641,10 @@ reduceDimension <- function(cds,
     cds <- findNearestPointOnMST(cds)
     }
   else if(reduction_method == "SGL-tree") {
+    if (!requireNamespace("L1Graph", quietly = TRUE)) {
+      stop("L1Graph package needed for this function to work. Please install it.",
+           call. = FALSE)
+    }
     if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
       tryCatch({
         reduced_dim_res <- extra_arguments$initial_method(t(FM)) #variance_explained
@@ -1855,8 +1871,6 @@ project_point_to_line_segment <- function(p, df){
 #' @param end_cells the terminal vertex for traversing on the graph
 #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @import igraph
-#' @export
-
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
   branchPoints <- which(degree(g) == 3)
@@ -1872,7 +1886,6 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param end_cells the terminal vertex for traversing on the graph
 #' @return a new cds containing only the cells traversed from the intial cell to the end cell
 #' @import igraph
-#' @export
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1899,7 +1912,6 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
 #' @param cells a vector contains all the cells you want to subset
 #' @return a new cds containing only the cells from the cells argument
 #' @import igraph
-#' @export
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)
   if(ncol(reducedDimK(cds)) != ncol(cds))
@@ -1932,13 +1944,12 @@ SubSet_cds <- function(cds, cells){
   cds_subset <- orderCells(cds_subset)
 }
 
-#' Reverse enbedding latent graph coordinates back to the high dimension
+#' Reverse embedding latent graph coordinates back to the high dimension
 #'
 #' @param cds a cell dataset after trajectory reconstruction
 #' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
-#' @export
 
-reverseEnbeddingCDS <- function(cds) {
+reverseEmbeddingCDS <- function(cds) {
   if(nrow(cds@reducedDimW) < 1)
     stop('You need to first apply reduceDimension function on your cds before the reverse embedding')
   

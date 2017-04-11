@@ -22,4 +22,3 @@ A dataset containing the information for the 92 ERCC spikein transcripts (This d
  Nature paper from Stephen Quake group)
 }
 \keyword{datasets}
-

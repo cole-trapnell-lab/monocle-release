@@ -19,4 +19,3 @@ a list of shortest path from the initial cell and terminal cell, geodestic dista
 \description{
 traverse from one cell to another cell
 }
-

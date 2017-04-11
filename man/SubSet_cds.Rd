@@ -17,4 +17,3 @@ a new cds containing only the cells from the cells argument
 \description{
 Subset a cds which only includes cells provided with the argument cells
 }
-

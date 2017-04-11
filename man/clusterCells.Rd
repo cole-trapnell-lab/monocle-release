@@ -30,13 +30,13 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
-\item{cell_type_hierarchy}{includeDescrip}
+\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
 \item{enrichment_thresh}{includeDescrip}
 
-\item{clustering_genes}{includeDescrip}
+\item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
 \item{method}{method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
 The other method is based on DDRTree.}
@@ -62,4 +62,3 @@ to determine the number of clusters to cluster.
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 }
-

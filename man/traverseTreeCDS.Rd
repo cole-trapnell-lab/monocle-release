@@ -19,4 +19,3 @@ a new cds containing only the cells traversed from the intial cell to the end ce
 \description{
 Make a cds by traversing from one cell to another cell
 }
-

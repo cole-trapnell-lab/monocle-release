@@ -22,4 +22,3 @@ Sets the minimum spanning tree used by Monocle during cell ordering. Not intende
 cds <- minSpanningTree(T)
 }
 }
-

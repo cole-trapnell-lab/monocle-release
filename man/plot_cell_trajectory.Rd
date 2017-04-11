@@ -53,4 +53,3 @@ plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 plot_cell_trajectory(HSMM, markers="MYH3")
 }
 }
-

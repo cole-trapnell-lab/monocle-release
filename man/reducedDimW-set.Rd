@@ -22,4 +22,3 @@ Sets the whitened expression values for each cell prior to independent component
 #' cds <- reducedDimA(A)
 }
 }
-

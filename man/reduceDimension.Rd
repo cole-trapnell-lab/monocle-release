@@ -79,4 +79,3 @@ If you don't want any transformation at all, set norm_method to "none" and
 pseudo_expr to 0. This maybe useful for single-cell qPCR data, or data you've
 already transformed yourself in some way.
 }
-

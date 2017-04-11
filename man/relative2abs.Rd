@@ -62,4 +62,3 @@ HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix,
    t_estimate = estimate_t(HSMM_relative_expr_matrix))
 }
 }
-

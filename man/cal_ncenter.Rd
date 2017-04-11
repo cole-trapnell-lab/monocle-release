@@ -19,4 +19,3 @@ a new cds containing only the genes used in reducing dimension. Expression value
 \description{
 Function to decide a good number of centers for running DDRTree on big datasets
 }
-

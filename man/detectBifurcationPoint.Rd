@@ -63,4 +63,3 @@ calculates these times. Although the branch times will be shaped by and distribu
 around the branch point in the trajectory, upstream regulators tend to branch
 earlier in pseudotime than their targets.
 }
-
