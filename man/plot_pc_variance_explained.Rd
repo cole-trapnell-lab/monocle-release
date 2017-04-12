@@ -13,6 +13,8 @@ plot_pc_variance_explained(cds, max_components = 100,
 \arguments{
 \item{cds}{CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE}
 
+\item{max_components}{Maximum number of components shown in the scree plot (variance explained by each component)}
+
 \item{norm_method}{Determines how to transform expression values prior to reducing dimensionality}
 
 \item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
