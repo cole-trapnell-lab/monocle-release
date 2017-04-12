@@ -1397,21 +1397,25 @@ reduceDimension <- function(cds,
       else{
         num_dim <- 50
       }
-
-      irlba_res <- irlba(FM,
-                         nv=min(num_dim, min(dim(FM)) - 1),
-                             nu=0,
-                             center=cell_means,
-                             scale=sqrt(cell_vars),
-                             right_only=TRUE)
-      irlba_pca_res <- irlba_res$v
-      #row.names(irlba_pca_res) <- genes_to_keep
+      
+      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      
+      # irlba_res <- irlba(FM,
+      #                    nv=min(num_dim, min(dim(FM)) - 1),
+      #                        nu=0,
+      #                        center=cell_means,
+      #                        scale=sqrt(cell_vars),
+      #                        right_only=TRUE)
+      # irlba_pca_res <- irlba_res$v
+      # row.names(irlba_pca_res) <- genes_to_keep
 
       # pca_res <- prcomp(t(FM), center = T, scale = T)
       # std_dev <- pca_res$sdev
       # pr_var <- std_dev^2
       # prop_varex <- pr_var/sum(pr_var)
-      prop_varex <- irlba_res$d / sum(irlba_res$d)
+      prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
 
       topDim_pca <- irlba_pca_res#[, 1:num_dim]
 
@@ -1687,9 +1691,9 @@ project_point_to_line_segment <- function(p, df){
 # #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 # #' @import igraph
 traverseTree <- function(g, starting_cell, end_cells){
-  distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
+  distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
-  path <- shortest_paths(g, from = initial_vertex, terminal_vertex)
+  path <- shortest_paths(g, from = starting_cell, end_cells)
 
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
@@ -1706,7 +1710,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   dp_mst <- cds@minSpanningTree
 
   for(end_cell in end_cells) {
-    traverse_res <- traverseTree(g, starting_cell, end_cell)
+    traverse_res <- traverseTree(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
 
     subset_cell <- c(subset_cell, path_cells)
@@ -1787,7 +1791,7 @@ reverseEmbeddingCDS <- function(cds) {
   raw_data <- as.matrix(exprs(cds)[row.names(FM), ]) 
   reverse_embedding_data <- reverse_embedding_data * (apply(raw_data, 1, function(x) quantile(x, 0.99)) ) / apply(reverse_embedding_data, 1, max)
 
-  exprs(cds_subset) <- reverse_embedding_data
+  Biobase::exprs(cds_subset) <- reverse_embedding_data
   
   return(cds_subset)
 }

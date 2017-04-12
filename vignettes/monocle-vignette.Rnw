@@ -425,7 +425,7 @@ HSMM <- clusterCells(HSMM,
  
  During development, in response to stimuli, and througout life, cells transition from one functional ``state'' to another. Cells in different states express different sets of genes, producing a dynamic repetoire of proteins and metabolites that carry out their work. As cells move between states, undergo a process of transcriptional re-configuration, with some genes being silenced and others newly activated. These transient states are often hard to characterize because purifying cells in between more stable endpoint states can be difficult or impossible. Single-cell RNA-Seq can enable you to see these states without the need for purification. However, to do so, we must determine where each cell is the range of possible states. 
  
- Monocle introduced the strategy of using RNA-Seq for \emph{single cell trajectory analysis}. Rather than purifying cells into discrete states experimentally, Monocle uses an algorithm to learn the sequence of gene expression changes each cell must go through as part of a dynamic biological process. Once it has learned the overall ``trajectory'' of gene expression changes, Monocle can place each cell at its proper position in the trajectory. You can then use Monocle's differential analysis toolkit to find genes regulated over the course of the trajectory, as described in section \ref{pseudotime_diff}. If there are multiple outcome for the process, Monocle will reconstruct a ``branched'' trajectory. These branches correspond to cellular ``decisions'', and Monocle provides powerful tools for identifying the genes affected by them and involved in making them. You can see how to analyze branches in section \ref{BEAM}. Monocle relies on a machine learning technique called \emph{manifold learning} to construct single-cell trajectories. You can read more about the theoretical foundations of Monocle's approach in section \ref{theory}, or consult the references shown below in section \ref{references}.
+ Monocle introduced the strategy of using RNA-Seq for \emph{single cell trajectory analysis}. Rather than purifying cells into discrete states experimentally, Monocle uses an algorithm to learn the sequence of gene expression changes each cell must go through as part of a dynamic biological process. Once it has learned the overall ``trajectory'' of gene expression changes, Monocle can place each cell at its proper position in the trajectory. You can then use Monocle's differential analysis toolkit to find genes regulated over the course of the trajectory, as described in section \ref{pseudotime_diff}. If there are multiple outcome for the process, Monocle will reconstruct a ``branched'' trajectory. These branches correspond to cellular ``decisions'', and Monocle provides powerful tools for identifying the genes affected by them and involved in making them. You can see how to analyze branches in section \ref{BEAM}. Monocle relies on a machine learning technique called \emph{reversed graph embedding} to construct single-cell trajectories. You can read more about the theoretical foundations of Monocle's approach in section \ref{theory}, or consult the references shown below in section \ref{references}.
  
  \subsection{``Pseudotime'': a measure of progress through a biological process }
  
@@ -523,7 +523,7 @@ analysis (PCA) is an effective way of finding genes that vary widely across cell
 can use PCA to pick out a good set of ordering genes in a completely unsupervised
 manner. The procedure below first normalizes the expression data by adding a 
 pseudocount, log-transforming it, and then standardizing it so that all genes
-have roughly the same dyanmic range.  Then, it uses the \Rpackage{irlba} package
+have roughly the same dynamic range.  Then, it uses the \Rpackage{irlba} package
 to perform the PCA. The code below is a little more complicated than just calling
 \Rfunction{prcomp()}, but it has the advantage of performing the entire computation
 with sparse matrix operations. This is important for large, sparse CellDataSet 
@@ -547,7 +547,8 @@ expression_means <- expression_means[genes_to_keep]
 expression_vars <- expression_vars[genes_to_keep]
 
 # Here's how to take the top PCA loading genes, but using
-# sparseMatrix operations the whole time, using irlba.
+# sparseMatrix operations the whole time, using irlba. Note
+# that the v matrix from irlba is the loading matrix
 irlba_pca_res <- irlba(t(exprs_filtered), 
                        nu=0, 
                        center=expression_means, 
@@ -559,7 +560,7 @@ row.names(irlba_pca_res) <- row.names(exprs_filtered)
 # Here, we will just
 # take the top 200 genes from components 2 and 3. 
 # Component 1 usually is driven by technical noise.
-# We could also use a more principled approach , 
+# We could also use a more principled approach, 
 # similar to what dpFeature does below
 PC2_genes <- names(sort(abs(irlba_pca_res[, 2]), decreasing = T))[1:200]
 PC3_genes <- names(sort(abs(irlba_pca_res[, 3]), decreasing = T))[1:200]
@@ -596,7 +597,7 @@ We can look at a scree plot and determine how many pca dimensions are wanted bas
 significant gap between that component and the component after it. By selecting only the high loading PCs, 
 we effectively only focus on the more interesting biological variations.  
 <<plot_pc_variance, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
-plot_pc_variance_explained(HSMM_myo, return_all = F) #look at the plot and decide how many dimensions you need. It is determined by a huge drop of variance at that dimension. pass that number to num_dim in the next function. I used 10 there. 
+plot_pc_variance_explained(HSMM_myo, return_all = F) #look at the plot and decide how many dimensions you need. It is determined by a huge drop of variance at that dimension. pass that number to num_dim in the next function.
 @ %def
 
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.  
@@ -645,9 +646,9 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
 
 After we confirm the clustering makes sense, we can then perform differential 
-gene expression test as a value to extract the genes that distinguish them. 
+gene expression test as a way to extract the genes that distinguish them. 
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-#save.image('~/HSMM')
+save.image('~/HSMM')
 clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
                                              cores = detectCores())
