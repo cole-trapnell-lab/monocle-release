@@ -1819,6 +1819,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @param return_all A logical argument to determine whether or not the variance of each component is returned
 #' @param use_existing_pc_variance Whether to plot existing results for variance explained by each PC
 #' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @param ... additional arguments to pass to the dimensionality reduction function
 #' @export
 #' @examples
 #' \dontrun{

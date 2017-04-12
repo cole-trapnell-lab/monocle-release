@@ -37,13 +37,13 @@ run_pca <- function(data, ...) {
 #   return(dm@eigenvectors)
 # }
 
-#' Scale pseudotime to be in the range from 0 to 100
-#'
-#' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
-#'
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param verbose Whether to emit verbose output
-#' @return an updated CellDataSet object which an
+# #' Scale pseudotime to be in the range from 0 to 100
+# #'
+# #' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
+# #'
+# #' @param cds the CellDataSet upon which to perform this operation
+# #' @param verbose Whether to emit verbose output
+# #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
   Parent <- NA
   pd <- pData(cds)
@@ -1679,13 +1679,13 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-#' traverse from one cell to another cell
-#'
-#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
-#' @import igraph
+# #' traverse from one cell to another cell
+# #'
+# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+# #' @import igraph
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
   branchPoints <- which(degree(g) == 3)
@@ -1694,13 +1694,13 @@ traverseTree <- function(g, starting_cell, end_cells){
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-#' Make a cds by traversing from one cell to another cell
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a new cds containing only the cells traversed from the intial cell to the end cell
-#' @import igraph
+# #' Make a cds by traversing from one cell to another cell
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+# #' @import igraph
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1721,12 +1721,12 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   return(cds_subset)
 }
 
-#' Subset a cds which only includes cells provided with the argument cells
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param cells a vector contains all the cells you want to subset
-#' @return a new cds containing only the cells from the cells argument
-#' @import igraph
+# #' Subset a cds which only includes cells provided with the argument cells
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param cells a vector contains all the cells you want to subset
+# #' @return a new cds containing only the cells from the cells argument
+# #' @import igraph
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)
   if(ncol(reducedDimK(cds)) != ncol(cds))
@@ -1759,10 +1759,10 @@ SubSet_cds <- function(cds, cells){
   cds_subset <- orderCells(cds_subset)
 }
 
-#' Reverse embedding latent graph coordinates back to the high dimension
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
+# #' Reverse embedding latent graph coordinates back to the high dimension
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
 
 reverseEmbeddingCDS <- function(cds) {
   if(nrow(cds@reducedDimW) < 1)

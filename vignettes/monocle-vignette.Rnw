@@ -657,8 +657,7 @@ clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_ex
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)
-[order(clustering_DEG_genes_subset$qval)][1:1000] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
