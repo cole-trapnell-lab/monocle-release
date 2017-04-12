@@ -549,6 +549,7 @@ expression_vars <- expression_vars[genes_to_keep]
 # Here's how to take the top PCA loading genes, but using
 # sparseMatrix operations the whole time, using irlba. Note
 # that the v matrix from irlba is the loading matrix
+set.seed(0)
 irlba_pca_res <- irlba(t(exprs_filtered), 
                        nu=0, 
                        center=expression_means, 
@@ -648,7 +649,6 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 After we confirm the clustering makes sense, we can then perform differential 
 gene expression test as a way to extract the genes that distinguish them. 
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-save.image('~/HSMM')
 clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
                                              cores = detectCores())
@@ -752,7 +752,7 @@ HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
-HSMM_myo <- orderCells(HSMM_myo, root_state=4)
+#HSMM_myo <- orderCells(HSMM_myo, root_state=4)
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 plot_cell_trajectory(HSMM_myo, color_by="CellType")
 @ %def
