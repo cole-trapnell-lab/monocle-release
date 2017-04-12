@@ -310,7 +310,7 @@ Now we're ready to try clustering the cells:
 <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
 # HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 8, 
                        reduction_method = 'tSNE', verbose = T) 
 HSMM <- clusterCells(HSMM,
                      num_clusters=2)
@@ -350,7 +350,7 @@ First, we'll select a different set of genes to use for clustering the cells. Be
 <<cluster_cells_diff_table, eval=TRUE>>=
 marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                  cth, 
-                                 residualModelFormulaStr="~Media",
+                                 residualModelFormulaStr="~Media + num_genes_expressed",
                                  cores=detectCores())
 @ %def
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
@@ -588,7 +588,7 @@ then used to order cells.
 To use dpFeature, we first select superset of feature genes as genes expressed 
 in at least $5\%$ of all the cells. 
 <<set_ordering_gene_dpfeature, fig.height=3, fig.width=3, fig.align="center", eval=TRUE, warning=FALSE>>=
-fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo)
+fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.1 * ncol(HSMM_myo)
 @ %def
 
 Then we will perform a PCA analysis to identify the variance explained by each PC (principal component). 
@@ -647,6 +647,7 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 After we confirm the clustering makes sense, we can then perform differential 
 gene expression test as a value to extract the genes that distinguish them. 
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+#save.image('~/HSMM')
 clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
                                              cores = detectCores())
