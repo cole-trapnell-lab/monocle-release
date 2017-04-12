@@ -1717,7 +1717,9 @@ plot_cell_clusters <- function(cds,
 
   gene_short_name <- NULL
   sample_name <- NULL
-  
+  data_dim_1 <- NULL
+  data_dim_2 <- NULL
+
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info <- pData(cds)
   
@@ -1786,6 +1788,8 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
     & !is.null(pData(cds)$halo)
     & !is.null(pData(cds)$delta)
     & !is.null(pData(cds)$rho)) {
+    rho <- NULL
+    delta <- NULL
 
     # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
     #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
@@ -1813,12 +1817,14 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' data using the same procedure used in reduceDimension function.
 #'
 #' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @param max_components Maximum number of components shown in the scree plot (variance explained by each component)
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
 #' @param return_all A logical argument to determine whether or not the variance of each component is returned
 #' @param use_existing_pc_variance Whether to plot existing results for variance explained by each PC
 #' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @param ... additional arguments to pass to the dimensionality reduction function
 #' @export
 #' @examples
 #' \dontrun{
@@ -1826,14 +1832,15 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' plot_pc_variance_explained(HSMM)
 #' }
 plot_pc_variance_explained <- function(cds, 
-                            # max_components=2, 
+                            max_components=100, 
                             # reduction_method=c("DDRTree", "ICA", 'tSNE'),
                             norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             return_all = F, 
                             use_existing_pc_variance=FALSE,
-                            verbose=FALSE){
+                            verbose=FALSE, 
+                            ...){
   set.seed(2016)
   if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
     prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
@@ -1868,27 +1875,31 @@ plot_pc_variance_explained <- function(cds,
     
     # FM <- convert2DRData(cds, norm_method = 'log') 
     # FM <- FM[rowSums(is.na(FM)) == 0, ]
-    cell_means <- Matrix::rowMeans(FM_t)
-    cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
-    
-    irlba_res <- irlba(FM,
-                       nv= min(dim(FM)) - 1,
-                       nu=0,
-                       center=cell_means,
-                       scale=sqrt(cell_vars),
-                       right_only=TRUE)
-    prop_varex <- irlba_res$d / sum(irlba_res$d)
-    
+    irlba_res <- prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
+                              center = TRUE, scale. = TRUE)
+    prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
+    # 
+    # cell_means <- Matrix::rowMeans(FM_t)
+    # cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
+    # 
+    # irlba_res <- irlba(FM,
+    #                    nv= min(max_components, min(dim(FM)) - 1), #avoid calculating components in the tail
+    #                    nu=0,
+    #                    center=cell_means,
+    #                    scale=sqrt(cell_vars),
+    #                    right_only=TRUE)
+    # prop_varex <- irlba_res$d / sum(irlba_res$d)
+    # 
     # # pca_res <- prcomp(t(FM), center = T, scale = T)
     # # std_dev <- pca_res$sdev 
     # # pr_var <- std_dev^2
     # prop_varex <- pr_var/sum(pr_var)
   }
   
-  p <- qplot(1:length(prop_varex), prop_varex, alpha = 0.5) +  monocle_theme_opts() + 
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = I(0.5)) +  monocle_theme_opts() + 
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     theme(panel.background = element_rect(fill='white')) + xlab('components') + 
-    ylab('variance explained by each component')
+    ylab('Variance explained \n by each component')
   # return(prop_varex = prop_varex, p = p)
   if(return_all) {
     return(list(variance_explained = prop_varex, p = p))
