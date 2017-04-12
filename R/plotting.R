@@ -1817,6 +1817,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' data using the same procedure used in reduceDimension function.
 #'
 #' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @param max_components Maximum number of components shown in the scree plot (variance explained by each component)
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
