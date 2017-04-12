@@ -1717,7 +1717,9 @@ plot_cell_clusters <- function(cds,
 
   gene_short_name <- NULL
   sample_name <- NULL
-  
+  data_dim_1 <- NULL
+  data_dim_2 <- NULL
+
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info <- pData(cds)
   
@@ -1786,6 +1788,8 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
     & !is.null(pData(cds)$halo)
     & !is.null(pData(cds)$delta)
     & !is.null(pData(cds)$rho)) {
+    rho <- NULL
+    delta <- NULL
 
     # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
     #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
@@ -1871,7 +1875,7 @@ plot_pc_variance_explained <- function(cds,
     # FM <- convert2DRData(cds, norm_method = 'log') 
     # FM <- FM[rowSums(is.na(FM)) == 0, ]
     irlba_res <- prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
-                              center = TRUE, scale = TRUE)
+                              center = TRUE, scale. = TRUE)
     prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
     # 
     # cell_means <- Matrix::rowMeans(FM_t)
