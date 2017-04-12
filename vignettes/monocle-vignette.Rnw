@@ -1,4 +1,4 @@
-% \VignetteIndexEntry{Monocle: Differential expression and time-series analysis for single-cell RNA-Seq and qPCR experiments.} 
+% \VignetteIndexEntry{Monocle: Cell counting, differential expression, and trajectory analysis for single-cell RNA-Seq experiments} 
 % \VignetteEngine{knitr::knitr}
 % \VignetteDepends{} 
 % \VignettePackage{monocle}
