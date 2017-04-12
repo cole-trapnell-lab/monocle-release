@@ -1377,11 +1377,11 @@ reduceDimension <- function(cds,
     if (verbose)
         message("Remove noise by PCA ...")
 
-      # Calculate the variance across genes without converting to a dense
-      # matrix:
-      FM_t <- Matrix::t(FM)
-      cell_means <- Matrix::rowMeans(FM_t)
-      cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
+      # # Calculate the variance across genes without converting to a dense
+      # # matrix:
+      # FM_t <- Matrix::t(FM)
+      # cell_means <- Matrix::rowMeans(FM_t)
+      # cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
       # Filter out genes that are constant across all cells:
       #genes_to_keep <- expression_vars > 0
       #FM <- FM[genes_to_keep,]
@@ -1415,7 +1415,7 @@ reduceDimension <- function(cds,
       # std_dev <- pca_res$sdev
       # pr_var <- std_dev^2
       # prop_varex <- pr_var/sum(pr_var)
-      prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
+      # prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
 
       topDim_pca <- irlba_pca_res#[, 1:num_dim]
 
