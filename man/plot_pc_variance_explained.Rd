@@ -5,12 +5,15 @@
 \title{Plots the percentage of variance explained by the each component based on PCA from the normalized expression
 data using the same procedure used in reduceDimension function.}
 \usage{
-plot_pc_variance_explained(cds, norm_method = c("vstExprs", "log", "none"),
+plot_pc_variance_explained(cds, max_components = 100,
+  norm_method = c("vstExprs", "log", "none"),
   residualModelFormulaStr = NULL, pseudo_expr = NULL, return_all = F,
-  use_existing_pc_variance = FALSE, verbose = FALSE)
+  use_existing_pc_variance = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE}
+
+\item{max_components}{Maximum number of components shown in the scree plot (variance explained by each component)}
 
 \item{norm_method}{Determines how to transform expression values prior to reducing dimensionality}
 
@@ -23,6 +26,8 @@ plot_pc_variance_explained(cds, norm_method = c("vstExprs", "log", "none"),
 \item{use_existing_pc_variance}{Whether to plot existing results for variance explained by each PC}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
+
+\item{...}{additional arguments to pass to the dimensionality reduction function}
 }
 \description{
 Plots the percentage of variance explained by the each component based on PCA from the normalized expression

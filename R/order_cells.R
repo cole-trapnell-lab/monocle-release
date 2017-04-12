@@ -37,13 +37,13 @@ run_pca <- function(data, ...) {
 #   return(dm@eigenvectors)
 # }
 
-#' Scale pseudotime to be in the range from 0 to 100
-#'
-#' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
-#'
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param verbose Whether to emit verbose output
-#' @return an updated CellDataSet object which an
+# #' Scale pseudotime to be in the range from 0 to 100
+# #'
+# #' This function transforms the pseudotime scale so that it ranges from 0 to 100. If there are multiple branches, each leaf is set to be 100, with branches stretched accordingly.
+# #'
+# #' @param cds the CellDataSet upon which to perform this operation
+# #' @param verbose Whether to emit verbose output
+# #' @return an updated CellDataSet object which an
 scale_pseudotime <- function(cds, verbose = F) {
   Parent <- NA
   pd <- pData(cds)
@@ -1377,11 +1377,11 @@ reduceDimension <- function(cds,
     if (verbose)
         message("Remove noise by PCA ...")
 
-      # Calculate the variance across genes without converting to a dense
-      # matrix:
-      FM_t <- Matrix::t(FM)
-      cell_means <- Matrix::rowMeans(FM_t)
-      cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
+      # # Calculate the variance across genes without converting to a dense
+      # # matrix:
+      # FM_t <- Matrix::t(FM)
+      # cell_means <- Matrix::rowMeans(FM_t)
+      # cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
       # Filter out genes that are constant across all cells:
       #genes_to_keep <- expression_vars > 0
       #FM <- FM[genes_to_keep,]
@@ -1397,21 +1397,25 @@ reduceDimension <- function(cds,
       else{
         num_dim <- 50
       }
-
-      irlba_res <- irlba(FM,
-                         nv=min(num_dim, min(dim(FM)) - 1),
-                             nu=0,
-                             center=cell_means,
-                             scale=sqrt(cell_vars),
-                             right_only=TRUE)
-      irlba_pca_res <- irlba_res$v
-      #row.names(irlba_pca_res) <- genes_to_keep
+      
+      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      
+      # irlba_res <- irlba(FM,
+      #                    nv=min(num_dim, min(dim(FM)) - 1),
+      #                        nu=0,
+      #                        center=cell_means,
+      #                        scale=sqrt(cell_vars),
+      #                        right_only=TRUE)
+      # irlba_pca_res <- irlba_res$v
+      # row.names(irlba_pca_res) <- genes_to_keep
 
       # pca_res <- prcomp(t(FM), center = T, scale = T)
       # std_dev <- pca_res$sdev
       # pr_var <- std_dev^2
       # prop_varex <- pr_var/sum(pr_var)
-      prop_varex <- irlba_res$d / sum(irlba_res$d)
+      # prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
 
       topDim_pca <- irlba_pca_res#[, 1:num_dim]
 
@@ -1679,34 +1683,34 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-#' traverse from one cell to another cell
-#'
-#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
-#' @import igraph
+# #' traverse from one cell to another cell
+# #'
+# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+# #' @import igraph
 traverseTree <- function(g, starting_cell, end_cells){
-  distance <- shortest.paths(g, v=initial_vertex, to=terminal_vertex)
+  distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
-  path <- shortest_paths(g, from = initial_vertex, terminal_vertex)
+  path <- shortest_paths(g, from = starting_cell, end_cells)
 
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-#' Make a cds by traversing from one cell to another cell
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a new cds containing only the cells traversed from the intial cell to the end cell
-#' @import igraph
+# #' Make a cds by traversing from one cell to another cell
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+# #' @import igraph
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
 
   for(end_cell in end_cells) {
-    traverse_res <- traverseTree(g, starting_cell, end_cell)
+    traverse_res <- traverseTree(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
 
     subset_cell <- c(subset_cell, path_cells)
@@ -1721,12 +1725,12 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   return(cds_subset)
 }
 
-#' Subset a cds which only includes cells provided with the argument cells
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param cells a vector contains all the cells you want to subset
-#' @return a new cds containing only the cells from the cells argument
-#' @import igraph
+# #' Subset a cds which only includes cells provided with the argument cells
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param cells a vector contains all the cells you want to subset
+# #' @return a new cds containing only the cells from the cells argument
+# #' @import igraph
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)
   if(ncol(reducedDimK(cds)) != ncol(cds))
@@ -1759,10 +1763,10 @@ SubSet_cds <- function(cds, cells){
   cds_subset <- orderCells(cds_subset)
 }
 
-#' Reverse embedding latent graph coordinates back to the high dimension
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
+# #' Reverse embedding latent graph coordinates back to the high dimension
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @return a new cds containing only the genes used in reducing dimension. Expression values are reverse embedded and rescaled.
 
 reverseEmbeddingCDS <- function(cds) {
   if(nrow(cds@reducedDimW) < 1)
@@ -1787,7 +1791,7 @@ reverseEmbeddingCDS <- function(cds) {
   raw_data <- as.matrix(exprs(cds)[row.names(FM), ]) 
   reverse_embedding_data <- reverse_embedding_data * (apply(raw_data, 1, function(x) quantile(x, 0.99)) ) / apply(reverse_embedding_data, 1, max)
 
-  exprs(cds_subset) <- reverse_embedding_data
+  Biobase::exprs(cds_subset) <- reverse_embedding_data
   
   return(cds_subset)
 }
