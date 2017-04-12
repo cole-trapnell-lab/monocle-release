@@ -209,7 +209,7 @@ relative2abs <- function(relative_cds,
   return_all = FALSE, 
   method = c('num_genes', 'tpm_fraction'),
   cores = 1) {
-  
+  FPKM <- NULL
   relative_expr_matrix <- exprs(relative_cds)
   # relative_expr_matrix <- apply(relative_expr_matrix, 2, function(x) x / sum(x) * 10^6) #convert to TPM
 

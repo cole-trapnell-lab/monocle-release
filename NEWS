@@ -3,7 +3,7 @@ Monocle 2.0.0 Series NEWS
 
 Version 2.3.0
 --------------------------------------------------------------------------------
-  o Revamped clusterCells functionality based on t-SNE
+  o Revamped clusterCells functionality based on t-SNE and densityPeak
   o New procedure for selected ordering genes called "dpFeature". See vignette
     for details.
 

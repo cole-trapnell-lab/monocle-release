@@ -83,7 +83,7 @@ clusterCells <- function(cds,
                           verbose = F, 
                           ...) {
 
-  if(method == 'DDRTree') {
+  if(method == 'DDRTree') { # this option will be removed in future
     # disp_table <- dispersionTable(cds)
     # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
     # cds <- setOrderingFilter(cds, ordering_genes)
@@ -97,11 +97,11 @@ clusterCells <- function(cds,
       cds <- setOrderingFilter(cds, clustering_genes)
     
     cds <- reduceDimension(cds, 
-                           max_components=max_components, 
-                           residualModelFormulaStr=residualModelFormulaStr,
+                           max_components=2, #
+                           residualModelFormulaStr=NULL,
                            reduction_method = "DDRTree",
                            verbose=verbose,
-                           param.gamma=param.gamma,
+                           param.gamma=100,
                            ncenter=num_clusters, 
                            ...)
     pData(cds)$Cluster <- as.factor(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex)
@@ -116,6 +116,7 @@ clusterCells <- function(cds,
   }
 
   else if(method == 'densityPeak'){
+    set.seed(2017)
     tsne_data <- reducedDimA(cds)
     if(ncol(tsne_data) != ncol(cds))
       stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
