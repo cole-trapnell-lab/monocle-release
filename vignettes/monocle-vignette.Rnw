@@ -310,11 +310,10 @@ Now we're ready to try clustering the cells:
 <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
 # HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, 
                        reduction_method = 'tSNE', verbose = T) 
 HSMM <- clusterCells(HSMM,
-                     num_clusters=2,
-                     clustering_genes=unsup_clustering_genes$gene_id)
+                     num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType", markers=c("MYF5", "ANPEP"))
 @ %def
 
@@ -327,11 +326,10 @@ plot_cell_clusters(HSMM, 1, 2, color="Media")
 Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
 
 <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, reduction_method = 'tSNE', 
-                       residualModelFormulaStr="~Media + num_genes_expressed", verbose = T)
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 15, reduction_method = 'tSNE', 
+                       residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #
 HSMM <- clusterCells(HSMM,
-                     num_clusters=2,
-                     clustering_genes=unsup_clustering_genes$gene_id)
+                     num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="Media")
 @ %def
 
@@ -339,10 +337,8 @@ Now that we've accounted for some unwanted sources of variation, we're ready to 
 
 <<cluster_cells_unsup_plot_by_cell_type, fig.width = 6, fig.height = 4, fig.align="center", eval=TRUE>>=
 HSMM <- clusterCells(HSMM,
-                     num_clusters=2,
-                     clustering_genes=unsup_clustering_genes$gene_id)
+                     num_clusters=3)
 plot_cell_clusters(HSMM, 1, 2, color="Cluster") + facet_wrap(~CellType)
-save.image('~/HSMM')
 @ %def
  
 Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both. However, we still see some cells of both types in each cluster. This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering. To help rule out the latter, let's try running \Rfunction{clusterCells} in its semi-supervised mode.  
@@ -378,7 +374,7 @@ Note that we've got a smaller set of genes, and some of them are not especially 
 
 <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
 HSMM <- clusterCells(HSMM,
  num_clusters=2,
@@ -398,7 +394,7 @@ HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 HSMM <- reduceDimension(HSMM, 
                         max_components=2, 
-                        num_dim = 3, 
+                        num_dim = 4, 
                         reduction_method = 'tSNE', 
                         residualModelFormulaStr="~Media + num_genes_expressed", 
                         verbose = T) #norm_method = 'log'
@@ -605,7 +601,8 @@ plot_pc_variance_explained(HSMM_myo, return_all = F) #look at the plot and decid
 
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.  
 <<perform tSNE dimension reduction, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 5, reduction_method = 'tSNE', verbose = T)
+  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 3, 
+                              reduction_method = 'tSNE', verbose = T)
 @ %def
 
 Then we can run density peak clustering to identify the clusters on the 2-D t-SNE space. Density peak algorithm clusters cells based on each 
@@ -654,12 +651,14 @@ clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,],
                                              fullModelFormulaStr = '~Cluster', 
                                              cores = detectCores())
 
-clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo), ]
+clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_expressed > 0.05 
+                                                    * ncol(HSMM_myo), ]
 @ %def
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)
+[order(clustering_DEG_genes_subset$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
@@ -1087,7 +1086,7 @@ needing to know its high-level structure ahead of time.
 
 \subsection{Reversed graph embedding}
 
-Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao_undated-xi} to learn the 
+Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{QiRGE, qiu2017RGE} to learn the 
 structure of the manifold that describes a single-cell experiment.
 
 Reversed graph embedding simultaneously learns a \emph{principal graph} that
