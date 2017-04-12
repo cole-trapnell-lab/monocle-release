@@ -1039,7 +1039,7 @@ when you use Monocle or discuss single-cell pseudotemporal ordering in your work
  
 \section{Theory behind Monocle}\label{theory}
 \subsection{DPfeature: feature selection by detecting DEGs across cluster of cells}
-An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{Trapnell2014-fv}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
+An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{TRAPNELL_CACCHIARELLI}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
 	
 First, dpFeature filters genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the expressed genes and then users can decide the number of principal components (PCs) used for downstream analysis based on whether or not there is a significant drop in the variance explained at the selected component. These top PCs will be further used to initialize t-SNE which projects the cells into two-dimension t-SNE space. Third, dpFeature uses a recently developed density based clustering algorithm, called density peak clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and distance ($\delta$) of a cell to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called decision plot. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell to form clusters. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between a negative-binomial generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes, after Benjamini-Hochberg correction, as the ordering genes for the trajectory reconstruction. 
 	
@@ -1086,7 +1086,7 @@ needing to know its high-level structure ahead of time.
 
 \subsection{Reversed graph embedding}
 
-Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{QiRGE, qiu2017RGE} to learn the 
+Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao2016-ru, Qiu2017-nx} to learn the 
 structure of the manifold that describes a single-cell experiment.
 
 Reversed graph embedding simultaneously learns a \emph{principal graph} that
@@ -1283,6 +1283,7 @@ The branching time point for each gene can be quantified by fitting a separate s
  If you use Monocle to analyze your experiments, please cite:
  <<citation, eval=TRUE>>=
  citation("monocle")
+
  @ %def 
  
  \section{Acknowledgements}
