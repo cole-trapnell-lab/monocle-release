@@ -1871,8 +1871,6 @@ plot_pc_variance_explained <- function(cds,
       stop("Error: all rows have standard deviation zero")
     }
     
-    FM_t <- Matrix::t(FM)
-    
     # FM <- convert2DRData(cds, norm_method = 'log') 
     # FM <- FM[rowSums(is.na(FM)) == 0, ]
     irlba_res <- prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
