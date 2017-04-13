@@ -348,7 +348,7 @@ First, we'll select a different set of genes to use for clustering the cells. Be
 marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                  cth, 
                                  residualModelFormulaStr="~Media + num_genes_expressed",
-                                 cores=detectCores())
+                                 cores=1)
 @ %def
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
@@ -469,9 +469,10 @@ The genes we've chosen to use for ordering define the \emph{state space} of the 
  @ %def
  
 Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
- <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
- @ %def
+
+<<order_cells, eval=TRUE>>=
+HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+@ %def
  
 Once the cells are ordered, we can visualize the trajectory in the reduced 
 dimensional space.
@@ -479,6 +480,15 @@ dimensional space.
  <<plot_ordering_mst, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
  plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def 
+ 
+<<plot_ordering_with_GM_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+GM_state <- function(cds){
+  T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
+  as.numeric(names(T0_counts)[which(T0_counts == max(T0_counts))])
+}
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
+plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
+@ %def 
  
  To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
 
@@ -558,7 +568,8 @@ Using these to order the cells as above yields the following trajectory:
  <<order_cells_pca_unsup, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE, eval=TRUE>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
-HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+HSMM_myo <- orderCells(HSMM_myo)
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 @ %def
 
@@ -575,7 +586,8 @@ then used to order cells.
 To use dpFeature, we first select superset of feature genes as genes expressed 
 in at least $5\%$ of all the cells. 
 <<set_ordering_gene_dpfeature, fig.height=3, fig.width=3, fig.align="center", eval=TRUE, warning=FALSE>>=
-fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.1 * ncol(HSMM_myo)
+HSMM_myo <- detectGenes(HSMM_myo, min_expr=0.1)
+fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo)
 @ %def
 
 Then we will perform a PCA analysis to identify the variance explained by each PC (principal component). 
@@ -636,20 +648,17 @@ gene expression test as a way to extract the genes that distinguish them.
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
 clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
-                                             cores = detectCores())
-
-clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_expressed > 0.05 
-                                                    * ncol(HSMM_myo), ]
+                                             cores = 1)
 @ %def
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo)
-
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 @ %def
@@ -667,7 +676,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def 
  
 <<plot_ordering_mst_with_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-HSMM_myo <- orderCells(HSMM_myo, root_state=1)
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
 @ %def 
 
@@ -724,7 +733,7 @@ Now we select the set of genes that co-vary (in either direction) with these two
 <<semi_sup_ordering_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,], 
                                cth, 
-                               cores=detectCores())
+                               cores=1)
 #semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
 semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:500] 
 @ %def
@@ -735,6 +744,7 @@ HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 #plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 plot_cell_trajectory(HSMM_myo, color_by="CellType")
 @ %def
