@@ -720,7 +720,7 @@ semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:50
 @ %def
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
-<<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 3.5, warning=FALSE, fig.align="center">>=
+<<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 2, warning=FALSE, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 #plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
@@ -733,7 +733,7 @@ To confirm that the ordering is correct, we can select a couple of markers of
 myogenic progress. In this experiment, one of the branches corresponds to cells
 that successfully fuse to form myotubes, and the other to those that fail to 
 fully differentiate. We'll exclude the latter for now, but you can learn more 
-about tools for dealing with branched trajectories in section \cite{subsec:BEAM_trajectory}.
+about tools for dealing with branched trajectories in section \cite{BEAM_trajectory}.
 
 <<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
@@ -1156,7 +1156,7 @@ core manifold describing a \Robject{CellDataSet}, and then computes pseudotime
 coordinates and branch assignments using this manifold. Monocle also uses the 
 manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reversed graph embedding for single-cell trajectory
-analysis has been posted on biorxiv (\cite{}).
+analysis has been posted on biorxiv (\cite{Qiu2017-nx}).
 
 % \subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
 % SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
