@@ -24,7 +24,7 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
+                            expressionFamily=VGAM::negbinomial.size())
 {
   #cellData <- as.matrix( cellData )
   
