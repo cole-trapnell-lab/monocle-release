@@ -297,8 +297,7 @@ The first step is to decide which genes to use in clustering the cells. We could
 
 <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
 disp_table <- dispersionTable(HSMM)
-unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 
-                                 & dispersion_empirical >= 1 * dispersion_fit)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
 HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
 plot_ordering_genes(HSMM)
 @ %def
@@ -310,34 +309,32 @@ Now we're ready to try clustering the cells:
 <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
 # HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 8, 
-                       reduction_method = 'tSNE', verbose = T) 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+                        reduction_method = 'tSNE', verbose = T) 
 HSMM <- clusterCells(HSMM,
                      num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType", markers=c("MYF5", "ANPEP"))
 @ %def
 
-As you can see, the cells fall into two different clusters. The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. Unfortunately, the cells don't simply cluster by type - the myoblasts are split into two different clusters. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
+As you can see, the cells fall into several different clusters. The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. Unfortunately, the cells don't simply cluster by type - the myoblasts are split into two different clusters. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
 
 <<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
 plot_cell_clusters(HSMM, 1, 2, color="Media")
 @ %def
 
-Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
+Monocle allows us to subtract the effects of ``uninteresting'' sources of variation to reduce their impact on the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
 
 <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 15, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #
-HSMM <- clusterCells(HSMM,
-                     num_clusters=2)
-plot_cell_clusters(HSMM, 1, 2, color="Media")
+HSMM <- clusterCells(HSMM, num_clusters=2)
+plot_cell_clusters(HSMM, 1, 2, color="CellType")
 @ %def
 
 Now that we've accounted for some unwanted sources of variation, we're ready to take another crack at classifying the cells by unsupervised clustering:
 
 <<cluster_cells_unsup_plot_by_cell_type, fig.width = 6, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- clusterCells(HSMM,
-                     num_clusters=3)
+HSMM <- clusterCells(HSMM, num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="Cluster") + facet_wrap(~CellType)
 @ %def
  
@@ -363,22 +360,21 @@ head(selectTopMarkers(marker_spec, 3))
 @ %def
 The last line above shows the top three marker genes for myoblasts and fibroblasts. The "specificity" score is calculated using the metric described in Cabili et al \cite{CABILI} and can range from zero to one. The closer it is to one, the more restricted it is to the cell type in question. You can use this feature to define new markers for known cell types, or pick out genes you can use in purifying newly discovered cell types. This can be highly valuable for downstream follow up experiments.
 
-To cluster the cells, we'll choose the top ten markers for each of these cell types:
+To cluster the cells, we'll choose the top 500 markers for each of these cell types:
 <<cluster_cells_semisup_pick_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 20)$gene_id)
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
 HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
 plot_ordering_genes(HSMM)
 @ %def
 
-Note that we've got a smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
+Note that we've got smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
 
 <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
-HSMM <- clusterCells(HSMM,
- num_clusters=2,
- clustering_genes=semisup_clustering_genes) #
+HSMM <- clusterCells(HSMM, num_clusters=2,
+                     clustering_genes=semisup_clustering_genes) 
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
@@ -388,17 +384,6 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
  Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
  
  <<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
-          
-#HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
-plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, 
-                        max_components=2, 
-                        num_dim = 4, 
-                        reduction_method = 'tSNE', 
-                        residualModelFormulaStr="~Media + num_genes_expressed", 
-                        verbose = T) #norm_method = 'log'
-
 HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
                       frequency_thresh=0.1,
@@ -406,7 +391,8 @@ HSMM <- clusterCells(HSMM,
                       clustering_genes=row.names(subset(marker_diff, qval < 0.05)))
  plot_cell_clusters(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
  @ %def
- As you can see, the clusters are fairly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
+ 
+As you can see, the clusters are fairly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
  
  <<count_cells_semisup_pie, fig.width = 5, fig.height = 5, fig.align="center", eval=TRUE>>=
  pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
@@ -453,7 +439,6 @@ HSMM <- clusterCells(HSMM,
  Ideally, we'd like to use as little prior knowledge of the biology of the system under study as possible. We'd like to discover the important ordering genes from the data, rather than relying on literature and textbooks, because that might introduce bias in the ordering. One effective way to isolate a set of ordering genes is to simply compare the cells collected at the beginning of the process to those at the end and find the differentially expressed genes, as described above. The command below will find all genes that are differentially expressed in response to the switch from growth medium to differentiation medium:
  
  <<ordering_not_run, eval=FALSE>>=
- #not run
  diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,], 
                                        fullModelFormulaStr="~Media")
  ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
@@ -468,10 +453,10 @@ Genes that vary a lot are often highly informative for identifying cell subpopul
  disp_table <- dispersionTable(HSMM_myo)
  ordering_genes <- subset(disp_table, 
                           mean_expression >= 0.5 & 
-                          dispersion_empirical >= 1.5 * dispersion_fit)$gene_id
+                          dispersion_empirical >= 1 * dispersion_fit)$gene_id
  @ %def
  
- nce we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
+Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
  
 <<set_ordering_filter, eval=TRUE, fig.height=3, fig.width=3, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
@@ -708,7 +693,7 @@ about tools for dealing with branched trajectories in section \cite{subsec:branc
  
 <<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,2)]
+                          pData(HSMM_myo)$State %in% c(1,3)]
  
 my_genes <- row.names(subset(fData(HSMM_filtered), 
                               gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
@@ -741,18 +726,15 @@ marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,],
                                cth, 
                                cores=detectCores())
 #semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
-semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:1000] 
-
-length(semisup_clustering_genes)
+semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:500] 
 @ %def
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
 <<semi_sup_ordering_trajectory, eval=TRUE, fig.width = 6, fig.height = 4, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
-plot_ordering_genes(HSMM_myo)
+#plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
-#HSMM_myo <- orderCells(HSMM_myo, root_state=4)
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 plot_cell_trajectory(HSMM_myo, color_by="CellType")
 @ %def
@@ -761,10 +743,10 @@ And we can see that kinetics of notable genes we examined before are largely the
 
 <<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,2,4)]
+                          pData(HSMM_myo)$State %in% c(1,3)]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
-                             gene_short_name %in% c("CDK1", "MEF2C", "MYOG"))) 
+                             gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 
 cds_subset <- HSMM_filtered[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
@@ -1039,10 +1021,10 @@ graph embedding for single-cell trajectory analysis will be forthcoming
 when you use Monocle or discuss single-cell pseudotemporal ordering in your work.
  
 \section{Theory behind Monocle}\label{theory}
-\subsection{DPfeature: feature selection by detecting DEGs across cluster of cells}
-An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{TRAPNELL_CACCHIARELLI}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
+\subsection{dpFeature: selecting features from dense cell clusters}
+Appling algorithms like t-SNE to cells transiting through a continuous process like cell differentiation often groups the cells into clusters that do not necessarily reflect their progression through the process. Nevertheless, the genes that are differentially expressed by cells the clusters are often highly informative markers of each cell's progress through the trajectory. That is, clustering algorithms like t-SNE can find often genes that vary over the trajectory, but not the trajectory itself. We designed a simple procedure to identify these genes for use in trajectory reconstruction. 
 	
-First, dpFeature filters genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the expressed genes and then users can decide the number of principal components (PCs) used for downstream analysis based on whether or not there is a significant drop in the variance explained at the selected component. These top PCs will be further used to initialize t-SNE which projects the cells into two-dimension t-SNE space. Third, dpFeature uses a recently developed density based clustering algorithm, called density peak clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and distance ($\delta$) of a cell to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called decision plot. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell to form clusters. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between a negative-binomial generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes, after Benjamini-Hochberg correction, as the ordering genes for the trajectory reconstruction. 
+The dpFeature procedure works as follows. First, dpFeature excludes genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the remaining genes in order to identify the principal components that explain a substantial amount of variance in the data. These top PCs are then used to initialize t-SNE, which projects the cells into two-dimensional t-SNE space. Next, dpFeature uses a recently developed clustering algorithm, called ``density peak'' clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and its distance ($\delta$) to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called ``decision plot'' in order to select thresholds that define ``peaks'' in the t-SNE space. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between using a generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes as the ordering genes for the trajectory reconstruction. 
 	
 \subsection{Reversed graph embedding}\label{RGE}
 Single-cell expression datasets are some of the largest and most complex encountered
