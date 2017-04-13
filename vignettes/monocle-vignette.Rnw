@@ -468,12 +468,12 @@ The genes we've chosen to use for ordering define the \emph{state space} of the 
  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
  @ %def
  
-Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
+Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. 
 
 <<order_cells, eval=TRUE>>=
-HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
+HSMM_myo <- orderCells(HSMM_myo)
 @ %def
- 
+
 Once the cells are ordered, we can visualize the trajectory in the reduced 
 dimensional space.
  
@@ -481,6 +481,21 @@ dimensional space.
  plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def 
  
+% The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
+ The trajectory has a tree-like structure. We can see that the cells 
+ collected at time zero are located near one of the tips of the tree, while the 
+ others are distributed amongst the two ``branches''.  Monocle doesn't know
+ \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
+ so we often have to call \Rfunction{orderCells} again using the 
+ \Robject{root\_state} argument to specify the beginning. First, we plot the
+ trajectory, this time coloring the cells by ``State'':
+ 
+ <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+ plot_cell_trajectory(HSMM_myo, color_by="State")
+ @ %def 
+
+``State'' is just Monocle's term for the segment of the tree. The function below is handy for identifying the State which contains most of the cells from time zero. We can then pass that to \Rfunction{orderCells}:
+
 <<plot_ordering_with_GM_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 GM_state <- function(cds){
   T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
@@ -489,8 +504,22 @@ GM_state <- function(cds){
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
 @ %def 
- 
- To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
+
+If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
+
+<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3, warning=FALSE>>=
+plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State, nrow=1)
+@ %def 
+
+And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
+
+<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
+blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
+plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
+@ %def 
+
+
+To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
 
 <<plot_markers_linear, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
@@ -565,7 +594,7 @@ ordering_genes <- union(PC2_genes, PC3_genes)
 @ %def
 
 Using these to order the cells as above yields the following trajectory:
- <<order_cells_pca_unsup, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE, eval=TRUE>>=
+ <<order_cells_pca_unsup, fig.width = 4, fig.height = 3, fig.align="center", warning=FALSE, eval=TRUE>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
@@ -616,7 +645,7 @@ HSMM_myo <- clusterCells(HSMM_myo, verbose = F)
 @ %def
 
 After the clustering, we can check the clustering results. 
-<<check the clustering results, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+<<check the clustering results, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
@@ -638,7 +667,7 @@ HSMM_myo <- clusterCells(HSMM_myo,
 @ %def
 
 We can check the final clustering results as following: 
-<<check_clustering_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+<<check_clustering_again, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
@@ -662,54 +691,6 @@ HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 @ %def
-
- The trajectory has a simple tree-like structure. We can see that the cells 
- collected at time zero are located near one of the tips of the tree, while the 
- others are distributed amongst the two ``branches''.  Monocle doesn't know
- \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
- so we often have to call \Rfunction{orderCells} again using the 
- \Robject{root\_state} argument to specify the beginning. First, we plot the
- trajectory, this time coloring the cells by ``State'':
- 
- <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
- plot_cell_trajectory(HSMM_myo, color_by="State")
- @ %def 
- 
-<<plot_ordering_mst_with_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
-plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
-@ %def 
-
-If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
-
-<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
-plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State)
-@ %def 
-
-And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
-
-<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
-blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
-plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
-@ %def 
-
-
-To confirm that the ordering is correct, we can select a couple of markers of 
-myogenic progress. In this experiment, one of the branches corresponds to cells
-that successfully fuse to form myotubes (State 2), and the other to those that fail to 
-fully differentiate (State 3). We'll exclude the latter for now, but you can learn more 
-about tools for dealing with branched trajectories in section \cite{subsec:branch}.
- 
-<<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,3)]
- 
-my_genes <- row.names(subset(fData(HSMM_filtered), 
-                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
- 
-cds_subset <- HSMM_filtered[my_genes,]
-plot_genes_in_pseudotime(cds_subset, color_by="Hours")
-@ %def 
 
 \subsection{Semi-supervised ordering with known marker genes}
 
@@ -738,66 +719,35 @@ marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,],
 semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:500] 
 @ %def
 
-Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
-<<semi_sup_ordering_trajectory, eval=TRUE, fig.width = 6, fig.height = 4, fig.align="center">>=
+Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
+<<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 #plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
-plot_cell_trajectory(HSMM_myo, color_by="Hours")
 plot_cell_trajectory(HSMM_myo, color_by="CellType")
 @ %def
 
-And we can see that kinetics of notable genes we examined before are largely the same.
+To confirm that the ordering is correct, we can select a couple of markers of 
+myogenic progress. In this experiment, one of the branches corresponds to cells
+that successfully fuse to form myotubes, and the other to those that fail to 
+fully differentiate. We'll exclude the latter for now, but you can learn more 
+about tools for dealing with branched trajectories in section \cite{subsec:BEAM_trajectory}.
 
 <<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,3)]
+HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 
 cds_subset <- HSMM_filtered[my_genes,]
-plot_genes_in_pseudotime(cds_subset, color_by="Hours")
+plot_genes_branched_pseudotime(cds_subset, 
+                               branch_point=1, 
+                               color_by="Time", 
+                               ncol=1)
 @ %def 
 
-\subsection{Reconstructing branched trajectories} \label{subsec:branch}
-
-Monocle reconstructs a linear trajectory because muscle differentiation is a relatively simple process with just one outcome for the cells. It can't tell a-priori which side of the trajectory is the start and which is the end, but that's easily solved with the \Robject{reverse} flag. However, if the trajectory includes multiple outcomes, Monocle might need a little more help from you. Consider the experiment performed by Steve Quake's lab by Barbara Treutlein and colleages, who captured cells from the developing mouse lung. They captured cells early in development, later when the lung contains both major types of epithelial cells (AT1 and AT2), and cells right about to make the decision to become either AT1 or AT2. Monocle can reconstruct this process as a \emph{branched} trajectory, allow you to analyze the decision point in great detail. We'll learn more about branch analysis in section \ref{BEAM}.
-
-Monocle reconstructs branched trajectories, but it doesn't necessarily know which part of of the trajectory is the beginning.  It's important to tell Monocle where the trajectory starts so that the Pseudotime axis runs in the right direction and reflects the underlying biological process. In the figure below, you can see that Monocle reconstructs a tree with two outcomes from the Truetlein data. The ``root'' of the trajectory happens to the branch where most of the cells collected early in the experiment (E14.5 and E16.5) can be found. So Monocle happened to start the trajectory at the right spot in this case.
-
-<<init_treutlein_branch_demo, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
-lung <- load_lung()
-
-plot_cell_trajectory(lung, color_by="Time")
-plot_cell_trajectory(lung, color_by="Pseudotime")
-@ %def 
-
-If however, we want to change the root of the tree, we first plot the trajectory coloring the cells by ``State'' so we can see our options for where we can set the root.  ``State'' is just Monocle's jargon for the different segments of the tree. This tree has 3 States, but more complex trees could have quite a few more. We then call \Rfunction{order\_cells()} \emph{again}, passing this state as the \Robject{root\_state} argument:
-
-<<init_lung_reorder, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
-plot_cell_trajectory(lung, color_by="State")
-lung <- orderCells(lung, root_state=3)
-plot_cell_trajectory(lung, color_by="Pseudotime")
-
-@ %def 
-
-If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
-
-<<init_lung_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
-plot_cell_trajectory(lung, color_by="State") + facet_wrap(~State)
-@ %def 
-
-And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
-
-<<init_lung_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
-lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
-plot_genes_jitter(lung[lung_genes,], grouping="State")
-@ %def 
-
-Here we can see that State 1 is the proliferative state on the basis high expression of Cyclin B2.
 
 % \subsection{Learning trajectories using other dimension reduction methods}
 % Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial\_method} in \Rfunction{reduceDimension}. For example, we can use the nice package destiny$ , from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
@@ -974,7 +924,7 @@ plot_genes_jitter(cds_subset,
 
 Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
 
-Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell development that reveals a key cell fate decision. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
+Consider the experiment performed by Steve Quake's lab by Barbara Treutlein and colleages, who captured cells from the developing mouse lung. They captured cells early in development, later when the lung contains both major types of epithelial cells (AT1 and AT2), and cells right about to make the decision to become either AT1 or AT2. Monocle can reconstruct this process as a \emph{branched} trajectory, allow you to analyze the decision point in great detail. We'll learn more about branch analysis in section \ref{BEAM}. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
 
 <<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 lung <- load_lung()
@@ -1208,14 +1158,14 @@ manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reversed graph embedding for single-cell trajectory
 analysis has been posted on biorxiv (\cite{}).
 
-\subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
-SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
-
-\subsection{The principal $\mathcal{L}_1$ graph algorithm.}\label{L1}
-	Mao et al later proposed an extension of SimplePPT that can learn arbitrary graphs, rather than just trees, which describe large datasets embedded in the same space as the input \cite{Mao2016-ru}. An $\mathcal{L}_1$ graph is a sparse graph which is based on the assumption that each data point (or cell) has a small number of neighborhoods in which the minimum number of points that span a low-dimensional affine subspace \cite{Boyd2004-xw} passing through that point. In addition, there may exist noise in certain elements of $z_i$ and a natural idea is to estimate the edge weights by tolerating these errors. In general, a sparse solution is more robust and facilitates the consequent identification of test sample (or sequenced single-cell samples). Unlike SimplePPT, this method learns the graph by formulating the optimization as a linear programming problem. 
-	
-	In the same work\cite{Mao2016-ru}, they also proposed a generalization of SimplePPT, which we term as SGL-tree (Principal Graph and Structure Learning for tree),  to learn tree structure for large dataset by similarly considering clustering of data points as in DDRTree. Principal $\mathcal{L}_1$ graph and SGL-tree are all treated as SGL in this study. 
-	
+% \subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
+% SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
+% 
+% \subsection{The principal $\mathcal{L}_1$ graph algorithm.}\label{L1}
+% 	Mao et al later proposed an extension of SimplePPT that can learn arbitrary graphs, rather than just trees, which describe large datasets embedded in the same space as the input \cite{Mao2016-ru}. An $\mathcal{L}_1$ graph is a sparse graph which is based on the assumption that each data point (or cell) has a small number of neighborhoods in which the minimum number of points that span a low-dimensional affine subspace \cite{Boyd2004-xw} passing through that point. In addition, there may exist noise in certain elements of $z_i$ and a natural idea is to estimate the edge weights by tolerating these errors. In general, a sparse solution is more robust and facilitates the consequent identification of test sample (or sequenced single-cell samples). Unlike SimplePPT, this method learns the graph by formulating the optimization as a linear programming problem. 
+% 	
+% 	In the same work\cite{Mao2016-ru}, they also proposed a generalization of SimplePPT, which we term as SGL-tree (Principal Graph and Structure Learning for tree),  to learn tree structure for large dataset by similarly considering clustering of data points as in DDRTree. Principal $\mathcal{L}_1$ graph and SGL-tree are all treated as SGL in this study. 
+% 	
 \subsection{Census}\label{Census}
 In \cite{qiu2017single}, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with the negative binomial distribution can dramatically improve the differential expression test compared to using the negative binomial with read counts or the Tobit with TPM/FPKM values. 
 
