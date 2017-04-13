@@ -181,7 +181,9 @@ If you performed your single-cell RNA-Seq experiment using \emph{spike-in} stand
  # First create a CellDataSet from the relative expression levels
  HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
                         phenoData = pd, 
-                        featureData = fd)
+                        featureData = fd,
+                        lowerDetectionLimit=0.1,
+                        expressionFamily=tobit(Lower=0.1))
  
  # Next, use it to estimate RNA counts
  rpc_matrix <- relative2abs(HSMM)
