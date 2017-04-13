@@ -62,7 +62,7 @@ data(HSMM_sample_sheet)
  \newline
  Monocle can help you perform three main types of analysis:
  \begin{enumerate}
- \item \textbf{Classifying and counting cells.} Single-cell RNA-Seq experiments allow you to discover new (and possibly rare) subtypes of cells. Monocle helps you identify them.
+ \item \textbf{Clustering, classifying, and counting cells.} Single-cell RNA-Seq experiments allow you to discover new (and possibly rare) subtypes of cells. Monocle helps you identify them.
  \item \textbf{Constructing single-cell trajectories.} In development, disease, and throughout life, cells transition from one state to another. Monocle helps you discover these transitions.
  \item \textbf{Differential expression analysis.} Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
  \end{enumerate}
@@ -71,7 +71,7 @@ data(HSMM_sample_sheet)
  
  \section{Getting started with Monocle}
  
- The \Rpackage{monocle} package takes a matrix of gene expression values as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments).  Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. If you don't have UMI counts, We recommend you load up FPKM or TPM values instead of raw read counts.
+ The \Rpackage{monocle} package takes a matrix of gene expression values as calculated by Cufflinks\cite{Trapnell:2012kp} or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments). Monocle also works ``out-of-the-box'' with the transcript count matrices produced by \href{https://support.10xgenomics.com/single-cell/software/overview/welcome}{CellRanger}, the software pipeline for analyzing experiments from the 10X Genomics Chromium instrument. Monocle also works well with data from other RNA-Seq workflows such as \href{http://biorxiv.org/content/early/2017/02/02/104844}{sci-RNA-Seq} and instruments like the Biorad ddSEQ. Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. If you don't have UMI counts, We recommend you load up FPKM or TPM values instead of raw read counts.
  
  \subsection{The CellDataSet class}
  
@@ -102,19 +102,22 @@ data(HSMM_sample_sheet)
  HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
  @ %def
  
- This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. By default, Monocle assumes that your expression data is log-normally distrubuted and uses a Tobit model to test for differential expression in downstream steps. However, if you're not using TPM or FPKM data, see below for how to tell Monocle how to model it in downstream steps
+This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. By default, Monocle assumes that your expression data is in units of transcript counts and uses a negative binomial model to test for differential expression in downstream steps. However, if you're using relative expression values such as TPM or FPKM data, see below for how to tell Monocle how to model it in downstream steps.
+
+\textbf{NOTE:} if you do have UMI data, you should \emph{not} normalize it yourself prior to creating your \Robject{CellDataSet}. You should also \emph{not} try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data). You should \emph{not} use \Rfunction{relative2abs()} as discussed below in section \ref{conv_rel2abs}. Monocle will do all needed normalization steps internally. Normalizing it yourself risks breaking some of Monocle's key steps.
  
- \subsection{Choosing a distribution for expression data}
+\subsection{Choosing a distribution for expression data}
  
- Monocle works well with both relative expression data and count-based measures (e.g. UMIs). In general, it works best with transcript count data, especially UMI data. Whatever your data type, it is \emph{critical} that specify the appropriate distribution for it. FPKM/TPM values are generally log-normally distributed, while UMIs or read counts are better modeled with the negative binomial. To work with count data, specify the negative binomial distribution as the \Robject{expressionFamily} argument to \Rfunction{newCellDataSet}: 
+Monocle works well with both relative expression data and count-based measures (e.g. UMIs). In general, it works best with transcript count data, especially UMI data. Whatever your data type, it is \emph{critical} that specify the appropriate distribution for it. FPKM/TPM values are generally log-normally distributed, while UMIs or read counts are better modeled with the negative binomial. To work with count data, specify the negative binomial distribution as the \Robject{expressionFamily} argument to \Rfunction{newCellDataSet}: 
  
  <<show_expression_family, eval=FALSE>>=
  # Not run
  HSMM <- newCellDataSet(count_matrix, 
                         phenoData = pd, 
                         featureData = fd,
-                        expressionFamily=negbinomial())
+                        expressionFamily=negbinomial.size())
  @ %def
+ 
  
  There are several allowed values for \Robject{expressionFamily}, which expects a ``family function'' from the \Rpackage{VGAM} package:
  \newline
@@ -123,15 +126,16 @@ data(HSMM_sample_sheet)
  \textbf{Family function} & \textbf{Data type} & \textbf{Notes} \\
  \hline
  \noalign{\smallskip}
- \Rfunction{tobit()} (default) & FPKM, TPM & Tobits are truncated normal distributions. Using \Rfunction{tobit()} will tell Monocle to log-transform your data where appropriate. Do not transform it yourself. \\
+ \Rfunction{negbinomial.size()} (default) & UMIs, Transcript counts from experiments with spike-ins or \Rfunction{relative2abs}, raw read counts & Negative binomial distribution with fixed variance (which is automatically calculated by Monocle). Recommended for most users. \\
  \hline
  \noalign{\smallskip}
- \Rfunction{negbinomial()} & UMIs, Transcript counts from experiments with spike-ins or \Rfunction{relative2abs}, raw read counts & Using \Rfunction{negbinomial()} can be slow for very large datasets. In these cases, consider \Rfunction{negbinomial.size()}. \\
+ \Rfunction{negbinomial()} & UMIs, Transcript counts from experiments with spike-ins or \Rfunction{relative2abs}, raw read counts & Slightly more accurate than \Rfunction{negbinomial.size()}, but much, much slower. Not recommended except for very small datasets. \\
  \hline
  \noalign{\smallskip}
- \Rfunction{negbinomial.size()} & UMIs, Transcript counts from experiments with spike-ins, raw read counts & Slightly less accurate for differential expression than \Rfunction{negbinomial()}, but much, much faster. \\
+  \Rfunction{tobit()} & FPKM, TPM & Tobits are truncated normal distributions. Using \Rfunction{tobit()} will tell Monocle to log-transform your data where appropriate. Do not transform it yourself. \\
  \hline
  \noalign{\smallskip}
+
  \Rfunction{gaussianff()} & log-transformed FPKM/TPMs, Ct values from single-cell qPCR & If you want to use Monocle on data you have already transformed to be normally distributed, you can use this function, though some Monocle features may not work well. 
  \end{tabular}
  
@@ -139,10 +143,9 @@ data(HSMM_sample_sheet)
  
  \subsection{Working with large data sets}
  
- Some single-cell RNA-Seq experiments report measurements from tens of thousands of cells or more. As instrumentation improves and costs drop, experiments will become ever larger and more complex, with many conditions, controls, and replicates. A matrix of expression data with 50,000 cells and a measurement for each of the 25,000+ genes in the human genome can take up a lot of memory. However, because current protocols typically don't capture all or even most of the mRNA molecules in each cell, many of the entries of expression matrices are zero. Using \emph{sparse matrices} can help you work with huge datasets on a typical computer.
+Some single-cell RNA-Seq experiments report measurements from tens of thousands of cells or more. As instrumentation improves and costs drop, experiments will become ever larger and more complex, with many conditions, controls, and replicates. A matrix of expression data with 50,000 cells and a measurement for each of the 25,000+ genes in the human genome can take up a lot of memory. However, because current protocols typically don't capture all or even most of the mRNA molecules in each cell, many of the entries of expression matrices are zero. Using \emph{sparse matrices} can help you work with huge datasets on a typical computer. We generally recommend the use of sparseMatrices for most users, as it speeds up many computations even for more modestly sized datasets.
  
- To work with your data in a sparse format, simply provide it to Monocle as a sparse matrix from the \Rpackage{Matrix} package:
- 
+To work with your data in a sparse format, simply provide it to Monocle as a sparse matrix from the \Rpackage{Matrix} package:
  
  <<show_sparse_new_cell_dataset, eval=FALSE>>=
  HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
@@ -152,10 +155,22 @@ data(HSMM_sample_sheet)
                         expressionFamily=negbinomial.size())
  @ %def
  
- Other sparse matrix packages, such as \Rpackage{slam} or \Rpackage{SparseM} are not supported.
+\textbf{NOTE:} The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX). If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via \Rfunction(as.matrix)), because that may exceed your available memeory. If you have 10X Genomics data and are using \Rpackage{cellrangerRkit}, you can use it to load your data and then pass that to Monocle as follows:
+
+ <<chromium_load, eval=FALSE>>=
+cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
+gbm <- load_cellranger_matrix(cellranger_pipestance_path)
+
+gbm_cds <- newCellDataSet(exprs(gbm),
+                          phenoData = pData(gbm), 
+                          featureData = fData(gbm),
+                          lowerDetectionLimit=0.5,
+                          expressionFamily=negbinomial.size())
+ @ %de
  
+Monocle's sparse matrix support is provided by the \Rpackage{Matrix} package. Other sparse matrix packages, such as \Rpackage{slam} or \Rpackage{SparseM} are not supported.
  
- \subsection{Converting relative expression values into mRNA counts} \label{conv_rel2abs}
+\subsection{Converting relative expression values into mRNA counts} \label{conv_rel2abs}
  
 If you performed your single-cell RNA-Seq experiment using \emph{spike-in} standards, you can convert these measurements into mRNAs per cell (RPC). RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them. In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment. Monocle 2 includes an algorithm called \emph{Census} which performs this conversion (Qiu \emph{et al}, submitted). You can convert to RPC values before creating your CellDataSet object using the \Robject{relative2abs} function, as follows:
  
@@ -166,7 +181,9 @@ If you performed your single-cell RNA-Seq experiment using \emph{spike-in} stand
  # First create a CellDataSet from the relative expression levels
  HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
                         phenoData = pd, 
-                        featureData = fd)
+                        featureData = fd,
+                        lowerDetectionLimit=0.1,
+                        expressionFamily=tobit(Lower=0.1))
  
  # Next, use it to estimate RNA counts
  rpc_matrix <- relative2abs(HSMM)
@@ -271,7 +288,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
         {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
  @ %def
  
- The functions are organized into a small data structure called a \Robject{CellTypeHierarchy}, that Monocle uses to classify the cells. You first initialize a new CellTypeHierarchy object, then register your gating functions within it. Once the data strucure is set up, you can use it to classify all the cells in the experiment:
+ The functions are organized into a small data structure called a \Robject{CellTypeHierarchy}, that Monocle uses to classify the cells. You first initialize a new CellTypeHierarchy object, then register your gating functions within it. Once the data structure is set up, you can use it to classify all the cells in the experiment:
  
  <<count_cells_unsup, fig.width = 3, fig.height = 4, fig.align="center", eval=TRUE>>=
  HSMM <- classifyCells(HSMM, cth, 0.1)
@@ -291,14 +308,13 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
  Note that many cells are marked ``Unknown''. This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments. A cell might express a few \emph{MYF5} mRNAs, but we weren't lucky enough to capture one of them. When a cell doesn't meet any of the criteria specified in your classification functions, it's marked ``Unknown''. If it meets multiple functions' criteria, it's marked ``Ambiguous''. You could just exclude such cells, but you'd be throwing out a lot of your data. In this case, we'd lose more than half of the cells!
 
 \subsection{Unsupervised cell clustering}
-Fortunately, Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithm, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
+Monocle provides an algorithm you can use to impute the types of the ``Unknown'' cells. This algorithm, implemented in the function \Rfunction{clusterCells}, groups cells together according to global expression profile. That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack \emph{MYF5}, we can still recognize it as a myoblast. \Rfunction{clusterCells} can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge. Let's look at the unsupervised mode first.
 
 The first step is to decide which genes to use in clustering the cells. We could use all genes, but we'd be including a lot of genes that are not expressed at a high enough level to provide a meaningful signal. Including them would just add noise to the system. We can filter genes based on average expression level, and we can additionally select genes that are unusually variable across cells. These genes tend to be highly informative about cell state.
 
 <<cluster_cells_unsup_gene_pick, fig.width = 5, fig.height = 4, fig.align="center", eval=TRUE>>=
 disp_table <- dispersionTable(HSMM)
-unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 
-                                 & dispersion_empirical >= 1 * dispersion_fit)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
 HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
 plot_ordering_genes(HSMM)
 @ %def
@@ -310,34 +326,34 @@ Now we're ready to try clustering the cells:
 <<cluster_cells_unsup_no_covariate, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
 # HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 8, 
-                       reduction_method = 'tSNE', verbose = T) 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+                        reduction_method = 'tSNE', verbose = T) 
 HSMM <- clusterCells(HSMM,
                      num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType", markers=c("MYF5", "ANPEP"))
 @ %def
 
-As you can see, the cells fall into two different clusters. The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. Unfortunately, the cells don't simply cluster by type - the myoblasts are split into two different clusters. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
+Monocle uses t-SNE \cite{Maaten2008-om} to cluster cells, using an approach that's very similar to and inspired by Rahul Satija's excellent \href{http://satijalab.org/seurat/}{Seurat} package, which itself was inspired by \href{https://www.c2b2.columbia.edu/danapeerlab/html/cyt.html}{viSNE} from Dana Pe'er's lab.
+
+The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. In many experiments, cells of different types are clearly separate from one another. Unfortunately, in this experiment, the cells don't simply cluster by type - there's not a clear space between the green cells and the red cells. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
 
 <<cluster_cells_unsup_plot_by_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
 plot_cell_clusters(HSMM, 1, 2, color="Media")
 @ %def
 
-Fortunately, Monocle allows us to subtract the effects of ``uninteresting'' sources of variation so they don't impact the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
+Monocle allows us to subtract the effects of ``uninteresting'' sources of variation to reduce their impact on the clustering. You can do this with the \Robject{residualModelFormulaStr} argument to \Rfunction{clusterCells} and several other Monocle functions. This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
 
 <<cluster_cells_unsup_control_for_media, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 15, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #
-HSMM <- clusterCells(HSMM,
-                     num_clusters=2)
-plot_cell_clusters(HSMM, 1, 2, color="Media")
+HSMM <- clusterCells(HSMM, num_clusters=2)
+plot_cell_clusters(HSMM, 1, 2, color="CellType")
 @ %def
 
 Now that we've accounted for some unwanted sources of variation, we're ready to take another crack at classifying the cells by unsupervised clustering:
 
 <<cluster_cells_unsup_plot_by_cell_type, fig.width = 6, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- clusterCells(HSMM,
-                     num_clusters=3)
+HSMM <- clusterCells(HSMM, num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="Cluster") + facet_wrap(~CellType)
 @ %def
  
@@ -351,7 +367,7 @@ First, we'll select a different set of genes to use for clustering the cells. Be
 marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                  cth, 
                                  residualModelFormulaStr="~Media + num_genes_expressed",
-                                 cores=detectCores())
+                                 cores=1)
 @ %def
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
@@ -363,22 +379,21 @@ head(selectTopMarkers(marker_spec, 3))
 @ %def
 The last line above shows the top three marker genes for myoblasts and fibroblasts. The "specificity" score is calculated using the metric described in Cabili et al \cite{CABILI} and can range from zero to one. The closer it is to one, the more restricted it is to the cell type in question. You can use this feature to define new markers for known cell types, or pick out genes you can use in purifying newly discovered cell types. This can be highly valuable for downstream follow up experiments.
 
-To cluster the cells, we'll choose the top ten markers for each of these cell types:
+To cluster the cells, we'll choose the top 500 markers for each of these cell types:
 <<cluster_cells_semisup_pick_genes, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 20)$gene_id)
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
 HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
 plot_ordering_genes(HSMM)
 @ %def
 
-Note that we've got a smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
+Note that we've got smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
 
 <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 5, reduction_method = 'tSNE', 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
-HSMM <- clusterCells(HSMM,
- num_clusters=2,
- clustering_genes=semisup_clustering_genes) #
+HSMM <- clusterCells(HSMM, num_clusters=2,
+                     clustering_genes=semisup_clustering_genes) 
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
@@ -387,18 +402,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
  
  Note that we've reduce the number of ``contaminating'' fibroblasts in the myoblast cluster, and vice versa. But what about the ``Unknown'' cells? If you provide \Rfunction{clusterCells} with a the CellTypeHierarcy, Monocle will use it classify \emph{whole clusters}, rather than just individual cells. Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster. When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type. If a cluster is composed of more than one cell type, the whole thing is marked ``Ambiguous''. If there's no cell type thats above the threshold, the cluster is marked ``Unknown''. Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data.
  
- <<cluster_cells_semisup_clustering_with_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-HSMM <- setOrderingFilter(HSMM, row.names(subset(marker_diff, qval < 0.05)))
-          
-#HSMM@auxClusteringData[["tSNE"]]$variance_explained <- NULL
-plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, 
-                        max_components=2, 
-                        num_dim = 4, 
-                        reduction_method = 'tSNE', 
-                        residualModelFormulaStr="~Media + num_genes_expressed", 
-                        verbose = T) #norm_method = 'log'
-
+ <<cluster_cells_semisup_clustering_with_impute, fig.width = 7, fig.height = 4, fig.align="center", eval=TRUE>>=
 HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
                       frequency_thresh=0.1,
@@ -406,7 +410,8 @@ HSMM <- clusterCells(HSMM,
                       clustering_genes=row.names(subset(marker_diff, qval < 0.05)))
  plot_cell_clusters(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
  @ %def
- As you can see, the clusters are fairly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
+ 
+As you can see, the clusters are fairly pure in terms of \emph{MYF5} expression. There are some cells expressing \emph{ANPEP} in both clusters, but those in the myoblast cluster also express \emph{MYF5}. This is not surprising, as ANPEP isn't a very specific marker of fibroblasts. Overall, we've successfully classified all the cells:
  
  <<count_cells_semisup_pie, fig.width = 5, fig.height = 5, fig.align="center", eval=TRUE>>=
  pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
@@ -415,7 +420,7 @@ HSMM <- clusterCells(HSMM,
    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
  @ %def
  
- Finally, we subset the CellDataSet object to create $HSMM_myo$, which includes only myoblasts. 
+ Finally, we subset the CellDataSet object to create \Robject{HSMM\_myo}, which includes only myoblasts. We'll use this in the rest of the analysis.
  <<select_myoblasts, eval=TRUE>>=
  HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]	
  HSMM_myo <- estimateDispersions(HSMM_myo)
@@ -453,7 +458,6 @@ HSMM <- clusterCells(HSMM,
  Ideally, we'd like to use as little prior knowledge of the biology of the system under study as possible. We'd like to discover the important ordering genes from the data, rather than relying on literature and textbooks, because that might introduce bias in the ordering. One effective way to isolate a set of ordering genes is to simply compare the cells collected at the beginning of the process to those at the end and find the differentially expressed genes, as described above. The command below will find all genes that are differentially expressed in response to the switch from growth medium to differentiation medium:
  
  <<ordering_not_run, eval=FALSE>>=
- #not run
  diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,], 
                                        fullModelFormulaStr="~Media")
  ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
@@ -468,10 +472,10 @@ Genes that vary a lot are often highly informative for identifying cell subpopul
  disp_table <- dispersionTable(HSMM_myo)
  ordering_genes <- subset(disp_table, 
                           mean_expression >= 0.5 & 
-                          dispersion_empirical >= 1.5 * dispersion_fit)$gene_id
+                          dispersion_empirical >= 1 * dispersion_fit)$gene_id
  @ %def
  
- nce we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
+Once we have a list of gene ids to be used for ordering, we need to set them in the \Robject{HSMM} object, because the next several functions will depend on them.
  
 <<set_ordering_filter, eval=TRUE, fig.height=3, fig.width=3, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
@@ -483,11 +487,12 @@ The genes we've chosen to use for ordering define the \emph{state space} of the 
  HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
  @ %def
  
-Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
- <<order_cells, eval=TRUE>>=
- HSMM_myo <- orderCells(HSMM_myo, reverse=TRUE)
- @ %def
- 
+Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. 
+
+<<order_cells, eval=TRUE>>=
+HSMM_myo <- orderCells(HSMM_myo)
+@ %def
+
 Once the cells are ordered, we can visualize the trajectory in the reduced 
 dimensional space.
  
@@ -495,7 +500,45 @@ dimensional space.
  plot_cell_trajectory(HSMM_myo, color_by="Hours")
  @ %def 
  
- To confirm that the ordering is correct, and to verify that we don't need to flip around the ordering using the \Robject{reverse} flag in \Robject{orderCells}, we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
+% The second argument is the \Robject{reverse} flag.  Monocle won't be able to tell without some help which cells are at the beginning of the process and which are at the end.  The \Robject{reverse} flag tells Monocle to reverse the orientation of the entire process as it's being discovered from the data, so that the cells that would have been assigned to the end are instead assigned to the beginning, and so on. Setting \Robject{reverse} to true will reverse the ordering of the cells in pseudotime.   
+ The trajectory has a tree-like structure. We can see that the cells 
+ collected at time zero are located near one of the tips of the tree, while the 
+ others are distributed amongst the two ``branches''.  Monocle doesn't know
+ \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
+ so we often have to call \Rfunction{orderCells} again using the 
+ \Robject{root\_state} argument to specify the beginning. First, we plot the
+ trajectory, this time coloring the cells by ``State'':
+ 
+ <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+ plot_cell_trajectory(HSMM_myo, color_by="State")
+ @ %def 
+
+``State'' is just Monocle's term for the segment of the tree. The function below is handy for identifying the State which contains most of the cells from time zero. We can then pass that to \Rfunction{orderCells}:
+
+<<plot_ordering_with_GM_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
+GM_state <- function(cds){
+  T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
+  as.numeric(names(T0_counts)[which(T0_counts == max(T0_counts))])
+}
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
+plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
+@ %def 
+
+If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
+
+<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3, warning=FALSE>>=
+plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State, nrow=1)
+@ %def 
+
+And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
+
+<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
+blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
+plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
+@ %def 
+
+
+To confirm that the ordering is correct we can select a couple of markers of myogenic progress. Plotting these genes demonstrates that ordering looks good: 
 
 <<plot_markers_linear, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
@@ -508,7 +551,7 @@ cds_subset <- HSMM_filtered[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 @ %def 
 
-Note that in the event that Monocle produces a linear trajectory, there will only
+\textbf{Note:} in the event that Monocle produces a linear trajectory, there will only
 be one state. In this case, you can tell it which end is the beginning of the 
 trajectory by passing \Rfunction{orderCells} an optional argument argument: the 
 \Robject{reverse} flag. The \Robject{reverse} flag tells Monocle to reverse the 
@@ -570,10 +613,11 @@ ordering_genes <- union(PC2_genes, PC3_genes)
 @ %def
 
 Using these to order the cells as above yields the following trajectory:
- <<order_cells_pca_unsup, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE, eval=TRUE>>=
+ <<order_cells_pca_unsup, fig.width = 4, fig.height = 3, fig.align="center", warning=FALSE, eval=TRUE>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
-HSMM_myo <- orderCells(HSMM_myo, reverse=FALSE)
+HSMM_myo <- orderCells(HSMM_myo)
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 @ %def
 
@@ -590,7 +634,8 @@ then used to order cells.
 To use dpFeature, we first select superset of feature genes as genes expressed 
 in at least $5\%$ of all the cells. 
 <<set_ordering_gene_dpfeature, fig.height=3, fig.width=3, fig.align="center", eval=TRUE, warning=FALSE>>=
-fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.1 * ncol(HSMM_myo)
+HSMM_myo <- detectGenes(HSMM_myo, min_expr=0.1)
+fData(HSMM_myo)$use_for_ordering <- fData(HSMM_myo)$num_cells_expressed > 0.05 * ncol(HSMM_myo)
 @ %def
 
 Then we will perform a PCA analysis to identify the variance explained by each PC (principal component). 
@@ -619,7 +664,7 @@ HSMM_myo <- clusterCells(HSMM_myo, verbose = F)
 @ %def
 
 After the clustering, we can check the clustering results. 
-<<check the clustering results, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+<<check the clustering results, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
@@ -641,7 +686,7 @@ HSMM_myo <- clusterCells(HSMM_myo,
 @ %def
 
 We can check the final clustering results as following: 
-<<check_clustering_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
+<<check_clustering_again, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 @ %def
@@ -651,71 +696,20 @@ gene expression test as a way to extract the genes that distinguish them.
 <<perform_DEG_analysis, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
 clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,], 
                                              fullModelFormulaStr = '~Cluster', 
-                                             cores = detectCores())
-
-clustering_DEG_genes_subset <- clustering_DEG_genes[fData(HSMM_myo)$num_cells_expressed > 0.05 
-                                                    * ncol(HSMM_myo), ]
+                                             cores = 1)
 @ %def
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-HSMM_ordering_genes <- row.names(clustering_DEG_genes_subset)[order(clustering_DEG_genes_subset$qval)][1:1000] 
+HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo)
-
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 @ %def
-
- The trajectory has a simple tree-like structure. We can see that the cells 
- collected at time zero are located near one of the tips of the tree, while the 
- others are distributed amongst the two ``branches''.  Monocle doesn't know
- \emph{a priori} which of the trajectory of the tree to call the ``beginning'',
- so we often have to call \Rfunction{orderCells} again using the 
- \Robject{root\_state} argument to specify the beginning. First, we plot the
- trajectory, this time coloring the cells by ``State'':
- 
- <<plot_ordering_mst_by_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
- plot_cell_trajectory(HSMM_myo, color_by="State")
- @ %def 
- 
-<<plot_ordering_mst_with_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
-HSMM_myo <- orderCells(HSMM_myo, root_state=1)
-plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
-@ %def 
-
-If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
-
-<<init_hsmm_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
-plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State)
-@ %def 
-
-And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
-
-<<init_hsmm_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
-blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
-plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
-@ %def 
-
-
-To confirm that the ordering is correct, we can select a couple of markers of 
-myogenic progress. In this experiment, one of the branches corresponds to cells
-that successfully fuse to form myotubes (State 2), and the other to those that fail to 
-fully differentiate (State 3). We'll exclude the latter for now, but you can learn more 
-about tools for dealing with branched trajectories in section \cite{subsec:branch}.
- 
-<<plot_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,2)]
- 
-my_genes <- row.names(subset(fData(HSMM_filtered), 
-                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
- 
-cds_subset <- HSMM_filtered[my_genes,]
-plot_genes_in_pseudotime(cds_subset, color_by="Hours")
-@ %def 
 
 \subsection{Semi-supervised ordering with known marker genes}
 
@@ -739,73 +733,40 @@ Now we select the set of genes that co-vary (in either direction) with these two
 <<semi_sup_ordering_markers, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
 marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,], 
                                cth, 
-                               cores=detectCores())
+                               cores=1)
 #semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
-semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:1000] 
-
-length(semisup_clustering_genes)
+semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:500] 
 @ %def
 
-Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner'': the small branches are gone.
-<<semi_sup_ordering_trajectory, eval=TRUE, fig.width = 6, fig.height = 4, fig.align="center">>=
+Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
+<<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 2, warning=FALSE, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
-plot_ordering_genes(HSMM_myo)
+#plot_ordering_genes(HSMM_myo)
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
 HSMM_myo <- orderCells(HSMM_myo)
-#HSMM_myo <- orderCells(HSMM_myo, root_state=4)
-plot_cell_trajectory(HSMM_myo, color_by="Hours")
-plot_cell_trajectory(HSMM_myo, color_by="CellType")
+HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
+plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="right")
 @ %def
 
-And we can see that kinetics of notable genes we examined before are largely the same.
+To confirm that the ordering is correct, we can select a couple of markers of 
+myogenic progress. In this experiment, one of the branches corresponds to cells
+that successfully fuse to form myotubes, and the other to those that fail to 
+fully differentiate. We'll exclude the latter for now, but you can learn more 
+about tools for dealing with branched trajectories in section \ref{BEAM_trajectory}.
 
 <<semi_sup_ordering_genes_in_pseudotime, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
-HSMM_filtered <- HSMM_myo[HSMM_expressed_genes, 
-                          pData(HSMM_myo)$State %in% c(1,2,4)]
+HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
 
 my_genes <- row.names(subset(fData(HSMM_filtered), 
-                             gene_short_name %in% c("CDK1", "MEF2C", "MYOG"))) 
+                             gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 
 cds_subset <- HSMM_filtered[my_genes,]
-plot_genes_in_pseudotime(cds_subset, color_by="Hours")
+plot_genes_branched_pseudotime(cds_subset, 
+                               branch_point=1, 
+                               color_by="Hours", 
+                               ncol=1)
 @ %def 
 
-\subsection{Reconstructing branched trajectories} \label{subsec:branch}
-
-Monocle reconstructs a linear trajectory because muscle differentiation is a relatively simple process with just one outcome for the cells. It can't tell a-priori which side of the trajectory is the start and which is the end, but that's easily solved with the \Robject{reverse} flag. However, if the trajectory includes multiple outcomes, Monocle might need a little more help from you. Consider the experiment performed by Steve Quake's lab by Barbara Treutlein and colleages, who captured cells from the developing mouse lung. They captured cells early in development, later when the lung contains both major types of epithelial cells (AT1 and AT2), and cells right about to make the decision to become either AT1 or AT2. Monocle can reconstruct this process as a \emph{branched} trajectory, allow you to analyze the decision point in great detail. We'll learn more about branch analysis in section \ref{BEAM}.
-
-Monocle reconstructs branched trajectories, but it doesn't necessarily know which part of of the trajectory is the beginning.  It's important to tell Monocle where the trajectory starts so that the Pseudotime axis runs in the right direction and reflects the underlying biological process. In the figure below, you can see that Monocle reconstructs a tree with two outcomes from the Truetlein data. The ``root'' of the trajectory happens to the branch where most of the cells collected early in the experiment (E14.5 and E16.5) can be found. So Monocle happened to start the trajectory at the right spot in this case.
-
-<<init_treutlein_branch_demo, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
-lung <- load_lung()
-
-plot_cell_trajectory(lung, color_by="Time")
-plot_cell_trajectory(lung, color_by="Pseudotime")
-@ %def 
-
-If however, we want to change the root of the tree, we first plot the trajectory coloring the cells by ``State'' so we can see our options for where we can set the root.  ``State'' is just Monocle's jargon for the different segments of the tree. This tree has 3 States, but more complex trees could have quite a few more. We then call \Rfunction{order\_cells()} \emph{again}, passing this state as the \Robject{root\_state} argument:
-
-<<init_lung_reorder, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, warning=FALSE, fig.show='hold'>>=
-plot_cell_trajectory(lung, color_by="State")
-lung <- orderCells(lung, root_state=3)
-plot_cell_trajectory(lung, color_by="Pseudotime")
-
-@ %def 
-
-If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to ``facet'' the trajectory plot so it's easier to see where each of the states are located:
-
-<<init_lung_facet_state, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 3.5, warning=FALSE>>=
-plot_cell_trajectory(lung, color_by="State") + facet_wrap(~State)
-@ %def 
-
-And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system. For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells. So the root should have cells that express high levels of proliferation markers. We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
-
-<<init_lung_jitter_state, include=TRUE, eval=TRUE, fig.width = 3, fig.height = 3.5, fig.align="center", warning=FALSE>>=
-lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
-plot_genes_jitter(lung[lung_genes,], grouping="State")
-@ %def 
-
-Here we can see that State 1 is the proliferative state on the basis high expression of Cyclin B2.
 
 % \subsection{Learning trajectories using other dimension reduction methods}
 % Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument \Robject{initial\_method} in \Rfunction{reduceDimension}. For example, we can use the nice package destiny$ , from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the \Rfunction{reduceDimension} function.
@@ -858,7 +819,7 @@ sig_genes <- subset(diff_test_res, qval < 0.1)
 sig_genes[,c("gene_short_name", "pval", "qval")]
 @ %def
 
-So 17 of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
+So most of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
 
 <<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
 MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo), 
@@ -909,6 +870,8 @@ diff_test_res
 @ %def
 Occassionally, as we'll see later, it's useful to be able to call \Rfunction{fitModel} directly.
 
+The differential analysis procedure in Monocle is extremely flexible: the model formulae you use in your tests can include any term that exists as a column in the \Rfunction{pData} table, including those columns that are added by Monocle in other analysis steps. For example, if you use \Rfunction{clusterCells()}, you can test for genes that differ between clusters by using \Robject{Cluster} as your model formula.
+
 \subsection{Finding genes that change as a function of pseudotime} \label{pseudotime_diff}
 
 Monocle's main job is to put cells in order of progress through a biological process (such as cell differentiation) without knowing which genes to look at ahead of time.  Once it's done so, you can analyze the cells to find genes that changes as the cells make progress.  For example, you can find genes that are significantly upregulated as the cells ``mature''.  Let's look at a panel of genes important for myogenesis: 
@@ -953,7 +916,7 @@ sig_gene_names <- row.names(subset(diff_test_res, qval < 0.1))
 
 
 plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,], 
-                        num_clusters = 2, 
+                        num_clusters = 3, 
                         cores = 1, 
                         show_rownames = T)
 @ %def
@@ -982,7 +945,7 @@ plot_genes_jitter(cds_subset,
 
 Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
 
-Truetlein and colleagues perfomed a single cell analysis of lung epithelial cell development that reveals a key cell fate decision. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
+Consider the experiment performed by Steve Quake's lab by Barbara Treutlein and colleages, who captured cells from the developing mouse lung. They captured cells early in development, later when the lung contains both major types of epithelial cells (AT1 and AT2), and cells right about to make the decision to become either AT1 or AT2. Monocle can reconstruct this process as a \emph{branched} trajectory, allow you to analyze the decision point in great detail. We'll learn more about branch analysis in section \ref{BEAM}. The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch? What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
 
 <<init_treutlein, include=TRUE, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 lung <- load_lung()
@@ -1032,17 +995,18 @@ Monocle 2 is a near-complete re-write of Monocle 1. Monocle 2 is geared towards 
 Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree\cite{Mao2015-cs}, described below in section \ref{theory}. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1. The algorithm is also far less sensitive to outliers, so careful QC and selection of high quality cells is less critical.  Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment. Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
  
 Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points\cite{qiu2017single}. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings. 
- 
+
+Monocle 2 also includes functionality that is inspired by other packages that weren't available when Monocle 1 was written. For example, much of Monocle 2's clustering strategy is similar to
+Seurat \cite{Satija2015-xb} from Rahul Satija's lab.  
+
 A manuscript describing Monocle 2 and the general stragegy of using reversed 
-graph embedding for single-cell trajectory analysis will be forthcoming 
-(Qiu et al, in preparation). Until it appears, please continue to cite \cite{TRAPNELL_CACCHIARELLI}
-when you use Monocle or discuss single-cell pseudotemporal ordering in your work.
+graph embedding for single-cell trajectory analysis is available on the bioRxiv \cite{Qiu2017-nx}. 
  
 \section{Theory behind Monocle}\label{theory}
-\subsection{DPfeature: feature selection by detecting DEGs across cluster of cells}
-An interesting observation we found when analyzing multiple datasets associated with development is that genes informative to differentiation trajectory often form clusters across cell states (Figure 1 of \cite{Paul2015-bh}, Figure 2-4 of \cite{Treutlein2014-za} or Figure 2 of \cite{TRAPNELL_CACCHIARELLI}) . That is, there are clusters of genes which have relative high expression in the progenitor cell states but low expression in the terminal cell state, etc. Inspired by this observation, we developed a simple procedure, termed dpFeature, to automatically select those clusters of genes that have the block expression patterns. 
+\subsection{dpFeature: selecting features from dense cell clusters}
+Appling algorithms like t-SNE to cells transiting through a continuous process like cell differentiation often groups the cells into clusters that do not necessarily reflect their progression through the process. Nevertheless, the genes that are differentially expressed by cells the clusters are often highly informative markers of each cell's progress through the trajectory. That is, clustering algorithms like t-SNE can find often genes that vary over the trajectory, but not the trajectory itself. We designed a simple procedure to identify these genes for use in trajectory reconstruction. 
 	
-First, dpFeature filters genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the expressed genes and then users can decide the number of principal components (PCs) used for downstream analysis based on whether or not there is a significant drop in the variance explained at the selected component. These top PCs will be further used to initialize t-SNE which projects the cells into two-dimension t-SNE space. Third, dpFeature uses a recently developed density based clustering algorithm, called density peak clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and distance ($\delta$) of a cell to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called decision plot. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell to form clusters. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between a negative-binomial generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes, after Benjamini-Hochberg correction, as the ordering genes for the trajectory reconstruction. 
+The dpFeature procedure works as follows. First, dpFeature excludes genes that only expressed in a very small percentage of cells (by default, $5\%$). Second, dpFeature performs PCA on the remaining genes in order to identify the principal components that explain a substantial amount of variance in the data. These top PCs are then used to initialize t-SNE, which projects the cells into two-dimensional t-SNE space. Next, dpFeature uses a recently developed clustering algorithm, called ``density peak'' clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space. The density peak clustering algorithm calculates each cell's local density ($\rho$) and its distance ($\delta$) to another cell with higher density. The $\rho$ and $\delta$ values for each cell can be plotted in a so-called ``decision plot'' in order to select thresholds that define ``peaks'' in the t-SNE space. Cells with high local density that are far away from other cells with high local density correspond to the density peaks. These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell. Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between using a generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't. We then select (by default) the top 1,000 significantly differentially expressed genes as the ordering genes for the trajectory reconstruction. 
 	
 \subsection{Reversed graph embedding}\label{RGE}
 Single-cell expression datasets are some of the largest and most complex encountered
@@ -1067,13 +1031,13 @@ first step. Conventional, dimensionality reduction approaches (for
 example, PCA, ICA, Isomap, LLE, etc.) are limited in their ability to explictly 
 recover the intrinisic structure from the data. 
 
-Monocle 2 uses a newly developed technique, called reversed graph embedding, 
-to simultaneously: 
+Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao2016-ru, Qiu2017-nx} to learn the 
+structure of the manifold that describes a single-cell experiment. It simultaneously: 
 
 \begin{enumerate}
-\item Reduce high dimensional expression data into a lower dimension space.
-\item Learn an explicit, smooth manifold that generates the data.
-\item Assign each cell to its position on that manifold 
+\item Reduces high dimensional expression data into a lower dimension space.
+\item Learns an explicit, smooth manifold that generates the data.
+\item Assigns each cell to its position on that manifold 
 \end{enumerate}
 
 Together, these tasks allow Monocle 2 to order cells in pseudotime in an entirely
@@ -1084,11 +1048,6 @@ These are learned from the data. This allows Monocle 2 to to discriminate betwee
 linear and branched trajectories automatically. To our knowledge, Monocle 2 is the first 
 trajectory reconstruction algorithm to learn smooth tree-like manifolds without
 needing to know its high-level structure ahead of time.
-
-\subsection{Reversed graph embedding}
-
-Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao2016-ru, Qiu2017-nx} to learn the 
-structure of the manifold that describes a single-cell experiment.
 
 Reversed graph embedding simultaneously learns a \emph{principal graph} that
 approximates the manifold, as well as a function that maps points on the graph 
@@ -1139,7 +1098,7 @@ $\lambda$
 b_{i,j}||f_g(\mathbf{z}_i) - f_g(\mathbf{z}_j)||^2
 \end{equation}
 
-Reversed graph embedding requires a feasible set $\hat{\mathcal{G}}_b$ of graph and a 
+Reversed graph embedding requires a feasible set $\hat{\mathcal{G}}_b$ of graphs and a 
 mapping function $f_\mathcal{G}$. In practice, implementing reversed graph embedding
 requires that we place some constraints on $\hat{\mathcal{G}}_b$ and $f_\mathcal{G}$.
 As work on reversed graph embedding continues, we anticipate that more general 
@@ -1214,16 +1173,16 @@ core manifold describing a \Robject{CellDataSet}, and then computes pseudotime
 coordinates and branch assignments using this manifold. Monocle also uses the 
 manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reversed graph embedding for single-cell trajectory
-analysis has been posted on biorxiv (\cite{}).
+analysis is available on bioRxiv (\cite{Qiu2017-nx}).
 
-\subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
-SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
-
-\subsection{The principal $\mathcal{L}_1$ graph algorithm.}\label{L1}
-	Mao et al later proposed an extension of SimplePPT that can learn arbitrary graphs, rather than just trees, which describe large datasets embedded in the same space as the input \cite{Mao2016-ru}. An $\mathcal{L}_1$ graph is a sparse graph which is based on the assumption that each data point (or cell) has a small number of neighborhoods in which the minimum number of points that span a low-dimensional affine subspace \cite{Boyd2004-xw} passing through that point. In addition, there may exist noise in certain elements of $z_i$ and a natural idea is to estimate the edge weights by tolerating these errors. In general, a sparse solution is more robust and facilitates the consequent identification of test sample (or sequenced single-cell samples). Unlike SimplePPT, this method learns the graph by formulating the optimization as a linear programming problem. 
-	
-	In the same work\cite{Mao2016-ru}, they also proposed a generalization of SimplePPT, which we term as SGL-tree (Principal Graph and Structure Learning for tree),  to learn tree structure for large dataset by similarly considering clustering of data points as in DDRTree. Principal $\mathcal{L}_1$ graph and SGL-tree are all treated as SGL in this study. 
-	
+% \subsection{SimplePPT: A simple principal tree algorithm.}\label{SimplePPT}
+% SimplePPT is the first RGE technique proposed by Mao et al for learning a tree structure to describe a set of observed data points. The tree can be learned in the original space or in some lower dimension retrieved by some dimensionality reduction method such as PCA \cite{Mao_undated-bv}. SimplePPT makes some choices that simplify the optimization problem. Notably, $f_G(z_i)$ is optimized as one single variable instead of two separate sets of variables. Moreover, the loss function in the reversed graph embedding is replaced by the empirical quantization error, which serves as the measurement between the $f_G(z_i)$ and its corresponding observed points $x_i$. The joint optimization of $f_G(z_i)$ is efficient from the perspective of optimization with respect to $\{b_{ij}\}$, which is solved by simply finding the minimum spanning tree. 
+% 
+% \subsection{The principal $\mathcal{L}_1$ graph algorithm.}\label{L1}
+% 	Mao et al later proposed an extension of SimplePPT that can learn arbitrary graphs, rather than just trees, which describe large datasets embedded in the same space as the input \cite{Mao2016-ru}. An $\mathcal{L}_1$ graph is a sparse graph which is based on the assumption that each data point (or cell) has a small number of neighborhoods in which the minimum number of points that span a low-dimensional affine subspace \cite{Boyd2004-xw} passing through that point. In addition, there may exist noise in certain elements of $z_i$ and a natural idea is to estimate the edge weights by tolerating these errors. In general, a sparse solution is more robust and facilitates the consequent identification of test sample (or sequenced single-cell samples). Unlike SimplePPT, this method learns the graph by formulating the optimization as a linear programming problem. 
+% 	
+% 	In the same work\cite{Mao2016-ru}, they also proposed a generalization of SimplePPT, which we term as SGL-tree (Principal Graph and Structure Learning for tree),  to learn tree structure for large dataset by similarly considering clustering of data points as in DDRTree. Principal $\mathcal{L}_1$ graph and SGL-tree are all treated as SGL in this study. 
+% 	
 \subsection{Census}\label{Census}
 In \cite{qiu2017single}, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with the negative binomial distribution can dramatically improve the differential expression test compared to using the negative binomial with read counts or the Tobit with TPM/FPKM values. 
 
