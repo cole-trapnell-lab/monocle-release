@@ -517,8 +517,10 @@ dimensional space.
 
 <<plot_ordering_with_GM_state, eval=TRUE, fig.width = 4, fig.height = 4, fig.align="center", warning=FALSE>>=
 GM_state <- function(cds){
-  T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
-  as.numeric(names(T0_counts)[which(T0_counts == max(T0_counts))])
+  if (length(unique(pData(cds)$State)) > 1){
+    T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
+    return(as.numeric(names(T0_counts)[which(T0_counts == max(T0_counts))]))
+  }else { return (1) } 
 }
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
