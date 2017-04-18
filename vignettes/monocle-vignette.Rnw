@@ -373,7 +373,7 @@ The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHiera
 
 
 <<cluster_cells_semisup_show_marker_spec, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE>>=
-candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
+candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
 marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
 head(selectTopMarkers(marker_spec, 3))
 @ %def
@@ -392,8 +392,7 @@ Note that we've got smaller set of genes, and some of them are not especially hi
 plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
-HSMM <- clusterCells(HSMM, num_clusters=2,
-                     clustering_genes=semisup_clustering_genes) 
+HSMM <- clusterCells(HSMM, num_clusters=2) 
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
  @ %def
@@ -406,8 +405,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 HSMM <- clusterCells(HSMM,
                       num_clusters=2, 
                       frequency_thresh=0.1,
-                      cell_type_hierarchy=cth,
-                      clustering_genes=row.names(subset(marker_diff, qval < 0.05)))
+                      cell_type_hierarchy=cth)
  plot_cell_clusters(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
  @ %def
  
