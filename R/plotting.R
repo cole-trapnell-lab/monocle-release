@@ -29,6 +29,7 @@ monocle_theme_opts <- function()
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param theta includeDescrip
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -52,7 +53,8 @@ plot_cell_trajectory <- function(cds,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
-                               show_branch_points=TRUE){
+                               show_branch_points=TRUE, 
+                               theta = 0){
   gene_short_name <- NA
   sample_name <- NA
   data_dim_1 <- NA
@@ -67,7 +69,7 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type == "DDRTree"){
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -104,6 +106,23 @@ plot_cell_trajectory <- function(cds,
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   
+  return_rotation_mat <- function(theta) {
+    theta <- theta / 180 * pi
+    matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
+  }
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(data_df[, c(2, 3)]))
+  data_df$data_dim_1 <- tmp[1, ]
+  data_df$data_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta = theta) %*% t(as.matrix(edge_df[, c('source_prin_graph_dim_1', 'source_prin_graph_dim_2')]))
+  edge_df$source_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$source_prin_graph_dim_2 <- tmp[2, ]
+  
+  tmp <- return_rotation_mat(theta) %*% t(as.matrix(edge_df[, c('target_prin_graph_dim_1', 'target_prin_graph_dim_2')]))
+  edge_df$target_prin_graph_dim_1 <- tmp[1, ]
+  edge_df$target_prin_graph_dim_2 <- tmp[2, ]
+  
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -124,7 +143,7 @@ plot_cell_trajectory <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   if (show_tree){
-    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=.3, linetype="solid", na.rm=TRUE, data=edge_df)
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=cell_link_size, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
   # FIXME: setting size here overrides the marker expression funtionality. 
@@ -1659,4 +1678,231 @@ plot_ordering_genes <- function(cds){
   g
 }
 
+#' Plots clusters of cells .
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_name_size the size of cell name labels
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_cell_clusters(HSMM)
+#' plot_cell_clusters(HSMM, color_by="Pseudotime")
+#' plot_cell_clusters(HSMM, markers="MYH3")
+#' }
+plot_cell_clusters <- function(cds, 
+                               x=1, 
+                               y=2, 
+                               color_by="Cluster", 
+                               # show_tree=TRUE, 
+                               # show_backbone=TRUE, 
+                               # backbone_color="black", 
+                               markers=NULL, 
+                               show_cell_names=FALSE, 
+                               cell_size=1.5,
+                               # cell_link_size=0.75,
+                               cell_name_size=2){
+  if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
+    stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
+  }
+
+  gene_short_name <- NULL
+  sample_name <- NULL
+  data_dim_1 <- NULL
+  data_dim_2 <- NULL
+
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info <- pData(cds)
+  
+  tSNE_dim_coords <- reducedDimA(cds)
+  data_df <- data.frame(t(tSNE_dim_coords[c(x,y),]))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- colnames(cds)
+  data_df <- merge(data_df, lib_info, by.x="sample_name", by.y="row.names")
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
+    #print (head(edge_df))
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+  }else{
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
+  }
+  
+  # FIXME: setting size here overrides the marker expression funtionality. 
+  # Don't do it!
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+  }else {
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+  }
+  
+  g <- g + 
+    #scale_color_brewer(palette="Set1") +
+    monocle_theme_opts() + 
+    xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) +
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    #guides(color = guide_legend(label.position = "top")) +
+    theme(legend.key = element_blank()) +
+    theme(panel.background = element_rect(fill='white'))
+  g
+}
+
+#' Plots the decision map of density clusters .
+#'
+#' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
+#' @param rho_threshold The threshold of local density (rho) used to select the density peaks for plotting 
+#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting 
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_rho_delta(HSMM)
+#' }
+
+plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
+    if(!is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
+    & !is.null(pData(cds)$Cluster)
+    & !is.null(pData(cds)$peaks)
+    & !is.null(pData(cds)$halo)
+    & !is.null(pData(cds)$delta)
+    & !is.null(pData(cds)$rho)) {
+    rho <- NULL
+    delta <- NULL
+
+    # df <- data.frame(rho = as.numeric(levels(pData(cds)$rho))[pData(cds)$rho], 
+    #   delta = as.numeric(levels(pData(cds)$delta))[pData(cds)$delta])
+    if(!is.null(rho_threshold) & !is.null(delta_threshold)){
+      peaks <- pData(cds)$rho >= rho_threshold & pData(cds)$delta >= delta_threshold
+    }
+    else
+      peaks <- pData(cds)$peaks
+
+    df <- data.frame(rho = pData(cds)$rho, delta = pData(cds)$delta, peaks = peaks)
+
+    g <- qplot(rho, delta, data = df, alpha = I(0.5), color = peaks) +  monocle_theme_opts() + 
+      theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+      scale_color_manual(values=c("grey","black")) + 
+      theme(legend.key = element_blank()) +
+      theme(panel.background = element_rect(fill='white'))
+  }
+  else {
+    stop('Please run clusterCells_Density_Peak before using this plotting function')
+  }
+  g
+}
+
+#' Plots the percentage of variance explained by the each component based on PCA from the normalized expression
+#' data using the same procedure used in reduceDimension function.
+#'
+#' @param cds CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE 
+#' @param max_components Maximum number of components shown in the scree plot (variance explained by each component)
+#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
+#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
+#' @param pseudo_expr amount to increase expression values before dimensionality reduction
+#' @param return_all A logical argument to determine whether or not the variance of each component is returned
+#' @param use_existing_pc_variance Whether to plot existing results for variance explained by each PC
+#' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @param ... additional arguments to pass to the dimensionality reduction function
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' plot_pc_variance_explained(HSMM)
+#' }
+plot_pc_variance_explained <- function(cds, 
+                            max_components=100, 
+                            # reduction_method=c("DDRTree", "ICA", 'tSNE'),
+                            norm_method = c("vstExprs", "log", "none"), 
+                            residualModelFormulaStr=NULL,
+                            pseudo_expr=NULL, 
+                            return_all = F, 
+                            use_existing_pc_variance=FALSE,
+                            verbose=FALSE, 
+                            ...){
+  set.seed(2016)
+  if(!is.null(cds@auxClusteringData[["tSNE"]]$variance_explained) & use_existing_pc_variance == T){
+    prop_varex <- cds@auxClusteringData[["tSNE"]]$variance_explained
+  }
+  else{
+    FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+    
+    #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
+    xm <- Matrix::rowMeans(FM)
+    xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+    FM <- FM[xsd > 0,]
+    
+    if (is.null(residualModelFormulaStr) == FALSE) {
+      if (verbose) 
+        message("Removing batch effects")
+      X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr), 
+                                         data = pData(cds), drop.unused.levels = TRUE)
+      
+      fit <- limma::lmFit(FM, X.model_mat, ...)
+      beta <- fit$coefficients[, -1, drop = FALSE]
+      beta[is.na(beta)] <- 0
+      FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
+    }else{
+      X.model_mat <- NULL
+    }
+    
+    if (nrow(FM) == 0) {
+      stop("Error: all rows have standard deviation zero")
+    }
+    
+    # FM <- convert2DRData(cds, norm_method = 'log') 
+    # FM <- FM[rowSums(is.na(FM)) == 0, ]
+    irlba_res <- prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
+                              center = TRUE, scale. = TRUE)
+    prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
+    # 
+    # cell_means <- Matrix::rowMeans(FM_t)
+    # cell_vars <- Matrix::rowMeans((FM_t - cell_means)^2)
+    # 
+    # irlba_res <- irlba(FM,
+    #                    nv= min(max_components, min(dim(FM)) - 1), #avoid calculating components in the tail
+    #                    nu=0,
+    #                    center=cell_means,
+    #                    scale=sqrt(cell_vars),
+    #                    right_only=TRUE)
+    # prop_varex <- irlba_res$d / sum(irlba_res$d)
+    # 
+    # # pca_res <- prcomp(t(FM), center = T, scale = T)
+    # # std_dev <- pca_res$sdev 
+    # # pr_var <- std_dev^2
+    # prop_varex <- pr_var/sum(pr_var)
+  }
+  
+  p <- qplot(1:length(prop_varex), prop_varex, alpha = I(0.5)) +  monocle_theme_opts() + 
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    theme(panel.background = element_rect(fill='white')) + xlab('components') + 
+    ylab('Variance explained \n by each component')
+  # return(prop_varex = prop_varex, p = p)
+  if(return_all) {
+    return(list(variance_explained = prop_varex, p = p))
+  }
+  else
+    return(p)  
+}
 

@@ -19,4 +19,3 @@ in each gene's expression across cells varies according to the mean. This
 function only works for CellDataSet objects containing count-based expression
 data, either transcripts or reads.
 }
-

@@ -21,4 +21,3 @@ during dimensionality reduction.
 W <- reducedDimW(HSMM)
 }
 }
-

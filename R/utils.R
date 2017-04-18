@@ -24,12 +24,17 @@ newCellDataSet <- function( cellData,
                             phenoData = NULL, 
                             featureData = NULL, 
                             lowerDetectionLimit = 0.1, 
-                            expressionFamily=VGAM::tobit(Lower=log10(lowerDetectionLimit), lmu="identitylink"))
+                            expressionFamily=VGAM::negbinomial.size())
 {
   #cellData <- as.matrix( cellData )
   
   if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
     stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
+  }
+  
+  if(!('gene_short_name' %in% colnames(featureData))) {
+   warning("None of your featureData columns are named 'gene_short_name', some functions will not be able
+           to take this function as input as a result") 
   }
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )

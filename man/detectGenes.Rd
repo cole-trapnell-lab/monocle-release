@@ -28,4 +28,3 @@ detectable in each cell.
 HSMM <- detectGenes(HSMM, min_expr=0.1)
 }
 }
-

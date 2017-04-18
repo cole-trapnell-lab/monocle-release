@@ -20,4 +20,3 @@ vstExprs(cds, dispModelName = "blind", expr_matrix = NULL,
 This function was taken from the DESeq package (Anders and Huber) and modified 
 to suit Monocle's needs
 }
-

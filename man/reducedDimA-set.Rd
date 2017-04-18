@@ -23,4 +23,3 @@ space back to the full (whitened) space.
 cds <- reducedDimA(A)
 }
 }
-

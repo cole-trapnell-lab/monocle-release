@@ -13,7 +13,7 @@ CellDataSet extends the basic Bioconductor ExpressionSet class.
 This class is initialized from a matrix of expression values Methods that 
 operate on CellDataSet objects constitute the basic Monocle workflow.
 }
-\section{Slots}{
+\section{Fields}{
 
 \describe{
 \item{\code{reducedDimS}}{Matrix of class numeric, containing the source values computed by Independent Components Analysis.}

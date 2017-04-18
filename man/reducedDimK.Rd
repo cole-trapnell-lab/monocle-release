@@ -21,4 +21,3 @@ Retrieves the the whitening matrix during independent component analysis.
 K <- reducedDimW(HSMM)
 }
 }
-

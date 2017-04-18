@@ -45,4 +45,3 @@ MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", 
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 }
 }
-

@@ -7,7 +7,8 @@
 plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE)
+  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE,
+  theta = 0)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -35,6 +36,8 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 \item{cell_name_size}{the size of cell name labels}
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
+
+\item{theta}{includeDescrip}
 }
 \value{
 a ggplot2 plot object
@@ -50,4 +53,3 @@ plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 plot_cell_trajectory(HSMM, markers="MYH3")
 }
 }
-

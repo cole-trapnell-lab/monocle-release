@@ -12,4 +12,3 @@ A CellDataSet object
 \description{
 Return a CellDataSet of classic muscle genes
 }
-
