@@ -28,6 +28,10 @@ newCellDataSet <- function( cellData,
 {
   #cellData <- as.matrix( cellData )
   
+  if(!('gene_short_name' %in% colnames(featureData))) {
+    warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+  }
+  
   if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
     stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
   }
