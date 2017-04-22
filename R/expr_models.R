@@ -508,6 +508,11 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   #                              modelFormulaStr=modelFormulaStr, 
   #                              expressionFamily=cds@expressionFamily)
   # }
+  
+  if(!(('negbinomial' == cds@expressionFamily@vfamily) || ('negbinomial.size' == cds@expressionFamily@vfamily))){
+    stop("Error: estimateDispersions only works, and is only needed, when you're using a CellDataSet with a negbinomial or negbinomial.size expression family")
+  }
+  
   mu <- NA
   model_terms <- unlist(lapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
   model_terms <- model_terms[model_terms != ""]

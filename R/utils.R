@@ -296,9 +296,14 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
 #' @export
 dispersionTable <- function(cds){
   
-  if (is.null(cds@dispFitInfo[["blind"]]))
-    stop("Error: no dispersion model found. Please call estimateDispersions() before calling this function.")
+  if (is.null(cds@dispFitInfo[["blind"]])){
+    warning("Warning: estimateDispersions only works, and is only needed, when you're using a CellDataSet with a negbinomial or negbinomial.size expression family")
+    stop("Error: no dispersion model found. Please call estimateDispersions() before calling this function")
+  }
   
+  #if(!(('negbinomial()' == cds@expressionFamily) || ('negbinomial.size()' == cds@expressionFamily))){
+    
+  #}
   disp_df<-data.frame(gene_id=cds@dispFitInfo[["blind"]]$disp_table$gene_id,
                       mean_expression=cds@dispFitInfo[["blind"]]$disp_table$mu, 
                       dispersion_fit=cds@dispFitInfo[["blind"]]$disp_func(cds@dispFitInfo[["blind"]]$disp_table$mu),
@@ -553,6 +558,7 @@ load_HSMM_markers <- function(){
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory
+#' @import dplyr
 #' @importFrom Biobase pData pData<- exprs fData
 #' @export
 load_lung <- function(){

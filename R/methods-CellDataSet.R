@@ -56,6 +56,11 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1
 {
   dispModelName="blind"
   stopifnot( is( object, "CellDataSet" ) )
+  
+  if(!(identical("negbinomial.size", object@expressionFamily@vfamily) || identical("negbinomial", object@expressionFamily@vfamily))){
+    stop("Error: estimateDispersions only works, and is only needed, when you're using a CellDataSet with a negbinomial or negbinomial.size expression family")
+  }
+
   if( any( is.na( sizeFactors(object) ) ) )
     stop( "NAs found in size factors. Have you called 'estimateSizeFactors'?" )
   

@@ -23,6 +23,7 @@ Davide Cacchiarelli\\[1em]Harvard University,\\ Cambridge, Massachussetts, USA\\
 \texttt{davide@broadinstitute.org}}
 
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 <<package_loads, include=FALSE, eval=TRUE>>=
 library(Biobase)
