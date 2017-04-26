@@ -48,13 +48,16 @@ plot_cell_trajectory <- function(cds,
                                show_backbone=TRUE, 
                                backbone_color="black", 
                                markers=NULL, 
-                               show_cell_names=FALSE, 
+                               show_cell_names=FALSE,
+                               show_state_number = FALSE,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
+                               state_number_size = 2.9,
                                show_branch_points=TRUE){
   gene_short_name <- NA
   sample_name <- NA
+  sample_state <- pData(cds)$State
   data_dim_1 <- NA
   data_dim_2 <- NA
   
@@ -81,6 +84,7 @@ plot_cell_trajectory <- function(cds,
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
   ica_space_df$sample_name <- row.names(ica_space_df)
+  ica_space_df$sample_state <- row.names(ica_space_df)
   #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
@@ -100,6 +104,7 @@ plot_cell_trajectory <- function(cds,
   
   S_matrix <- reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[c(x,y),]))
+  data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
@@ -150,6 +155,10 @@ plot_cell_trajectory <- function(cds,
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
+  if (show_state_number){
+    g <- g + geom_text(aes(label = sample_state), size = state_number_size)
+  }
+  
   g <- g + 
     #scale_color_brewer(palette="Set1") +
     monocle_theme_opts() + 
