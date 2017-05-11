@@ -201,6 +201,12 @@ smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
 ####
 #' Filter genes with extremely high or low negentropy
 #'
+#' @description Examines all the genes in the CellDataSet passed in and removes
+#' all the genes that contain extremely high or low negentropies. You can specify
+#' which genes to filter out based on the boundaries you can set for expression levels
+#' and the boundaries you set for which centile to include. the function "dispersionTable"
+#' is a better form of this function.
+#'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param lower_negentropy_bound the centile below which to exclude to genes 
 #' @param upper_negentropy_bound the centile above which to exclude to genes
@@ -312,6 +318,8 @@ dispersionTable <- function(cds){
 }
 
 #####
+#'@title Detects genes above minimum threshold.
+#'
 #' Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 
 #' above a minimum threshold. Also counts the number of genes above this threshold are 
@@ -521,6 +529,10 @@ estimateSizeFactorsForMatrix <- function(counts, locfunc = median, round_exprs=T
 # Some convenience functions for loading the HSMM data
 
 #' Return the names of classic muscle genes
+#' 
+#' @description Returns a list of classic muscle genes. Used to
+#' add conveinence for loading HSMM data.
+#' 
 #' @export
 get_classic_muscle_markers <- function(){
   c("MEF2C", "MEF2D", "MYF5", "ANPEP", "PDGFRA",
@@ -529,6 +541,10 @@ get_classic_muscle_markers <- function(){
 }
 
 #' Build a CellDataSet from the HSMMSingleCell package
+#' 
+#' @description Creates a cellDataSet using the data from the
+#' HSMMSingleCell package.
+#' 
 #' @import HSMMSingleCell
 #' @importFrom utils data
 #' @export
@@ -546,7 +562,7 @@ load_HSMM <- function(){
   HSMM
 }
 
-#' Return a CellDataSet of classic muscle genes
+#' Return a CellDataSet of classic muscle genes.
 #' @importFrom Biobase fData
 #' @return A CellDataSet object
 #' @export
@@ -557,7 +573,7 @@ load_HSMM_markers <- function(){
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
 
-#' Build a CellDataSet from the data stored in inst/extdata directory
+#' Build a CellDataSet from the data stored in inst/extdata directory.
 #' @import dplyr
 #' @importFrom Biobase pData pData<- exprs fData
 #' @export

@@ -179,6 +179,8 @@ reducedDimW <- function( cds ) {
 }   
 
 #' Retrieves the the whitening matrix during independent component analysis.
+#' 
+#' @description
 #'
 #' @param cds A CellDataSet object.
 #' @return A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
