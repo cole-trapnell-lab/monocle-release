@@ -24,12 +24,12 @@ monocle_theme_opts <- function()
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
-#' @param non_log_scale Changes scale for the markers to non_logarithmic
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -49,6 +49,7 @@ plot_cell_trajectory <- function(cds,
                                show_backbone=TRUE, 
                                backbone_color="black", 
                                markers=NULL, 
+                               markers_linear = FALSE,
                                show_cell_names=FALSE,
                                show_state_number = FALSE,
                                cell_size=1.5,
@@ -124,8 +125,11 @@ plot_cell_trajectory <- function(cds,
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    #print (head(edge_df))
-    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    if(markers_linear){
+      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size= (value * 0.1))) + facet_wrap(~feature_label)
+    } else {
+      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    }
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
