@@ -78,10 +78,6 @@ plot_cell_trajectory <- function(cds,
     stop("Error: unrecognized dimensionality reduction method.")
   }
   
-  if (is.null(reduced_dim_coords)){
-    stop("You must first call reduceDimension() before using this function")
-  }
-  
   ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
