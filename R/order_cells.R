@@ -1623,7 +1623,7 @@ projPointOnLine <- function(point, line) {
   ap <- point - line[, 1]
   ab <- line[, 2] - line[, 1]
 
-  res <- line[, 1] + (ap %*% ab) / (ab %*% ab) * ab
+  res <- line[, 1] + c((ap %*% ab) / (ab %*% ab)) * ab
   return(res)
 }
 
