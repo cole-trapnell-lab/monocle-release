@@ -15,7 +15,7 @@ monocle_theme_opts <- function()
 }
 
 #' Plots the minimum spanning tree on cells.
-#' @description Plots the minimum spanning tree on cells.
+#' @description 
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -24,6 +24,7 @@ monocle_theme_opts <- function()
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
@@ -49,14 +50,18 @@ plot_cell_trajectory <- function(cds,
                                show_backbone=TRUE, 
                                backbone_color="black", 
                                markers=NULL, 
-                               show_cell_names=FALSE, 
+                               markers_linear = FALSE,
+                               show_cell_names=FALSE,
+                               show_state_number = FALSE,
                                cell_size=1.5,
                                cell_link_size=0.75,
                                cell_name_size=2,
-                               show_branch_points=TRUE, 
+                               state_number_size = 2.9,
+                               show_branch_points=TRUE,
                                theta = 0){
   gene_short_name <- NA
   sample_name <- NA
+  sample_state <- pData(cds)$State
   data_dim_1 <- NA
   data_dim_2 <- NA
   
@@ -75,14 +80,11 @@ plot_cell_trajectory <- function(cds,
     stop("Error: unrecognized dimensionality reduction method.")
   }
   
-  if (is.null(reduced_dim_coords)){
-    stop("You must first call reduceDimension() before using this function")
-  }
-  
   ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
   ica_space_df$sample_name <- row.names(ica_space_df)
+  ica_space_df$sample_state <- row.names(ica_space_df)
   #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
@@ -102,6 +104,7 @@ plot_cell_trajectory <- function(cds,
   
   S_matrix <- reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[c(x,y),]))
+  data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
@@ -137,8 +140,11 @@ plot_cell_trajectory <- function(cds,
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    #print (head(edge_df))
-    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    if(markers_linear){
+      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size= (value * 0.1))) + facet_wrap(~feature_label)
+    } else {
+      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    }
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
@@ -169,6 +175,10 @@ plot_cell_trajectory <- function(cds,
   if (show_cell_names){
     g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
   }
+  if (show_state_number){
+    g <- g + geom_text(aes(label = sample_state), size = state_number_size)
+  }
+  
   g <- g + 
     #scale_color_brewer(palette="Set1") +
     monocle_theme_opts() + 
@@ -242,6 +252,10 @@ plot_spanning_tree <- function(cds,
 
 
 #' Plots expression for one or more genes as a jittered, grouped points
+#' 
+#' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
+#' and produces one or more ggplot2 objects that plots the level of expression for
+#' each group of cells. 
 #'
 #' @param cds_subset CellDataSet for the experiment
 #' @param grouping the cell attribute (e.g. the column of pData(cds)) to group cells by on the horizontal axis
@@ -265,8 +279,13 @@ plot_spanning_tree <- function(cds,
 #' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
 #' plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 #' }
-plot_genes_jitter <- function(cds_subset, grouping = "State", 
-                              min_expr=NULL, cell_size=0.75, nrow=NULL, ncol=1, panel_order=NULL, 
+plot_genes_jitter <- function(cds_subset, 
+                              grouping = "State", 
+                              min_expr=NULL, 
+                              cell_size=0.75, 
+                              nrow=NULL, 
+                              ncol=1, 
+                              panel_order=NULL, 
                               color_by=NULL,
                               plot_trend=FALSE,
                               label_by_short_name=TRUE,
@@ -353,7 +372,17 @@ plot_genes_jitter <- function(cds_subset, grouping = "State",
   q
 }
 
-#' Plots the number of cells expressing one or more genes as a barplot 
+#' Plots the number of cells expressing one or more genes as a barplot
+#' 
+#'  @description Accetps a CellDataSet and a parameter,"grouping", used for dividing cells into groups.
+#'  Returns one or more bar graphs (one graph for each gene in the CellDataSet).
+#'  Each graph shows the percentage of cells that express a gene in the in the CellDataSet for
+#'  each sub-group of cells created by "grouping".
+#'  
+#'  Let's say the CellDataSet passed in included genes A, B, and C and the "grouping parameter divided
+#'  all of the cells into three groups called X, Y, and Z. Then three graphs would be produced called A,
+#'  B, and C. In the A graph there would be three bars one for X, one for Y, and one for Z. So X bar in the
+#'  A graph would show the percentage of cells in the X group that express gene A.
 #'
 #' @param cds_subset CellDataSet for the experiment
 #' @param grouping the cell attribute (e.g. the column of pData(cds)) to group cells by on the horizontal axis
@@ -457,6 +486,10 @@ plot_genes_positive_cells <- function(cds_subset,
 
 
 #' Plots expression for one or more genes as a function of pseudotime
+#' 
+#' @description Plots expression for one or more genes as a function of pseudotime.
+#' Plotting allows you determine if the ordering produced by orderCells() is correct
+#' and it does not need to be flipped using the "reverse" flag in orderCells
 #'
 #' @param cds_subset CellDataSet for the experiment
 #' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
@@ -593,6 +626,11 @@ plot_genes_in_pseudotime <-function(cds_subset,
 }
 
 #' Plots kinetic clusters of genes.
+#'
+#' @description returns a ggplot2 object showing the shapes of the
+#' expression patterns followed by a set of pre-selected genes.
+#' The topographic lines highlight the distributions of the kinetic patterns
+#' relative to overall trend lines.
 #'
 #' @param cds CellDataSet for the experiment
 #' @param clustering a clustering object produced by clusterCells
@@ -899,6 +937,12 @@ plot_genes_heatmap <- function(...){
 
 #' Plots a pseudotime-ordered, row-centered heatmap
 #' 
+#' @description The function plot_pseudotime_heatmap takes a CellDataSet object 
+#' (usually containing a only subset of significant genes) and generates smooth expression 
+#' curves much like plot_genes_in_pseudotime. 
+#' Then, it clusters these genes and plots them using the pheatmap package. 
+#' This allows you to visualize modules of genes that co-vary across pseudotime.
+#' 
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
 #' @param cluster_rows Whether to cluster the rows of the heatmap.
 #' @param hclust_method The method used by pheatmap to perform hirearchical clustering of the rows. 
@@ -1062,7 +1106,10 @@ plot_pseudotime_heatmap <- function(cds_subset,
 
 #' Plot the branch genes in pseduotime with separate branch curves.
 #' 
-#' This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
+#' @description Works similarly to plot_genes_in_psuedotime esceptit shows 
+#' one kinetic trend for each lineage. 
+#' 
+#' @details This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
 #' and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
 #' bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  
 #' Then we fit two nature spline curves for each branchs using VGAM package.  
@@ -1082,6 +1129,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @param trend_formula The model formula to be used for fitting the expression trend over pseudotime
 #' @param reducedModelFormulaStr A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model
 #' @param label_by_short_name Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param multi_branch a boolean that signifies whether you'd like to compare more than two branches at once
 #' @param relative_expr Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)
 #' @param ... Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.
 #' @return a ggplot2 plot object
@@ -1105,7 +1153,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                             trend_formula = "~ sm.ns(Pseudotime, df=3) * Branch", 
                                             reducedModelFormulaStr = NULL, 
                                             label_by_short_name = TRUE,
-                                            relative_expr = TRUE, 
+                                            relative_expr = TRUE,
                                             #gene_pairs = NULL,
                                             ...)
 {
@@ -1437,6 +1485,12 @@ blue = c(0.2, 0.2, 1))
 blue2green2red <- matlab.like2
 
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
+#'  
+#'  @description returns a heatmap that shows changes in both lineages at the same time. 
+#'  It also requires that you choose a branch point to inspect. 
+#'  Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. 
+#'  As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. 
+#'  The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.
 #'
 #' @param cds_subset CellDataSet for the experiment (normally only the branching genes detected with branchTest)
 #' @param branch_point The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".

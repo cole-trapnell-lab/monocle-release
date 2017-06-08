@@ -803,8 +803,10 @@ weight_of_ordering <- function(ordering, dist_matrix)
   return(time_delta)
 }
 
-
-#' Sets the features (e.g. genes) to be used for ordering cells in pseudotime.
+#' Marks genes for clustering
+#' @description The function marks genes that will be used for clustering in subsequent calls to clusterCells. 
+#' The list of selected genes can be altered at any time.
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object
@@ -1248,11 +1250,11 @@ normalize_expr_data <- function(cds,
 }
 
 #' Compute a projection of a CellDataSet object into a lower dimensional space
-#'
-#' Monocle aims to learn how cells transition through a biological program of
-#' gene expression changes in an experiment. Each cell can be viewed as a point
-#' in a high-dimensional space, where each dimension describes the expression of
-#' a different gene in the genome. Identifying the program of gene expression
+#' 
+#' @description Monocle aims to learn how cells transition through a biological program of 
+#' gene expression changes in an experiment. Each cell can be viewed as a point 
+#' in a high-dimensional space, where each dimension describes the expression of 
+#' a different gene in the genome. Identifying the program of gene expression 
 #' changes is equivalent to learning a \emph{trajectory} that the cells follow
 #' through this space. However, the more dimensions there are in the analysis,
 #' the harder the trajectory is to learn. Fortunately, many genes typically
@@ -1262,9 +1264,9 @@ normalize_expr_data <- function(cds,
 #' Both take a CellDataSet object and a number of dimensions allowed for the
 #' reduced space. You can also provide a model formula indicating some variables
 #' (e.g. batch ID or other technical factors) to "subtract" from the data so it
-#' doesn't contribute to the trajectory.
-#'
-#' You can choose two different reduction algorithms: Independent Component
+#' doesn't contribute to the trajectory. 
+#' 
+#' @details You can choose two different reduction algorithms: Independent Component 
 #' Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
 #' The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
 #' Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
@@ -1623,7 +1625,7 @@ projPointOnLine <- function(point, line) {
   ap <- point - line[, 1]
   ab <- line[, 2] - line[, 1]
 
-  res <- line[, 1] + (ap %*% ab) / (ab %*% ab) * ab
+  res <- line[, 1] + c((ap %*% ab) / (ab %*% ab)) * ab
   return(res)
 }
 

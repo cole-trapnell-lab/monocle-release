@@ -97,6 +97,17 @@ fit_model_helper <- function(x,
 }
 
 #' Fits a model for each gene in a CellDataSet object.
+#' 
+#' This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
+#' By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
+#' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
+#' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
+#' 
+#' This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
+#' By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
+#' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
+#' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
+#' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
 #' @param relative_expr Whether to fit a model to relative or absolute expression. Only meaningful for count-based expression data. If TRUE, counts are normalized by Size_Factor prior to fitting.
@@ -104,12 +115,6 @@ fit_model_helper <- function(x,
 #' @return a list of VGAM model objects
 #' @importFrom qlcMatrix rowMax
 #' @export
-#' @details
-#' 
-#' This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
-#' By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
-#' cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
-#' additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 fitModel <- function(cds,
                      modelFormulaStr="~sm.ns(Pseudotime, df=3)",
                      relative_expr=TRUE,
@@ -132,7 +137,7 @@ fitModel <- function(cds,
   }
 }
 
-#' Response values
+#' Calculates response values.
 #' 
 #' Generates a matrix of response values for a set of fitted models
 #' @param models a list of models, e.g. as returned by fitModels()
@@ -416,8 +421,9 @@ parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
 
 #' Return a variance-stabilized matrix of expression values
 #'
-#' This function was taken from the DESeq package (Anders and Huber) and modified 
-#' to suit Monocle's needs
+#' @description This function was taken from the DESeq package (Anders and Huber) and modified 
+#' to suit Monocle's needs. It accpets a either a CellDataSet or the expression values of one
+#' and returns a variance-stabilized matrix based off of them. 
 #'
 #' @param cds A CellDataSet to use for variance stabilization.
 #' @param dispModelName The name of the dispersion function to use for VST.
@@ -508,6 +514,11 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   #                              modelFormulaStr=modelFormulaStr, 
   #                              expressionFamily=cds@expressionFamily)
   # }
+  
+  if(!(('negbinomial' == cds@expressionFamily@vfamily) || ('negbinomial.size' == cds@expressionFamily@vfamily))){
+    stop("Error: estimateDispersions only works, and is only needed, when you're using a CellDataSet with a negbinomial or negbinomial.size expression family")
+  }
+  
   mu <- NA
   model_terms <- unlist(lapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
   model_terms <- model_terms[model_terms != ""]
