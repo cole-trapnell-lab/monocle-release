@@ -25,6 +25,7 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 \texttt{xqiu@uw.edu}
 }
 \begin{document}
+\SweaveOpts{concordance=TRUE}
 
 
 
@@ -186,7 +187,7 @@ If you performed your single-cell RNA-Seq experiment using \emph{spike-in} stand
                         expressionFamily=tobit(Lower=0.1))
  
  # Next, use it to estimate RNA counts
- rpc_matrix <- relative2abs(HSMM)
+ rpc_matrix <- relative2abs(HSMM, method = "num_genes")
  
  # Now, make a new CellDataSet using the RNA counts
  HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
@@ -389,8 +390,8 @@ plot_ordering_genes(HSMM)
 Note that we've got smaller set of genes, and some of them are not especially highly expressed or variable across the experiment. However, they are great for distinguishing cells that express \emph{MYF5} from those that have \emph{ANPEP}. We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to \Rfunction{clusterCells}.
 
 <<cluster_cells_semisup_clustering_no_impute, fig.width = 4, fig.height = 4, fig.align="center", eval=TRUE, warning = F>>=
-plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE', 
+plot_pc_variance_explained(HSMM, return_all = F) # 
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log', reduction_method = 'tSNE', 
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
 HSMM <- clusterCells(HSMM, num_clusters=2) 
 
@@ -482,7 +483,7 @@ plot_ordering_genes(HSMM_myo)
  
 The genes we've chosen to use for ordering define the \emph{state space} of the cells in our data set.  Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.  So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.  For a number of reasons, Monocle works better if we can \emph{reduce} the dimensionality of that space before we try to put the cells in order.  In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
  <<reduce_dimension, eval=TRUE>>=
- HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
+ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
  @ %def
  
 Now that the space is reduced, it's time to order the cells using the \Rfunction{orderCells} function as shown below. 
@@ -615,7 +616,7 @@ ordering_genes <- union(PC2_genes, PC3_genes)
 Using these to order the cells as above yields the following trajectory:
  <<order_cells_pca_unsup, fig.width = 4, fig.height = 3, fig.align="center", warning=FALSE, eval=TRUE>>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
-HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
 HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
@@ -704,7 +705,7 @@ We will then select the top $1000$ significant genes as the ordering genes.
 HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000] 
 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
-HSMM_myo <- reduceDimension(HSMM_myo)
+HSMM_myo <- reduceDimension(HSMM_myo, method = 'DDRTree')
 HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
@@ -735,14 +736,14 @@ marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,],
                                cth, 
                                cores=1)
 #semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
-semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:500] 
+semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:1000] 
 @ %def
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
 <<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 2, warning=FALSE, fig.align="center">>=
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 #plot_ordering_genes(HSMM_myo)
-HSMM_myo <- reduceDimension(HSMM_myo, max_components=2)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree', norm_method = 'log')
 HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="right")
