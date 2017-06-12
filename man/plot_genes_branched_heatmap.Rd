@@ -12,7 +12,7 @@ plot_genes_branched_heatmap(cds_subset, branch_point = 1,
   show_rownames = FALSE, use_gene_short_name = TRUE, scale_max = 3,
   scale_min = -3, norm_method = c("vstExprs", "log"),
   trend_formula = "~sm.ns(Pseudotime, df=3) * Branch",
-  return_heatmap = FALSE, cores = 1)
+  return_heatmap = FALSE, cores = 1, ...)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
@@ -52,6 +52,8 @@ plot_genes_branched_heatmap(cds_subset, branch_point = 1,
 \item{return_heatmap}{Whether to return the pheatmap object to the user.}
 
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
+
+\item{...}{Additional arguments passed to buildBranchCellDataSet}
 }
 \value{
 A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
@@ -60,4 +62,3 @@ annotation_row (annotation data.frame for the row), annotation_col (annotation d
 \description{
 Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
 }
-

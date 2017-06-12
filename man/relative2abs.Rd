@@ -8,7 +8,8 @@ relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
   modelFormulaStr = "~1", ERCC_controls = NULL, ERCC_annotation = NULL,
   volume = 10, dilution = 40000, mixture_type = 1,
   detection_threshold = 800, expected_capture_rate = 0.25,
-  verbose = FALSE, return_all = FALSE, cores = 1)
+  verbose = FALSE, return_all = FALSE, method = c("num_genes",
+  "tpm_fraction"), cores = 1)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}
@@ -37,6 +38,8 @@ based on isoform FPKM will give better results in general}
 \item{return_all}{parameter for the intended return results. If setting TRUE, matrix of m, c, k^*, b^* as well as the transformed absolute cds will be returned
 in a list format}
 
+\item{method}{the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)}
+
 \item{cores}{number of cores to perform the recovery. The recovery algorithm is very efficient so multiple cores only needed when we have very huge number of cells or genes.}
 }
 \value{
@@ -59,4 +62,3 @@ HSMM_abs_matrix <- relative2abs(HSMM_relative_expr_matrix,
    t_estimate = estimate_t(HSMM_relative_expr_matrix))
 }
 }
-

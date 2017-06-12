@@ -39,4 +39,3 @@ clusters <- clusterGenes(expression_curve_matrix, k=4)
 plot_clusters(HSMM_filtered[ordering_genes,], clusters)
 }
 }
-

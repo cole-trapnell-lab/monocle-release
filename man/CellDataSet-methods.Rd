@@ -2,12 +2,15 @@
 % Please edit documentation in R/methods-CellDataSet.R
 \docType{methods}
 \name{CellDataSet-methods}
-\alias{CellDataSet,ANY,ANY-method}
 \alias{CellDataSet-methods}
-\alias{estimateDispersions,CellDataSet-method}
-\alias{estimateSizeFactors,CellDataSet-method}
 \alias{sizeFactors,CellDataSet-method}
+\alias{CellDataSet,ANY,ANY-method}
 \alias{sizeFactors<-,CellDataSet,numeric-method}
+\alias{CellDataSet,ANY,ANY-method}
+\alias{estimateSizeFactors,CellDataSet-method}
+\alias{CellDataSet,ANY,ANY-method}
+\alias{estimateDispersions,CellDataSet-method}
+\alias{CellDataSet,ANY,ANY-method}
 \title{Methods for the CellDataSet class}
 \usage{
 \S4method{sizeFactors}{CellDataSet}(object)
@@ -43,4 +46,3 @@ The default groups all cells together.}
 \description{
 Methods for the CellDataSet class
 }
-

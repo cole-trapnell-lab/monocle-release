@@ -29,4 +29,3 @@ The result of with(pData(X) apply(exprs(X)), MARGIN, FUN, ...))
 mcesApply computes the row-wise or column-wise results of FUN, just like esApply.
 Variables in pData from X are available in FUN.
 }
-

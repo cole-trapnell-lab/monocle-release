@@ -25,4 +25,3 @@ a data frame containing the data for the fitted spline curves.
 This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return
 the corresponding residuals matrix. This function is build on other functions (fit_models and residualsMatrix)
 }
-

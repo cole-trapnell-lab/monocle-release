@@ -21,4 +21,3 @@ Retrieves a matrix capturing distances between each cell used during cell orderi
 D <- cellPairwiseDistances(HSMM)
 }
 }
-

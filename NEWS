@@ -1,6 +1,16 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
 
+Version 2.4.0
+--------------------------------------------------------------------------------
+  o The default expressionFamily is now negbinomial.size, instead of Tobit. If 
+    you are using TPM or FPKM data, we urge you to convert it to relative 
+    transcript counts with relative2abs and use the negative binomial distribution
+    in your CellDataSet objects.
+  o Revamped clusterCells functionality based on t-SNE and densityPeak
+  o New procedure for selected ordering genes called "dpFeature". See vignette
+    for details.
+
 Version 2.1.1
 --------------------------------------------------------------------------------
   

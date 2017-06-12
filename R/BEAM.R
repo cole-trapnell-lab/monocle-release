@@ -9,6 +9,7 @@
 #' table in the returned CellDataSet.
 #' 
 #' @param cds CellDataSet for the experiment
+#' @param progenitor_method The method to use for dealing with the cells prior to the branch
 #' @param branch_point The ID of the branch point to analyze. Can only be used
 #'   when \code{\link{reduceDimension}()} is called with \code{reduction_method
 #'   = "DDRTree"}.
@@ -22,10 +23,11 @@
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
-                                          branch_states = NULL, 
-                                          branch_point = 1,
-                                          branch_labels = NULL, 
-                                          stretch = TRUE)
+                                   progenitor_method = c('sequential_split', 'duplicate'), 
+                                   branch_states = NULL, 
+                                   branch_point = 1,
+                                   branch_labels = NULL, 
+                                   stretch = TRUE)
 {
   # TODO: check that branches are on the same paths
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
@@ -196,48 +198,83 @@ buildBranchCellDataSet <- function(cds,
   
   pData[common_ancestor_cells, "Branch"] <- names(paths_to_root)[1] #set progenitors to the branch 1
   
-
-  # progenitor_pseudotime_order <- order(pData[progenitor_ind, 'Pseudotime'])
-  
-  # branchA <- progenitor_pseudotime_order[seq(1, length(progenitor_ind), by = 2)]
-  # pData[progenitor_ind[branchA], 'State'] <- branch_states[1]
-  # branchB <- progenitor_pseudotime_order[seq(2, length(progenitor_ind), by = 2)]
-  # pData[progenitor_ind[branchB], 'State'] <- branch_states[2]    
-  
   progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
   
-  pData$Branch <- names(paths_to_root)[1]
-  
-  branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchA], 'Branch'] <- names(paths_to_root)[1]
-  branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
-  pData[common_ancestor_cells[branchB], 'Branch'] <- names(paths_to_root)[2]   
-  
-  # Duplicate the root cell to make sure both regression start at pseudotime zero:
-  zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
-  exprs_data <- cBind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
-  pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
-  row.names(pData)[nrow(pData)] <- 'duplicate_root'
-  pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
-  
-  weight_vec <- rep(1, nrow(pData))
-  
-  for (i in 1:length(paths_to_root)){
-    path_to_ancestor <- paths_to_root[[i]]
-    branch_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
-    pData[branch_cells,]$Branch <- names(paths_to_root)[i]
+  if (progenitor_method == 'duplicate') {
+    ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
+    expr_blocks <- list()
+    
+    # Duplicate the expression data
+    for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
+      if (nrow(ancestor_exprs) == 1)
+        exprs_data <- t(as.matrix(ancestor_exprs))
+      else exprs_data <- ancestor_exprs
+      
+      colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
+      exprs_data <- cbind(exprs_data, expr_lineage_data)
+      expr_blocks[[i]] <- exprs_data
+    }
+    
+    # Make a bunch of copies of the pData entries from the common ancestors
+    ancestor_pData_block <- pData[common_ancestor_cells,]
+    
+    pData_blocks <- list()
+    
+    weight_vec <- c()
+    for (i in 1:length(paths_to_root)) {
+      weight_vec <- c(weight_vec, rep(1, length(common_ancestor_cells)))
+      weight_vec_block <- rep(1, length(common_ancestor_cells))
+      
+      #pData <- rbind(pData, pData[common_ancestor_cells, ])
+      new_pData_block <- ancestor_pData_block
+      # new_pData_block$Lineage <- lineage_states[i]
+      # new_pData_block$State <- lineage_states[i]
+      
+      row.names(new_pData_block) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
+      
+      pData_lineage_cells <- pData[setdiff(paths_to_root[[i]], common_ancestor_cells),]
+      # pData_lineage_cells$Lineage <- lineage_states[i]
+      # pData_lineage_cells$State <- lineage_states[i]
+      
+      weight_vec_block <- c(weight_vec_block, rep(1, nrow(pData_lineage_cells)))
+      
+      weight_vec <- c(weight_vec, weight_vec_block)
+      
+      new_pData_block <- rbind(new_pData_block, pData_lineage_cells)
+      new_pData_block$Branch <- names(paths_to_root)[i]
+      pData_blocks[[i]] <- new_pData_block
+    }
+    pData <- do.call(rbind, pData_blocks)
+    exprs_data <- do.call(cbind, expr_blocks)
   }
-  
-  # if (!is.null(branch_labels))
-  #   pData$Branch <- as.factor(branch_map[as.character(pData$State)])
-  # else
-  #   pData$Branch <- as.factor(pData$State)
+  else if(progenitor_method == 'sequential_split') {
+    pData$Branch <- names(paths_to_root)[1]
+    
+    branchA <- progenitor_pseudotime_order[seq(1, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[branchA], 'Branch'] <- names(paths_to_root)[1]
+    branchB <- progenitor_pseudotime_order[seq(2, length(common_ancestor_cells), by = 2)]
+    pData[common_ancestor_cells[branchB], 'Branch'] <- names(paths_to_root)[2]   
+    
+    # Duplicate the root cell to make sure both regression start at pseudotime zero:
+    zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
+    exprs_data <- cBind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
+    pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
+    row.names(pData)[nrow(pData)] <- 'duplicate_root'
+    pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
+    
+    weight_vec <- rep(1, nrow(pData))
+    
+    for (i in 1:length(paths_to_root)){
+      path_to_ancestor <- paths_to_root[[i]]
+      branch_cells <- setdiff(path_to_ancestor, common_ancestor_cells)
+      pData[branch_cells,]$Branch <- names(paths_to_root)[i]
+    }
+  }
   
   pData$Branch <- as.factor(pData$Branch)
   
-  pData$State <- factor(pData(cds)[as.character(pData$original_cell_id),]$State, 
-                        levels =levels(cds$State))
-  pData$weight <- weight_vec
+  pData$State <- factor(pData$State)
   Size_Factor <- pData$Size_Factor
   
   fData <- fData(cds)
@@ -303,8 +340,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         verbose=verbose,
-                                         ...)
+                                         verbose=verbose)
   
   return(branchTest_res)
 }
@@ -319,6 +355,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param branch_point includeDescrip
 #' @param trajectory_states States corresponding to two branches 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
@@ -332,9 +369,11 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @return a data frame containing the ABCs (Area under curves) score as the first column and other meta information from fData
+#' @export 
 calABCs <- function(cds,
                     trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-                    trajectory_states = c(2, 3),
+                    branch_point = 1,
+                    trajectory_states = NULL,
                     relative_expr = TRUE, 
                     stretch = TRUE, 
                     cores = 1, 
@@ -345,20 +384,26 @@ calABCs <- function(cds,
                     branch_labels = NULL,
                     ...){
   ABC_method = "integral"
-  if (length(trajectory_states) != 2)
-    stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  if(!is.null(trajectory_states)){
+    if (length(trajectory_states) != 2)
+      stop("Sorry, this function only supports the calculation of ABCs between TWO branch trajectories")
+  }
   
-  
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
-                                                branch_labels = branch_labels, stretch = stretch)
+    cds_subset <- buildBranchCellDataSet(cds = cds, 
+                                                progenitor_method = 'duplicate',
+                                                branch_point = branch_point, 
+                                                branch_states = trajectory_states,
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
  
  
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two branches")
-  if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
-    stop("state(s) in trajectory_states are not included in 'Branch'")
-  
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two branches")
+  # if(!all(trajectory_states %in% pData(cds_subset)[, "Branch"]))
+  #   stop("state(s) in trajectory_states are not included in 'Branch'")
+  # 
+  trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(verbose)
     message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
   
@@ -372,13 +417,13 @@ calABCs <- function(cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[1])))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   if (verbose)
     print(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                 sort(pData(cds_branchA)$Pseudotime)))
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = num), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = num), Branch = as.factor(as.character(trajectory_states[2])))
   colnames(str_new_cds_branchB)[2] <- formula_all_variables[2]
   
   if (verbose)
@@ -453,6 +498,7 @@ calABCs <- function(cds,
 #'
 #' @param cds CellDataSet for the experiment
 #' @param trend_formula trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
+#' @param branch_point includeDescrip
 #' @param trajectory_states states corresponding to two branches 
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
@@ -474,9 +520,11 @@ calABCs <- function(cds,
 #' @import methods
 #' @importFrom Biobase pData fData
 #' @importFrom reshape2 melt
+#' @export 
 calILRs <- function (cds, 
           trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-          trajectory_states = c(2, 3), 
+          branch_point = 1,
+          trajectory_states = NULL, 
           relative_expr = TRUE, 
           stretch = TRUE, 
           cores = 1, 
@@ -490,24 +538,39 @@ calILRs <- function (cds,
           return_all = F, 
           verbose = FALSE, 
           ...){
-  
- 
-    cds_subset <- buildBranchCellDataSet(cds = cds, #branch_states = trajectory_states,
-                                                branch_labels = branch_labels, stretch = stretch)
+    if(!is.null(trajectory_states)){
+      if (length(trajectory_states) != 2)
+        stop("Sorry, this function only supports the calculation of ILRs between TWO branch trajectories")
+    }
+
+    cds_subset <- buildBranchCellDataSet(cds = cds, branch_states = trajectory_states,
+                                                branch_point = branch_point,
+                                                progenitor_method = 'duplicate',
+                                                branch_labels = branch_labels, stretch = stretch, ...)
     overlap_rng <- c(0, max(pData(cds_subset)$Pseudotime))
   
 
-  if (length(trajectory_states) != 2)
-    stop("calILRs can only work for two Branches")
-  if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
-      stop("state(s) in trajectory_states are not included in 'Branch'")
+  # if (length(trajectory_states) != 2)
+  #   stop("calILRs can only work for two Branches")
+  # if(!all(pData(cds_subset)[pData(cds_subset)$State %in% trajectory_states, "Branch"] %in% pData(cds_subset)[, "Branch"]))
+  #     stop("state(s) in trajectory_states are not included in 'Branch'")
     
-  if(verbose)
-    message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
-  
+  # if(verbose)
+  #   message(paste("the pseudotime range for the calculation of ILRs:", overlap_rng[1], overlap_rng[2], sep = ' '))
+  if(is.null(trajectory_states))
+    trajectory_states <- unique(pData(cds_subset)[, "Branch"])
+
   if(!is.null(branch_labels)){
     trajectory_states <- branch_labels
   }
+  else if(is.null(trajectory_states)){
+    trajectory_states_tmp <- as.character(trajectory_states)
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), as.character(State) == trajectory_states_tmp[1])), 'Branch'])
+    trajectory_states[1] <- names(which.max(branch_stats))
+    branch_stats <- table(pData(cds_subset)[row.names(subset(pData(cds), as.character(State) == trajectory_states_tmp[2])), 'Branch'])
+    trajectory_states[2] <- names(which.max(branch_stats))
+  }
+      
   cds_branchA <- cds_subset[, pData(cds_subset)[, "Branch"] ==
                               trajectory_states[1]]
   cds_branchB <- cds_subset[, pData(cds_subset)[, "Branch"] ==
@@ -520,14 +583,14 @@ calILRs <- function (cds,
   
   t_rng <- range(pData(cds_branchA)$Pseudotime)
   str_new_cds_branchA <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[1]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[1])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchA)$Pseudotime)))
   colnames(str_new_cds_branchA)[2] <- formula_all_variables[2] #interaction term can be terms rather than Branch
   
   str_new_cds_branchB <- data.frame(Pseudotime = seq(overlap_rng[1], overlap_rng[2],
-                                                     length.out = 100), Branch = as.factor(trajectory_states[2]))
+                                                     length.out = 100), Branch = as.factor(as.character(trajectory_states[2])))
   if (verbose)
     message(paste("Check the whether or not Pseudotime scaled from 0 to 100: ",
                   sort(pData(cds_branchB)$Pseudotime)))
@@ -627,6 +690,7 @@ calILRs <- function (cds,
 #' @import methods
 #' @importFrom reshape2 melt
 #' @importFrom parallel detectCores
+#' @export 
 detectBifurcationPoint <- function(str_log_df = NULL, 
                                    ILRs_threshold = 0.1, 
                                    detect_all = T,

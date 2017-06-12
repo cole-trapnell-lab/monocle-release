@@ -9,7 +9,7 @@ orderCells(cds, root_state = NULL, num_paths = NULL, reverse = NULL)
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
-\item{root_state}{The state to use as the root of the trajectory. 
+\item{root_state}{The state to use as the root of the trajectory.
 You must already have called orderCells() once to use this argument.}
 
 \item{num_paths}{the number of end-point cell states to allow in the biological process.}
@@ -21,29 +21,28 @@ an updated CellDataSet object, in which phenoData contains values for State and 
 }
 \description{
 Learns a "trajectory" describing the biological process the cells are
-going through, and calculates where each cell falls within that trajectory. 
+going through, and calculates where each cell falls within that trajectory.
 Monocle learns trajectories in two steps. The first step is reducing the dimensionality
 of the data with \code{\link{reduceDimension}()}. The second is this function.
-function. This function takes as input a CellDataSet and returns it with 
-two new columns: \code{Pseudotime} and \code{State}, which together encode 
+function. This function takes as input a CellDataSet and returns it with
+two new columns: \code{Pseudotime} and \code{State}, which together encode
 where each cell maps to the trajectory. \code{orderCells()} optionally takes
-a "root" state, which you can use to specify the start of the trajectory. If 
+a "root" state, which you can use to specify the start of the trajectory. If
 you don't provide a root state, one is selected arbitrarily.
 }
 \details{
-The \code{reduction_method} argument to \code{\link{reduceDimension}()} 
+The \code{reduction_method} argument to \code{\link{reduceDimension}()}
 determines which algorithm is used by \code{orderCells()} to learn the trajectory.
 If \code{reduction_method == "ICA"}, this function uses \emph{polygonal reconstruction}
-to learn the underlying trajectory. If \code{reduction_method == "DDRTree"}, 
-the trajectory is specified by the principal graph learned by the 
+to learn the underlying trajectory. If \code{reduction_method == "DDRTree"},
+the trajectory is specified by the principal graph learned by the
 \code{\link[DDRTree]{DDRTree}()} function.
 
-Whichever algorithm you use, the trajectory will be composed of segments. 
+Whichever algorithm you use, the trajectory will be composed of segments.
 The cells from a segment will share the same value of \code{State}. One of
-these segments will be selected as the root of the trajectory arbitrarily. 
+these segments will be selected as the root of the trajectory arbitrarily.
 The most distal cell on that segment will be chosen as the "first" cell in the
-trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will 
+trajectory, and will have a Pseudotime value of zero. \code{orderCells()} will
 then "walk" along the trajectory, and as it encounters additional cells, it
 will assign them increasingly large values of Pseudotime.
 }
-

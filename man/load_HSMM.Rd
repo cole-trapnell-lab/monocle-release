@@ -9,4 +9,3 @@ load_HSMM()
 \description{
 Build a CellDataSet from the HSMMSingleCell package
 }
-

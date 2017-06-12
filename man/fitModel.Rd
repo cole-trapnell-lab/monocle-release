@@ -28,4 +28,3 @@ By default, expression levels are modeled as smooth functions of the Pseudotime 
 cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 }
-

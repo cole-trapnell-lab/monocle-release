@@ -4,11 +4,14 @@
 \alias{buildBranchCellDataSet}
 \title{Build a CellDataSet that splits cells among two branches}
 \usage{
-buildBranchCellDataSet(cds, branch_states = NULL, branch_point = 1,
+buildBranchCellDataSet(cds, progenitor_method = c("sequential_split",
+  "duplicate"), branch_states = NULL, branch_point = 1,
   branch_labels = NULL, stretch = TRUE)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{progenitor_method}{The method to use for dealing with the cells prior to the branch}
 
 \item{branch_states}{The states for two branching branches}
 
@@ -32,4 +35,3 @@ and returns a version where the cells are assigned to one of two branches.
 The branch for each cell is encoded in a new column, "Branch", in the pData
 table in the returned CellDataSet.
 }
-

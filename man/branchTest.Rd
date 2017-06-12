@@ -40,4 +40,3 @@ then performing a likelihood ratio test to see if the branch assignments
 significantly improves the fit over a null model that does not split the cells.
 \code{branchTest()} implements these two steps.
 }
-
