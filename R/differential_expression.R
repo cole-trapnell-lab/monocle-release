@@ -142,12 +142,12 @@ differentialGeneTest <- function(cds,
   
   fmfs_test <- fullModelFormulaStr
   fmfs_test <- substr(fmfs_test, 2, nchar(fmfs_test))
-  pdat_cols_check_2 <- strsplit(fmfs_test, " + ", fixed = TRUE)
+  pdat_cols_check_2 <- strsplit(fmfs_test, "\\s*\\+\\s*", fixed = F)
   
   if(reducedModelFormulaStr != "~1") {
     rmfs_test <- reducedModelFormulaStr
     rmfs_test <- substr(rmfs_test, 2, nchar(rmfs_test))
-    pdat_cols_check_1 <- strsplit(rmfs_test, " + ", fixed = TRUE)
+    pdat_cols_check_1 <- strsplit(rmfs_test, "\\s*\\+\\s*", fixed = F)
   }
   
   if(pdat_cols_check_1 != "empty") {
@@ -160,7 +160,7 @@ differentialGeneTest <- function(cds,
   pd <- pData(cds)
   
   for(i in pdat_cols_check_2) {
-    x <- pd[[i]]
+    x <- pd[, i]
     if(any((c(Inf, NaN, NA) %in% x))){
       stop("Error: Inf, NaN, or NA values were located in pData of cds in columns mentioned in model terms")
     }

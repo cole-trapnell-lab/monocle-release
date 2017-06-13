@@ -365,6 +365,7 @@ Now, most of the myoblasts are in one cluster, most of the fibroblasts are in th
 First, we'll select a different set of genes to use for clustering the cells. Before we just picked genes that were highly expressed and highly variable. Now, we'll pick genes that \emph{co-vary} with our markers. In a sense, we'll be building a large list of genes to use as markers, so that even if a cell doesn't have \emph{MYF5}, it might be recognizable as a myoblast based on other genes.
   
 <<cluster_cells_diff_table, eval=TRUE>>=
+save.image('/Users/xqiu/Project/test_vignette.RData')
 marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                  cth, 
                                  residualModelFormulaStr="~Media + num_genes_expressed",
