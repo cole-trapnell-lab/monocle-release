@@ -16,11 +16,14 @@ https://nodejs.org/en/
 5. install bundler
 sudo gem install bundler
 
-6. Build the site:
+6. install packages used by site
+bundle install
+
+7. Build the site:
 bundle exec jekyll build --incremental --watch
 
-7. Serve the site (in a second terminal window)
+8. Serve the site (in a second terminal window)
 bundle exec jekyll serve --watch
 
-8. Load the site in chrome:
+9. Load the site in chrome:
 http://127.0.0.1:4000/
