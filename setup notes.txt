@@ -1,0 +1,16 @@
+Steps for deploying the website
+
+1. install homebrew:
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+2. install ruby with homebrew
+brew install ruby
+
+3. install jekyll
+sudo gem install jekyll
+
+4. install node.js
+from package installer
+
+5. install bundler
+sudo gem install bundler

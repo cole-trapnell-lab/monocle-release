@@ -1,0 +1,25 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+@charset "utf-8";
+
+/* path to glyphicons */
+$icon-font-path: "/node_modules/bootstrap-sass/assets/fonts/bootstrap/";
+
+/* custom variable */
+// $body-bg: red;
+
+/* any style customization must be before the bootstrap import */
+@import "bootstrap";
+
+.jumbotron h1{
+    color: #fff;
+}
+
+.jumbotron p{
+    color: #fff;
+}
+// 
+// .token.function { ... }
+// .token.variable { ... }
+// .token.namespace { ... }
