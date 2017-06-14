@@ -25,7 +25,14 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 \texttt{xqiu@uw.edu}
 }
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+concordance=TRUE
+)
+@
+
 
 
 
@@ -70,7 +77,7 @@ data(HSMM_sample_sheet)
  
  Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
  
- \section{Quick Start}
+\section{Quick Start}
  
  This quick start will outline the default functions to execute in order to to analyze your data. 
  If you are interested in how Monocle works and functions other than the default ones mentioned here, move onto section 3 "Getting Started with Monocle".
@@ -80,13 +87,13 @@ data(HSMM_sample_sheet)
  
  Three files are required in order to create a CellDataSet object: 
  
- exprs: rows are genes & columns are cells (type = matrix)
- phenoData: rows are cells & columns are cell attributes (type = AnnotatedDataFrame)
- featureData: rows are features & columns are gene attributes (type = AnnotatedDataFrame)
+ exprs: rows are genes and columns are cells (type = matrix)
+ phenoData: rows are cells and columns are cell attributes (type = AnnotatedDataFrame)
+ featureData: rows are features and columns are gene attributes (type = AnnotatedDataFrame)
  
- exprs # of columns must equal phenoData # of rows
- exprs # of rows must equal featureData # of rows
- featureData must have column named "gene_short_name" for certain functions
+ exprs number of columns must equal phenoData number of rows
+ exprs number of rows must equal featureData number of rows
+ featureData must have column named "gene\_short\_name" for certain functions
  
  Use the newCellDataSet function, as shown below, to create a new CellDataSet object with expression values measured in FPKM.  By default, Monocle assumes your data is log-normally distributed and uses a Tobit model to test for differential expression
  in downstream steps. If you are not using TPM or FPKM data go to section 2.2 on how to model it for further steps.
@@ -100,14 +107,14 @@ data(HSMM_sample_sheet)
  \item Filter Low-quality Cells
  
 The following lines are an example of how to display a table that reports how many cells express certain genes. detectGenes() takes a CellDataSet object and minimum threshold and will return the same CellDataSet object with all the genes that surpass the minimum threshold. 
- <<quick_start_filter_cells, eval=FALSE>>=
+ <<quick_start_report_genes_detected, eval=FALSE>>=
  HSMM <- detectGenes(HSMM, min_expr = 0.1)
  print(head(fData(HSMM)))
  @ %def
  
- The expressed_genes vector will hold the identifiers for genes expressed in at least 50 cells of the 
+ The expressed\_genes vector will hold the identifiers for genes expressed in at least 50 cells of the 
  CellDataSet. This will be used later when we place cells in order of biological process.
- <<quick_start_filter_cells, eval=FALSE>>=
+ <<quick_start_store_expressed_genes, eval=FALSE>>=
  expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
  @ %def
  
@@ -121,21 +128,23 @@ The following lines are an example of how to display a table that reports how ma
  
  \item Classify Cells with CellTypeHierarchy
  
- Monocle allows you to tag different cells based on the expression of marker genes of your choosing through CellTypeHierarchies. First, create a new CellTypeHierarchy with the newCellTypeHierarchy() function. Then you can add new cell types to the CellTypeHierarchy by using the addCellType() function as shown below. The addCellType() function takes the CellTypeHierarchy you are adding the cell type to, the name of the new cell type as a string, and a classifaction function, called classify_func, that accept expression data of each cell as input and return a boolean indicating whether or not the inputted cell is of that type.
+ Monocle allows you to tag different cells based on the expression of marker genes of your choosing through CellTypeHierarchies. First, create a new CellTypeHierarchy with the newCellTypeHierarchy() function. Then you can add new cell types to the CellTypeHierarchy by using the addCellType() function as shown below. The addCellType() function takes the CellTypeHierarchy you are adding the cell type to, the name of the new cell type as a string, and a classifaction function, called classify\_func, that accept expression data of each cell as input and return a boolean indicating whether or not the inputted cell is of that type.
  
- <<quick_start_filter_cells, eval=FALSE>>=
+ <<quick_start_set_up_cth, eval=FALSE>>=
  cth <- newCellTypeHierarchy()
  
  MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
  ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
  
  cth <- addCellType(cth, "Myoblast", classify_func = function(x) {x[MYF5_id,] >= 1})
- cth <- addCellType(cth, "Fibroblast", classify_func = function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1} )
+ cth <- addCellType(cth, "Fibroblast", 
+                    classify_func = function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1} )
  
  HSMM <- classifyCells(HSMM, cth, 0.1)
  @ %def
  
  \item Cluster Cells with Known Marker Genes
+ 
  For this quick start we will be clustering cells using predetermined markers, however Monocle is capable of unsupervised cell clustering, but that is beyond the default settings that are displayed in this quick start.
  
  The markerDiffTable function accepts a CellDataSet and a CellTypeHierarchy as input and classifies all the cells in the CellDataSet into types in the CellTypeHierarchy.
@@ -165,6 +174,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
                       residualModelFormulaStr = "~Media + num_genes_expressed")
  @ %def
  \item Semi-Supervised Ordering with Known Marker Genes
+ 
  To order cells in a semi-supervised manner, first, define genes that mark progress using a new 
  CellTypeHierarchy, much like we did for cell classifacation.
  <<quick_start_cell_ordering_def_genes, eval = FALSE>>=
@@ -207,7 +217,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  
  \item Plot Genes in Pseudotime
  The first three lines are used to filter through the data so that only pseudotime is plotted for desired 
- genes. The last line with the function "plot_genes_in_pseudotime()" will actually plot the genes. 
+ genes. The last line with the function "plot\_genes\_in\_pseudotime()" will actually plot the genes. 
  <<quick_start_plot_genes_in_pseudotime, eval = FALSE>>=
  HSMM_filtered <- HSMM_myo[expressed_genes,]
  my_genes <- row.names(subset(fData(HSMM_filtered),
@@ -237,7 +247,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  plot_cell_trajectory(lung, color_by = "State")
  @ %def
  
- When you have determined which branch to set as the root, call orderCells() again and set the "root_state" parameter as the number associated with the branch you want as the root. 
+ When you have determined which branch to set as the root, call orderCells() again and set the "root\_state" parameter as the number associated with the branch you want as the root. 
  <<quick_start_change_root_make_change, eval = FALSE>>=
  lung <- orderCells(lung, root_state = 3)
  @ %def
@@ -258,7 +268,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  @ %def
  
  \item Find Genes that Distinguish Cell Type or State
- To test the effects of CellType on gene expression, call differentialGeneTest() on the selected genes. In order to do so you must specify a model formula, a parameter of diff_test_res, that indicates we are looking for genes with expression levels that depend on CellType. We do not need to specify the reduced model because
+ To test the effects of CellType on gene expression, call differentialGeneTest() on the selected genes. In order to do so you must specify a model formula, a parameter of diff\_test\_res, that indicates we are looking for genes with expression levels that depend on CellType. We do not need to specify the reduced model because
  the default value, 1, is what we want here. 
  <<quick_start_find_genes_ID_cell_type, eval = FALSE>>=
  to_be_tested <- row.names(subset(fData(HSMM),
@@ -291,7 +301,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  diff_test_res[,c("gene_short_name", "pval", "qval")]
  @ %def
  
- We can plot the expression levels of these genes with the plot_genes_in_pseudotime() function.
+ We can plot the expression levels of these genes with the plot\_genes\_in\_pseudotime() function.
  <<quick_start_find_genes_change_in_pseudotime_graph, eval = FALSE>>=
  plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
  @ %def
@@ -300,7 +310,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  
  Monocle contains several tools for analyzing the branching events of trajectories with multiple outcomes.
  To analyze how genes are expressed differently in a branch compared to its root, Monocle incorporates branched expression analysis modeling, or BEAM. BEAM takes a CellDataSet ordered by orderCells and the name of a branch point in the trajectory and returns a table of significance scores for each gene. Genes that score significant are branch-dependent in their expression.
- <<quick_start_analayze_branches_single_cell_trajectory_heat, eval = FALSE>>=
+ <<quick_start_perform_BEAM, eval = FALSE>>=
  lung <- load_lung()
  BEAM_res <- BEAM(lung, branch_point = 1, cores = 1)
  BEAM_res <- BEAM_res[order(BEAM_res$qval),]
@@ -318,7 +328,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
                              show_rownames = T)
  @ %def
  
- We can also plot these genes in pseudotime using plot_genes_branched_pseudotime() which is quite similar to plot_genes_in_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
+ We can also plot these genes in pseudotime using plot\_genes\_branched\_pseudotime() which is quite similar to plot\_genes\_in\_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
  <<quick_start_analayze_branches_single_cell_trajectory_heat, eval = FALSE>>=
  lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
  plot_genes_branched_pseudotime(lung[lung_genes,],
@@ -624,7 +634,6 @@ Now, most of the myoblasts are in one cluster, most of the fibroblasts are in th
 First, we'll select a different set of genes to use for clustering the cells. Before we just picked genes that were highly expressed and highly variable. Now, we'll pick genes that \emph{co-vary} with our markers. In a sense, we'll be building a large list of genes to use as markers, so that even if a cell doesn't have \emph{MYF5}, it might be recognizable as a myoblast based on other genes.
   
 <<cluster_cells_diff_table, eval=TRUE>>=
-save.image('/Users/xqiu/Project/test_vignette.RData')
 marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
                                  cth, 
                                  residualModelFormulaStr="~Media + num_genes_expressed",
