@@ -14,3 +14,9 @@ from package installer
 
 5. install bundler
 sudo gem install bundler
+
+6. Build the site:
+bundle exec jekyll build --incremental --watch
+
+7. Serve the site (in a second terminal window)
+bundle exec jekyll serve --watch
