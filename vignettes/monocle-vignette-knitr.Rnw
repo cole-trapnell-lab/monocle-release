@@ -29,7 +29,7 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 <<include=FALSE>>=
 library(knitr)
 opts_chunk$set(
-concordance=TRUE
+#concordance=TRUE
 )
 @
 
