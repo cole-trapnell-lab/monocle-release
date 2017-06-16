@@ -35,7 +35,7 @@ library(knitr)
 library(reshape2)
 library(ggplot2)
 
-knitr::opts_chunk$set(autodep=TRUE, cache=FALSE, warning=FALSE)
+knitr::opts_chunk$set(autodep=TRUE, cache=FALSE, warning=FALSE, dev='png', dpi=600)
 set.seed(0)
 @ %def
 
@@ -163,8 +163,8 @@ cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
 gbm <- load_cellranger_matrix(cellranger_pipestance_path)
 
 gbm_cds <- newCellDataSet(exprs(gbm),
-                          phenoData = pData(gbm), 
-                          featureData = fData(gbm),
+                          phenoData = new("AnnotatedDataFrame", pData(gbm)), 
+                          featureData = new("AnnotatedDataFrame", fData(gbm)),
                           lowerDetectionLimit=0.5,
                           expressionFamily=negbinomial.size())
  @ %de
