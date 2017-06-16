@@ -1,0 +1,145 @@
+---
+layout: page
+permalink: /docs/
+description: "Documentation for Monocle."
+modified: 2013-09-11
+tags: [monocle, manual, vignette]
+---
+
+<div class="container">
+
+<h2> Abstract </h2>
+Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package \Rpackage{monocle} provides tools for analyzing single-cell expression experiments. Monocle introduced the strategy of ordering single cells in \emph{pseudotime}, placing them along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of \Rpackage{monocle}, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Trapnell and Cacchiarelli \emph{et al}\cite{TRAPNELL_CACCHIARELLI}
+
+{% highlight R %}
+library(HSMMSingleCell)
+library(monocle)
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
+{% endhighlight %}
+
+<h2>Introduction </h2>
+
+
+The monocle package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
+
+<strong>Monocle 2</strong> includes new, improved algorithms for classifying and counting cells, performing differential expression analysis between subpopulations of cells, and reconstructing cellular trajectories. Monocle 2 has also been re-engineered to work well with very large single-cell RNA-Seq experiments containing tens of thousands of cells or even more.
+\newline
+Monocle can help you perform three main types of analysis:
+
+<ul>
+ <li><strong>Clustering, classifying, and counting cells.</strong> Single-cell RNA-Seq experiments allow you to discover new (and possibly rare) subtypes of cells. Monocle helps you identify them.
+ <li><strong>Constructing single-cell trajectories.</strong> In development, disease, and throughout life, cells transition from one state to another. Monocle helps you discover these transitions.
+ <li> <strong>Differential expression analysis.</strong> Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
+</ul>
+
+Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
+
+
+<h2> Getting started with Monocle </h2>
+
+Monocle takes a matrix of gene expression values as calculated by Cufflinks or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments). Monocle also works "out-of-the-box" with the transcript count matrices produced by <a href="https://support.10xgenomics.com/single-cell/software/overview/welcome">CellRanger</a>, the software pipeline for analyzing experiments from the 10X Genomics Chromium instrument. Monocle also works well with data from other RNA-Seq workflows such as <a href="http://biorxiv.org/content/early/2017/02/02/104844">sci-RNA-Seq</a> and instruments like the Biorad ddSEQ. Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. If you don't have UMI counts, We recommend you load up FPKM or TPM values instead of raw read counts.
+
+<h3>The CellDataSet class</h3>
+
+Monocle holds single cell expression data in objects of the <code>CellDataSet</code> class. The class is derived from the Bioconductor \Rclass{ExpressionSet} class, which provides a common interface familiar to those who have analyzed microarray experiments with Bioconductor. The class requires three input files:
+<ul>
+  <li> <code>exprs</code>, a numeric matrix of expression values, where rows are genes, and columns are cells
+  <li> <code>phenoData</code>, an <code>AnnotatedDataFrame</code> object, where rows are cells, and columns are cell attributes (such as cell type, culture condition, day captured, etc.)
+  <li> <code>featureData</code>, an \Rpackage{AnnotatedDataFrame</code> object, where rows are features (e.g. genes), and columns are gene attributes, such as biotype, gc content, etc.
+</ul>
+
+<div class="panel panel-warning">
+  <div class="panel-heading">
+    <h3 class="panel-title">Required dimensions for input files</h3>
+  </div>
+  <div class="panel-body">
+    The expression value matrix <strong>must</strong>:
+    <ul>
+    <li>have the same number of columns as the <code>phenoData</code> has rows.
+    <li>have the same number of rows as the <code>featureData</code> data frame has rows.
+    </ul>
+    Additionally:
+    <ul>
+    <li>row names of the <code>phenoData</code> object should match the column names of the expression matrix.
+    <li>row names of the <code>featureData</code> object should match row names of the expression matrix.
+    <li> one of the columns of the <code>featureData</code> should be named "gene_short_name".
+    </ul>
+
+  </div>
+</div>
+
+You can create a new <code>CellDataSet</code> object as follows:
+
+{% highlight R %}
+HSMM_expr_matrix <- read.table("fpkm_matrix.txt")
+HSMM_sample_sheet <- read.delim("cell_sample_sheet.txt")
+HSMM_gene_annotation <- read.delim("gene_annotations.txt")
+{% endhighlight %}
+
+Once these tables are loaded, you can create the CellDataSet object like this:
+
+{% highlight R %}
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
+{% endhighlight %}
+
+SKIPPING SOME STUFF
+
+
+ There are several allowed values for <code>expressionFamily</code>, which expects a "family function" from the VGAM package:
+
+ <table class="table">
+   <thead>
+     <tr>
+       <th>Family function</th>
+       <th>Data type</th>
+       <th>Notes</th>
+     </tr>
+   </thead>
+   <tbody>
+     <tr>
+       <td><code>negbinomial.size()</code></td>
+       <td>UMIs, Transcript counts from experiments with spike-ins or \Rfunction{relative2abs}, raw read counts</td>
+       <td>Negative binomial distribution with fixed variance (which is automatically calculated by Monocle). Recommended for most users.</td>
+     </tr>
+     <tr>
+       <td><code>negbinomial()</code></td>
+       <td>UMIs, Transcript counts from experiments with spike-ins or \Rfunction{relative2abs}, raw read counts</td>
+       <td>Slightly more accurate than \Rfunction{negbinomial.size()}, but much, much slower. Not recommended except for very small datasets.</td>
+     </tr>
+     <tr>
+       <td><code>tobit()</code></td>
+       <td>FPKM, TPM</td>
+       <td>Tobits are truncated normal distributions. Using \Rfunction{tobit()} will tell Monocle to log-transform your data where appropriate. Do not transform it yourself.</td>
+     </tr>
+     <tr>
+       <td><code>gaussianff()M</code></td>
+       <td>log-transformed FPKM/TPMs, Ct values from single-cell qPCR</td>
+       <td>If you want to use Monocle on data you have already transformed to be normally distributed, you can use this function, though some Monocle features may not work well.</td>
+     </tr>
+   </tbody>
+ </table>
+
+SKIPPING SOME MORE STUFF
+
+{% highlight R %}
+ # Log-transform each value in the expression matrix.
+ L <- log(exprs(HSMM[expressed_genes,]))
+
+ # Standardize each gene, so that they are all on the same scale,
+ # Then melt the data with plyr so we can plot it easily"
+ melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+ # Plot the distribution of the standardized gene expression values.
+ qplot(value, geom="density", data=melted_dens_df) +
+   stat_function(fun = dnorm, size=0.5, color='red') +
+   xlab("Standardized log(FPKM)") +
+   ylab("Density")
+{% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/lognormal_plot-1.png" width=300>
+</div>
