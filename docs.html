@@ -1,12 +1,28 @@
 ---
-layout: page
+layout: vanilla
 permalink: /docs/
 description: "Documentation for Monocle."
 modified: 2013-09-11
 tags: [monocle, manual, vignette]
 ---
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
 
-<div class="container">
+  {% include head.html %}
+
+  <!-- See here for how to use the TOC control:
+  https://afeld.github.io/bootstrap-toc/ -->
+  <body  data-spy="scroll" data-target="#toc">
+    {% include header.html %}
+
+    <div class="container">
+      <div class="row">
+        <!-- sidebar, which will move to the top on a small screen -->
+        <div class="col-sm-4">
+          <nav id="toc" data-spy="affix" data-toggle="toc"></nav>
+        </div>
+        <!-- main content area -->
+        <div class="col-sm-8">
 
 <h2> Abstract </h2>
 Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package <strong>Monocle</strong> provides tools for analyzing single-cell expression experiments. Monocle introduced the strategy of ordering single cells in <strong>pseudotime</strong>, placing them along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of <strong>monocle</strong>, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Cole Trapnell and Davide Cacchiarelli et al (2014): The dynamics and regulators of cell fate decisions are revealed
@@ -38,7 +54,7 @@ Monocle can help you perform three main types of analysis:
 Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
 
 
-<h2> Getting started with Monocle </h2>
+<h2> Getting started</h2>
 
 Monocle takes a matrix of gene expression values as calculated by Cufflinks or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments). Monocle also works "out-of-the-box" with the transcript count matrices produced by <a href="https://support.10xgenomics.com/single-cell/software/overview/welcome">CellRanger</a>, the software pipeline for analyzing experiments from the 10X Genomics Chromium instrument. Monocle also works well with data from other RNA-Seq workflows such as <a href="http://biorxiv.org/content/early/2017/02/02/104844">sci-RNA-Seq</a> and instruments like the Biorad ddSEQ. Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. If you don't have UMI counts, We recommend you load up FPKM or TPM values instead of raw read counts.
 
@@ -368,7 +384,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 </div>
 <br>
 
-<h2> 4. Classifying and Counting Cells of Different Types </h2>
+<h2>Classifying and Counting Cells</h2>
 
 Single cell experiments are often performed on complex mixtures of multiple cell types.
 Dissociated tissue samples might contain two, three, or even many different cells types.
@@ -381,7 +397,7 @@ Likewise, fibroblasts express high levels of <i>ANPEP</i> (CD13), while myoblast
 <br>
 <br>
 
-<h3> 4.1 Classifying cells with CellTypeHierarchy </h3>
+<h3>Classifying cells with CellTypeHierarchy </h3>
 Monocle provides a simple system for tagging cells based on the expression of marker genes of your choosing.
 You simply provide a set of functions that Monocle can use to annotate each cell.
 For example, you could provide a function for each of several cell types.
@@ -1220,3 +1236,13 @@ cds_subset <- HSMM_myo[to_be_tested,]
 {% endhighlight %}
 
 Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between <em>CellType</em>.  Monocle assigns each cell a "pseudotime" value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the <em>VGAM</em> package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
+
+</div>
+</div>
+</div>
+
+{% include footer.html %}
+
+</body>
+
+</html>
