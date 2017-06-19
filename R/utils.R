@@ -37,8 +37,7 @@ newCellDataSet <- function( cellData,
   }
   
   if(!('gene_short_name' %in% colnames(featureData))) {
-   warning("None of your featureData columns are named 'gene_short_name', some functions will not be able
-           to take this function as input as a result") 
+   warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions") 
   }
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )
@@ -47,7 +46,11 @@ newCellDataSet <- function( cellData,
   if( is.null( phenoData ) )
     phenoData <- annotatedDataFrameFrom( cellData, byrow=FALSE )
   if( is.null( featureData ) ) 
-    featureData <- annotatedDataFrameFrom( cellData, byrow=TRUE )
+    featureData <- annotatedDataFrameFrom(cellData, byrow=TRUE)
+  
+  if(!('gene_short_name' %in% colnames(featureData))) {
+    warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+  }
   
   phenoData$`Size_Factor` <- sizeFactors
   
