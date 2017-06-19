@@ -376,6 +376,9 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. By default, Monocle assumes that your expression data is in units of transcript counts and uses a negative binomial model to test for differential expression in downstream steps. However, if you're using relative expression values such as TPM or FPKM data, see below for how to tell Monocle how to model it in downstream steps.
 
 \textbf{NOTE:} if you do have UMI data, you should \emph{not} normalize it yourself prior to creating your \Robject{CellDataSet}. You should also \emph{not} try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data). You should \emph{not} use \Rfunction{relative2abs()} as discussed below in section \ref{conv_rel2abs}. Monocle will do all needed normalization steps internally. Normalizing it yourself risks breaking some of Monocle's key steps.
+
+\textbf{NOTE:} when creating a \Robject{CellDataSet}, the matrix passed in to the featureData variable should have a column verbatim named 'gene\_short\_name'. Otherwise, some functions that accept
+your \Robject{CellDataSet} as a parameter will not work.
  
 \subsection{Choosing a distribution for expression data}
  
@@ -469,7 +472,7 @@ If you performed your single-cell RNA-Seq experiment using \emph{spike-in} stand
  @ %def
  
  Note that since we are using RPC values, we have changed the value of \Robject{lowerDetectionLimit} to reflect the new scale of expression. Importantly, we have also set the \Robject{expressionFamily} to \Robject{negbinomial()}, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests. Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
- 
+
  
  Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
  <<estimate_size_and_dispersion, eval=TRUE >>=
