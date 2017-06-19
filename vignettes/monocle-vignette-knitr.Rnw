@@ -27,6 +27,14 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 \begin{document}
 \SweaveOpts{concordance=TRUE}
 
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+#concordance=TRUE
+)
+@
+
+
 
 
 <<package_loads, include=FALSE, eval=TRUE>>=
@@ -35,7 +43,7 @@ library(knitr)
 library(reshape2)
 library(ggplot2)
 
-knitr::opts_chunk$set(autodep=TRUE, cache=FALSE, warning=FALSE)
+knitr::opts_chunk$set(autodep=TRUE, cache=FALSE, warning=FALSE, dev='png', dpi=600)
 set.seed(0)
 @ %def
 
@@ -69,6 +77,268 @@ data(HSMM_sample_sheet)
  \end{enumerate}
  
  Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
+ 
+\section{Quick Start}
+ 
+ This quick start will outline the default functions to execute in order to to analyze your data. 
+ If you are interested in how Monocle works and functions other than the default ones mentioned here, move onto section 3 "Getting Started with Monocle".
+ 
+ \begin{enumerate}
+ \item Store Data in a CellDataSet Object
+ 
+ Three files are required in order to create a CellDataSet object: 
+ 
+ exprs: rows are genes and columns are cells (type = matrix)
+ phenoData: rows are cells and columns are cell attributes (type = AnnotatedDataFrame)
+ featureData: rows are features and columns are gene attributes (type = AnnotatedDataFrame)
+ 
+ exprs number of columns must equal phenoData number of rows
+ exprs number of rows must equal featureData number of rows
+ featureData must have column named "gene\_short\_name" for certain functions
+ 
+ Use the newCellDataSet function, as shown below, to create a new CellDataSet object with expression values measured in FPKM.  By default, Monocle assumes your data is log-normally distributed and uses a Tobit model to test for differential expression
+ in downstream steps. If you are not using TPM or FPKM data go to section 2.2 on how to model it for further steps.
+ 
+ <<quick_start_create_cds, eval=FALSE>>=
+ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+ fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+ HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
+@ %def
+ 
+ \item Filter Low-quality Cells
+ 
+The following lines are an example of how to display a table that reports how many cells express certain genes. detectGenes() takes a CellDataSet object and minimum threshold and will return the same CellDataSet object with all the genes that surpass the minimum threshold. 
+ <<quick_start_report_genes_detected, eval=FALSE>>=
+ HSMM <- detectGenes(HSMM, min_expr = 0.1)
+ print(head(fData(HSMM)))
+ @ %def
+ 
+ The expressed\_genes vector will hold the identifiers for genes expressed in at least 50 cells of the 
+ CellDataSet. This will be used later when we place cells in order of biological process.
+ <<quick_start_store_expressed_genes, eval=FALSE>>=
+ expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 50))
+ @ %def
+ 
+ The following lines will remove cells with very low mRNA recovery or far more recovery than that of the typical cell.
+ <<quick_start_filter_cells, eval=FALSE>>=
+ HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+ upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+ lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+ HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & pData(HSMM)$Total_mRNAs < upper_bound]
+ @ %def
+ 
+ \item Classify Cells with CellTypeHierarchy
+ 
+ Monocle allows you to tag different cells based on the expression of marker genes of your choosing through CellTypeHierarchies. First, create a new CellTypeHierarchy with the newCellTypeHierarchy() function. Then you can add new cell types to the CellTypeHierarchy by using the addCellType() function as shown below. The addCellType() function takes the CellTypeHierarchy you are adding the cell type to, the name of the new cell type as a string, and a classifaction function, called classify\_func, that accept expression data of each cell as input and return a boolean indicating whether or not the inputted cell is of that type.
+ 
+ <<quick_start_set_up_cth, eval=FALSE>>=
+ cth <- newCellTypeHierarchy()
+ 
+ MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+ 
+ cth <- addCellType(cth, "Myoblast", classify_func = function(x) {x[MYF5_id,] >= 1})
+ cth <- addCellType(cth, "Fibroblast", 
+                    classify_func = function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1} )
+ 
+ HSMM <- classifyCells(HSMM, cth, 0.1)
+ @ %def
+ 
+ \item Cluster Cells with Known Marker Genes
+ 
+ For this quick start we will be clustering cells using predetermined markers, however Monocle is capable of unsupervised cell clustering, but that is beyond the default settings that are displayed in this quick start.
+ 
+ The markerDiffTable function accepts a CellDataSet and a CellTypeHierarchy as input and classifies all the cells in the CellDataSet into types in the CellTypeHierarchy.
+ <<quick_start_cell_clustering, eval = FALSE>>=
+ marker_diff <- markerDiffTable(HSMM[expressed_genes,],
+                                cth,
+                                residualModelFormulaStr = "~Media",
+                                cores = 1)
+ @ %def
+ 
+ We then assign all the genes with a q-value below 0.05 to a variable and calculate the "specifity" of those
+ genes to cell type listed in the CellTypeHierarchy. The "specificity" can range from 0 to 1, the closer it is to 1 the more restricted it is to the type in question. Afterwards, selectTopMarkers will return a data table
+ of the genes with the highest specificity which you can then use to determine which genes you will use for clustering. It's often best to choose the top 10 to 20 genes that are the most specific for each cell type for clustering.
+ <<quick_start_cell_clustering_candidate, eval = FALSE>>=
+ candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
+ marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
+ head(selectTopMarkers(marker_spec, 10))
+ @ %def
+ 
+To cluster the cells we'll choose the top ten markers for each of the cell types. An example of the procedure of clusteringCells is shown below. The parameter of clusterCells(), residualModelFormulaStr, is a model formula that identifies the effects to subtract from the   data before clustering.
+ <<quick_start_cluster_cells, eval = FALSE>>=
+ semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 20)$gene_id)
+ HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
+ HSMM <- clusterCells(HSMM,
+                      num_clusters = 2,
+                      clustering_genes = semisup_clustering_genes,
+                      residualModelFormulaStr = "~Media + num_genes_expressed")
+ @ %def
+ \item Semi-Supervised Ordering with Known Marker Genes
+ 
+ To order cells in a semi-supervised manner, first, define genes that mark progress using a new 
+ CellTypeHierarchy, much like we did for cell classifacation.
+ <<quick_start_cell_ordering_def_genes, eval = FALSE>>=
+ HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]
+ 
+ CCNB2_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "CCNB2"))
+ MYH3_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "MYH3"))
+ 
+ @ %def
+ 
+ Then select ordering genes that co-vary with these markers.
+ <<quick_start_cell_ordering_select_ordering_genes, eval = FALSE>>=
+ 
+ cth <- newCellTypeHierarchy()
+ cth <- addCellType(cth, "Cycling myoblast", classify_func = function(x) {x[CCNB2_id,] >= 1})
+ cth <- addCellType(cth, "Myotube", classify_func = function(x) {x[MYH3_id,] >= 1})
+ 
+ @ %def
+ 
+ Finally, order the cells based on these genes.
+ <<quick_start_cell_ordering_order_cells, eval = FALSE>>=
+ marker_diff <- markerDiffTable(HSMM_myo[expressed_genes,],
+                                cth,
+                                cores = 1)
+ semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+ HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
+ @ %def
+ 
+ \item Reduce Dimensionality of Data
+ 
+ <<quick_start_reduce_dimensionality, eval = FALSE>>=
+ HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2)
+ @ %def
+ 
+ \item Order Cells in Pseudotime
+ 
+ <<quick_start_order_cells, eval = FALSE>>=
+ HSMM_myo <- orderCells(HSMM_myo, reverse = FALSE)
+ @ %def
+ 
+ \item Plot Genes in Pseudotime
+ The first three lines are used to filter through the data so that only pseudotime is plotted for desired 
+ genes. The last line with the function "plot\_genes\_in\_pseudotime()" will actually plot the genes. 
+ <<quick_start_plot_genes_in_pseudotime, eval = FALSE>>=
+ HSMM_filtered <- HSMM_myo[expressed_genes,]
+ my_genes <- row.names(subset(fData(HSMM_filtered),
+                              gene_short_name %in% c("CDK1", "MEF2C", "MYOG")))
+ cds_subset <- HSMM_filtered[my_genes,]
+ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
+ @ %def
+ 
+ \item Determine Root of Branched Trajectory
+ Monocle cannot tell which side of the cell trajectory is the beginning, however it contains methods for each scenario to make sure that the trajectory is lined up correctly with the axis. 
+ 
+ If the trajectory DOES NOT contain multiple outcomes, this is easily solved by re-ordering the cells and setting the "reverse" parameter in the orderCells() function to TRUE as the example below demonstrates
+ <<quick_start_reverse_order_trajectory, eval = FALSE>>=
+ HSMM_myo <- orderCells(HSMM_myo, reverse = TRUE)
+ @ %def
+ 
+ If the trajectory DOES contain multiple outcomes you can check to see if Monocle chose the correct branch as the start by generating two cell trajectories, one that colors by time and the other by pseudotime. If the branch that contains time 0, in the cell trajectory colored by time, is in the same position as the the branch that contains pseudotime 0, in the cell trajectory colored by pseudotime, then Monocle chose the correct starting point. Otherwise you will have to manually change it.   
+ <<quick_start_find_root, eval = FALSE>>=
+ lung <- load_lung()
+ 
+ plot_cell_trajectory(lung, color_by = "Time")
+ plot_cell_trajectory(lung, color_by = "Pseudotime")
+ @ %def
+ 
+ In order to change the root we must first call plot trajectory coloring the cells by "State" to see what our options are for where we can set the root. State is Monocle's jargon for different portions of the tree. When this plot is created it will assign each branch a number
+ <<quick_start_change_root_locate_opts, eval = FALSE>>=
+ plot_cell_trajectory(lung, color_by = "State")
+ @ %def
+ 
+ When you have determined which branch to set as the root, call orderCells() again and set the "root\_state" parameter as the number associated with the branch you want as the root. 
+ <<quick_start_change_root_make_change, eval = FALSE>>=
+ lung <- orderCells(lung, root_state = 3)
+ @ %def
+ 
+ \item Basic Differential Analysis
+ In the myoblast data, the cells in the beginning of the experiment were cultured in "growth medium" to prevent differentiation and later switched to "differentiation medium" to promote it. The following example describes how to show which genes are affected by the switch. 
+ <<quick_start_basic_diff_analysis_table, eval = FALSE>>=
+ diff_test_res <- differentialGeneTest(HSMM_myo, fullModelFormulaStr = "~Media")
+ sig_genes <- subset(diff_test_res, qval < 0.1)
+ sig_genes[, c("gene_short_name", "pval", "qval")]
+ @ %def
+ 
+ Monocle also has tools that allow you to display your data with graphs to emphasize the differences revealed by the tests above. One type of plot is the "jitter" plot as shown in the below example.
+ <<quick_start_basic_diff_analysis_jitter, eval = FALSE>>=
+ MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo),
+                                       gene_short_name %in% c("MYOG", "CCNB2"))),]
+ plot_genes_jitter(MYOG_ID1, grouping = "Media", ncol = 2)
+ @ %def
+ 
+ \item Find Genes that Distinguish Cell Type or State
+ To test the effects of CellType on gene expression, call differentialGeneTest() on the selected genes. In order to do so you must specify a model formula, a parameter of diff\_test\_res, that indicates we are looking for genes with expression levels that depend on CellType. We do not need to specify the reduced model because
+ the default value, 1, is what we want here. 
+ <<quick_start_find_genes_ID_cell_type, eval = FALSE>>=
+ to_be_tested <- row.names(subset(fData(HSMM),
+                                  gene_short_name %in% c("UBC", "NCAM1", "ANPEP")))
+ cds_subset <- HSMM[to_be_tested,]
+ diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr = "~CellType")
+ diff_test_res[,c("gene_short_name", "pval", "qval")]
+ 
+ @ %def
+ 
+ In order to see which genes are myoblast-specific we can again use a jitter plot to see.
+ <<quick_start_find_genes_ID_graph, eval = FALSE>>=
+ 
+ plot_genes_jitter(cds_subset, grouping = "~CellType", 
+                   nrow = 1, ncol = NULL, plot_trend = TRUE)
+ @ %def
+ 
+ \item Find Genes That Are a Function of Pseudotime
+ Once Monocle is able to put cells in order of a biological process, you can analyze the cells to find genes that change as the cells make progress. 
+ <<quick_start_find_genes_change_in_pseudotime_pick_genes, eval = FALSE>>=
+ to_be_tested <- row.names(subset(fData(HSMM),
+                                  gene_short_name %in% c("MYH3", "MEF2C", "CCNB2", "TNNT1")))
+ cds_subset <- HSMM[to_be_tested,]
+ @ % def
+ 
+ We need to specify a model for differential analysis that indicates change across Pseudotime as the first line
+ below shows. The sm.ns in the model below indicates that Monocle should fit a natural spline through the expression values.
+ <<quick_start_find_genes_change_in_pseudotime_diff_analysis, eval = FALSE>>=
+ diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr = "~sm.ns(Pseudotime)")
+ diff_test_res[,c("gene_short_name", "pval", "qval")]
+ @ %def
+ 
+ We can plot the expression levels of these genes with the plot\_genes\_in\_pseudotime() function.
+ <<quick_start_find_genes_change_in_pseudotime_graph, eval = FALSE>>=
+ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
+ @ %def
+ 
+ \item Analyzing Branches in Single-Cell Trajectories
+ 
+ Monocle contains several tools for analyzing the branching events of trajectories with multiple outcomes.
+ To analyze how genes are expressed differently in a branch compared to its root, Monocle incorporates branched expression analysis modeling, or BEAM. BEAM takes a CellDataSet ordered by orderCells and the name of a branch point in the trajectory and returns a table of significance scores for each gene. Genes that score significant are branch-dependent in their expression.
+ <<quick_start_perform_BEAM, eval = FALSE>>=
+ lung <- load_lung()
+ BEAM_res <- BEAM(lung, branch_point = 1, cores = 1)
+ BEAM_res <- BEAM_res[order(BEAM_res$qval),]
+ BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
+ @ %def
+ 
+ You can visualize changes for all genes that are significantly branch-dependent with a special type of 
+ heatmap. This heatmap will show both lineages simultaneously. This heatmap requires you to enter a specifc branch point. The start of the branch point is represented by the middle of the heatmap, going from the middle to the left is one branch and going from the middle to the right is the other branch.  
+ <<quick_start_analyze_branches_single_cell_trajectory_heat, eval = FALSE>>=
+ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
+                             branch_point = 1,
+                             num_clusters = 4,
+                             cores = 1,
+                             use_gene_short_name = T,
+                             show_rownames = T)
+ @ %def
+ 
+ We can also plot these genes in pseudotime using plot\_genes\_branched\_pseudotime() which is quite similar to plot\_genes\_in\_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
+ <<quick_start_analayze_branches_single_cell_trajectory_heat, eval = FALSE>>=
+ lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
+ plot_genes_branched_pseudotime(lung[lung_genes,],
+                                branch_point = 1,
+                                color_by = "Time",
+                                ncol = 1)
+ @ %def
+ 
+ \end{enumerate}
  
  \section{Getting started with Monocle}
  
@@ -106,6 +376,9 @@ data(HSMM_sample_sheet)
 This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks. By default, Monocle assumes that your expression data is in units of transcript counts and uses a negative binomial model to test for differential expression in downstream steps. However, if you're using relative expression values such as TPM or FPKM data, see below for how to tell Monocle how to model it in downstream steps.
 
 \textbf{NOTE:} if you do have UMI data, you should \emph{not} normalize it yourself prior to creating your \Robject{CellDataSet}. You should also \emph{not} try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data). You should \emph{not} use \Rfunction{relative2abs()} as discussed below in section \ref{conv_rel2abs}. Monocle will do all needed normalization steps internally. Normalizing it yourself risks breaking some of Monocle's key steps.
+
+\textbf{NOTE:} when creating a \Robject{CellDataSet}, the matrix passed in to the featureData variable should have a column verbatim named 'gene\_short\_name'. Otherwise, some functions that accept
+your \Robject{CellDataSet} as a parameter will not work.
  
 \subsection{Choosing a distribution for expression data}
  
@@ -163,8 +436,8 @@ cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
 gbm <- load_cellranger_matrix(cellranger_pipestance_path)
 
 gbm_cds <- newCellDataSet(exprs(gbm),
-                          phenoData = pData(gbm), 
-                          featureData = fData(gbm),
+                          phenoData = new("AnnotatedDataFrame", pData(gbm)), 
+                          featureData = new("AnnotatedDataFrame", fData(gbm)),
                           lowerDetectionLimit=0.5,
                           expressionFamily=negbinomial.size())
  @ %de
@@ -199,7 +472,7 @@ If you performed your single-cell RNA-Seq experiment using \emph{spike-in} stand
  @ %def
  
  Note that since we are using RPC values, we have changed the value of \Robject{lowerDetectionLimit} to reflect the new scale of expression. Importantly, we have also set the \Robject{expressionFamily} to \Robject{negbinomial()}, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests. Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
- 
+
  
  Finally, we'll also call two functions that pre-calculate some information about the data. Size factors help us normalize for differences in mRNA recovered across cells, and ``dispersion'' values will help us perform differential expression analysis later.
  <<estimate_size_and_dispersion, eval=TRUE >>=

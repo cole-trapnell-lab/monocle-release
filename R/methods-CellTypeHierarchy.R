@@ -411,7 +411,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
   fullModelFormulaStr <- paste("~", fullModelFormulaStr,sep = "")
   if (residualModelFormulaStr != "~1"){
     residual_terms <- str_replace_all(residualModelFormulaStr, "~", "")
-    fullModelFormulaStr <- paste(fullModelFormulaStr, residual_terms, sep = "+")
+    fullModelFormulaStr <- paste(fullModelFormulaStr, residual_terms, sep = " + ")
   }
 
   if (verbose)
