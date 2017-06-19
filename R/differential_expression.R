@@ -138,29 +138,6 @@ differentialGeneTest <- function(cds,
                                  verbose=FALSE
                                  ){
   status <- NA
-  # pdat_cols_check_1 <- "empty"
-  # 
-  # fmfs_test <- fullModelFormulaStr
-  # fmfs_test <- substr(fmfs_test, 2, nchar(fmfs_test)) #remove the first 
-  # # pdat_cols_check_2 <- strsplit(fmfs_test, " + ", fixed = TRUE)
-  # pdat_cols_check_2 <- strsplit(fmfs_test, "\\s*\\+\\s*", fixed = F)
-  # pdat_cols_check_2 <- unlist(pdat_cols_check_2)
-  # 
-  # if(reducedModelFormulaStr != "~1") {
-  #   rmfs_test <- reducedModelFormulaStr
-  #   rmfs_test <- substr(rmfs_test, 2, nchar(rmfs_test))
-  #   # pdat_cols_check_1 <- strsplit(rmfs_test, " + ", fixed = TRUE)
-  #   pdat_cols_check_1 <- strsplit(rmfs_test, "\\s*\\+\\s*", fixed = F)
-  #   pdat_cols_check_1 <- unlist(pdat_cols_check_1)
-  # }
-  # 
-  # if(pdat_cols_check_1 != "empty") {
-  #   pdat_cols_check_2 <- append(pdat_cols_check_1, pdat_cols_check_2)
-  # }
-  # 
-  # pdat_cols_check_2 <- replace(pdat_cols_check_2, grepl("sm.ns", pdat_cols_check_2), "Pseudotime")
-  # pdat_cols_check_2 <- unique.default(pdat_cols_check_2)
-  # 
   all_vars <- c(all.vars(formula(fullModelFormulaStr)), all.vars(formula(reducedModelFormulaStr)))
    
   pd <- pData(cds)
