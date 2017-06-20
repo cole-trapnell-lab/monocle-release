@@ -549,7 +549,7 @@ plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/cluster_cells_unsup_no_covariate-1.pdf" width=600>
 </div>
 
 {% highlight R %}
@@ -601,7 +601,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_control_for_media-1.png" width=600>
 </div>
 
 <br>
@@ -684,7 +684,7 @@ plot_ordering_genes(HSMM)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/set_ordering_filter-1.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_pick_genes-1.pdf" width=600>
 </div>
 
 <br>
@@ -701,7 +701,7 @@ plot_pc_variance_explained(HSMM, return_all = F)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_no_impute-1.pdf" width=600>
 </div>
 
 {% highlight R %}
@@ -713,7 +713,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_no_impute-2.pdf" width=600>
 </div>
 
 <h3> 4.4 Imputing Cell Type </h3>
@@ -737,7 +737,7 @@ HSMM <- clusterCells(HSMM,
 {% endhighlight%}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_with_impute-1.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_with_impute-1.pdf" width=600>
 </div>
 
 <br>
@@ -755,7 +755,7 @@ pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/count_cells_semisup_pie-1.png" width=600>
+  <img src="{{site.url}}/vignettes/figure/count_cells_semisup_pie-1.pdf" width=600>
 </div>
 
 <br>
@@ -885,7 +885,9 @@ HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 plot_ordering_genes(HSMM_myo)
 {% endhighlight %}
 
-## INSERT GRAPH HERE
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/set_ordering_filter-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -922,6 +924,11 @@ dimensional space.
 {% highlight R %}
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_ordering_mst-1.pdf" width=600>
+</div>
+
 <br>
 
 The trajectory has a tree-like structure. We can see that the cells
@@ -937,6 +944,10 @@ The trajectory has a tree-like structure. We can see that the cells
  {% highlight R %}
  plot_cell_trajectory(HSMM_myo, color_by="State")
  {% endhighlight %}
+
+ <div class="text-center">
+   <img src="{{site.url}}/vignettes/figure/plot_ordering_mst_by_state-1.pdf" width=600>
+ </div>
 
 <br>
 
@@ -955,6 +966,10 @@ HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  {% endhighlight %}
 
+ <div class="text-center">
+   <img src="{{site.url}}/vignettes/figure/plot_ordering_with_GM_state-1.pdf" width=600>
+ </div>
+
  <br>
 
  If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to "facet" the trajectory plot so it's easier to see where each of the states are located:
@@ -964,6 +979,10 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  {% highlight R %}
  plot_cell_trajectory(HSMM_myo, color_by="State") + facet_wrap(~State, nrow=1)
  {% endhighlight %}
+
+ <div class="text-center">
+   <img src="{{site.url}}/vignettes/figure/init_hsmm_facet_state-1.pdf" width=600>
+ </div>
 
  <br>
  <br>
@@ -977,6 +996,10 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
 blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
 plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/init_hsmm_jitter_state-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -993,6 +1016,10 @@ my_genes <- row.names(subset(fData(HSMM_filtered),
 cds_subset <- HSMM_filtered[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_markers_linear-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -1070,6 +1097,10 @@ HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/order_cells_pca_unsup-1.pdf" width=600>
+</div>
+
 <h3> 5.4 Unsupervized Feature Selection Based on Density Peak Clustering </h3>
 
 Selecting genes for ordering cells using the techniques discussed above often
@@ -1111,6 +1142,10 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 
 <br>
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_pc_variance-1.pdf" width=600>
+</div>
+
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.
 
 <br>
@@ -1150,6 +1185,14 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 <br>
 <br>
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/check_the_clustering_results-1.pdf" width=600>
+</div>
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/check_the_clustering_results-2.pdf" width=600>
+</div>
+
 We also provide the decision plot for users to check the &Rho, &Delta for each cell and decide the threshold for defining the cell clusters.
 
 <br>
@@ -1158,6 +1201,10 @@ We also provide the decision plot for users to check the &Rho, &Delta for each c
 {% highlight R %}
 plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_rho_delta-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -1184,6 +1231,14 @@ We can check the final clustering results as following:
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Cluster)')
 plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/check_clustering_again-1.pdf" width=600>
+</div>
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/check_clustering_again-2.pdf" width=600>
+</div>
 
 
 <br>
@@ -1216,6 +1271,10 @@ HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/order_cells_dp_feature-1.pdf" width=600>
+</div>
 
 <h3> 5.5 Semi-Supervised Ordering with Known Marker Genes </h3>
 
@@ -1265,6 +1324,10 @@ plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="rig
 {% endhighlight %}
 
 <br>
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/semi_sup_ordering_trajectory-1.pdf" width=600>
+</div>
 
 To confirm that the ordering is correct, we can select a couple of markers of
 myogenic progress. In this experiment, one of the branches corresponds to cells
@@ -1333,6 +1396,10 @@ MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo),
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_myog_jitter-1.pdf" width=600>
+</div>
+
 <br>
 
 Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on <code>plot_genes_jitter</code> for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the <em>ggplot2</em> package.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the <em>ggplot2</em> book\cite{Wickham} for more details.
@@ -1391,6 +1458,10 @@ However, we don't know which genes correspond to myoblast-specific genes (those 
 plot_genes_jitter(cds_subset, grouping="CellType", color_by="CellType",
                   nrow=1, ncol=NULL, plot_trend=TRUE)
 {%endhighlight%}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/jitter_plot_diff_res-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -1471,6 +1542,10 @@ This function has a number of cosmetic options you can use to control the layout
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_diff_res_pt-1.pdf" width=600>
+</div>
+
 <h3> 6.4 Clustering Genes by Pseudotemporal Expression Pattern </h3>
 
 A common question that arises when studying time-series gene expression studies is: "which genes follow similar kinetic trends"?
@@ -1496,6 +1571,10 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
                         cores = 1,
                         show_rownames = T)
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_diff_res_pt_heatmap-1.pdf" width=600>
+</div>
 
 <h3> 6.5 Multi-Factorial Differential Expression Analysis </h3>
 
@@ -1526,6 +1605,10 @@ plot_genes_jitter(cds_subset,
   facet_wrap( ~ feature_label, scales="free_y")
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/plot_diff_res_multi-1.pdf" width=600>
+</div>
+
 <h2> 7 Analyzing Branches in Single-Cell Trajectories </h2>
 Often, single-cell trajectories include branches.
 The branches occur because cells execute alternative gene expression programs.
@@ -1546,6 +1629,10 @@ lung <- load_lung()
 
 plot_cell_trajectory(lung, color_by="Time")
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/init_treutlein-1.pdf" width=600>
+</div>
 
 <br>
 
@@ -1584,6 +1671,10 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
                             show_rownames = T)
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/lung_beam_branched_heatmap-1.pdf" width=600>
+</div>
+
 <br>
 
 
@@ -1600,6 +1691,10 @@ plot_genes_branched_pseudotime(lung[lung_genes,],
                                color_by="Time",
                                ncol=1)
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/vignettes/figure/lung_beam_branched_pseudotime-1.pdf" width=600>
+</div>
 
 <br>
 
