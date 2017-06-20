@@ -24,7 +24,7 @@ tags: [monocle, manual, vignette]
         <!-- main content area -->
         <div class="col-sm-8">
 
-<h2> Abstract </h2>
+<h2> 1 Abstract </h2>
 Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package <strong>Monocle</strong> provides tools for analyzing single-cell expression experiments. Monocle introduced the strategy of ordering single cells in <strong>pseudotime</strong>, placing them along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of <strong>monocle</strong>, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Cole Trapnell and Davide Cacchiarelli et al (2014): The dynamics and regulators of cell fate decisions are revealed
 by pseudo-temporal ordering of single cells. Nature Biotechnology
 
@@ -36,7 +36,7 @@ data(HSMM_gene_annotation)
 data(HSMM_sample_sheet)
 {% endhighlight %}
 
-<h2>Introduction </h2>
+<h2> 2 Introduction </h2>
 
 
 The monocle package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
@@ -423,7 +423,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 </div>
 <br>
 
-<h2>Classifying and Counting Cells</h2>
+<h2>4 Classifying and Counting Cells</h2>
 
 Single cell experiments are often performed on complex mixtures of multiple cell types.
 Dissociated tissue samples might contain two, three, or even many different cells types.
@@ -567,6 +567,10 @@ Monocle uses t-SNE \cite{Maaten2008-om} to cluster cells, using an approach that
 <br>
 <br>
 
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-2.png" width=600>
+</div>
+
 The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. In many experiments, cells of different types are clearly separate from one another. Unfortunately, in this experiment, the cells don't simply cluster by type - there's not a clear space between the green cells and the red cells. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in?
 
 <br>
@@ -577,6 +581,10 @@ plot_cell_clusters(HSMM, 1, 2, color="Media")
 {% endhighlight %}
 
 <br>
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_media-1.png" width=600>
+</div>
 
 Monocle allows us to subtract the effects of "uninteresting" sources of variation to reduce their impact on the clustering.
 You can do this with the <i>residualModelFormulaStr</i> argument to <code>clusterCells</code> and several other Monocle functions.
@@ -592,6 +600,9 @@ HSMM <- clusterCells(HSMM, num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
+</div>
 
 <br>
 
@@ -603,6 +614,11 @@ plot_cell_clusters(HSMM, 1, 2, color="Cluster") + facet_wrap(~CellType)
 {% endhighlight %}
 
 <br>
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_cell_type-1.png" width=600>
+</div>
+
 
 Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both.
 However, we still see some cells of both types in each cluster.
@@ -667,6 +683,10 @@ plot_ordering_genes(HSMM)
 
 {% endhighlight %}
 
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/set_ordering_filter-1.png" width=600>
+</div>
+
 <br>
 
 Note that we've got smaller set of genes, and some of them are not especially highly expressed or variable across the experiment.
@@ -678,12 +698,23 @@ We've already marked them for use in clustering, but even if we hadn't, we could
 
 {% highlight R %}
 plot_pc_variance_explained(HSMM, return_all = F)
+{% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width=600>
+</div>
+
+{% highlight R %}
 HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log', reduction_method = 'tSNE',
                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T)
 HSMM <- clusterCells(HSMM, num_clusters=2)
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
+</div>
 
 <h3> 4.4 Imputing Cell Type </h3>
 Note that we've reduce the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
@@ -705,6 +736,10 @@ HSMM <- clusterCells(HSMM,
  plot_cell_clusters(HSMM, 1, 2, color="CellType", markers = c("MYF5", "ANPEP"))
 {% endhighlight%}
 
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_with_impute-1.png" width=600>
+</div>
+
 <br>
 
 As you can see, the clusters are fairly pure in terms of <i>MYF5</i> expression.
@@ -718,6 +753,10 @@ pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
  pie + coord_polar(theta = "y") +
    theme(axis.title.x=element_blank(), axis.title.y=element_blank())
 {% endhighlight %}
+
+<div class="text-center">
+  <img src="{{site.url}}/images/vignette/count_cells_semisup_pie-1.png" width=600>
+</div>
 
 <br>
 
@@ -845,6 +884,8 @@ Once we have a list of gene ids to be used for ordering, we need to set them in 
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
 plot_ordering_genes(HSMM_myo)
 {% endhighlight %}
+
+## INSERT GRAPH HERE
 
 <br>
 
@@ -1940,7 +1981,7 @@ sessionInfo()
 
 {% endhighlight %}
 
-<h2> References </h2>
+<h2>13  References </h2>
 
 [1] Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang Li, Michael Morse, Niall J. Lennon, Kenneth J. Livak, Tarjei S. Mikkelsen, and John L. Rinn. The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells. Nature Biotechnology, 2014.
 <br>
