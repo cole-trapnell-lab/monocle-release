@@ -1158,11 +1158,11 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num
 <br>
 
 Then we can run density peak clustering to identify the clusters on the 2-D t-SNE space. Density peak algorithm clusters cells based on each
-cell''s local density (&Rho) and the nearest distance &Delta of a cell to another cell with higher distance. We can set a threshold for
-the &Rho, &Delta and define any cell with a higher local density and distance than the thresholds as the density peaks. Those peaks are then
-used to define the clusters for all cells. By default, <code>clusterCells</code> choose <em>95%</em> of &Rho and &Delta to define
+cell''s local density (&Rho;) and the nearest distance &Delta; of a cell to another cell with higher distance. We can set a threshold for
+the &Rho;, &Delta; and define any cell with a higher local density and distance than the thresholds as the density peaks. Those peaks are then
+used to define the clusters for all cells. By default, <code>clusterCells</code> choose <em>95%</em> of &Rho; and &Delta; to define
 the thresholds. We can also set a number of clusters <em>(n)</em> we want to cluster. In this setting, we will find the top <em>n</em> cells with high
-&Delta with &Delta among the top <em>50%</em> range. The default setting often gives good clustering.
+&Delta; with &Delta; among the top <em>50%</em> range. The default setting often gives good clustering.
 
 <br>
 <br>
@@ -1193,7 +1193,7 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
   <img src="{{site.url}}/vignettes/figure/check_the_clustering_results-2.pdf" width=600>
 </div>
 
-We also provide the decision plot for users to check the &Rho, &Delta for each cell and decide the threshold for defining the cell clusters.
+We also provide the decision plot for users to check the &Rho;, &Delta; for each cell and decide the threshold for defining the cell clusters.
 
 <br>
 <br>
@@ -1210,7 +1210,7 @@ plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 
 We could then re-run clustering based on the user defined threshold. To
 facilitate the computation, we can set <code>(skip_rho_sigma = T)</code>
-which enables us to skip the calculation of the &Rho, &Sigma.
+which enables us to skip the calculation of the &Rho;, &Sigma.
 
 <br>
 <br>
@@ -1733,8 +1733,8 @@ First, dpFeature excludes genes that only expressed in a very small percentage o
 Second, dpFeature performs PCA on the remaining genes in order to identify the principal components that explain a substantial amount of variance in the data.
 These top PCs are then used to initialize t-SNE, which projects the cells into two-dimensional t-SNE space.
 Next, dpFeature uses a recently developed clustering algorithm, called "density peak" clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space.
-The density peak clustering algorithm calculates each cell's local density (&Rho) and its distance (&Delta) to another cell with higher density.
-The &Rho and &Delta values for each cell can be plotted in a so-called "decision plot" in order to select thresholds that define "peaks" in the t-SNE space.
+The density peak clustering algorithm calculates each cell's local density (&Rho;) and its distance (&Delta;) to another cell with higher density.
+The &Rho; and &Delta; values for each cell can be plotted in a so-called "decision plot" in order to select thresholds that define "peaks" in the t-SNE space.
 Cells with high local density that are far away from other cells with high local density correspond to the density peaks.
 These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell.
 Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between using a generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't.
@@ -1772,7 +1772,7 @@ recover the intrinisic structure from the data.
 
 <br>
 
-Monocle 2 uses a technique called \emph{reversed graph embedding}\cite{Mao2016-ru, Qiu2017-nx} to learn the
+Monocle 2 uses a technique called <em>reversed graph embedding</em> \cite{Mao2016-ru, Qiu2017-nx} to learn the
 structure of the manifold that describes a single-cell experiment. It simultaneously:
 
 <ol>
