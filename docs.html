@@ -96,6 +96,9 @@ HSMM_sample_sheet <- read.delim("cell_sample_sheet.txt")
 HSMM_gene_annotation <- read.delim("gene_annotations.txt")
 {% endhighlight %}
 
+<br>
+<br>
+
 Once these tables are loaded, you can create the CellDataSet object like this:
 
 {% highlight R %}
@@ -274,9 +277,7 @@ HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
 {% endhighlight %}
 <br>
-<br>
 We're now ready to start using the <i>HSMM</i> object in our analysis.
-<br>
 <br>
 
 <h3> 3.5 Filtering Low-Quality Cells </h3>
@@ -490,9 +491,7 @@ table(pData(HSMM)$CellType)
 <div class="text-center">
   <img src="{{site.url}}/images/vignette/count_cells_unsup_readout-1.png" width=600>
 </div>
-<br>
 
-<br>
 
 Note that many cells are marked "Unknown".
 This is common, largely because of the low rate of mRNA capture in most single-cell RNA-Seq experiments.
@@ -549,7 +548,7 @@ plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/cluster_cells_unsup_no_covariate-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width=600>
 </div>
 
 {% highlight R %}
@@ -562,7 +561,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType", markers=c("MYF5", "ANPEP"))
 
 <br>
 
-Monocle uses t-SNE \cite{Maaten2008-om} to cluster cells, using an approach that's very similar to and inspired by Rahul Satija's excellent \href{http://satijalab.org/seurat/}{Seurat} package, which itself was inspired by \href{https://www.c2b2.columbia.edu/danapeerlab/html/cyt.html}{viSNE} from Dana Pe'er's lab.
+Monocle uses t-SNE [3] to cluster cells, using an approach that's very similar to and inspired by Rahul Satija's excellent <a href= "http://satijalab.org/seurat/"> Seurat package </a>, which itself was inspired by <a href="https://www.c2b2.columbia.edu/danapeerlab/html/cyt.html"> viSNE </a> from Dana Pe'er's lab.
 
 <br>
 <br>
@@ -667,7 +666,7 @@ head(selectTopMarkers(marker_spec, 3))
 <br>
 
 The last line above shows the top three marker genes for myoblasts and fibroblasts.
-The "specificity" score is calculated using the metric described in Cabili et al \cite{CABILI} and can range from zero to one.
+The "specificity" score is calculated using the metric described in Cabili et al [13] and can range from zero to one.
 The closer it is to one, the more restricted it is to the cell type in question.
 You can use this feature to define new markers for known cell types, or pick out genes you can use in purifying newly discovered cell types.
 This can be highly valuable for downstream follow up experiments.
@@ -684,7 +683,7 @@ plot_ordering_genes(HSMM)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_pick_genes-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width=600>
 </div>
 
 <br>
@@ -701,7 +700,7 @@ plot_pc_variance_explained(HSMM, return_all = F)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_no_impute-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width=600>
 </div>
 
 {% highlight R %}
@@ -713,7 +712,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_no_impute-2.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
 </div>
 
 <h3> 4.4 Imputing Cell Type </h3>
@@ -737,7 +736,7 @@ HSMM <- clusterCells(HSMM,
 {% endhighlight%}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/cluster_cells_semisup_clustering_with_impute-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_with_impute-1.png" width=600>
 </div>
 
 <br>
@@ -755,10 +754,9 @@ pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/count_cells_semisup_pie-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/count_cells_semisup_pie-1.png" width=600>
 </div>
 
-<br>
 
 Finally, we subset the CellDataSet object to create <em>HSMM_myo</em>, which includes only myoblasts.
 We'll use this in the rest of the analysis.
@@ -801,8 +799,6 @@ By ordering each cell according to its progress along a learned trajectory, Mono
 
 <h3> 5.2 The Ordering Algorithm </h3>
 
-<br>
-
 <h4> 5.2.1 Choosing Genes for Ordering </h4>
 
 Inferring a single-cell trajectory is a hard machine learning problem.
@@ -815,9 +811,15 @@ You can use these tools to either perform a completely "unsupervised" analysis, 
 Alternatively, you can make use of expert knowledge in the form of genes that are already known to define biolgical progress to shape Monocle's trajectory.
 We consider this mode "semi-supervised", because Monocle will augment the markers you provide with other, related genes. Monocle then uses these genes to produce trajectories consistent with known biology but that often reveal new regulatory structure. We return to the muscle data to illustrate both of these modes.
 
+<br>
+<br>
+
 <h4> 5.2.2 Reducing the Dimensionality of the Data </h4>
 Once we have selected the genes we will use to order the cells, Monocle applies a <em>dimensionality reduction</em> to the data, which will drastically improves the quality of the trajectory.
 Monocle reduces the dimensionality of the data with the <code>reduceDimension</code> function. This function has a number of options, so you should familiarize yourself with them by consulting the its manual page. You can choose from two algorithms in <code>reduceDimension</code>. The first, termed Independent Component Analysis, is a classic linear technique for decomposing data that powered the original version of Monocle. The second, called DDRTree, is a much more powerful nonlinear technique that is the default for Monocle 2.  For more on how these both work, see section 9.
+
+<br>
+<br>
 
 <h4> 5.2.3 Ordering the Cells in Pseudotime </h4>
 With the expression data projected into a lower dimensional space, Monocle is ready to learn the trajectory that describes how cells transition from one state into another. Monocle assumes that the trajectory has a tree structure, with one end of it the "root", and the others the "leaves". A cell at the beginning of the biological process starts at the root and progresses along the trunk until it reaches the first branch, if there is one. It then chooses a branch, and moves further and further along the tree until it reaches a leaf. These mathematical assumptions translate into some important biological ones. First, that the data includes all the major stages of the biological process. If your experiment failed to capture any cells at a key developmental transition, Monocle won't know its there. Second, that gene expression changes are smooth as a cell moves from one stage to the next. This assumption is realistic: major discontinuities in the trajectory would amount to a cell almost instantaneously turning over its transcriptome, which probably doesn't happen in most biolgical processes.
@@ -886,7 +888,7 @@ plot_ordering_genes(HSMM_myo)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/set_ordering_filter-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/set_ordering_filter-1.png" width=600>
 </div>
 
 <br>
@@ -926,7 +928,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_ordering_mst-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_ordering_mst-1.png" width=600>
 </div>
 
 <br>
@@ -946,7 +948,7 @@ The trajectory has a tree-like structure. We can see that the cells
  {% endhighlight %}
 
  <div class="text-center">
-   <img src="{{site.url}}/vignettes/figure/plot_ordering_mst_by_state-1.pdf" width=600>
+   <img src="{{site.url}}/images/vignette/plot_ordering_mst_by_state-1.png" width=600>
  </div>
 
 <br>
@@ -967,7 +969,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  {% endhighlight %}
 
  <div class="text-center">
-   <img src="{{site.url}}/vignettes/figure/plot_ordering_with_GM_state-1.pdf" width=600>
+   <img src="{{site.url}}/images/vignette/plot_ordering_with_GM_state-1.png" width=600>
  </div>
 
  <br>
@@ -981,7 +983,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  {% endhighlight %}
 
  <div class="text-center">
-   <img src="{{site.url}}/vignettes/figure/init_hsmm_facet_state-1.pdf" width=600>
+   <img src="{{site.url}}/images/vignette/init_hsmm_facet_state-1.png" width=600>
  </div>
 
  <br>
@@ -998,7 +1000,7 @@ plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/init_hsmm_jitter_state-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/init_hsmm_jitter_state-1.png" width=600>
 </div>
 
 <br>
@@ -1018,7 +1020,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_markers_linear-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_markers_linear-1.png" width=600>
 </div>
 
 <br>
@@ -1098,7 +1100,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/order_cells_pca_unsup-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/order_cells_pca_unsup-1.png" width=600>
 </div>
 
 <h3> 5.4 Unsupervized Feature Selection Based on Density Peak Clustering </h3>
@@ -1107,7 +1109,7 @@ Selecting genes for ordering cells using the techniques discussed above often
 works well in simple settings, but for more complex processes, we recommend a
 new procedure called "dpFeature". This procedure works by first projecting
 cells into two dimensions using t-SNE and then detecting clusters using the
-"densityPeak'' algorithm of Rodriguez and Laio \cite{RodriguezLaio}. The
+"densityPeak'' algorithm of Rodriguez and Laio [4]. The
 resulting clusters of cells are compared using Monocle's differential expression
 analysis functions to find genes that distinguish them. The top of these are
 then used to order cells.
@@ -1143,7 +1145,7 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_pc_variance-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_pc_variance-1.png" width=600>
 </div>
 
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.
@@ -1186,11 +1188,11 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/check_the_clustering_results-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/check_the_clustering_results-1.png" width=600>
 </div>
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/check_the_clustering_results-2.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/check_the_clustering_results-2.png" width=600>
 </div>
 
 We also provide the decision plot for users to check the &Rho;, &Delta; for each cell and decide the threshold for defining the cell clusters.
@@ -1203,14 +1205,14 @@ plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_rho_delta-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_rho_delta-1.png" width=600>
 </div>
 
 <br>
 
 We could then re-run clustering based on the user defined threshold. To
 facilitate the computation, we can set <code>(skip_rho_sigma = T)</code>
-which enables us to skip the calculation of the &Rho;, &Sigma.
+which enables us to skip the calculation of the &Rho;, &Sigma;.
 
 <br>
 <br>
@@ -1233,11 +1235,11 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/check_clustering_again-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/check_clustering_again-1.png" width=600>
 </div>
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/check_clustering_again-2.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/check_clustering_again-2.png" width=600>
 </div>
 
 
@@ -1273,7 +1275,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/order_cells_dp_feature-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/order_cells_dp_feature-1.png" width=600>
 </div>
 
 <h3> 5.5 Semi-Supervised Ordering with Known Marker Genes </h3>
@@ -1326,7 +1328,7 @@ plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="rig
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/semi_sup_ordering_trajectory-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/semi_sup_ordering_trajectory-1.png" width=600>
 </div>
 
 To confirm that the ordering is correct, we can select a couple of markers of
@@ -1355,7 +1357,7 @@ plot_genes_branched_pseudotime(cds_subset,
 Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the <em>phenoData</em> table of each <em>CellDataSet</em>.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
 
 <h3> 6.1 Basic Differential Analysis </h3>
-Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from \cite{TRAPNELL_CACCHIARELLI}, which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities:
+Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from [1], which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities:
 
 {% highlight R %}
 marker_genes <- row.names(subset(fData(HSMM_myo),
@@ -1397,12 +1399,12 @@ plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_myog_jitter-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_myog_jitter-1.png" width=600>
 </div>
 
 <br>
 
-Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on <code>plot_genes_jitter</code> for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the <em>ggplot2</em> package.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the <em>ggplot2</em> book\cite{Wickham} for more details.
+Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on <code>plot_genes_jitter</code> for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the <em>ggplot2</em> package.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the <em>ggplot2</em> book [5] for more details.
 
 In this section, we'll explore how to use Monocle to find genes that are differentially expressed according to several different criteria. First, we'll look at how to use our previous classification of the cells by type to find genes that distinguish fibroblasts and myoblasts. Second, we'll look at how to find genes that are differentially expressed as a function of pseudotime, such as those that become activated or repressed during differentiation.  Finally, you'll see how to perform multi-factorial differential analysis, which can help subtract the effects of confounding variables in your experiment.
 
@@ -1460,7 +1462,7 @@ plot_genes_jitter(cds_subset, grouping="CellType", color_by="CellType",
 {%endhighlight%}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/jitter_plot_diff_res-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/jitter_plot_diff_res-1.png" width=600>
 </div>
 
 <br>
@@ -1510,7 +1512,7 @@ cds_subset <- HSMM_myo[to_be_tested,]
 
 <br>
 
-Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between <em>CellType</em>.  Monocle assigns each cell a "pseudotime" value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the <em>VGAM</em> package to model a gene's expression level as a smooth, nonlinear function of pseudotime
+Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between <em>CellType</em>.  Monocle assigns each cell a "pseudotime" value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the <em>VGAM</em> package to model a gene's expression level as a smooth, nonlinear function of pseudotime.
 
 <br>
 <br>
@@ -1543,7 +1545,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_diff_res_pt-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_diff_res_pt-1.png" width=600>
 </div>
 
 <h3> 6.4 Clustering Genes by Pseudotemporal Expression Pattern </h3>
@@ -1573,7 +1575,7 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_diff_res_pt_heatmap-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width=600>
 </div>
 
 <h3> 6.5 Multi-Factorial Differential Expression Analysis </h3>
@@ -1606,7 +1608,7 @@ plot_genes_jitter(cds_subset,
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/plot_diff_res_multi-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/plot_diff_res_multi-1.png" width=600>
 </div>
 
 <h2> 7 Analyzing Branches in Single-Cell Trajectories </h2>
@@ -1631,7 +1633,7 @@ plot_cell_trajectory(lung, color_by="Time")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/init_treutlein-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/init_treutlein-1.png" width=600>
 </div>
 
 <br>
@@ -1672,7 +1674,7 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/lung_beam_branched_heatmap-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/lung_beam_branched_heatmap-1.png" width=600>
 </div>
 
 <br>
@@ -1693,7 +1695,7 @@ plot_genes_branched_pseudotime(lung[lung_genes,],
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/vignettes/figure/lung_beam_branched_pseudotime-1.pdf" width=600>
+  <img src="{{site.url}}/images/vignette/lung_beam_branched_pseudotime-1.png" width=600>
 </div>
 
 <br>
@@ -1732,7 +1734,7 @@ The dpFeature procedure works as follows.
 First, dpFeature excludes genes that only expressed in a very small percentage of cells (by default, <em>5%</em>).
 Second, dpFeature performs PCA on the remaining genes in order to identify the principal components that explain a substantial amount of variance in the data.
 These top PCs are then used to initialize t-SNE, which projects the cells into two-dimensional t-SNE space.
-Next, dpFeature uses a recently developed clustering algorithm, called "density peak" clustering \cite{Rodriguez2014-rl} to cluster the cells in the two-dimensional t-SNE space.
+Next, dpFeature uses a recently developed clustering algorithm, called "density peak" clustering [4] to cluster the cells in the two-dimensional t-SNE space.
 The density peak clustering algorithm calculates each cell's local density (&Rho;) and its distance (&Delta;) to another cell with higher density.
 The &Rho; and &Delta; values for each cell can be plotted in a so-called "decision plot" in order to select thresholds that define "peaks" in the t-SNE space.
 Cells with high local density that are far away from other cells with high local density correspond to the density peaks.
@@ -1772,7 +1774,7 @@ recover the intrinisic structure from the data.
 
 <br>
 
-Monocle 2 uses a technique called <em>reversed graph embedding</em> \cite{Mao2016-ru, Qiu2017-nx} to learn the
+Monocle 2 uses a technique called <em>reversed graph embedding</em> [10, 12] to learn the
 structure of the manifold that describes a single-cell experiment. It simultaneously:
 
 <ol>
@@ -1794,7 +1796,7 @@ Reversed graph embedding simultaneously learns a <em>principal graph</em> that
 approximates the manifold, as well as a function that maps points on the graph
 (which is embedded in low dimensions) back to the original high dimensional space.
 Reversed graph embedding aims to learn both a set of <em>latent points</em>
- \mathcal{Z} = \{\mathbf{z}_1, ..., \mathbf{z}_M\}$ corresponding to the input data
+ $$ \mathcal{Z} = \{\mathbf{z}_1, ..., \mathbf{z}_M\}$$corresponding to the input data
 that reside in the low-dimensional space along with a graph $\mathcal{G}$ that
 connects them. This graph approximates the manifold. In order to map points on
 the manifold back to the original high-dimensional input space, we also need to
@@ -1940,8 +1942,8 @@ The total number of mRNAs captured for cell $i$ can be estimated as:
 M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,j}dX}
 \end{equation}
 
-where (&Epsilon) is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed genes in a single cell.
-That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes, as illustrated in Figure 1A of \cite{qiu2017single}.
+where (&Epsilon;) is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed genes in a single cell.
+That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes, as illustrated in Figure 1A of [8].
 However, cDNA and PCR amplification steps during library prep can lead to superlinear growth in the relative abundance of a transcript as a function of copy number.
 In practice, the above formula often over-estimates total mRNAs in the lysate.
 To alleviate this issue, we used an alternative formula in Census:
@@ -1953,8 +1955,8 @@ M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}
 %\end{align*}
 \end{equation}
 
-where $F_{X_i}$ represents the cumulative distribution function for the TPM values of genes expressed above (&Epsilon) for cell $i$.
-Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above (&Epsilon). Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in [8]), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by 1/(&Theta) to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate (&Theta) a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study [8], we assume a value of <em>0.25</em>, which is close to the lung and neuron experiments of Truetlein et al.
+where $F_{X_i}$ represents the cumulative distribution function for the TPM values of genes expressed above (&Epsilon;) for cell $i$.
+Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above (&Epsilon;). Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in [8]), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by 1/(&Theta;) to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate (&Theta;) a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study [8], we assume a value of <em>0.25</em>, which is close to the lung and neuron experiments of Truetlein et al.
 
 With an estimate of the total lysate mRNAs <em>M<sub>i</sub></em> in cell <em>i</em>, we simply rescale its TPM values into mRNA counts for each gene:
 
@@ -1998,7 +2000,7 @@ The branch plots in section <em>Analyzing branches in single-cell trajectories</
 
 The branching time point for each gene can be quantified by fitting a separate spline curves for each branch from all the progenitor to each cell fate.
 To robustly detect the pseudotime point (<em>t<sub>beta</sub><sup>i</sup></em>) when a gene <em>i</em> with a branching expression pattern starts to diverge between two cell fates <em>L<sub>1</sub></em>, <em>L<sub>2</sub></em>, we developed the branch time point detection algorithm.
-The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the <em>supplementary note 1</em> for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene <em>i</em>'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, $t_{\beta}^i$ , for that particular gene <em>i</em>.
+The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the <em>supplementary note 1</em> for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene <em>i</em>'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, <br> $t_{\beta}^i$ , for that particular gene <em>i</em>.
 
 <h2> 10 Citation </h2>
 
@@ -2115,16 +2117,22 @@ sessionInfo()
 [12] Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. Principal graph and structure learning based on reversed graph embedding. IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016.
 <br>
 <br>
+[13] Cabili, Moran N. et al. “Integrative Annotation of Human Large Intergenic Noncoding RNAs Reveals Global Properties and Specific Subclasses.” Genes & Development 25.18 (2011): 1915–1927. PMC. Web. 21 June 2017.
 <br>
 <br>
 <br>
 <br>
 
-Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between <em>CellType</em>.  Monocle assigns each cell a "pseudotime" value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the <em>VGAM</em> package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
+</div>
+</div>
+</div>
 
-</div>
-</div>
-</div>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 {% include footer.html %}
 
