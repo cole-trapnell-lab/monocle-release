@@ -253,6 +253,134 @@ plot_spanning_tree <- function(cds,
 }
 
 
+#' Plots expression for one or more genes as a violin plot
+#' 
+#' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
+#' and produces one or more ggplot2 objects that plots the level of expression for
+#' each group of cells. 
+#'
+#' @param cds_subset CellDataSet for the experiment
+#' @param grouping the cell attribute (e.g. the column of pData(cds)) to group cells by on the horizontal axis
+#' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
+#' @param cell_size the size (in points) of each cell used in the plot
+#' @param nrow the number of rows used when laying out the panels for each gene's expression
+#' @param ncol the number of columns used when laying out the panels for each gene's expression
+#' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell  
+#' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
+#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param relative_expr Whether to transform expression into relative values
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom BiocGenerics sizeFactors
+#' @export
+#' @examples
+#' \dontrun{
+#' data(HSMM)
+#' my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("ACTA1", "ID1", "CCNB2"))),]
+#' plot_genes_violin(my_genes, grouping="Hours", ncol=2, min_expr=0.1)
+#' }
+plot_genes_violin <- function (cds_subset, grouping = "State", min_expr = NULL, cell_size = 0.75, 
+                              nrow = NULL, ncol = 1, panel_order = NULL, color_by = NULL, 
+                              plot_trend = FALSE, label_by_short_name = TRUE, relative_expr = TRUE, 
+                              log_scale = TRUE) 
+{
+  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", 
+                                                 "negbinomial.size")) {
+    integer_expression = TRUE
+  }
+  else {
+    integer_expression = FALSE
+    relative_expr = TRUE
+  }
+  if (integer_expression) {
+    cds_exprs = exprs(cds_subset)
+    if (relative_expr) {
+      if (is.null(sizeFactors(cds_subset))) {
+        stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+      }
+      cds_exprs = Matrix::t(Matrix::t(cds_exprs)/sizeFactors(cds_subset))
+    }
+    #cds_exprs = reshape2::melt(round(as.matrix(cds_exprs)))
+    cds_exprs = reshape2::melt(as.matrix(cds_exprs))
+  }
+  else {
+    cds_exprs = exprs(cds_subset)
+    cds_exprs = reshape2::melt(as.matrix(cds_exprs))
+  }
+  if (is.null(min_expr)) {
+    min_expr = cds_subset@lowerDetectionLimit
+  }
+  colnames(cds_exprs) = c("f_id", "Cell", "expression")
+  cds_exprs$expression[cds_exprs$expression < min_expr] = min_expr
+  cds_pData = pData(cds_subset)
+  
+  # 
+  # # Custom bit for adding in a group for 
+  # if(! is.null(show_combined)) {
+  #   for(combine_gene in show_combined) {
+  #     cds_pData_all = subset(cds_pData, gene == combine_gene)
+  #     cds_pData_all[, grouping] = paste("All", combine_gene)
+  #     cds_pData = rbind(cds_pData, cds_pData_all)
+  #   }
+  # }
+  
+  cds_fData = fData(cds_subset)
+  cds_exprs = merge(cds_exprs, cds_fData, by.x = "f_id", by.y = "row.names")
+  cds_exprs = merge(cds_exprs, cds_pData, by.x = "Cell", by.y = "row.names")
+  cds_exprs$adjusted_expression = log10(cds_exprs$expression)
+  
+  
+  
+  
+  if (label_by_short_name == TRUE) {
+    if (is.null(cds_exprs$gene_short_name) == FALSE) {
+      cds_exprs$feature_label = cds_exprs$gene_short_name
+      cds_exprs$feature_label[is.na(cds_exprs$feature_label)] = cds_exprs$f_id
+    }
+    else {
+      cds_exprs$feature_label = cds_exprs$f_id
+    }
+  }
+  else {
+    cds_exprs$feature_label = cds_exprs$f_id
+  }
+  if (is.null(panel_order) == FALSE) {
+    cds_exprs$feature_label = factor(cds_exprs$feature_label, 
+                                     levels = panel_order)
+  }
+  q = ggplot(aes_string(x = grouping, y = "expression"), data = cds_exprs)
+  if (is.null(color_by) == FALSE) {
+    q = q + geom_violin(aes_string(fill = color_by))
+  }
+  else {
+    q = q + geom_violin()
+  }
+  if (plot_trend == TRUE) {
+    q = q + stat_summary(fun.data = "mean_cl_boot", 
+                         size = 0.2)
+    q = q + stat_summary(aes_string(x = grouping, y = "expression", 
+                                    group = color_by), fun.data = "mean_cl_boot", 
+                         size = 0.2, geom = "line")
+  }
+  q = q + facet_wrap(~feature_label, nrow = nrow, 
+                     ncol = ncol, scales = "free_y")
+  if (min_expr < 1) {
+     q = q + expand_limits(y = c(min_expr, 1))
+  }
+  
+  
+  q = q + ylab("Expression") + xlab(grouping)
+  
+  if (log_scale == TRUE){
+    
+    q = q + scale_y_log10()
+  }
+  q
+}
+
+
 #' Plots expression for one or more genes as a jittered, grouped points
 #' 
 #' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
@@ -278,8 +406,8 @@ plot_spanning_tree <- function(cds,
 #' @examples
 #' \dontrun{
 #' data(HSMM)
-#' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
-#' plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
+#' my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1", "CCNB2"))),]
+#' plot_genes_jitter(my_genes, grouping="Media", ncol=2)
 #' }
 plot_genes_jitter <- function(cds_subset, 
                               grouping = "State", 
@@ -363,7 +491,7 @@ plot_genes_jitter <- function(cds_subset,
   
   q <- q + scale_y_log10() + facet_wrap(~feature_label, nrow=nrow, ncol=ncol, scales="free_y")
   
-  # Need this to gaurd against plotting failures caused by non-expressed genes
+  # Need this to guard against plotting failures caused by non-expressed genes
   if (min_expr < 1)
   {
     q <- q + expand_limits(y=c(min_expr, 1))

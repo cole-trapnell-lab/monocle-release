@@ -206,11 +206,13 @@ The following lines are an example of how to display a table that reports how ma
 \hlstd{marker_diff} \hlkwb{<-} \hlkwd{markerDiffTable}\hlstd{(HSMM[expressed_genes,],}
                                \hlstd{cth,}
                                \hlkwc{residualModelFormulaStr} \hlstd{=} \hlstr{"~Media"}\hlstd{,}
-                               \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{)}
+                               \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
  
+ 
+
  We then assign all the genes with a q-value below 0.05 to a variable and calculate the "specifity" of those
  genes to cell type listed in the CellTypeHierarchy. The "specificity" can range from 0 to 1, the closer it is to 1 the more restricted it is to the type in question. Afterwards, selectTopMarkers will return a data table
  of the genes with the highest specificity which you can then use to determine which genes you will use for clustering. It's often best to choose the top 10 to 20 genes that are the most specific for each cell type for clustering.
@@ -269,13 +271,15 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \begin{alltt}
 \hlstd{marker_diff} \hlkwb{<-} \hlkwd{markerDiffTable}\hlstd{(HSMM_myo[expressed_genes,],}
                                \hlstd{cth,}
-                               \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{)}
+                               \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \hlstd{semisup_clustering_genes} \hlkwb{<-} \hlkwd{row.names}\hlstd{(}\hlkwd{subset}\hlstd{(marker_diff, qval} \hlopt{<} \hlnum{0.01}\hlstd{))}
 \hlstd{HSMM_myo} \hlkwb{<-} \hlkwd{setOrderingFilter}\hlstd{(HSMM_myo, semisup_clustering_genes)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
- 
+
+
+
  \item Reduce Dimensionality of Data
  
 \begin{knitrout}
@@ -441,13 +445,15 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{lung} \hlkwb{<-} \hlkwd{load_lung}\hlstd{()}
-\hlstd{BEAM_res} \hlkwb{<-} \hlkwd{BEAM}\hlstd{(lung,} \hlkwc{branch_point} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{)}
+\hlstd{BEAM_res} \hlkwb{<-} \hlkwd{BEAM}\hlstd{(lung,} \hlkwc{branch_point} \hlstd{=} \hlnum{1}\hlstd{,} \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \hlstd{BEAM_res} \hlkwb{<-} \hlstd{BEAM_res[}\hlkwd{order}\hlstd{(BEAM_res}\hlopt{$}\hlstd{qval),]}
 \hlstd{BEAM_res} \hlkwb{<-} \hlstd{BEAM_res[,}\hlkwd{c}\hlstd{(}\hlstr{"gene_short_name"}\hlstd{,} \hlstr{"pval"}\hlstd{,} \hlstr{"qval"}\hlstd{)]}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
  
+ 
+
  You can visualize changes for all genes that are significantly branch-dependent with a special type of 
  heatmap. This heatmap will show both lineages simultaneously. This heatmap requires you to enter a specifc branch point. The start of the branch point is represented by the middle of the heatmap, going from the middle to the left is one branch and going from the middle to the right is the other branch.  
 \begin{knitrout}
@@ -456,13 +462,15 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \hlkwd{plot_genes_branched_heatmap}\hlstd{(lung[}\hlkwd{row.names}\hlstd{(}\hlkwd{subset}\hlstd{(BEAM_res, qval} \hlopt{<} \hlnum{1e-4}\hlstd{)),],}
                             \hlkwc{branch_point} \hlstd{=} \hlnum{1}\hlstd{,}
                             \hlkwc{num_clusters} \hlstd{=} \hlnum{4}\hlstd{,}
-                            \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{,}
+                            \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{(),}
                             \hlkwc{use_gene_short_name} \hlstd{= T,}
                             \hlkwc{show_rownames} \hlstd{= T)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
  
+ 
+
  We can also plot these genes in pseudotime using plot\_genes\_branched\_pseudotime() which is quite similar to plot\_genes\_in\_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -892,7 +900,7 @@ Now we're ready to try clustering the cells:
                      \hlkwc{num_clusters}\hlstd{=}\hlnum{2}\hlstd{)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 1.125988
+## Distance cutoff calculated to 1.12138
 \end{verbatim}
 
 
@@ -946,7 +954,7 @@ Monocle allows us to subtract the effects of ``uninteresting'' sources of variat
 \hlstd{HSMM} \hlkwb{<-} \hlkwd{clusterCells}\hlstd{(HSMM,} \hlkwc{num_clusters}\hlstd{=}\hlnum{2}\hlstd{)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 1.003443
+## Distance cutoff calculated to 0.9592123
 \end{verbatim}
 
 
@@ -971,7 +979,7 @@ Now that we've accounted for some unwanted sources of variation, we're ready to 
 \hlstd{HSMM} \hlkwb{<-} \hlkwd{clusterCells}\hlstd{(HSMM,} \hlkwc{num_clusters}\hlstd{=}\hlnum{2}\hlstd{)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 1.003443
+## Distance cutoff calculated to 0.9592123
 \end{verbatim}
 
 
@@ -1000,10 +1008,13 @@ First, we'll select a different set of genes to use for clustering the cells. Be
 \hlstd{marker_diff} \hlkwb{<-} \hlkwd{markerDiffTable}\hlstd{(HSMM[expressed_genes,],}
                                  \hlstd{cth,}
                                  \hlkwc{residualModelFormulaStr}\hlstd{=}\hlstr{"~Media + num_genes_expressed"}\hlstd{,}
-                                 \hlkwc{cores}\hlstd{=}\hlnum{1}\hlstd{)}
+                                 \hlkwc{cores}\hlstd{=}\hlkwd{detectCores}\hlstd{())}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
+
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
 
@@ -1073,7 +1084,7 @@ Note that we've got smaller set of genes, and some of them are not especially hi
 \hlstd{HSMM} \hlkwb{<-} \hlkwd{clusterCells}\hlstd{(HSMM,} \hlkwc{num_clusters}\hlstd{=}\hlnum{2}\hlstd{)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 1.026453
+## Distance cutoff calculated to 1.088545
 \end{verbatim}
 
 
@@ -1103,7 +1114,7 @@ Note that we've got smaller set of genes, and some of them are not especially hi
                      \hlkwc{cell_type_hierarchy}\hlstd{=cth)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 1.026453
+## Distance cutoff calculated to 1.088545
 \end{verbatim}
 
 
@@ -1519,7 +1530,7 @@ $\delta$ with $\rho$ among the top $50\%$ range. The default setting often gives
 \hlstd{HSMM_myo} \hlkwb{<-} \hlkwd{clusterCells}\hlstd{(HSMM_myo,} \hlkwc{verbose} \hlstd{= F)}
 \end{alltt}
 \begin{verbatim}
-## Distance cutoff calculated to 0.6909884
+## Distance cutoff calculated to 0.681014
 \end{verbatim}
 
 
@@ -1590,10 +1601,12 @@ gene expression test as a way to extract the genes that distinguish them.
 \begin{alltt}
 \hlstd{clustering_DEG_genes} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(HSMM_myo[HSMM_expressed_genes,],}
                                              \hlkwc{fullModelFormulaStr} \hlstd{=} \hlstr{'~Cluster'}\hlstd{,}
-                                             \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{)}
+                                             \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 We will then select the top $1000$ significant genes as the ordering genes. 
 \begin{knitrout}
@@ -1645,12 +1658,14 @@ Now we select the set of genes that co-vary (in either direction) with these two
 \begin{alltt}
 \hlstd{marker_diff} \hlkwb{<-} \hlkwd{markerDiffTable}\hlstd{(HSMM_myo[HSMM_expressed_genes,],}
                                \hlstd{cth,}
-                               \hlkwc{cores}\hlstd{=}\hlnum{1}\hlstd{)}
+                               \hlkwc{cores}\hlstd{=}\hlkwd{detectCores}\hlstd{())}
 \hlcom{#semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))}
 \hlstd{semisup_clustering_genes} \hlkwb{<-} \hlkwd{row.names}\hlstd{(marker_diff)[}\hlkwd{order}\hlstd{(marker_diff}\hlopt{$}\hlstd{qval)][}\hlnum{1}\hlopt{:}\hlnum{1000}\hlstd{]}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
 \begin{knitrout}
@@ -1753,7 +1768,8 @@ In the myoblast data, the cells collected at the outset of the experiment were c
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(HSMM_myo[marker_genes,],}
-                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~Media"}\hlstd{)}
+                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~Media"}\hlstd{,}
+                                      \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 
 \hlcom{# Select genes that are significant at an FDR < 10%}
 \hlstd{sig_genes} \hlkwb{<-} \hlkwd{subset}\hlstd{(diff_test_res, qval} \hlopt{<} \hlnum{0.1}\hlstd{)}
@@ -1783,6 +1799,8 @@ In the myoblast data, the cells collected at the outset of the experiment were c
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+
 
 So most of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
 
@@ -1830,7 +1848,9 @@ To set up the test based on \Robject{CellType}, we simply call \Rfunction{differ
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(cds_subset,} \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~CellType"}\hlstd{)}
+\hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(cds_subset,}
+                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~CellType"}\hlstd{,}
+                                      \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \hlstd{diff_test_res[,}\hlkwd{c}\hlstd{(}\hlstr{"gene_short_name"}\hlstd{,} \hlstr{"pval"}\hlstd{,} \hlstr{"qval"}\hlstd{)]}
 \end{alltt}
 \begin{verbatim}
@@ -1841,6 +1861,8 @@ To set up the test based on \Robject{CellType}, we simply call \Rfunction{differ
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+
 
 Note that all the genes are significantly differentially expressed as a function of \Robject{CellType} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in myoblasts versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
@@ -1897,10 +1919,14 @@ Again, we'll need to specify the model we want to use for differential analysis.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(cds_subset,}  \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~sm.ns(Pseudotime)"}\hlstd{)}
+\hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(cds_subset,}
+                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~sm.ns(Pseudotime)"}\hlstd{,}
+                                      \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
 
@@ -1912,10 +1938,10 @@ Once again, let's add in the gene annotations so it's easy to see which genes ar
 \end{alltt}
 \begin{verbatim}
 ##                    gene_short_name         pval         qval
-## ENSG00000081189.9            MEF2C 6.134079e-35 1.226816e-34
-## ENSG00000105048.12           TNNT1 3.142126e-33 3.142126e-33
-## ENSG00000109063.9             MYH3 6.129469e-71 2.451788e-70
-## ENSG00000157456.3            CCNB2 3.904667e-34 5.206223e-34
+## ENSG00000081189.9            MEF2C 6.134750e-35 1.226950e-34
+## ENSG00000105048.12           TNNT1 3.141574e-33 3.141574e-33
+## ENSG00000109063.9             MYH3 6.124129e-71 2.449651e-70
+## ENSG00000157456.3            CCNB2 3.907668e-34 5.210224e-34
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -1949,14 +1975,15 @@ co-vary across pseudotime.
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(HSMM_myo[marker_genes,],}
-                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~sm.ns(Pseudotime)"}\hlstd{)}
+                                      \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~sm.ns(Pseudotime)"}\hlstd{,}
+                                      \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 
 \hlstd{sig_gene_names} \hlkwb{<-} \hlkwd{row.names}\hlstd{(}\hlkwd{subset}\hlstd{(diff_test_res, qval} \hlopt{<} \hlnum{0.1}\hlstd{))}
 
 
 \hlkwd{plot_pseudotime_heatmap}\hlstd{(HSMM_myo[sig_gene_names,],}
                         \hlkwc{num_clusters} \hlstd{=} \hlnum{3}\hlstd{,}
-                        \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{,}
+                        \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{(),}
                         \hlkwc{show_rownames} \hlstd{= T)}
 \end{alltt}
 \end{kframe}
@@ -1968,6 +1995,8 @@ co-vary across pseudotime.
 
 
 \end{knitrout}
+
+
 
 \subsection{Multi-factorial differential expression analysis}
 
@@ -1984,7 +2013,8 @@ When we plot the expression levels of these genes, we can modify the resulting o
 
 \hlstd{diff_test_res} \hlkwb{<-} \hlkwd{differentialGeneTest}\hlstd{(cds_subset,}
                                       \hlkwc{fullModelFormulaStr}\hlstd{=}\hlstr{"~CellType + Hours"}\hlstd{,}
-                                      \hlkwc{reducedModelFormulaStr}\hlstd{=}\hlstr{"~Hours"}\hlstd{)}
+                                      \hlkwc{reducedModelFormulaStr}\hlstd{=}\hlstr{"~Hours"}\hlstd{,}
+                                      \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \hlstd{diff_test_res[,}\hlkwd{c}\hlstd{(}\hlstr{"gene_short_name"}\hlstd{,} \hlstr{"pval"}\hlstd{,} \hlstr{"qval"}\hlstd{)]}
 \end{alltt}
 \begin{verbatim}
@@ -2008,6 +2038,8 @@ When we plot the expression levels of these genes, we can modify the resulting o
 
 
 \end{knitrout}
+
+
 
 \section{Analyzing branches in single-cell trajectories} \label{BEAM_trajectory}
 
@@ -2040,12 +2072,14 @@ BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{BEAM_res} \hlkwb{<-} \hlkwd{BEAM}\hlstd{(lung,} \hlkwc{branch_point}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{)}
+\hlstd{BEAM_res} \hlkwb{<-} \hlkwd{BEAM}\hlstd{(lung,} \hlkwc{branch_point}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{())}
 \hlstd{BEAM_res} \hlkwb{<-} \hlstd{BEAM_res[}\hlkwd{order}\hlstd{(BEAM_res}\hlopt{$}\hlstd{qval),]}
 \hlstd{BEAM_res} \hlkwb{<-} \hlstd{BEAM_res[,}\hlkwd{c}\hlstd{(}\hlstr{"gene_short_name"}\hlstd{,} \hlstr{"pval"}\hlstd{,} \hlstr{"qval"}\hlstd{)]}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 You can visualize changes for all the genes that are significantly branch dependent using a special type of heatmap. This heatmap shows changes in both lineages at the same time. It also requires that you choose a branch point to inspect. Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.
 \begin{knitrout}
@@ -2054,7 +2088,7 @@ You can visualize changes for all the genes that are significantly branch depend
 \hlkwd{plot_genes_branched_heatmap}\hlstd{(lung[}\hlkwd{row.names}\hlstd{(}\hlkwd{subset}\hlstd{(BEAM_res, qval} \hlopt{<} \hlnum{1e-4}\hlstd{)),],}
                             \hlkwc{branch_point} \hlstd{=} \hlnum{1}\hlstd{,}
                             \hlkwc{num_clusters} \hlstd{=} \hlnum{4}\hlstd{,}
-                            \hlkwc{cores} \hlstd{=} \hlnum{1}\hlstd{,}
+                            \hlkwc{cores} \hlstd{=} \hlkwd{detectCores}\hlstd{(),}
                             \hlkwc{use_gene_short_name} \hlstd{= T,}
                             \hlkwc{show_rownames} \hlstd{= T)}
 \end{alltt}
@@ -2067,6 +2101,8 @@ You can visualize changes for all the genes that are significantly branch depend
 
 
 \end{knitrout}
+
+
 
 We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} (both known markers of fate in this system), using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. We also show \emph{Ccnd2}, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. 
 
@@ -2365,6 +2401,10 @@ The branching time point for each gene can be quantified by fitting a separate s
 ## 
 ##   Xiaojie Qiu, Cole Trapnell et al (2017): Reverse graph embedding
 ##   resolves complex single-cell developmental trajectories. BioRxiv
+## 
+## To see these entries in BibTeX format, use 'print(<citation>,
+## bibtex=TRUE)', 'toBibtex(.)', or set
+## 'options(citation.bibtex.max=999)'.
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -2384,9 +2424,13 @@ The branching time point for each gene can be quantified by fitting a separate s
 \hlkwd{sessionInfo}\hlstd{()}
 \end{alltt}
 \begin{verbatim}
-## R version 3.3.2 (2016-10-31)
-## Platform: x86_64-apple-darwin13.4.0 (64-bit)
-## Running under: OS X Yosemite 10.10.5
+## R version 3.4.0 (2017-04-21)
+## Platform: x86_64-apple-darwin15.6.0 (64-bit)
+## Running under: macOS Sierra 10.12.1
+## 
+## Matrix products: default
+## BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
 ## 
 ## locale:
 ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
@@ -2397,29 +2441,29 @@ The branching time point for each gene can be quantified by fitting a separate s
 ## 
 ## other attached packages:
 ##  [1] monocle_2.5.1          DDRTree_0.1.5          irlba_2.2.1           
-##  [4] VGAM_1.0-3             Matrix_1.2-10          HSMMSingleCell_0.108.0
-##  [7] ggplot2_2.2.1          reshape2_1.4.2         Biobase_2.34.0        
-## [10] BiocGenerics_0.20.0    knitr_1.15.1          
+##  [4] VGAM_1.0-3             Matrix_1.2-9           HSMMSingleCell_0.110.0
+##  [7] ggplot2_2.2.1          reshape2_1.4.2         Biobase_2.36.2        
+## [10] BiocGenerics_0.22.0    knitr_1.16            
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] slam_0.1-40         lattice_0.20-35     colorspace_1.3-2   
 ##  [4] htmltools_0.3.6     fastICA_1.2-0       base64enc_0.1-3    
-##  [7] survival_2.41-3     rlang_0.1.1         foreign_0.8-68     
+##  [7] survival_2.41-3     rlang_0.1.1         foreign_0.8-67     
 ## [10] DBI_0.6-1           RColorBrewer_1.1-2  matrixStats_0.52.2 
 ## [13] plyr_1.8.4          stringr_1.2.0       munsell_0.4.3      
 ## [16] combinat_0.0-8      gtable_0.2.0        htmlwidgets_0.8    
 ## [19] evaluate_0.10       labeling_0.3        latticeExtra_0.6-28
 ## [22] htmlTable_1.9       highr_0.6           Rcpp_0.12.11       
-## [25] acepack_1.4.1       backports_1.0.5     checkmate_1.8.2    
-## [28] scales_0.4.1        limma_3.30.13       densityClust_0.3   
+## [25] acepack_1.4.1       backports_1.1.0     checkmate_1.8.2    
+## [28] scales_0.4.1        limma_3.32.2        densityClust_0.2.1 
 ## [31] Hmisc_4.0-3         gridExtra_2.2.1     digest_0.6.12      
 ## [34] stringi_1.1.5       Rtsne_0.13          qlcMatrix_0.9.5    
-## [37] dplyr_0.5.0         grid_3.3.2          tools_3.3.2        
+## [37] dplyr_0.5.0         grid_3.4.0          tools_3.4.0        
 ## [40] magrittr_1.5        lazyeval_0.2.0      proxy_0.4-17       
 ## [43] tibble_1.3.1        Formula_1.2-1       cluster_2.0.6      
-## [46] pkgconfig_2.0.1     pheatmap_1.0.8      data.table_1.10.4  
-## [49] assertthat_0.2.0    R6_2.2.1            rpart_4.1-11       
-## [52] nnet_7.3-12         igraph_1.1.0
+## [46] pheatmap_1.0.8      data.table_1.10.4   assertthat_0.2.0   
+## [49] R6_2.2.1            rpart_4.1-11        nnet_7.3-12        
+## [52] igraph_1.0.1        compiler_3.4.0
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
