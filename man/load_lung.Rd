@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils.R
 \name{load_lung}
 \alias{load_lung}
-\title{Build a CellDataSet from the data stored in inst/extdata directory}
+\title{Build a CellDataSet from the data stored in inst/extdata directory.}
 \usage{
 load_lung()
 }
 \description{
-Build a CellDataSet from the data stored in inst/extdata directory
+Build a CellDataSet from the data stored in inst/extdata directory.
 }
