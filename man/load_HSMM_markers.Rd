@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{load_HSMM_markers}
 \alias{load_HSMM_markers}
-\title{Return a CellDataSet of classic muscle genes}
+\title{Return a CellDataSet of classic muscle genes.}
 \usage{
 load_HSMM_markers()
 }
@@ -10,5 +10,5 @@ load_HSMM_markers()
 A CellDataSet object
 }
 \description{
-Return a CellDataSet of classic muscle genes
+Return a CellDataSet of classic muscle genes.
 }

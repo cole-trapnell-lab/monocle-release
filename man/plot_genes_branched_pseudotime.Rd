@@ -46,11 +46,17 @@ plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
 \item{relative_expr}{Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)}
 
 \item{...}{Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.}
+
+\item{multi_branch}{a boolean that signifies whether you'd like to compare more than two branches at once}
 }
 \value{
 a ggplot2 plot object
 }
 \description{
+Works similarly to plot_genes_in_psuedotime esceptit shows 
+one kinetic trend for each lineage.
+}
+\details{
 This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
 and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
 bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  

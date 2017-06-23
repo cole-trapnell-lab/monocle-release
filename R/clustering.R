@@ -194,7 +194,7 @@ clusterCells <- function(cds,
     #find the number of clusters: 
     #cluster_num <- length(unique(dataClust$clusters))
     
-    pData(cds)$Cluster <- factor(dataClust$clusters)
+    pData(cds)$Cluster <- as.character(dataClust$clusters)
     pData(cds)$peaks <- F
     pData(cds)$peaks[dataClust$peaks] <- T
     pData(cds)$halo <- dataClust$halo

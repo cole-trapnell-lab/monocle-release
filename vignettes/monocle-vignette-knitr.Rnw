@@ -1081,7 +1081,8 @@ marker_genes <- row.names(subset(fData(HSMM_myo),
 In the myoblast data, the cells collected at the outset of the experiment were cultured in ``growth medium'' (GM) to prevent them from differentiating.  After they were harvested, the rest of the cells were switched over to ``differentiation medium'' (DM) to promote differentiation. Let's have monocle find which of the genes above are affected by this switch:
 <<basic_diff, eval=TRUE>>=
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~Media")
+                                      fullModelFormulaStr="~Media", 
+                                      cores = detectCores())
 
 # Select genes that are significant at an FDR < 10%
 sig_genes <- subset(diff_test_res, qval < 0.1)
@@ -1118,7 +1119,9 @@ To test the effects of \Robject{CellType} on gene expression, we simply call \Rf
 To set up the test based on \Robject{CellType}, we simply call \Rfunction{differentialGeneTest} with a string specifying \Robject{fullModelFormulaStr}.  We don't have to specify the reduced model in this case, because the default of \Robject{~1} is what we want here.
 
 <<all_in_one_test, eval = TRUE, warning=FALSE>>=
-diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="~CellType")
+diff_test_res <- differentialGeneTest(cds_subset, 
+                                      fullModelFormulaStr="~CellType",
+                                      cores = detectCores())
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 @ %def
 
@@ -1154,7 +1157,9 @@ cds_subset <- HSMM_myo[to_be_tested,]
 
 Again, we'll need to specify the model we want to use for differential analysis.  This model will be a bit more complicated than the one we used to look at the differences between \Robject{CellType}.  Monocle assigns each cell a ``pseudotime'' value, which records its progress through the process in the experiment.  The model can test against changes as a function of this value. Monocle uses the \Rpackage{VGAM} package to model a gene's expression level as a smooth, nonlinear function of pseudotime:
 <<piecewise_test_pt, eval=TRUE>>=
-diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="~sm.ns(Pseudotime)")
+diff_test_res <- differentialGeneTest(cds_subset,  
+                                      fullModelFormulaStr="~sm.ns(Pseudotime)",
+                                      cores = detectCores())
 @ %def
 
 The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
@@ -1180,14 +1185,15 @@ co-vary across pseudotime.
 
 <<plot_diff_res_pt_heatmap, include=TRUE, eval=TRUE, fig.width = 5, fig.height = 4, fig.align="center", warning=FALSE>>=
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,], 
-                                      fullModelFormulaStr="~sm.ns(Pseudotime)")
+                                      fullModelFormulaStr="~sm.ns(Pseudotime)",
+                                      cores = detectCores())
 
 sig_gene_names <- row.names(subset(diff_test_res, qval < 0.1))
 
 
 plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,], 
                         num_clusters = 3, 
-                        cores = 1, 
+                        cores = detectCores(), 
                         show_rownames = T)
 @ %def
 
@@ -1204,7 +1210,8 @@ cds_subset <- HSMM[to_be_tested,]
 
 diff_test_res <- differentialGeneTest(cds_subset,  
                                       fullModelFormulaStr="~CellType + Hours", 
-                                      reducedModelFormulaStr="~Hours")
+                                      reducedModelFormulaStr="~Hours",
+                                      cores = detectCores())
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 plot_genes_jitter(cds_subset, 
                   grouping="Hours", color_by="CellType", plot_trend=TRUE) + 
@@ -1227,7 +1234,7 @@ plot_cell_trajectory(lung, color_by="Time")
 BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells} and the name of a branch point in the trajectory. It returns a table of significance scores for each gene. Genes that score significant are said to be \emph{branch-dependent} in their expression.
 
 <<lung_beam_test, include=TRUE, eval=TRUE, warning=FALSE>>=
-BEAM_res <- BEAM(lung, branch_point=1, cores = 1)
+BEAM_res <- BEAM(lung, branch_point=1, cores = detectCores())
 BEAM_res <- BEAM_res[order(BEAM_res$qval),]
 BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
 @ %def 
@@ -1237,7 +1244,7 @@ You can visualize changes for all the genes that are significantly branch depend
 plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),], 
                             branch_point = 1, 
                             num_clusters = 4, 
-                            cores = 1, 
+                            cores = detectCores(), 
                             use_gene_short_name = T, 
                             show_rownames = T)
 @ %def 

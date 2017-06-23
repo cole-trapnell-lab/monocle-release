@@ -48,5 +48,9 @@ A list of heatmap_matrix (expression matrix for the branch committment), ph (phe
 annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
-Plots a pseudotime-ordered, row-centered heatmap
+The function plot_pseudotime_heatmap takes a CellDataSet object 
+(usually containing a only subset of significant genes) and generates smooth expression 
+curves much like plot_genes_in_pseudotime. 
+Then, it clusters these genes and plots them using the pheatmap package. 
+This allows you to visualize modules of genes that co-vary across pseudotime.
 }

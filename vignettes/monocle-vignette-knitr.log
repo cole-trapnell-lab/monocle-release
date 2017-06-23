@@ -1,0 +1,1552 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  22 JUN 2017 17:25
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**monocle-vignette-knitr.tex
+(./monocle-vignette-knitr.tex
+LaTeX2e <2016/03/31>
+Babel <3.9r> and hyphenation patterns for 83 language(s) loaded.
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2014/09/29 v1.4h Standard LaTeX document class
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@section=\count80
+\c@subsection=\count81
+\c@subsubsection=\count82
+\c@paragraph=\count83
+\c@subparagraph=\count84
+\c@figure=\count85
+\c@table=\count86
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2016/05/09 v1.0r Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/01/02 v1.10 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 96.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/pdftex-def/pdftex.def
+File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count87
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/color.sty
+Package: color 2016/05/09 v1.1c Standard LaTeX Color (DPC)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package color Info: Driver file: pdftex.def on input line 144.
+)
+(./framed.sty
+Package: framed 2011/10/22 v 0.96: framed or shaded text with page breaks
+\OuterFrameSep=\skip43
+\fb@frw=\dimen105
+\fb@frh=\dimen106
+\FrameRule=\dimen107
+\FrameSep=\dimen108
+) (/usr/local/texlive/2016/texmf-dist/tex/latex/base/alltt.sty
+Package: alltt 1997/06/16 v2.0g defines alltt environment
+)
+(./whbiocvignette.sty
+Package: whbiocvignette 2013/02/24 Wolfgang Huber's class for Bioconductor vign
+ettes
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2016/05/05 v6.83n Hypertext links for LaTeX
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/hobsub-hyperref.sty
+Package: hobsub-hyperref 2016/05/16 v1.14 Bundle oberdiek, subset hyperref (HO)
+
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/hobsub-generic.sty
+Package: hobsub-generic 2016/05/16 v1.14 Bundle oberdiek, subset generic (HO)
+Package: hobsub 2016/05/16 v1.14 Construct package bundles (HO)
+Package hobsub Info: Skipping package `infwarerr' (already loaded).
+Package hobsub Info: Skipping package `ltxcmds' (already loaded).
+Package: ifluatex 2016/05/16 v1.4 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+Package: ifvtex 2016/05/16 v1.6 Detect VTeX and its facilities (HO)
+Package ifvtex Info: VTeX not detected.
+Package: intcalc 2016/05/16 v1.2 Expandable calculations with integers (HO)
+Package: ifpdf 2016/05/14 v3.1 Provides the ifpdf switch
+Package: etexcmds 2016/05/16 v1.6 Avoid name clashes with e-TeX commands (HO)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+Package: kvsetkeys 2016/05/16 v1.17 Key value parser (HO)
+Package: kvdefinekeys 2016/05/16 v1.4 Define keys (HO)
+Package: pdftexcmds 2016/05/10 v0.21 Utility functions of pdfTeX for LuaTeX (HO
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+Package pdftexcmds Info: \pdfdraftmode found.
+Package: pdfescape 2016/05/16 v1.14 Implements pdfTeX's escape features (HO)
+Package: bigintcalc 2016/05/16 v1.4 Expandable calculations on big integers (HO
+)
+Package: bitset 2016/05/16 v1.2 Handle bit-vector datatype (HO)
+Package: uniquecounter 2016/05/16 v1.3 Provide unlimited unique counter (HO)
+)
+Package hobsub Info: Skipping package `hobsub' (already loaded).
+Package: letltxmacro 2016/05/16 v1.5 Let assignment for LaTeX macros (HO)
+Package: hopatch 2016/05/16 v1.3 Wrapper for package hooks (HO)
+Package: xcolor-patch 2016/05/16 xcolor patch
+Package: atveryend 2016/05/16 v1.9 Hooks at the very end of document (HO)
+Package atveryend Info: \enddocument detected (standard20110627).
+Package: atbegshi 2016/05/16 v1.17 At begin shipout hook (HO)
+Package: refcount 2016/05/16 v3.5 Data extraction from label references (HO)
+Package: hycolor 2016/05/16 v1.8 Color options for hyperref/bookmark (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/ifxetex/ifxetex.sty
+Package: ifxetex 2010/09/12 v0.6 Provides ifxetex conditional
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/auxhook.sty
+Package: auxhook 2016/05/16 v1.4 Hooks for auxiliary files (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2016/05/16 v3.12 Key value format for package options (HO)
+)
+\@linkdim=\dimen109
+\Hy@linkcounter=\count88
+\Hy@pagecounter=\count89
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2016/05/05 v6.83n Hyperref: PDFDocEncoding definition (HO)
+)
+\Hy@SavedSpaceFactor=\count90
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/latexconfig/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+Package hyperref Info: Option `pdfpagelabels' set `true' on input line 4322.
+Package hyperref Info: Option `plainpages' set `false' on input line 4322.
+Package hyperref Info: Option `bookmarks' set `true' on input line 4322.
+Package hyperref Info: Option `bookmarksnumbered' set `true' on input line 4322
+.
+Package hyperref Info: Option `bookmarksopen' set `true' on input line 4322.
+Package hyperref Info: Option `raiselinks' set `true' on input line 4322.
+Package hyperref Info: Hyper figures OFF on input line 4446.
+Package hyperref Info: Link nesting OFF on input line 4451.
+Package hyperref Info: Hyper index ON on input line 4454.
+Package hyperref Info: Plain pages OFF on input line 4461.
+Package hyperref Info: Backreferencing OFF on input line 4466.
+Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
+Package hyperref Info: Bookmarks ON on input line 4691.
+\c@Hy@tempcnt=\count91
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/url/url.sty
+\Urlmuskip=\muskip10
+Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 5044.
+\XeTeXLinkMargin=\dimen110
+\Fld@menulength=\count92
+\Field@Width=\dimen111
+\Fld@charsize=\dimen112
+Package hyperref Info: Hyper figures OFF on input line 6298.
+Package hyperref Info: Link nesting OFF on input line 6303.
+Package hyperref Info: Hyper index ON on input line 6306.
+Package hyperref Info: backreferencing OFF on input line 6313.
+Package hyperref Info: Link coloring OFF on input line 6318.
+Package hyperref Info: Link coloring with OCG OFF on input line 6323.
+Package hyperref Info: PDF/A mode OFF on input line 6328.
+LaTeX Info: Redefining \ref on input line 6368.
+LaTeX Info: Redefining \pageref on input line 6372.
+\Hy@abspage=\count93
+\c@Item=\count94
+\c@Hfootnote=\count95
+)
+
+Package hyperref Message: Driver (autodetected): hpdftex.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/hpdftex.def
+File: hpdftex.def 2016/05/05 v6.83n Hyperref driver for pdfTeX
+\Fld@listcount=\count96
+\c@bookmark@seq@number=\count97
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/rerunfilecheck.sty
+Package: rerunfilecheck 2016/05/16 v1.8 Rerun checks for auxiliary files (HO)
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
+82.
+)
+\Hy@SectionHShift=\skip44
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2016/05/11 v2.12 LaTeX color extensions (UK)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Package option `usenames' ignored on input line 216.
+Package xcolor Info: Driver file: pdftex.def on input line 225.
+LaTeX Info: Redefining \color on input line 709.
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1348.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1352.
+Package xcolor Info: Model `RGB' extended on input line 1364.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1366.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1367.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1370.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1371.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/dvipsnam.def
+File: dvipsnam.def 2015/12/30 v3.0k Driver-dependent file (DPC,SPQR)
+))
+(/usr/local/texlive/2016/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2010/09/12 v5.6 Page Geometry
+\Gm@cnth=\count98
+\Gm@cntv=\count99
+\c@Gm@tempcnt=\count100
+\Gm@bindingoffset=\dimen113
+\Gm@wd@mp=\dimen114
+\Gm@odd@mp=\dimen115
+\Gm@even@mp=\dimen116
+\Gm@layoutwidth=\dimen117
+\Gm@layoutheight=\dimen118
+\Gm@layouthoffset=\dimen119
+\Gm@layoutvoffset=\dimen120
+\Gm@dimlist=\toks15
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/psnfss/helvet.sty
+Package: helvet 2005/04/12 PSNFSS-v9.2a (WaS) 
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/cite/cite.sty
+LaTeX Info: Redefining \cite on input line 302.
+LaTeX Info: Redefining \nocite on input line 332.
+Package: cite 2015/02/27  v 5.5
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/sectsty/sectsty.sty
+Package: sectsty 2002/02/25 v2.0.2 Commands to change all sectional heading sty
+les
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
+\fancy@headwidth=\skip45
+\f@ncyO@elh=\skip46
+\f@ncyO@erh=\skip47
+\f@ncyO@olh=\skip48
+\f@ncyO@orh=\skip49
+\f@ncyO@elf=\skip50
+\f@ncyO@erf=\skip51
+\f@ncyO@olf=\skip52
+\f@ncyO@orf=\skip53
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/xstring/xstring.sty
+(/usr/local/texlive/2016/texmf-dist/tex/generic/xstring/xstring.tex
+\@xs@message=\write3
+\integerpart=\count101
+\decimalpart=\count102
+)
+Package: xstring 2013/10/13  v1.7c  String manipulations (C Tellechea)
+)
+(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/Sweave.sty
+Package: Sweave 
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
+Package: fancyvrb 2008/02/07
+
+Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
+<2008/02/07> (tvz)
+\FV@CodeLineNo=\count103
+\FV@InFile=\read1
+\FV@TabBox=\box26
+\c@FancyVerbLine=\count104
+\FV@StepNumber=\count105
+\FV@OutFile=\write4
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/textcomp.sty
+Package: textcomp 2005/09/27 v1.99g Standard LaTeX package
+Package textcomp Info: Sub-encoding information:
+(textcomp)               5 = only ISO-Adobe without \textcurrency
+(textcomp)               4 = 5 + \texteuro
+(textcomp)               3 = 4 + \textohm
+(textcomp)               2 = 3 + \textestimated + \textcurrency
+(textcomp)               1 = TS1 - \textcircled - \t
+(textcomp)               0 = TS1 (full)
+(textcomp)             Font families with sub-encoding setting implement
+(textcomp)             only a restricted character set as indicated.
+(textcomp)             Family '?' is the default used for unknown fonts.
+(textcomp)             See the documentation for details.
+Package textcomp Info: Setting ? sub-encoding to TS1/1 on input line 79.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ts1enc.def
+File: ts1enc.def 2001/06/05 v3.0e (jk/car/fm) Standard LaTeX file
+)
+LaTeX Info: Redefining \oldstylenums on input line 334.
+Package textcomp Info: Setting cmr sub-encoding to TS1/0 on input line 349.
+Package textcomp Info: Setting cmss sub-encoding to TS1/0 on input line 350.
+Package textcomp Info: Setting cmtt sub-encoding to TS1/0 on input line 351.
+Package textcomp Info: Setting cmvtt sub-encoding to TS1/0 on input line 352.
+Package textcomp Info: Setting cmbr sub-encoding to TS1/0 on input line 353.
+Package textcomp Info: Setting cmtl sub-encoding to TS1/0 on input line 354.
+Package textcomp Info: Setting ccr sub-encoding to TS1/0 on input line 355.
+Package textcomp Info: Setting ptm sub-encoding to TS1/4 on input line 356.
+Package textcomp Info: Setting pcr sub-encoding to TS1/4 on input line 357.
+Package textcomp Info: Setting phv sub-encoding to TS1/4 on input line 358.
+Package textcomp Info: Setting ppl sub-encoding to TS1/3 on input line 359.
+Package textcomp Info: Setting pag sub-encoding to TS1/4 on input line 360.
+Package textcomp Info: Setting pbk sub-encoding to TS1/4 on input line 361.
+Package textcomp Info: Setting pnc sub-encoding to TS1/4 on input line 362.
+Package textcomp Info: Setting pzc sub-encoding to TS1/4 on input line 363.
+Package textcomp Info: Setting bch sub-encoding to TS1/4 on input line 364.
+Package textcomp Info: Setting put sub-encoding to TS1/5 on input line 365.
+Package textcomp Info: Setting uag sub-encoding to TS1/5 on input line 366.
+Package textcomp Info: Setting ugq sub-encoding to TS1/5 on input line 367.
+Package textcomp Info: Setting ul8 sub-encoding to TS1/4 on input line 368.
+Package textcomp Info: Setting ul9 sub-encoding to TS1/4 on input line 369.
+Package textcomp Info: Setting augie sub-encoding to TS1/5 on input line 370.
+Package textcomp Info: Setting dayrom sub-encoding to TS1/3 on input line 371.
+Package textcomp Info: Setting dayroms sub-encoding to TS1/3 on input line 372.
+
+Package textcomp Info: Setting pxr sub-encoding to TS1/0 on input line 373.
+Package textcomp Info: Setting pxss sub-encoding to TS1/0 on input line 374.
+Package textcomp Info: Setting pxtt sub-encoding to TS1/0 on input line 375.
+Package textcomp Info: Setting txr sub-encoding to TS1/0 on input line 376.
+Package textcomp Info: Setting txss sub-encoding to TS1/0 on input line 377.
+Package textcomp Info: Setting txtt sub-encoding to TS1/0 on input line 378.
+Package textcomp Info: Setting lmr sub-encoding to TS1/0 on input line 379.
+Package textcomp Info: Setting lmdh sub-encoding to TS1/0 on input line 380.
+Package textcomp Info: Setting lmss sub-encoding to TS1/0 on input line 381.
+Package textcomp Info: Setting lmssq sub-encoding to TS1/0 on input line 382.
+Package textcomp Info: Setting lmvtt sub-encoding to TS1/0 on input line 383.
+Package textcomp Info: Setting lmtt sub-encoding to TS1/0 on input line 384.
+Package textcomp Info: Setting qhv sub-encoding to TS1/0 on input line 385.
+Package textcomp Info: Setting qag sub-encoding to TS1/0 on input line 386.
+Package textcomp Info: Setting qbk sub-encoding to TS1/0 on input line 387.
+Package textcomp Info: Setting qcr sub-encoding to TS1/0 on input line 388.
+Package textcomp Info: Setting qcs sub-encoding to TS1/0 on input line 389.
+Package textcomp Info: Setting qpl sub-encoding to TS1/0 on input line 390.
+Package textcomp Info: Setting qtm sub-encoding to TS1/0 on input line 391.
+Package textcomp Info: Setting qzc sub-encoding to TS1/0 on input line 392.
+Package textcomp Info: Setting qhvc sub-encoding to TS1/0 on input line 393.
+Package textcomp Info: Setting futs sub-encoding to TS1/4 on input line 394.
+Package textcomp Info: Setting futx sub-encoding to TS1/4 on input line 395.
+Package textcomp Info: Setting futj sub-encoding to TS1/4 on input line 396.
+Package textcomp Info: Setting hlh sub-encoding to TS1/3 on input line 397.
+Package textcomp Info: Setting hls sub-encoding to TS1/3 on input line 398.
+Package textcomp Info: Setting hlst sub-encoding to TS1/3 on input line 399.
+Package textcomp Info: Setting hlct sub-encoding to TS1/5 on input line 400.
+Package textcomp Info: Setting hlx sub-encoding to TS1/5 on input line 401.
+Package textcomp Info: Setting hlce sub-encoding to TS1/5 on input line 402.
+Package textcomp Info: Setting hlcn sub-encoding to TS1/5 on input line 403.
+Package textcomp Info: Setting hlcw sub-encoding to TS1/5 on input line 404.
+Package textcomp Info: Setting hlcf sub-encoding to TS1/5 on input line 405.
+Package textcomp Info: Setting pplx sub-encoding to TS1/3 on input line 406.
+Package textcomp Info: Setting pplj sub-encoding to TS1/3 on input line 407.
+Package textcomp Info: Setting ptmx sub-encoding to TS1/4 on input line 408.
+Package textcomp Info: Setting ptmj sub-encoding to TS1/4 on input line 409.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2005/09/27 v1.99g Standard LaTeX package
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/t1enc.def
+File: t1enc.def 2005/09/27 v1.99g Standard LaTeX file
+LaTeX Font Info:    Redeclaring font encoding T1 on input line 48.
+))
+(/usr/local/texlive/2016/texmf-dist/tex/latex/ae/ae.sty
+Package: ae 2001/02/12 1.3 Almost European Computer Modern
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2005/09/27 v1.99g Standard LaTeX package
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/t1enc.def
+File: t1enc.def 2005/09/27 v1.99g Standard LaTeX file
+LaTeX Font Info:    Redeclaring font encoding T1 on input line 48.
+)
+LaTeX Font Info:    Try loading font information for T1+aer on input line 105.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/ae/t1aer.fd
+File: t1aer.fd 1997/11/16 Font definitions for T1/aer.
+)))))
+(/usr/local/texlive/2016/texmf-dist/tex/latex/upquote/upquote.sty
+Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verba
+tim
+)
+(./monocle-vignette-knitr.aux)
+\openout1 = `monocle-vignette-knitr.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 78.
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 78.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 78.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ts1cmr.fd
+File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    ... okay on input line 78.
+LaTeX Font Info:    Try loading font information for T1+aess on input line 78.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/ae/t1aess.fd
+File: t1aess.fd 1997/11/16 Font definitions for T1/aess.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count106
+\scratchdimen=\dimen121
+\scratchbox=\box27
+\nofMPsegments=\count107
+\nofMParguments=\count108
+\everyMPshowfont=\toks16
+\MPscratchCnt=\count109
+\MPscratchDim=\dimen122
+\MPnumerator=\count110
+\makeMPintoPDFobject=\count111
+\everyMPtoPDFconversion=\toks17
+) (/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
+Package: epstopdf-base 2016/05/15 v2.6 Base part for package epstopdf
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/oberdiek/grfext.sty
+Package: grfext 2016/05/16 v1.2 Manage graphics extensions (HO)
+)
+Package grfext Info: Graphics extension search list:
+(grfext)             [.png,.pdf,.jpg,.mps,.jpeg,.jbig2,.jb2,.PNG,.PDF,.JPG,.JPE
+G,.JBIG2,.JB2,.eps]
+(grfext)             \AppendGraphicsExtensions on input line 456.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+\AtBeginShipoutBox=\box28
+Package hyperref Info: Link coloring OFF on input line 78.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/hyperref/nameref.sty
+Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
+Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
+)
+\c@section@level=\count112
+)
+LaTeX Info: Redefining \ref on input line 78.
+LaTeX Info: Redefining \pageref on input line 78.
+LaTeX Info: Redefining \nameref on input line 78.
+
+(./monocle-vignette-knitr.out) (./monocle-vignette-knitr.out)
+\@outlinefile=\write5
+\openout5 = `monocle-vignette-knitr.out'.
+
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(54.06006pt, 489.38776pt, 54.06006pt)
+* v-part:(T,H,B)=(54.06006pt, 719.8549pt, 71.13188pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=489.38776pt
+* \textheight=719.8549pt
+* \oddsidemargin=-18.20993pt
+* \evensidemargin=-18.20993pt
+* \topmargin=-55.20993pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=10.0pt
+* \footskip=30.0pt
+* \marginparwidth=65.0pt
+* \marginparsep=11.0pt
+* \columnsep=10.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 88.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 88.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 88.
+LaTeX Font Info:    Try loading font information for T1+aett on input line 88.
+(/usr/local/texlive/2016/texmf-dist/tex/latex/ae/t1aett.fd
+File: t1aett.fd 1997/11/16 Font definitions for T1/aett.
+)
+LaTeX Font Info:    Font shape `T1/aess/m/it' in size <9> not available
+(Font)              Font shape `T1/aess/m/sl' tried instead on input line 90.
+
+(./monocle-vignette-knitr.toc
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 4.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 4.
+ [1
+
+{/usr/local/texlive/2016/texmf-var/fonts/map/pdftex/updmap/pdftex.map}])
+\tf@toc=\write6
+\openout6 = `monocle-vignette-knitr.toc'.
+
+LaTeX Font Info:    Font shape `T1/aess/m/it' in size <10> not available
+(Font)              Font shape `T1/aess/m/sl' tried instead on input line 99.
+ [2]
+
+Package xcolor Warning: Incompatible color definition on input line 134.
+
+
+LaTeX Font Warning: Font shape `T1/aett/bx/n' undefined
+(Font)              using `T1/aett/m/n' instead on input line 136.
+
+
+Package xcolor Warning: Incompatible color definition on input line 147.
+
+
+Package xcolor Warning: Incompatible color definition on input line 158.
+
+
+Package xcolor Warning: Incompatible color definition on input line 167.
+
+
+Overfull \hbox (33.41135pt too wide) in paragraph at lines 170--170
+[][]\T1/aett/bx/n/10 upper_bound[] []<-[] []10[][]^[][]([][]mean[][]([][]log10[
+][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs))[] []+[] []2[][]*[][]sd[][]([][]lo
+g10[][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs)))[][] 
+ []
+
+
+Overfull \hbox (33.41135pt too wide) in paragraph at lines 171--171
+[][]\T1/aett/bx/n/10 lower_bound[] []<-[] []10[][]^[][]([][]mean[][]([][]log10[
+][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs))[] []-[] []2[][]*[][]sd[][]([][]lo
+g10[][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs)))[][] 
+ []
+
+
+Overfull \hbox (17.69138pt too wide) in paragraph at lines 172--172
+[][]\T1/aett/bx/n/10 HSMM[] []<-[] []HSMM[,[][]pData[][](HSMM)[][]$[][]Total_mR
+NAs[] []>[] []lower_bound[] []&[] []pData[][](HSMM)[][]$[][]Total_mRNAs[] []<[]
+ []up-per_bound][][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 182.
+
+
+Package xcolor Warning: Incompatible color definition on input line 204.
+
+[3]
+
+Package xcolor Warning: Incompatible color definition on input line 218.
+
+
+Package xcolor Warning: Incompatible color definition on input line 229.
+
+
+Package xcolor Warning: Incompatible color definition on input line 245.
+
+
+Package xcolor Warning: Incompatible color definition on input line 257.
+
+
+Overfull \hbox (17.69138pt too wide) in paragraph at lines 260--260
+[][]\T1/aett/bx/n/10 cth[] []<-[] []ad-d-Cell-Type[][](cth,[] []"Cy-cling my-ob
+last"[][],[] []clas-sify_func[] []=[] []func-tion[][]([][]x[][]) {x[CCNB2_id,][
+] []>=[] []1[][]})[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 268.
+
+
+Package xcolor Warning: Incompatible color definition on input line 282.
+
+
+Package xcolor Warning: Incompatible color definition on input line 292.
+
+[4]
+
+Package xcolor Warning: Incompatible color definition on input line 303.
+
+
+Package xcolor Warning: Incompatible color definition on input line 319.
+
+
+Package xcolor Warning: Incompatible color definition on input line 328.
+
+
+Package xcolor Warning: Incompatible color definition on input line 340.
+
+
+Package xcolor Warning: Incompatible color definition on input line 349.
+
+
+Package xcolor Warning: Incompatible color definition on input line 359.
+
+
+Package xcolor Warning: Incompatible color definition on input line 370.
+
+
+Package xcolor Warning: Incompatible color definition on input line 383.
+
+[5]
+
+Package xcolor Warning: Incompatible color definition on input line 396.
+
+
+Package xcolor Warning: Incompatible color definition on input line 407.
+
+
+Overfull \hbox (17.69138pt too wide) in paragraph at lines 410--410
+[]                                 []\T1/aett/bx/n/10 gene_short_name[] []%in%[
+] []c[][]([][]"MYH3"[][],[] []"MEF2C"[][],[] []"CCNB2"[][],[] []"TNNT1"[][])))[
+][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 419.
+
+
+Overfull \hbox (22.93137pt too wide) in paragraph at lines 421--421
+[][]\T1/aett/bx/n/10 diff_test_res[] []<-[] []dif-fer-en-tial-GeneTest[][](cds_
+subset,[] []fullMod-elFor-mu-laStr[] []=[] []"~sm.ns(Pseudotime)"[][])[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 429.
+
+
+Package xcolor Warning: Incompatible color definition on input line 441.
+
+
+Package xcolor Warning: Incompatible color definition on input line 454.
+
+
+Package xcolor Warning: Incompatible color definition on input line 468.
+
+[6]
+Overfull \hbox (28.17136pt too wide) in paragraph at lines 470--470
+[][]\T1/aett/bx/n/10 lung_genes[] []<-[] []row.names[][]([][]subset[][]([][]fDa
+ta[][](lung), gene_short_name[] []%in%[] []c[][]([][]"Ccnd2"[][],[] []"Sftpb"[]
+[],[] []"Pdpn"[][])))[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 500.
+
+
+Package xcolor Warning: Incompatible color definition on input line 513.
+
+[7]
+
+Package xcolor Warning: Incompatible color definition on input line 531.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 550--550
+\T1/aess/m/n/10 from ex-per-i-ments with
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 550--550
+\T1/aess/m/n/10 spike-ins or \T1/aett/bx/n/10 rel-a-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 550--550
+\T1/aett/bx/n/10 tive2abs\T1/aess/m/n/10 , raw read
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 553--553
+\T1/aess/m/n/10 from ex-per-i-ments with
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 553--553
+\T1/aess/m/n/10 spike-ins or \T1/aett/bx/n/10 rel-a-
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 553--553
+\T1/aett/bx/n/10 tive2abs\T1/aess/m/n/10 , raw read
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 560--560
+[]\T1/aess/m/n/10 log-transformed
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 543--562
+
+ []
+
+
+Overfull \hbox (23.90375pt too wide) in paragraph at lines 543--562
+[] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 572.
+
+
+Package xcolor Warning: Incompatible color definition on input line 586.
+
+[8]
+
+Package xcolor Warning: Incompatible color definition on input line 607.
+
+
+Package xcolor Warning: Incompatible color definition on input line 637.
+
+
+Package xcolor Warning: Incompatible color definition on input line 644.
+
+[9]
+
+Package xcolor Warning: Incompatible color definition on input line 655.
+
+
+Package xcolor Warning: Incompatible color definition on input line 690.
+
+[10]
+
+Package xcolor Warning: Incompatible color definition on input line 716.
+
+
+Overfull \hbox (286.1308pt too wide) in paragraph at lines 718--718
+[][]\T1/aett/bx/n/10 valid_cells[] []<-[] []row.names[][]([][]subset[][]([][]pD
+ata[][](HSMM), Cells.in.Well[] []==[] []1[] []&[] []Control[] []==[] []FALSE[] 
+[]&[] []Clump[] []==[] []FALSE[] []&[] []Debris[] []==[] []FALSE[] []&[] []Mapp
+ed.Fragments[] []>[] []1000000[][]))[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 726.
+
+
+Overfull \hbox (8.41132pt too wide) in paragraph at lines 732--732
+[][]\T1/aett/bx/n/10 upper_bound[] []<-[] []10[][]^[][]([][]mean[][]([][]log10[
+][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs))[] []+[] []2[][]*[][]sd[][]([][]lo
+g10[][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs)))[][] 
+ []
+
+
+Overfull \hbox (8.41132pt too wide) in paragraph at lines 733--733
+[][]\T1/aett/bx/n/10 lower_bound[] []<-[] []10[][]^[][]([][]mean[][]([][]log10[
+][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs))[] []-[] []2[][]*[][]sd[][]([][]lo
+g10[][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs)))[][] 
+ []
+
+<figure/show_mRNA_totals-1.png, id=299, 2409.0pt x 1204.5pt>
+File: figure/show_mRNA_totals-1.png Graphic file (type png)
+
+<use figure/show_mRNA_totals-1.png>
+Package pdftex.def Info: figure/show_mRNA_totals-1.png used on input line 740.
+(pdftex.def)             Requested size: 489.38776pt x 244.68184pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 757.
+
+LaTeX Font Info:    Try loading font information for TS1+aett on input line 767
+.
+(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/ts1aett.fd
+File: ts1aett.fd 
+)
+LaTeX Font Info:    Try loading font information for TS1+cmtt on input line 767
+.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ts1cmtt.fd
+File: ts1cmtt.fd 2014/09/29 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `TS1/aett/m/n' in size <10> not available
+(Font)              Font shape `TS1/cmtt/m/n' tried instead on input line 767.
+
+Overfull \hbox (55.58868pt too wide) in paragraph at lines 767--767
+[][]\T1/aett/bx/n/10 qplot[][](value,[] []geom[][]=[][]"density"[][],[] []data[
+][]=melted_dens_df)[] []+[]  []stat_function[][]([][]fun[] []= dnorm,[] []size[
+][]=[][]0.5[][],[] []color[][]=[][]\TS1/cmtt/m/n/10 '\T1/aett/bx/n/10 red\TS1/c
+mtt/m/n/10 '[][]\T1/aett/bx/n/10 )[] []+[][] 
+ []
+
+[11 <./figure/show_mRNA_totals-1.png>]
+<figure/lognormal_plot-1.png, id=306, 1806.75pt x 1204.5pt>
+File: figure/lognormal_plot-1.png Graphic file (type png)
+
+<use figure/lognormal_plot-1.png>
+Package pdftex.def Info: figure/lognormal_plot-1.png used on input line 773.
+(pdftex.def)             Requested size: 489.38776pt x 326.24858pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 789.
+
+[12 <./figure/lognormal_plot-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 805.
+
+
+Package xcolor Warning: Incompatible color definition on input line 815.
+
+<figure/count_cells_unsup_readout-1.png, id=314, 3011.25pt x 3011.25pt>
+File: figure/count_cells_unsup_readout-1.png Graphic file (type png)
+
+<use figure/count_cells_unsup_readout-1.png>
+Package pdftex.def Info: figure/count_cells_unsup_readout-1.png used on input l
+ine 832.
+(pdftex.def)             Requested size: 489.38776pt x 489.39125pt.
+ [13]
+
+Package xcolor Warning: Incompatible color definition on input line 848.
+
+[14 <./figure/count_cells_unsup_readout-1.png>]
+<figure/cluster_cells_unsup_gene_pick-1.png, id=325, 3011.25pt x 2409.0pt>
+File: figure/cluster_cells_unsup_gene_pick-1.png Graphic file (type png)
+
+<use figure/cluster_cells_unsup_gene_pick-1.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_gene_pick-1.png used on inp
+ut line 857.
+(pdftex.def)             Requested size: 489.38776pt x 391.513pt.
+
+Overfull \hbox (1.99692pt too wide) in paragraph at lines 865--866
+[]\T1/aess/m/n/10 The \T1/aett/bx/n/10 setOrderingFilter \T1/aess/m/n/10 func-t
+ion marks genes that will be used for clus-ter-ing in sub-se-quent calls to \T1
+/aett/bx/n/10 clusterCells\T1/aess/m/n/10 ,
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 870.
+
+LaTeX Font Info:    Font shape `TS1/aett/m/it' in size <10> not available
+(Font)              Font shape `TS1/cmtt/m/it' tried instead on input line 873.
+
+<figure/cluster_cells_unsup_no_covariate-1.png, id=326, 2409.0pt x 2409.0pt>
+File: figure/cluster_cells_unsup_no_covariate-1.png Graphic file (type png)
+
+<use figure/cluster_cells_unsup_no_covariate-1.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_no_covariate-1.png used on 
+input line 877.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [15 <./figure/cluster_cells_unsup_gene_pick-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 888.
+
+
+Package xcolor Warning: Incompatible color definition on input line 890.
+
+
+Package xcolor Warning: Incompatible color definition on input line 899.
+
+<figure/cluster_cells_unsup_no_covariate-2.png, id=333, 2409.0pt x 2409.0pt>
+File: figure/cluster_cells_unsup_no_covariate-2.png Graphic file (type png)
+
+<use figure/cluster_cells_unsup_no_covariate-2.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_no_covariate-2.png used on 
+input line 904.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [16 <./figure/cluster_cells_unsup_no_covariate-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 917.
+
+<figure/cluster_cells_unsup_plot_by_media-1.png, id=342, 2409.0pt x 2409.0pt>
+File: figure/cluster_cells_unsup_plot_by_media-1.png Graphic file (type png)
+
+<use figure/cluster_cells_unsup_plot_by_media-1.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_plot_by_media-1.png used on
+ input line 923.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [17 <./figure/cluster_cells_unsup_no_covariate-2.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 934.
+
+
+Package xcolor Warning: Incompatible color definition on input line 941.
+
+
+Package xcolor Warning: Incompatible color definition on input line 943.
+
+
+Package xcolor Warning: Incompatible color definition on input line 945.
+
+
+Package xcolor Warning: Incompatible color definition on input line 953.
+
+
+<figure/cluster_cells_unsup_control_for_media-1.png, id=349, 2409.0pt x 2409.0p
+t>
+File: figure/cluster_cells_unsup_control_for_media-1.png Graphic file (type png
+)
+ <use figure/cluster_cells_unsup_control_for_media-1.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_control_for_media-1.png use
+d on input line 958.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [18 <./figure/cluster_cells_unsup_plot_by_media-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 969.
+
+
+Package xcolor Warning: Incompatible color definition on input line 978.
+
+
+<figure/cluster_cells_unsup_plot_by_cell_type-1.png, id=355, 3613.5pt x 2409.0p
+t>
+File: figure/cluster_cells_unsup_plot_by_cell_type-1.png Graphic file (type png
+)
+ <use figure/cluster_cells_unsup_plot_by_cell_type-1.png>
+Package pdftex.def Info: figure/cluster_cells_unsup_plot_by_cell_type-1.png use
+d on input line 983.
+(pdftex.def)             Requested size: 489.38776pt x 326.23021pt.
+ [19 <./figure/cluster_cells_unsup_control_for_media-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 998.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1011.
+
+[20 <./figure/cluster_cells_unsup_plot_by_cell_type-1.png>]
+
+LaTeX Warning: Citation `CABILI' on page 21 undefined on input line 1028.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1032.
+
+<figure/cluster_cells_semisup_pick_genes-1.png, id=367, 2409.0pt x 2409.0pt>
+File: figure/cluster_cells_semisup_pick_genes-1.png Graphic file (type png)
+
+<use figure/cluster_cells_semisup_pick_genes-1.png>
+Package pdftex.def Info: figure/cluster_cells_semisup_pick_genes-1.png used on 
+input line 1040.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1051.
+
+[21 <./figure/cluster_cells_semisup_pick_genes-1.png>]
+<figure/cluster_cells_semisup_clustering_no_impute-1.png, id=373, 2409.0pt x 24
+09.0pt>
+File: figure/cluster_cells_semisup_clustering_no_impute-1.png Graphic file (typ
+e png)
+ <use figure/cluster_cells_semisup_clustering_no_impute-1.png>
+Package pdftex.def Info: figure/cluster_cells_semisup_clustering_no_impute-1.pn
+g used on input line 1057.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+
+Overfull \hbox (76.5661pt too wide) in paragraph at lines 1063--1063
+[][]\T1/aett/bx/n/10 HSMM[] []<-[] []reduceDimension[][](HSMM,[] []max_componen
+ts[][]=[][]2[][],[] []num_dim[] []=[] []3[][],[] []norm_method[] []=[] []\TS1/c
+mtt/m/n/10 '\T1/aett/bx/n/10 log\TS1/cmtt/m/n/10 '[][]\T1/aett/bx/n/10 ,[] []re
+duction_method[] []=[] []\TS1/cmtt/m/n/10 '\T1/aett/bx/n/10 tSNE\TS1/cmtt/m/n/1
+0 '[][]\T1/aett/bx/n/10 ,[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 1068.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1070.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1072.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1080.
+
+
+<figure/cluster_cells_semisup_clustering_no_impute-2.png, id=374, 2409.0pt x 24
+09.0pt>
+File: figure/cluster_cells_semisup_clustering_no_impute-2.png Graphic file (typ
+e png)
+ <use figure/cluster_cells_semisup_clustering_no_impute-2.png>
+Package pdftex.def Info: figure/cluster_cells_semisup_clustering_no_impute-2.pn
+g used on input line 1085.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [22 <./figure/cluster_cells_semisup_clustering_no_impute-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1098.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1110.
+
+[23 <./figure/cluster_cells_semisup_clustering_no_impute-2.png>]
+<figure/cluster_cells_semisup_clustering_with_impute-1.png, id=385, 4215.75pt x
+ 2409.0pt>
+File: figure/cluster_cells_semisup_clustering_with_impute-1.png Graphic file (t
+ype png)
+ <use figure/cluster_cells_semisup_clustering_with_impute-1.png>
+Package pdftex.def Info: figure/cluster_cells_semisup_clustering_with_impute-1.
+png used on input line 1115.
+(pdftex.def)             Requested size: 489.38776pt x 279.62064pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1126.
+
+<figure/count_cells_semisup_pie-1.png, id=386, 3011.25pt x 3011.25pt>
+File: figure/count_cells_semisup_pie-1.png Graphic file (type png)
+
+<use figure/count_cells_semisup_pie-1.png>
+Package pdftex.def Info: figure/count_cells_semisup_pie-1.png used on input lin
+e 1135.
+(pdftex.def)             Requested size: 489.38776pt x 489.39125pt.
+ [24 <./figure/cluster_cells_semisup_clustering_with_impute-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1145.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1152.
+
+
+LaTeX Warning: Reference `references' on page 25 undefined on input line 1159.
+
+[25 <./figure/count_cells_semisup_pie-1.png>] [26]
+
+Package xcolor Warning: Incompatible color definition on input line 1187.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1202.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1215.
+
+<figure/set_ordering_filter-1.png, id=407, 1806.75pt x 1806.75pt>
+File: figure/set_ordering_filter-1.png Graphic file (type png)
+
+<use figure/set_ordering_filter-1.png>
+Package pdftex.def Info: figure/set_ordering_filter-1.png used on input line 12
+22.
+(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
+ [27]
+
+Package xcolor Warning: Incompatible color definition on input line 1232.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1242.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1253.
+
+<figure/plot_ordering_mst-1.png, id=412, 2409.0pt x 2409.0pt>
+File: figure/plot_ordering_mst-1.png Graphic file (type png)
+
+<use figure/plot_ordering_mst-1.png>
+Package pdftex.def Info: figure/plot_ordering_mst-1.png used on input line 1259
+.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [28 <./figure/set_ordering_filter-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1277.
+
+<figure/plot_ordering_mst_by_state-1.png, id=418, 2409.0pt x 2409.0pt>
+File: figure/plot_ordering_mst_by_state-1.png Graphic file (type png)
+
+<use figure/plot_ordering_mst_by_state-1.png>
+Package pdftex.def Info: figure/plot_ordering_mst_by_state-1.png used on input 
+line 1283.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [29 <./figure/plot_ordering_mst-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1294.
+
+<figure/plot_ordering_with_GM_state-1.png, id=424, 2409.0pt x 2409.0pt>
+File: figure/plot_ordering_with_GM_state-1.png Graphic file (type png)
+
+<use figure/plot_ordering_with_GM_state-1.png>
+Package pdftex.def Info: figure/plot_ordering_with_GM_state-1.png used on input
+ line 1307.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [30 <./figure/plot_ordering_mst_by_state-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1318.
+
+<figure/init_hsmm_facet_state-1.png, id=430, 3613.5pt x 1806.75pt>
+File: figure/init_hsmm_facet_state-1.png Graphic file (type png)
+
+<use figure/init_hsmm_facet_state-1.png>
+Package pdftex.def Info: figure/init_hsmm_facet_state-1.png used on input line 
+1323.
+(pdftex.def)             Requested size: 489.38776pt x 244.67265pt.
+
+Overfull \hbox (15.0pt too wide) in paragraph at lines 1323--1324
+[][] 
+ []
+
+[31 <./figure/plot_ordering_with_GM_state-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1330.
+
+
+Overfull \hbox (29.37128pt too wide) in paragraph at lines 1332--1332
+[][]\T1/aett/bx/n/10 blast_genes[] []<-[] []row.names[][]([][]subset[][]([][]fD
+ata[][](HSMM_myo), gene_short_name[] []%in%[] []c[][]([][]"CCNB2"[][],[] []"MYO
+D1"[][],[] []"MYOG"[][])))[][] 
+ []
+
+<figure/init_hsmm_jitter_state-1.png, id=437, 1806.75pt x 2107.875pt>
+File: figure/init_hsmm_jitter_state-1.png Graphic file (type png)
+
+<use figure/init_hsmm_jitter_state-1.png>
+Package pdftex.def Info: figure/init_hsmm_jitter_state-1.png used on input line
+ 1337.
+(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+ [32 <./figure/init_hsmm_facet_state-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1349.
+
+<figure/plot_markers_linear-1.png, id=443, 2409.0pt x 2409.0pt>
+File: figure/plot_markers_linear-1.png Graphic file (type png)
+
+<use figure/plot_markers_linear-1.png>
+Package pdftex.def Info: figure/plot_markers_linear-1.png used on input line 13
+62.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [33 <./figure/init_hsmm_jitter_state-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1392.
+
+[34 <./figure/plot_markers_linear-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1437.
+
+<figure/order_cells_pca_unsup-1.png, id=454, 2409.0pt x 1806.75pt>
+File: figure/order_cells_pca_unsup-1.png Graphic file (type png)
+
+<use figure/order_cells_pca_unsup-1.png>
+Package pdftex.def Info: figure/order_cells_pca_unsup-1.png used on input line 
+1447.
+(pdftex.def)             Requested size: 489.38776pt x 367.02277pt.
+ [35]
+
+Package xcolor Warning: Incompatible color definition on input line 1468.
+
+
+Overfull \hbox (8.41132pt too wide) in paragraph at lines 1471--1471
+[][]\T1/aett/bx/n/10 fData[][](HSMM_myo)[][]$[][]use_for_ordering[] []<-[] []fD
+ata[][](HSMM_myo)[][]$[][]num_cells_expressed[] []>[] []0.05[] []*[] []ncol[][]
+(HSMM_myo)[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 1481.
+
+
+Overfull \hbox (3.17133pt too wide) in paragraph at lines 1483--1483
+[][]\T1/aett/bx/n/10 plot_pc_variance_explained[][](HSMM_myo,[] []return_all[] 
+[]= F)[] []\T1/aett/m/it/10 #look at the plot and de-cide how many di-
+ []
+
+
+Overfull \hbox (13.6513pt too wide) in paragraph at lines 1483--1483
+\T1/aett/m/it/10 men-sions you need. It is de-ter-mined by a huge drop of vari-
+ance at that di-men-sion. pass that num-
+ []
+
+<figure/plot_pc_variance-1.png, id=460, 1806.75pt x 2409.0pt>
+File: figure/plot_pc_variance-1.png Graphic file (type png)
+
+<use figure/plot_pc_variance-1.png>
+Package pdftex.def Info: figure/plot_pc_variance-1.png used on input line 1487.
+
+(pdftex.def)             Requested size: 489.38776pt x 652.49718pt.
+ [36 <./figure/order_cells_pca_unsup-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1497.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1504.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1506.
+
+[37 <./figure/plot_pc_variance-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1517.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1526.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1531.
+
+<figure/check_the_clustering_results-1.png, id=475, 1806.75pt x 2107.875pt>
+File: figure/check_the_clustering_results-1.png Graphic file (type png)
+
+<use figure/check_the_clustering_results-1.png>
+Package pdftex.def Info: figure/check_the_clustering_results-1.png used on inpu
+t line 1537.
+(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+
+<figure/check_the_clustering_results-2.png, id=476, 1806.75pt x 2107.875pt>
+File: figure/check_the_clustering_results-2.png Graphic file (type png)
+
+<use figure/check_the_clustering_results-2.png>
+Package pdftex.def Info: figure/check_the_clustering_results-2.png used on inpu
+t line 1538.
+(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+
+Overfull \hbox (15.0pt too wide) in paragraph at lines 1537--1539
+[][]
+ []
+
+[38] [39 <./figure/check_the_clustering_results-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1544.
+
+<figure/plot_rho_delta-1.png, id=487, 1806.75pt x 1806.75pt>
+File: figure/plot_rho_delta-1.png Graphic file (type png)
+
+<use figure/plot_rho_delta-1.png>
+Package pdftex.def Info: figure/plot_rho_delta-1.png used on input line 1550.
+(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
+ [40 <./figure/check_the_clustering_results-2.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1562.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1575.
+
+<figure/check_clustering_again-1.png, id=493, 1806.75pt x 2107.875pt>
+File: figure/check_clustering_again-1.png Graphic file (type png)
+
+<use figure/check_clustering_again-1.png>
+Package pdftex.def Info: figure/check_clustering_again-1.png used on input line
+ 1581.
+(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+
+<figure/check_clustering_again-2.png, id=494, 1806.75pt x 2107.875pt>
+File: figure/check_clustering_again-2.png Graphic file (type png)
+
+<use figure/check_clustering_again-2.png>
+Package pdftex.def Info: figure/check_clustering_again-2.png used on input line
+ 1582.
+(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+
+Overfull \hbox (15.0pt too wide) in paragraph at lines 1581--1583
+[][]
+ []
+
+[41 <./figure/plot_rho_delta-1.png>] [42 <./figure/check_clustering_again-1.png
+>]
+
+Package xcolor Warning: Incompatible color definition on input line 1589.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1600.
+
+
+Overfull \hbox (13.6513pt too wide) in paragraph at lines 1602--1602
+[][]\T1/aett/bx/n/10 HSMM_ordering_genes[] []<-[] []row.names[][](clustering_DE
+G_genes)[[][]order[][](clustering_DEG_genes[][]$[][]qval)][[][]1[][]:[][]1000[]
+[]][][] 
+ []
+
+[43 <./figure/check_clustering_again-2.png>]
+<figure/order_cells_dp_feature-1.png, id=511, 1806.75pt x 1806.75pt>
+File: figure/order_cells_dp_feature-1.png Graphic file (type png)
+
+<use figure/order_cells_dp_feature-1.png>
+Package pdftex.def Info: figure/order_cells_dp_feature-1.png used on input line
+ 1612.
+(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1628.
+
+[44 <./figure/order_cells_dp_feature-1.png>]
+Overfull \hbox (60.81122pt too wide) in paragraph at lines 1636--1636
+[][]\T1/aett/bx/n/10 cth[] []<-[] []addCellType[][](cth,[] []"Reserve cell"[][]
+,[] []classify_func[][]=[][]function[][]([][]x[][]) {x[MYH3_id,][] []==[] []0[]
+ []&[] []x[CCNB2_id,][] []==[] []0[][]})[][] 
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 1644.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1657.
+
+
+Overfull \hbox (13.68622pt too wide) in paragraph at lines 1661--1661
+[][]\T1/aett/bx/n/10 HSMM_myo[] []<-[] []reduceDimension[][](HSMM_myo,[] []max_
+components[][]=[][]2[][],[] []method[] []=[] []\TS1/cmtt/m/n/10 '\T1/aett/bx/n/
+10 DDRTree\TS1/cmtt/m/n/10 '[][]\T1/aett/bx/n/10 ,[] []norm_method[] []=[] []\T
+S1/cmtt/m/n/10 '\T1/aett/bx/n/10 log\TS1/cmtt/m/n/10 '[][]\T1/aett/bx/n/10 )[][
+] 
+ []
+
+<figure/semi_sup_ordering_trajectory-1.png, id=517, 3613.5pt x 1204.5pt>
+File: figure/semi_sup_ordering_trajectory-1.png Graphic file (type png)
+
+<use figure/semi_sup_ordering_trajectory-1.png>
+Package pdftex.def Info: figure/semi_sup_ordering_trajectory-1.png used on inpu
+t line 1668.
+(pdftex.def)             Requested size: 489.38776pt x 163.1151pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1683.
+
+
+<figure/semi_sup_ordering_genes_in_pseudotime-1.png, id=519, 2409.0pt x 2409.0p
+t>
+File: figure/semi_sup_ordering_genes_in_pseudotime-1.png Graphic file (type png
+)
+ <use figure/semi_sup_ordering_genes_in_pseudotime-1.png>
+Package pdftex.def Info: figure/semi_sup_ordering_genes_in_pseudotime-1.png use
+d on input line 1698.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [45 <./figure/semi_sup_ordering_trajectory-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1737.
+
+[46 <./figure/semi_sup_ordering_genes_in_pseudotime-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1753.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1790.
+
+<figure/plot_myog_jitter-1.png, id=531, 2409.0pt x 1204.5pt>
+File: figure/plot_myog_jitter-1.png Graphic file (type png)
+
+<use figure/plot_myog_jitter-1.png>
+Package pdftex.def Info: figure/plot_myog_jitter-1.png used on input line 1798.
+
+(pdftex.def)             Requested size: 489.38776pt x 244.68184pt.
+ [47]
+
+Package xcolor Warning: Incompatible color definition on input line 1817.
+
+
+Overfull \hbox (46.9096pt too wide) in paragraph at lines 1828--1829
+[]\T1/aess/m/n/10 To set up the test based on \T1/aett/bx/n/10 CellType\T1/aess
+/m/n/10 , we sim-ply call \T1/aett/bx/n/10 differentialGeneTest \T1/aess/m/n/10
+ with a string spec-i-fy-ing \T1/aett/bx/n/10 fullModelFormulaStr\T1/aess/m/n/1
+0 .
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 1831.
+
+[48 <./figure/plot_myog_jitter-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1848.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1855.
+
+<figure/jitter_plot_diff_res-1.png, id=543, 4818.0pt x 1505.625pt>
+File: figure/jitter_plot_diff_res-1.png Graphic file (type png)
+
+<use figure/jitter_plot_diff_res-1.png>
+Package pdftex.def Info: figure/jitter_plot_diff_res-1.png used on input line 1
+857.
+(pdftex.def)             Requested size: 489.38776pt x 152.91466pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1869.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1887.
+
+[49 <./figure/jitter_plot_diff_res-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 1898.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1909.
+
+
+Package xcolor Warning: Incompatible color definition on input line 1926.
+
+<figure/plot_diff_res_pt-1.png, id=550, 2409.0pt x 2409.0pt>
+File: figure/plot_diff_res_pt-1.png Graphic file (type png)
+
+<use figure/plot_diff_res_pt-1.png>
+Package pdftex.def Info: figure/plot_diff_res_pt-1.png used on input line 1932.
+
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [50]
+
+Package xcolor Warning: Incompatible color definition on input line 1949.
+
+[51 <./figure/plot_diff_res_pt-1.png>]
+<figure/plot_diff_res_pt_heatmap-1.png, id=560, 3011.25pt x 2409.0pt>
+File: figure/plot_diff_res_pt_heatmap-1.png Graphic file (type png)
+
+<use figure/plot_diff_res_pt_heatmap-1.png>
+Package pdftex.def Info: figure/plot_diff_res_pt_heatmap-1.png used on input li
+ne 1964.
+(pdftex.def)             Requested size: 489.38776pt x 391.513pt.
+
+Overfull \hbox (8.56871pt too wide) in paragraph at lines 1976--1977
+[]\T1/aess/m/n/10 When we plot the ex-pres-sion lev-els of these genes, we can 
+mod-ify the re-sult-ing ob-ject re-turned by \T1/aett/bx/n/10 plot_genes_jitter
+
+ []
+
+
+Package xcolor Warning: Incompatible color definition on input line 1979.
+
+[52 <./figure/plot_diff_res_pt_heatmap-1.png>]
+<figure/plot_diff_res_multi-1.png, id=566, 4818.0pt x 2409.0pt>
+File: figure/plot_diff_res_multi-1.png Graphic file (type png)
+
+<use figure/plot_diff_res_multi-1.png>
+Package pdftex.def Info: figure/plot_diff_res_multi-1.png used on input line 20
+04.
+(pdftex.def)             Requested size: 489.38776pt x 244.66347pt.
+
+
+Package xcolor Warning: Incompatible color definition on input line 2019.
+
+
+Package xcolor Warning: Incompatible color definition on input line 2025.
+
+<figure/init_treutlein-1.png, id=568, 2409.0pt x 2409.0pt>
+File: figure/init_treutlein-1.png Graphic file (type png)
+
+<use figure/init_treutlein-1.png>
+Package pdftex.def Info: figure/init_treutlein-1.png used on input line 2030.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [53 <./figure/plot_diff_res_multi-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 2041.
+
+
+Package xcolor Warning: Incompatible color definition on input line 2052.
+
+[54 <./figure/init_treutlein-1.png>]
+<figure/lung_beam_branched_heatmap-1.png, id=579, 3613.5pt x 4818.0pt>
+File: figure/lung_beam_branched_heatmap-1.png Graphic file (type png)
+
+<use figure/lung_beam_branched_heatmap-1.png>
+Package pdftex.def Info: figure/lung_beam_branched_heatmap-1.png used on input 
+line 2063.
+(pdftex.def)             Requested size: 489.38776pt x 652.46042pt.
+ [55 <./figure/lung_beam_branched_heatmap-1.png>]
+
+Package xcolor Warning: Incompatible color definition on input line 2074.
+
+
+Overfull \hbox (3.17133pt too wide) in paragraph at lines 2076--2076
+[][]\T1/aett/bx/n/10 lung_genes[] []<-[] []row.names[][]([][]subset[][]([][]fDa
+ta[][](lung), gene_short_name[] []%in%[] []c[][]([][]"Ccnd2"[][],[] []"Sftpb"[]
+[],[] []"Pdpn"[][])))[][] 
+ []
+
+<figure/lung_beam_branched_pseudotime-1.png, id=586, 2409.0pt x 2409.0pt>
+File: figure/lung_beam_branched_pseudotime-1.png Graphic file (type png)
+
+<use figure/lung_beam_branched_pseudotime-1.png>
+Package pdftex.def Info: figure/lung_beam_branched_pseudotime-1.png used on inp
+ut line 2084.
+(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+ [56 <./figure/lung_beam_branched_pseudotime-1.png>]
+
+LaTeX Warning: Citation `Rodriguez2014-rl' on page 57 undefined on input line 2
+116.
+
+[57] [58] [59] [60]
+
+LaTeX Warning: Reference `citations' on page 61 undefined on input line 2349.
+
+
+Package xcolor Warning: Incompatible color definition on input line 2352.
+
+
+Package xcolor Warning: Incompatible color definition on input line 2382.
+
+[61] (./monocle-vignette-knitr.bbl [62])
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2430.
+ [63]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 2430.
+ (./monocle-vignette-knitr.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2430.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2430.
+
+Package rerunfilecheck Info: File `monocle-vignette-knitr.out' has not changed.
+
+(rerunfilecheck)             Checksum: 353A6FF359E626CAA4A06565BD92453F;3652.
+
+
+LaTeX Font Warning: Some font shapes were not available, defaults substituted.
+
+
+LaTeX Warning: There were undefined references.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2430.
+ ) 
+Here is how much of TeX's memory you used:
+ 8372 strings out of 493014
+ 127121 string characters out of 6133351
+ 222427 words of memory out of 5000000
+ 11555 multiletter control sequences out of 15000+600000
+ 38057 words of font info for 79 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 42i,12n,45p,1691b,449s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/local/texlive/2016/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc
+}</usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb>
+</usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></
+usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></u
+sr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmitt10.pfb></u
+sr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></us
+r/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></usr/
+local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/lo
+cal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/loca
+l/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></usr/local/t
+exlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr/local/texl
+ive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb></usr/local/texli
+ve/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmss12.pfb></usr/local/texliv
+e/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmss9.pfb></usr/local/texlive/
+2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmssbx10.pfb></usr/local/texlive
+/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi10.pfb></usr/local/texlive
+/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi9.pfb></usr/local/texlive/
+2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive/2
+016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/local/texlive/201
+6/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/2016/
+texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2016/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2016/te
+xmf-dist/fonts/type1/public/cm-super/sfit1000.pfb></usr/local/texlive/2016/texm
+f-dist/fonts/type1/public/cm-super/sftt1000.pfb>
+Output written on monocle-vignette-knitr.pdf (63 pages, 8385302 bytes).
+PDF statistics:
+ 781 PDF objects out of 1000 (max. 8388607)
+ 608 compressed objects within 7 object streams
+ 153 named destinations out of 1000 (max. 500000)
+ 540 words of extra memory for PDF output out of 10000 (max. 10000000)
+
