@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  22 JUN 2017 17:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  22 JUN 2017 19:31
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -776,12 +776,12 @@ Overfull \hbox (8.41132pt too wide) in paragraph at lines 733--733
 g10[][]([][]pData[][](HSMM)[][]$[][]Total_mRNAs)))[][] 
  []
 
-<figure/show_mRNA_totals-1.png, id=299, 2409.0pt x 1204.5pt>
+<figure/show_mRNA_totals-1.png, id=299, 289.08pt x 144.54pt>
 File: figure/show_mRNA_totals-1.png Graphic file (type png)
 
 <use figure/show_mRNA_totals-1.png>
 Package pdftex.def Info: figure/show_mRNA_totals-1.png used on input line 740.
-(pdftex.def)             Requested size: 489.38776pt x 244.68184pt.
+(pdftex.def)             Requested size: 289.07928pt x 144.54623pt.
 
 
 Package xcolor Warning: Incompatible color definition on input line 757.
@@ -807,44 +807,41 @@ Overfull \hbox (55.58868pt too wide) in paragraph at lines 767--767
 mtt/m/n/10 '[][]\T1/aett/bx/n/10 )[] []+[][] 
  []
 
-[11 <./figure/show_mRNA_totals-1.png>]
-<figure/lognormal_plot-1.png, id=306, 1806.75pt x 1204.5pt>
+<figure/lognormal_plot-1.png, id=300, 216.81pt x 144.54pt>
 File: figure/lognormal_plot-1.png Graphic file (type png)
 
 <use figure/lognormal_plot-1.png>
 Package pdftex.def Info: figure/lognormal_plot-1.png used on input line 773.
-(pdftex.def)             Requested size: 489.38776pt x 326.24858pt.
-
+(pdftex.def)             Requested size: 216.80946pt x 144.54623pt.
+ [11 <./figure/show_mRNA_totals-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 789.
 
-[12 <./figure/lognormal_plot-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 805.
 
 
 Package xcolor Warning: Incompatible color definition on input line 815.
 
-<figure/count_cells_unsup_readout-1.png, id=314, 3011.25pt x 3011.25pt>
+<figure/count_cells_unsup_readout-1.png, id=306, 361.35pt x 361.35pt>
 File: figure/count_cells_unsup_readout-1.png Graphic file (type png)
 
 <use figure/count_cells_unsup_readout-1.png>
 Package pdftex.def Info: figure/count_cells_unsup_readout-1.png used on input l
 ine 832.
-(pdftex.def)             Requested size: 489.38776pt x 489.39125pt.
- [13]
+(pdftex.def)             Requested size: 361.34912pt x 361.34912pt.
+ [12 <./figure/lognormal_plot-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 848.
 
-[14 <./figure/count_cells_unsup_readout-1.png>]
-<figure/cluster_cells_unsup_gene_pick-1.png, id=325, 3011.25pt x 2409.0pt>
+<figure/cluster_cells_unsup_gene_pick-1.png, id=312, 361.35pt x 289.08pt>
 File: figure/cluster_cells_unsup_gene_pick-1.png Graphic file (type png)
 
 <use figure/cluster_cells_unsup_gene_pick-1.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_gene_pick-1.png used on inp
 ut line 857.
-(pdftex.def)             Requested size: 489.38776pt x 391.513pt.
-
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
+ [13 <./figure/count_cells_unsup_readout-1.png (PNG copy)>]
 Overfull \hbox (1.99692pt too wide) in paragraph at lines 865--866
 []\T1/aess/m/n/10 The \T1/aett/bx/n/10 setOrderingFilter \T1/aess/m/n/10 func-t
 ion marks genes that will be used for clus-ter-ing in sub-se-quent calls to \T1
@@ -857,14 +854,15 @@ Package xcolor Warning: Incompatible color definition on input line 870.
 LaTeX Font Info:    Font shape `TS1/aett/m/it' in size <10> not available
 (Font)              Font shape `TS1/cmtt/m/it' tried instead on input line 873.
 
-<figure/cluster_cells_unsup_no_covariate-1.png, id=326, 2409.0pt x 2409.0pt>
+<figure/cluster_cells_unsup_no_covariate-1.png, id=318, 289.08pt x 289.08pt>
 File: figure/cluster_cells_unsup_no_covariate-1.png Graphic file (type png)
 
 <use figure/cluster_cells_unsup_no_covariate-1.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_no_covariate-1.png used on 
 input line 877.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [15 <./figure/cluster_cells_unsup_gene_pick-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [14 <./figure/cluster_cells_unsup_gene_pick-1.png (PNG copy)> <./figure/cluste
+r_cells_unsup_no_covariate-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 888.
 
@@ -874,25 +872,25 @@ Package xcolor Warning: Incompatible color definition on input line 890.
 
 Package xcolor Warning: Incompatible color definition on input line 899.
 
-<figure/cluster_cells_unsup_no_covariate-2.png, id=333, 2409.0pt x 2409.0pt>
+<figure/cluster_cells_unsup_no_covariate-2.png, id=325, 289.08pt x 289.08pt>
 File: figure/cluster_cells_unsup_no_covariate-2.png Graphic file (type png)
 
 <use figure/cluster_cells_unsup_no_covariate-2.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_no_covariate-2.png used on 
 input line 904.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [16 <./figure/cluster_cells_unsup_no_covariate-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 917.
 
-<figure/cluster_cells_unsup_plot_by_media-1.png, id=342, 2409.0pt x 2409.0pt>
+<figure/cluster_cells_unsup_plot_by_media-1.png, id=329, 289.08pt x 289.08pt>
 File: figure/cluster_cells_unsup_plot_by_media-1.png Graphic file (type png)
 
 <use figure/cluster_cells_unsup_plot_by_media-1.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_plot_by_media-1.png used on
  input line 923.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [17 <./figure/cluster_cells_unsup_no_covariate-2.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [15 <./figure/cluster_cells_unsup_no_covariate-2.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 934.
 
@@ -909,15 +907,15 @@ Package xcolor Warning: Incompatible color definition on input line 945.
 Package xcolor Warning: Incompatible color definition on input line 953.
 
 
-<figure/cluster_cells_unsup_control_for_media-1.png, id=349, 2409.0pt x 2409.0p
+<figure/cluster_cells_unsup_control_for_media-1.png, id=335, 289.08pt x 289.08p
 t>
 File: figure/cluster_cells_unsup_control_for_media-1.png Graphic file (type png
 )
  <use figure/cluster_cells_unsup_control_for_media-1.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_control_for_media-1.png use
 d on input line 958.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [18 <./figure/cluster_cells_unsup_plot_by_media-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [16 <./figure/cluster_cells_unsup_plot_by_media-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 969.
 
@@ -925,48 +923,48 @@ Package xcolor Warning: Incompatible color definition on input line 969.
 Package xcolor Warning: Incompatible color definition on input line 978.
 
 
-<figure/cluster_cells_unsup_plot_by_cell_type-1.png, id=355, 3613.5pt x 2409.0p
+<figure/cluster_cells_unsup_plot_by_cell_type-1.png, id=340, 433.62pt x 289.08p
 t>
 File: figure/cluster_cells_unsup_plot_by_cell_type-1.png Graphic file (type png
 )
  <use figure/cluster_cells_unsup_plot_by_cell_type-1.png>
 Package pdftex.def Info: figure/cluster_cells_unsup_plot_by_cell_type-1.png use
 d on input line 983.
-(pdftex.def)             Requested size: 489.38776pt x 326.23021pt.
- [19 <./figure/cluster_cells_unsup_control_for_media-1.png>]
+(pdftex.def)             Requested size: 433.61894pt x 289.09251pt.
+ [17 <./figure/cluster_cells_unsup_control_for_media-1.png (PNG copy)> <./figur
+e/cluster_cells_unsup_plot_by_cell_type-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 998.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1011.
 
-[20 <./figure/cluster_cells_unsup_plot_by_cell_type-1.png>]
 
-LaTeX Warning: Citation `CABILI' on page 21 undefined on input line 1028.
+LaTeX Warning: Citation `CABILI' on page 18 undefined on input line 1028.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1032.
 
-<figure/cluster_cells_semisup_pick_genes-1.png, id=367, 2409.0pt x 2409.0pt>
+<figure/cluster_cells_semisup_pick_genes-1.png, id=345, 289.08pt x 289.08pt>
 File: figure/cluster_cells_semisup_pick_genes-1.png Graphic file (type png)
 
 <use figure/cluster_cells_semisup_pick_genes-1.png>
 Package pdftex.def Info: figure/cluster_cells_semisup_pick_genes-1.png used on 
 input line 1040.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
-
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [18]
 
 Package xcolor Warning: Incompatible color definition on input line 1051.
 
-[21 <./figure/cluster_cells_semisup_pick_genes-1.png>]
-<figure/cluster_cells_semisup_clustering_no_impute-1.png, id=373, 2409.0pt x 24
-09.0pt>
+
+<figure/cluster_cells_semisup_clustering_no_impute-1.png, id=350, 289.08pt x 28
+9.08pt>
 File: figure/cluster_cells_semisup_clustering_no_impute-1.png Graphic file (typ
 e png)
  <use figure/cluster_cells_semisup_clustering_no_impute-1.png>
 Package pdftex.def Info: figure/cluster_cells_semisup_clustering_no_impute-1.pn
 g used on input line 1057.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
 
 Overfull \hbox (76.5661pt too wide) in paragraph at lines 1063--1063
 [][]\T1/aett/bx/n/10 HSMM[] []<-[] []reduceDimension[][](HSMM,[] []max_componen
@@ -988,43 +986,45 @@ Package xcolor Warning: Incompatible color definition on input line 1072.
 
 Package xcolor Warning: Incompatible color definition on input line 1080.
 
-
-<figure/cluster_cells_semisup_clustering_no_impute-2.png, id=374, 2409.0pt x 24
-09.0pt>
+[19 <./figure/cluster_cells_semisup_pick_genes-1.png (PNG copy)> <./figure/clus
+ter_cells_semisup_clustering_no_impute-1.png>]
+<figure/cluster_cells_semisup_clustering_no_impute-2.png, id=357, 289.08pt x 28
+9.08pt>
 File: figure/cluster_cells_semisup_clustering_no_impute-2.png Graphic file (typ
 e png)
  <use figure/cluster_cells_semisup_clustering_no_impute-2.png>
 Package pdftex.def Info: figure/cluster_cells_semisup_clustering_no_impute-2.pn
 g used on input line 1085.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [22 <./figure/cluster_cells_semisup_clustering_no_impute-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1098.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1110.
 
-[23 <./figure/cluster_cells_semisup_clustering_no_impute-2.png>]
-<figure/cluster_cells_semisup_clustering_with_impute-1.png, id=385, 4215.75pt x
- 2409.0pt>
+
+<figure/cluster_cells_semisup_clustering_with_impute-1.png, id=358, 505.89pt x 
+289.08pt>
 File: figure/cluster_cells_semisup_clustering_with_impute-1.png Graphic file (t
 ype png)
  <use figure/cluster_cells_semisup_clustering_with_impute-1.png>
 Package pdftex.def Info: figure/cluster_cells_semisup_clustering_with_impute-1.
 png used on input line 1115.
-(pdftex.def)             Requested size: 489.38776pt x 279.62064pt.
+(pdftex.def)             Requested size: 489.38776pt x 279.65738pt.
 
+[20 <./figure/cluster_cells_semisup_clustering_no_impute-2.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1126.
 
-<figure/count_cells_semisup_pie-1.png, id=386, 3011.25pt x 3011.25pt>
+<figure/count_cells_semisup_pie-1.png, id=363, 361.35pt x 361.35pt>
 File: figure/count_cells_semisup_pie-1.png Graphic file (type png)
 
 <use figure/count_cells_semisup_pie-1.png>
 Package pdftex.def Info: figure/count_cells_semisup_pie-1.png used on input lin
 e 1135.
-(pdftex.def)             Requested size: 489.38776pt x 489.39125pt.
- [24 <./figure/cluster_cells_semisup_clustering_with_impute-1.png>]
+(pdftex.def)             Requested size: 361.34912pt x 361.34912pt.
+ [21 <./figure/cluster_cells_semisup_clustering_with_impute-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1145.
 
@@ -1032,9 +1032,9 @@ Package xcolor Warning: Incompatible color definition on input line 1145.
 Package xcolor Warning: Incompatible color definition on input line 1152.
 
 
-LaTeX Warning: Reference `references' on page 25 undefined on input line 1159.
+LaTeX Warning: Reference `references' on page 22 undefined on input line 1159.
 
-[25 <./figure/count_cells_semisup_pie-1.png>] [26]
+[22 <./figure/count_cells_semisup_pie-1.png (PNG copy)>] [23]
 
 Package xcolor Warning: Incompatible color definition on input line 1187.
 
@@ -1044,69 +1044,66 @@ Package xcolor Warning: Incompatible color definition on input line 1202.
 
 Package xcolor Warning: Incompatible color definition on input line 1215.
 
-<figure/set_ordering_filter-1.png, id=407, 1806.75pt x 1806.75pt>
+<figure/set_ordering_filter-1.png, id=381, 216.81pt x 216.81pt>
 File: figure/set_ordering_filter-1.png Graphic file (type png)
 
 <use figure/set_ordering_filter-1.png>
 Package pdftex.def Info: figure/set_ordering_filter-1.png used on input line 12
 22.
-(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
- [27]
+(pdftex.def)             Requested size: 216.80946pt x 216.81938pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1232.
 
+[24 <./figure/set_ordering_filter-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1242.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1253.
 
-<figure/plot_ordering_mst-1.png, id=412, 2409.0pt x 2409.0pt>
+<figure/plot_ordering_mst-1.png, id=386, 289.08pt x 289.08pt>
 File: figure/plot_ordering_mst-1.png Graphic file (type png)
 
 <use figure/plot_ordering_mst-1.png>
 Package pdftex.def Info: figure/plot_ordering_mst-1.png used on input line 1259
 .
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [28 <./figure/set_ordering_filter-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1277.
 
-<figure/plot_ordering_mst_by_state-1.png, id=418, 2409.0pt x 2409.0pt>
+<figure/plot_ordering_mst_by_state-1.png, id=387, 289.08pt x 289.08pt>
 File: figure/plot_ordering_mst_by_state-1.png Graphic file (type png)
 
 <use figure/plot_ordering_mst_by_state-1.png>
 Package pdftex.def Info: figure/plot_ordering_mst_by_state-1.png used on input 
 line 1283.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [29 <./figure/plot_ordering_mst-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [25 <./figure/plot_ordering_mst-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1294.
 
-<figure/plot_ordering_with_GM_state-1.png, id=424, 2409.0pt x 2409.0pt>
+<figure/plot_ordering_with_GM_state-1.png, id=393, 289.08pt x 289.08pt>
 File: figure/plot_ordering_with_GM_state-1.png Graphic file (type png)
 
 <use figure/plot_ordering_with_GM_state-1.png>
 Package pdftex.def Info: figure/plot_ordering_with_GM_state-1.png used on input
  line 1307.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [30 <./figure/plot_ordering_mst_by_state-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [26 <./figure/plot_ordering_mst_by_state-1.png (PNG copy)> <./figure/plot_orde
+ring_with_GM_state-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1318.
 
-<figure/init_hsmm_facet_state-1.png, id=430, 3613.5pt x 1806.75pt>
+<figure/init_hsmm_facet_state-1.png, id=398, 433.62pt x 216.81pt>
 File: figure/init_hsmm_facet_state-1.png Graphic file (type png)
 
 <use figure/init_hsmm_facet_state-1.png>
 Package pdftex.def Info: figure/init_hsmm_facet_state-1.png used on input line 
 1323.
-(pdftex.def)             Requested size: 489.38776pt x 244.67265pt.
+(pdftex.def)             Requested size: 433.61894pt x 216.81938pt.
 
-Overfull \hbox (15.0pt too wide) in paragraph at lines 1323--1324
-[][] 
- []
-
-[31 <./figure/plot_ordering_with_GM_state-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 1330.
 
@@ -1117,44 +1114,46 @@ ata[][](HSMM_myo), gene_short_name[] []%in%[] []c[][]([][]"CCNB2"[][],[] []"MYO
 D1"[][],[] []"MYOG"[][])))[][] 
  []
 
-<figure/init_hsmm_jitter_state-1.png, id=437, 1806.75pt x 2107.875pt>
+<figure/init_hsmm_jitter_state-1.png, id=399, 216.81pt x 252.945pt>
 File: figure/init_hsmm_jitter_state-1.png Graphic file (type png)
 
 <use figure/init_hsmm_jitter_state-1.png>
 Package pdftex.def Info: figure/init_hsmm_jitter_state-1.png used on input line
  1337.
-(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
- [32 <./figure/init_hsmm_facet_state-1.png>]
+(pdftex.def)             Requested size: 216.80946pt x 252.95595pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1349.
 
-<figure/plot_markers_linear-1.png, id=443, 2409.0pt x 2409.0pt>
+[27 <./figure/init_hsmm_facet_state-1.png (PNG copy)> <./figure/init_hsmm_jitte
+r_state-1.png>]
+<figure/plot_markers_linear-1.png, id=405, 289.08pt x 289.08pt>
 File: figure/plot_markers_linear-1.png Graphic file (type png)
 
 <use figure/plot_markers_linear-1.png>
 Package pdftex.def Info: figure/plot_markers_linear-1.png used on input line 13
 62.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [33 <./figure/init_hsmm_jitter_state-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1392.
 
-[34 <./figure/plot_markers_linear-1.png>]
+[28 <./figure/plot_markers_linear-1.png (PNG copy)>]
 
 Package xcolor Warning: Incompatible color definition on input line 1437.
 
-<figure/order_cells_pca_unsup-1.png, id=454, 2409.0pt x 1806.75pt>
+<figure/order_cells_pca_unsup-1.png, id=410, 289.08pt x 216.81pt>
 File: figure/order_cells_pca_unsup-1.png Graphic file (type png)
 
 <use figure/order_cells_pca_unsup-1.png>
 Package pdftex.def Info: figure/order_cells_pca_unsup-1.png used on input line 
 1447.
-(pdftex.def)             Requested size: 489.38776pt x 367.02277pt.
- [35]
+(pdftex.def)             Requested size: 289.07928pt x 216.81938pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1468.
 
-
+[29 <./figure/order_cells_pca_unsup-1.png (PNG copy)>]
 Overfull \hbox (8.41132pt too wide) in paragraph at lines 1471--1471
 [][]\T1/aett/bx/n/10 fData[][](HSMM_myo)[][]$[][]use_for_ordering[] []<-[] []fD
 ata[][](HSMM_myo)[][]$[][]num_cells_expressed[] []>[] []0.05[] []*[] []ncol[][]
@@ -1176,14 +1175,14 @@ Overfull \hbox (13.6513pt too wide) in paragraph at lines 1483--1483
 ance at that di-men-sion. pass that num-
  []
 
-<figure/plot_pc_variance-1.png, id=460, 1806.75pt x 2409.0pt>
+<figure/plot_pc_variance-1.png, id=418, 216.81pt x 289.08pt>
 File: figure/plot_pc_variance-1.png Graphic file (type png)
 
 <use figure/plot_pc_variance-1.png>
 Package pdftex.def Info: figure/plot_pc_variance-1.png used on input line 1487.
 
-(pdftex.def)             Requested size: 489.38776pt x 652.49718pt.
- [36 <./figure/order_cells_pca_unsup-1.png>]
+(pdftex.def)             Requested size: 216.80946pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1497.
 
@@ -1193,7 +1192,6 @@ Package xcolor Warning: Incompatible color definition on input line 1504.
 
 Package xcolor Warning: Incompatible color definition on input line 1506.
 
-[37 <./figure/plot_pc_variance-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 1517.
 
@@ -1203,65 +1201,57 @@ Package xcolor Warning: Incompatible color definition on input line 1526.
 
 Package xcolor Warning: Incompatible color definition on input line 1531.
 
-<figure/check_the_clustering_results-1.png, id=475, 1806.75pt x 2107.875pt>
+[30 <./figure/plot_pc_variance-1.png>]
+<figure/check_the_clustering_results-1.png, id=425, 216.81pt x 252.945pt>
 File: figure/check_the_clustering_results-1.png Graphic file (type png)
 
 <use figure/check_the_clustering_results-1.png>
 Package pdftex.def Info: figure/check_the_clustering_results-1.png used on inpu
 t line 1537.
-(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+(pdftex.def)             Requested size: 216.80946pt x 252.95595pt.
 
-<figure/check_the_clustering_results-2.png, id=476, 1806.75pt x 2107.875pt>
+<figure/check_the_clustering_results-2.png, id=426, 216.81pt x 252.945pt>
 File: figure/check_the_clustering_results-2.png Graphic file (type png)
 
 <use figure/check_the_clustering_results-2.png>
 Package pdftex.def Info: figure/check_the_clustering_results-2.png used on inpu
 t line 1538.
-(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+(pdftex.def)             Requested size: 216.80946pt x 252.95595pt.
 
-Overfull \hbox (15.0pt too wide) in paragraph at lines 1537--1539
-[][]
- []
-
-[38] [39 <./figure/check_the_clustering_results-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 1544.
 
-<figure/plot_rho_delta-1.png, id=487, 1806.75pt x 1806.75pt>
+<figure/plot_rho_delta-1.png, id=427, 216.81pt x 216.81pt>
 File: figure/plot_rho_delta-1.png Graphic file (type png)
 
 <use figure/plot_rho_delta-1.png>
 Package pdftex.def Info: figure/plot_rho_delta-1.png used on input line 1550.
-(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
- [40 <./figure/check_the_clustering_results-2.png>]
+(pdftex.def)             Requested size: 216.80946pt x 216.81938pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1562.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1575.
 
-<figure/check_clustering_again-1.png, id=493, 1806.75pt x 2107.875pt>
+[31 <./figure/check_the_clustering_results-1.png (PNG copy)> <./figure/check_th
+e_clustering_results-2.png (PNG copy)> <./figure/plot_rho_delta-1.png>]
+<figure/check_clustering_again-1.png, id=434, 216.81pt x 252.945pt>
 File: figure/check_clustering_again-1.png Graphic file (type png)
 
 <use figure/check_clustering_again-1.png>
 Package pdftex.def Info: figure/check_clustering_again-1.png used on input line
  1581.
-(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+(pdftex.def)             Requested size: 216.80946pt x 252.95595pt.
 
-<figure/check_clustering_again-2.png, id=494, 1806.75pt x 2107.875pt>
+<figure/check_clustering_again-2.png, id=435, 216.81pt x 252.945pt>
 File: figure/check_clustering_again-2.png Graphic file (type png)
 
 <use figure/check_clustering_again-2.png>
 Package pdftex.def Info: figure/check_clustering_again-2.png used on input line
  1582.
-(pdftex.def)             Requested size: 489.38776pt x 570.93503pt.
+(pdftex.def)             Requested size: 216.80946pt x 252.95595pt.
 
-Overfull \hbox (15.0pt too wide) in paragraph at lines 1581--1583
-[][]
- []
-
-[41 <./figure/plot_rho_delta-1.png>] [42 <./figure/check_clustering_again-1.png
->]
 
 Package xcolor Warning: Incompatible color definition on input line 1589.
 
@@ -1275,19 +1265,20 @@ G_genes)[[][]order[][](clustering_DEG_genes[][]$[][]qval)][[][]1[][]:[][]1000[]
 []][][] 
  []
 
-[43 <./figure/check_clustering_again-2.png>]
-<figure/order_cells_dp_feature-1.png, id=511, 1806.75pt x 1806.75pt>
+<figure/order_cells_dp_feature-1.png, id=436, 216.81pt x 216.81pt>
 File: figure/order_cells_dp_feature-1.png Graphic file (type png)
 
 <use figure/order_cells_dp_feature-1.png>
 Package pdftex.def Info: figure/order_cells_dp_feature-1.png used on input line
  1612.
-(pdftex.def)             Requested size: 489.38776pt x 489.37288pt.
+(pdftex.def)             Requested size: 216.80946pt x 216.81938pt.
+ [32 <./figure/check_clustering_again-1.png (PNG copy)> <./figure/check_cluster
+ing_again-2.png (PNG copy)> <./figure/order_cells_dp_feature-1.png (PNG copy)>]
 
 
 Package xcolor Warning: Incompatible color definition on input line 1628.
 
-[44 <./figure/order_cells_dp_feature-1.png>]
+
 Overfull \hbox (60.81122pt too wide) in paragraph at lines 1636--1636
 [][]\T1/aett/bx/n/10 cth[] []<-[] []addCellType[][](cth,[] []"Reserve cell"[][]
 ,[] []classify_func[][]=[][]function[][]([][]x[][]) {x[MYH3_id,][] []==[] []0[]
@@ -1309,50 +1300,50 @@ S1/cmtt/m/n/10 '\T1/aett/bx/n/10 log\TS1/cmtt/m/n/10 '[][]\T1/aett/bx/n/10 )[][
 ] 
  []
 
-<figure/semi_sup_ordering_trajectory-1.png, id=517, 3613.5pt x 1204.5pt>
+<figure/semi_sup_ordering_trajectory-1.png, id=441, 433.62pt x 144.54pt>
 File: figure/semi_sup_ordering_trajectory-1.png Graphic file (type png)
 
 <use figure/semi_sup_ordering_trajectory-1.png>
 Package pdftex.def Info: figure/semi_sup_ordering_trajectory-1.png used on inpu
 t line 1668.
-(pdftex.def)             Requested size: 489.38776pt x 163.1151pt.
+(pdftex.def)             Requested size: 433.61894pt x 144.54623pt.
 
 
 Package xcolor Warning: Incompatible color definition on input line 1683.
 
-
-<figure/semi_sup_ordering_genes_in_pseudotime-1.png, id=519, 2409.0pt x 2409.0p
+[33 <./figure/semi_sup_ordering_trajectory-1.png (PNG copy)>]
+<figure/semi_sup_ordering_genes_in_pseudotime-1.png, id=447, 289.08pt x 289.08p
 t>
 File: figure/semi_sup_ordering_genes_in_pseudotime-1.png Graphic file (type png
 )
  <use figure/semi_sup_ordering_genes_in_pseudotime-1.png>
 Package pdftex.def Info: figure/semi_sup_ordering_genes_in_pseudotime-1.png use
 d on input line 1698.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [45 <./figure/semi_sup_ordering_trajectory-1.png>]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+
 
 Package xcolor Warning: Incompatible color definition on input line 1737.
 
-[46 <./figure/semi_sup_ordering_genes_in_pseudotime-1.png>]
 
 Package xcolor Warning: Incompatible color definition on input line 1753.
 
+[34 <./figure/semi_sup_ordering_genes_in_pseudotime-1.png (PNG copy)>]
 
-Package xcolor Warning: Incompatible color definition on input line 1790.
+Package xcolor Warning: Incompatible color definition on input line 1791.
 
-<figure/plot_myog_jitter-1.png, id=531, 2409.0pt x 1204.5pt>
+<figure/plot_myog_jitter-1.png, id=453, 289.08pt x 144.54pt>
 File: figure/plot_myog_jitter-1.png Graphic file (type png)
 
 <use figure/plot_myog_jitter-1.png>
-Package pdftex.def Info: figure/plot_myog_jitter-1.png used on input line 1798.
+Package pdftex.def Info: figure/plot_myog_jitter-1.png used on input line 1799.
 
-(pdftex.def)             Requested size: 489.38776pt x 244.68184pt.
- [47]
+(pdftex.def)             Requested size: 289.07928pt x 144.54623pt.
+ [35 <./figure/plot_myog_jitter-1.png>]
 
-Package xcolor Warning: Incompatible color definition on input line 1817.
+Package xcolor Warning: Incompatible color definition on input line 1818.
 
 
-Overfull \hbox (46.9096pt too wide) in paragraph at lines 1828--1829
+Overfull \hbox (46.9096pt too wide) in paragraph at lines 1829--1830
 []\T1/aess/m/n/10 To set up the test based on \T1/aett/bx/n/10 CellType\T1/aess
 /m/n/10 , we sim-ply call \T1/aett/bx/n/10 differentialGeneTest \T1/aess/m/n/10
  with a string spec-i-fy-ing \T1/aett/bx/n/10 fullModelFormulaStr\T1/aess/m/n/1
@@ -1360,144 +1351,142 @@ Overfull \hbox (46.9096pt too wide) in paragraph at lines 1828--1829
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 1831.
-
-[48 <./figure/plot_myog_jitter-1.png>]
-
-Package xcolor Warning: Incompatible color definition on input line 1848.
+Package xcolor Warning: Incompatible color definition on input line 1832.
 
 
-Package xcolor Warning: Incompatible color definition on input line 1855.
+Package xcolor Warning: Incompatible color definition on input line 1851.
 
-<figure/jitter_plot_diff_res-1.png, id=543, 4818.0pt x 1505.625pt>
+
+Package xcolor Warning: Incompatible color definition on input line 1858.
+
+<figure/jitter_plot_diff_res-1.png, id=461, 578.16pt x 180.675pt>
 File: figure/jitter_plot_diff_res-1.png Graphic file (type png)
 
 <use figure/jitter_plot_diff_res-1.png>
 Package pdftex.def Info: figure/jitter_plot_diff_res-1.png used on input line 1
-857.
-(pdftex.def)             Requested size: 489.38776pt x 152.91466pt.
+860.
+(pdftex.def)             Requested size: 489.38776pt x 152.93211pt.
+ [36]
+
+Package xcolor Warning: Incompatible color definition on input line 1872.
 
 
-Package xcolor Warning: Incompatible color definition on input line 1869.
+Package xcolor Warning: Incompatible color definition on input line 1890.
 
 
-Package xcolor Warning: Incompatible color definition on input line 1887.
-
-[49 <./figure/jitter_plot_diff_res-1.png>]
-
-Package xcolor Warning: Incompatible color definition on input line 1898.
+Package xcolor Warning: Incompatible color definition on input line 1901.
 
 
-Package xcolor Warning: Incompatible color definition on input line 1909.
+Package xcolor Warning: Incompatible color definition on input line 1914.
 
+[37 <./figure/jitter_plot_diff_res-1.png (PNG copy)>]
 
-Package xcolor Warning: Incompatible color definition on input line 1926.
+Package xcolor Warning: Incompatible color definition on input line 1931.
 
-<figure/plot_diff_res_pt-1.png, id=550, 2409.0pt x 2409.0pt>
+<figure/plot_diff_res_pt-1.png, id=472, 289.08pt x 289.08pt>
 File: figure/plot_diff_res_pt-1.png Graphic file (type png)
 
 <use figure/plot_diff_res_pt-1.png>
-Package pdftex.def Info: figure/plot_diff_res_pt-1.png used on input line 1932.
+Package pdftex.def Info: figure/plot_diff_res_pt-1.png used on input line 1937.
 
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [50]
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
 
-Package xcolor Warning: Incompatible color definition on input line 1949.
 
-[51 <./figure/plot_diff_res_pt-1.png>]
-<figure/plot_diff_res_pt_heatmap-1.png, id=560, 3011.25pt x 2409.0pt>
+Package xcolor Warning: Incompatible color definition on input line 1954.
+
+<figure/plot_diff_res_pt_heatmap-1.png, id=473, 361.35pt x 289.08pt>
 File: figure/plot_diff_res_pt_heatmap-1.png Graphic file (type png)
 
 <use figure/plot_diff_res_pt_heatmap-1.png>
 Package pdftex.def Info: figure/plot_diff_res_pt_heatmap-1.png used on input li
-ne 1964.
-(pdftex.def)             Requested size: 489.38776pt x 391.513pt.
-
-Overfull \hbox (8.56871pt too wide) in paragraph at lines 1976--1977
+ne 1970.
+(pdftex.def)             Requested size: 361.34912pt x 289.07928pt.
+ [38 <./figure/plot_diff_res_pt-1.png (PNG copy)>]
+Overfull \hbox (8.56871pt too wide) in paragraph at lines 1982--1983
 []\T1/aess/m/n/10 When we plot the ex-pres-sion lev-els of these genes, we can 
 mod-ify the re-sult-ing ob-ject re-turned by \T1/aett/bx/n/10 plot_genes_jitter
 
  []
 
 
-Package xcolor Warning: Incompatible color definition on input line 1979.
+Package xcolor Warning: Incompatible color definition on input line 1985.
 
-[52 <./figure/plot_diff_res_pt_heatmap-1.png>]
-<figure/plot_diff_res_multi-1.png, id=566, 4818.0pt x 2409.0pt>
+<figure/plot_diff_res_multi-1.png, id=478, 578.16pt x 289.08pt>
 File: figure/plot_diff_res_multi-1.png Graphic file (type png)
 
 <use figure/plot_diff_res_multi-1.png>
 Package pdftex.def Info: figure/plot_diff_res_multi-1.png used on input line 20
-04.
-(pdftex.def)             Requested size: 489.38776pt x 244.66347pt.
+11.
+(pdftex.def)             Requested size: 489.38776pt x 244.69139pt.
+ [39 <./figure/plot_diff_res_pt_heatmap-1.png (PNG copy)>]
+
+Package xcolor Warning: Incompatible color definition on input line 2026.
 
 
-Package xcolor Warning: Incompatible color definition on input line 2019.
+Package xcolor Warning: Incompatible color definition on input line 2032.
 
-
-Package xcolor Warning: Incompatible color definition on input line 2025.
-
-<figure/init_treutlein-1.png, id=568, 2409.0pt x 2409.0pt>
+<figure/init_treutlein-1.png, id=484, 289.08pt x 289.08pt>
 File: figure/init_treutlein-1.png Graphic file (type png)
 
 <use figure/init_treutlein-1.png>
-Package pdftex.def Info: figure/init_treutlein-1.png used on input line 2030.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [53 <./figure/plot_diff_res_multi-1.png>]
+Package pdftex.def Info: figure/init_treutlein-1.png used on input line 2037.
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [40 <./figure/plot_diff_res_multi-1.png (PNG copy)>]
 
-Package xcolor Warning: Incompatible color definition on input line 2041.
+Package xcolor Warning: Incompatible color definition on input line 2048.
 
 
-Package xcolor Warning: Incompatible color definition on input line 2052.
+Package xcolor Warning: Incompatible color definition on input line 2059.
 
-[54 <./figure/init_treutlein-1.png>]
-<figure/lung_beam_branched_heatmap-1.png, id=579, 3613.5pt x 4818.0pt>
+<figure/lung_beam_branched_heatmap-1.png, id=489, 433.62pt x 578.16pt>
 File: figure/lung_beam_branched_heatmap-1.png Graphic file (type png)
 
 <use figure/lung_beam_branched_heatmap-1.png>
 Package pdftex.def Info: figure/lung_beam_branched_heatmap-1.png used on input 
-line 2063.
-(pdftex.def)             Requested size: 489.38776pt x 652.46042pt.
- [55 <./figure/lung_beam_branched_heatmap-1.png>]
+line 2070.
+(pdftex.def)             Requested size: 433.61894pt x 578.18504pt.
+ [41 <./figure/init_treutlein-1.png (PNG copy)>]
 
-Package xcolor Warning: Incompatible color definition on input line 2074.
+Package xcolor Warning: Incompatible color definition on input line 2081.
 
 
-Overfull \hbox (3.17133pt too wide) in paragraph at lines 2076--2076
+Overfull \hbox (3.17133pt too wide) in paragraph at lines 2083--2083
 [][]\T1/aett/bx/n/10 lung_genes[] []<-[] []row.names[][]([][]subset[][]([][]fDa
 ta[][](lung), gene_short_name[] []%in%[] []c[][]([][]"Ccnd2"[][],[] []"Sftpb"[]
 [],[] []"Pdpn"[][])))[][] 
  []
 
-<figure/lung_beam_branched_pseudotime-1.png, id=586, 2409.0pt x 2409.0pt>
+<figure/lung_beam_branched_pseudotime-1.png, id=494, 289.08pt x 289.08pt>
 File: figure/lung_beam_branched_pseudotime-1.png Graphic file (type png)
 
 <use figure/lung_beam_branched_pseudotime-1.png>
 Package pdftex.def Info: figure/lung_beam_branched_pseudotime-1.png used on inp
-ut line 2084.
-(pdftex.def)             Requested size: 489.38776pt x 489.3637pt.
- [56 <./figure/lung_beam_branched_pseudotime-1.png>]
+ut line 2091.
+(pdftex.def)             Requested size: 289.07928pt x 289.09251pt.
+ [42 <./figure/lung_beam_branched_heatmap-1.png (PNG copy)>] [43 <./figure/lung
+_beam_branched_pseudotime-1.png (PNG copy)>]
 
-LaTeX Warning: Citation `Rodriguez2014-rl' on page 57 undefined on input line 2
-116.
+LaTeX Warning: Citation `Rodriguez2014-rl' on page 44 undefined on input line 2
+123.
 
-[57] [58] [59] [60]
+[44] [45] [46]
 
-LaTeX Warning: Reference `citations' on page 61 undefined on input line 2349.
-
-
-Package xcolor Warning: Incompatible color definition on input line 2352.
+LaTeX Warning: Reference `citations' on page 47 undefined on input line 2356.
 
 
-Package xcolor Warning: Incompatible color definition on input line 2382.
+Package xcolor Warning: Incompatible color definition on input line 2359.
 
-[61] (./monocle-vignette-knitr.bbl [62])
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2430.
- [63]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 2430.
+[47]
+
+Package xcolor Warning: Incompatible color definition on input line 2393.
+
+[48] (./monocle-vignette-knitr.bbl)
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 2445.
+ [49]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 2445.
  (./monocle-vignette-knitr.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2430.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2430.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 2445.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 2445.
 
 Package rerunfilecheck Info: File `monocle-vignette-knitr.out' has not changed.
 
@@ -1509,11 +1498,11 @@ LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
 LaTeX Warning: There were undefined references.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2430.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 2445.
  ) 
 Here is how much of TeX's memory you used:
- 8372 strings out of 493014
- 127121 string characters out of 6133351
+ 8358 strings out of 493014
+ 127023 string characters out of 6133351
  222427 words of memory out of 5000000
  11555 multiletter control sequences out of 15000+600000
  38057 words of font info for 79 fonts, out of 8000000 for 9000
@@ -1543,10 +1532,10 @@ texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/2016/t
 exmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/2016/te
 xmf-dist/fonts/type1/public/cm-super/sfit1000.pfb></usr/local/texlive/2016/texm
 f-dist/fonts/type1/public/cm-super/sftt1000.pfb>
-Output written on monocle-vignette-knitr.pdf (63 pages, 8385302 bytes).
+Output written on monocle-vignette-knitr.pdf (49 pages, 8829581 bytes).
 PDF statistics:
- 781 PDF objects out of 1000 (max. 8388607)
- 608 compressed objects within 7 object streams
- 153 named destinations out of 1000 (max. 500000)
+ 685 PDF objects out of 1000 (max. 8388607)
+ 560 compressed objects within 6 object streams
+ 139 named destinations out of 1000 (max. 500000)
  540 words of extra memory for PDF output out of 10000 (max. 10000000)
 
