@@ -34,7 +34,15 @@ plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
 a ggplot2 plot object
 }
 \description{
-Plots the number of cells expressing one or more genes as a barplot
+@description Accetps a CellDataSet and a parameter,"grouping", used for dividing cells into groups.
+ Returns one or more bar graphs (one graph for each gene in the CellDataSet).
+ Each graph shows the percentage of cells that express a gene in the in the CellDataSet for
+ each sub-group of cells created by "grouping".
+ 
+ Let's say the CellDataSet passed in included genes A, B, and C and the "grouping parameter divided
+ all of the cells into three groups called X, Y, and Z. Then three graphs would be produced called A,
+ B, and C. In the A graph there would be three bars one for X, one for Y, and one for Z. So X bar in the
+ A graph would show the percentage of cells in the X group that express gene A.
 }
 \examples{
 \dontrun{

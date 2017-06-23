@@ -46,6 +46,10 @@ in a list format}
 an matrix of absolute count for isoforms or genes after the transformation.
 }
 \description{
+Converts FPKM/TPM data to transcript counts. This allows for the use for negative binomial
+as an expressionFamily. These results are often far more accurate than using tobit().
+}
+\details{
 Transform a relative expression matrix to absolute transcript matrix based on the inferred linear regression parameters from most abundant isoform relative expression value.
 This function takes a relative expression matrix and a vector of estimated most abundant expression value from the isoform-level matrix and transform it into absolute transcript number.
 It is based on the observation that the recovery efficient of the single-cell RNA-seq is relative low and that most expressed isoforms of gene in a single cell therefore only sequenced one copy so that the 

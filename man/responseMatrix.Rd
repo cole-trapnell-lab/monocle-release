@@ -2,7 +2,7 @@
 % Please edit documentation in R/expr_models.R
 \name{responseMatrix}
 \alias{responseMatrix}
-\title{Response values}
+\title{Calculates response values.}
 \usage{
 responseMatrix(models, newdata = NULL, response_type = "response",
   cores = 1)

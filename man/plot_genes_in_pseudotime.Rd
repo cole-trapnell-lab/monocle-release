@@ -38,7 +38,9 @@ plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
 a ggplot2 plot object
 }
 \description{
-Plots expression for one or more genes as a function of pseudotime
+Plots expression for one or more genes as a function of pseudotime.
+Plotting allows you determine if the ordering produced by orderCells() is correct
+and it does not need to be flipped using the "reverse" flag in orderCells
 }
 \examples{
 \dontrun{
