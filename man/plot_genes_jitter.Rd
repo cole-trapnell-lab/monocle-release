@@ -36,7 +36,9 @@ plot_genes_jitter(cds_subset, grouping = "State", min_expr = NULL,
 a ggplot2 plot object
 }
 \description{
-Plots expression for one or more genes as a jittered, grouped points
+Accepts a subset of a CellDataSet and an attribute to group cells by,
+and produces one or more ggplot2 objects that plots the level of expression for
+each group of cells.
 }
 \examples{
 \dontrun{

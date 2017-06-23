@@ -1,0 +1,78 @@
+\begin{thebibliography}{10}
+
+\bibitem{TRAPNELL_CACCHIARELLI}
+Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang
+  Li, Michael Morse, Niall~J. Lennon, Kenneth~J. Livak, Tarjei~S. Mikkelsen,
+  and John~L. Rinn.
+\newblock {The dynamics and regulators of cell fate decisions are revealed by
+  pseudotemporal ordering of single cells}.
+\newblock {\em Nature Biotechnology}, 2014.
+
+\bibitem{Trapnell:2012kp}
+Cole Trapnell, Adam Roberts, Loyal Goff, Geo Pertea, Daehwan Kim, David~R
+  Kelley, Harold Pimentel, Steven~L Salzberg, John~L Rinn, and Lior Pachter.
+\newblock {Differential gene and transcript expression analysis of RNA-seq
+  experiments with TopHat and Cufflinks.}
+\newblock {\em Nature Protocols}, 7(3):562--578, March 2012.
+
+\bibitem{Maaten2008-om}
+Laurens van~der Maaten and Geoffrey Hinton.
+\newblock Visualizing data using {t-SNE}.
+\newblock {\em J. Mach. Learn. Res.}, 9(Nov):2579--2605, 2008.
+
+\bibitem{RodriguezLaio}
+Alessandro~Laio. Alex~Rodriguez.
+\newblock Clustering by fast search and find of density peaks.
+\newblock {\em Science}, 344:1492--1496, 2014.
+
+\bibitem{Wickham}
+Hadley Wickham.
+\newblock {\em ggplot2: Elegant Graphics for Data Analysis}.
+\newblock Springer-Verlag New York, 2009.
+
+\bibitem{Anders2010-oc}
+Simon Anders and Wolfgang Huber.
+\newblock Differential expression analysis for sequence count data.
+\newblock {\em Genome Biol.}, 11(10):R106, 2010.
+
+\bibitem{Mao2015-cs}
+Qi~Mao, Li~Wang, Steve Goodison, and Yijun Sun.
+\newblock Dimensionality reduction via graph structure learning.
+\newblock In {\em Proceedings of the 21th ACM SIGKDD International Conference
+  on Knowledge Discovery and Data Mining}, pages 765--774. ACM, 2015.
+
+\bibitem{qiu2017single}
+X~Qiu, A~Hill, J~Packer, D~Lin, YA~Ma, and C~Trapnell.
+\newblock Single-cell mrna quantification and differential analysis with
+  census.
+\newblock {\em Nature methods}, 2017.
+
+\bibitem{Satija2015-xb}
+Rahul Satija, Jeffrey~A Farrell, David Gennert, Alexander~F Schier, and Aviv
+  Regev.
+\newblock Spatial reconstruction of single-cell gene expression data.
+\newblock {\em Nat. Biotechnol.}, 33(5):495--502, May 2015.
+
+\bibitem{Qiu2017-nx}
+Xiaojie Qiu, Qi~Mao, Ying Tang, Li~Wang, Raghav Chawla, Hannah Pliner, and Cole
+  Trapnell.
+\newblock Reversed graph embedding resolves complex single-cell developmental
+  trajectories.
+\newblock 21~February 2017.
+
+\bibitem{Macosko2015-fh}
+Evan~Z Macosko, Anindita Basu, Rahul Satija, James Nemesh, Karthik Shekhar,
+  Melissa Goldman, Itay Tirosh, Allison~R Bialas, Nolan Kamitaki, Emily~M
+  Martersteck, John~J Trombetta, David~A Weitz, Joshua~R Sanes, Alex~K Shalek,
+  Aviv Regev, and Steven~A McCarroll.
+\newblock Highly parallel genome-wide expression profiling of individual cells
+  using nanoliter droplets.
+\newblock {\em Cell}, 161(5):1202--1214, 2015.
+
+\bibitem{Mao2016-ru}
+Qi~Mao, Li~Wang, Ivor Tsang, and Yijun Sun.
+\newblock Principal graph and structure learning based on reversed graph
+  embedding.
+\newblock {\em IEEE Trans. Pattern Anal. Mach. Intell.}, 5~December 2016.
+
+\end{thebibliography}

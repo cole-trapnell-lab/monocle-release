@@ -6,8 +6,9 @@
 \usage{
 plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
-  markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_link_size = 0.75, cell_name_size = 2, show_branch_points = TRUE,
+  markers = NULL, markers_linear = FALSE, show_cell_names = FALSE,
+  show_state_number = FALSE, cell_size = 1.5, cell_link_size = 0.75,
+  cell_name_size = 2, state_number_size = 2.9, show_branch_points = TRUE,
   theta = 0)
 }
 \arguments{
@@ -27,7 +28,11 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{markers}{a gene name or gene id to use for setting the size of each cell in the plot}
 
+\item{markers_linear}{a boolean used to indicate whether you want to scale the markers logarithimically or linearly}
+
 \item{show_cell_names}{draw the name of each cell in the plot}
+
+\item{show_state_number}{}
 
 \item{cell_size}{The size of the point for each cell}
 
@@ -35,15 +40,14 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{cell_name_size}{the size of cell name labels}
 
+\item{state_number_size}{}
+
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
 \item{theta}{includeDescrip}
 }
 \value{
 a ggplot2 plot object
-}
-\description{
-Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{

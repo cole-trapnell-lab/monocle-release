@@ -32,5 +32,7 @@ want to exclude when testing for cell type dependent expression}
 A table of differential expression test results
 }
 \description{
-Test genes for cell type-dependent expression
+takes a CellDataSet and a CellTypeHeirarchy and classifies all cells into types passed
+functions passed into the CellTypeHeirarchy. The function will remove all "Unknown" and "Ambigious" types
+before identifying genes that are differentially expressed between types.
 }
