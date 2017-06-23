@@ -155,6 +155,10 @@ The following lines are an example of how to display a table that reports how ma
                                 cores = detectCores())
  @ %def
  
+ <<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
  We then assign all the genes with a q-value below 0.05 to a variable and calculate the "specifity" of those
  genes to cell type listed in the CellTypeHierarchy. The "specificity" can range from 0 to 1, the closer it is to 1 the more restricted it is to the type in question. Afterwards, selectTopMarkers will return a data table
  of the genes with the highest specificity which you can then use to determine which genes you will use for clustering. It's often best to choose the top 10 to 20 genes that are the most specific for each cell type for clustering.
@@ -202,7 +206,11 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
  HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
  @ %def
- 
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
  \item Reduce Dimensionality of Data
  
  <<quick_start_reduce_dimensionality, eval = FALSE>>=
@@ -317,6 +325,10 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
  @ %def
  
+ <<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
  You can visualize changes for all genes that are significantly branch-dependent with a special type of 
  heatmap. This heatmap will show both lineages simultaneously. This heatmap requires you to enter a specifc branch point. The start of the branch point is represented by the middle of the heatmap, going from the middle to the left is one branch and going from the middle to the right is the other branch.  
  <<quick_start_analyze_branches_single_cell_trajectory_heat, eval = FALSE>>=
@@ -328,6 +340,10 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
                              show_rownames = T)
  @ %def
  
+ <<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
  We can also plot these genes in pseudotime using plot\_genes\_branched\_pseudotime() which is quite similar to plot\_genes\_in\_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
  <<quick_start_analayze_branches_single_cell_trajectory_heat, eval = FALSE>>=
  lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
@@ -639,6 +655,11 @@ marker_diff <- markerDiffTable(HSMM[expressed_genes,],
                                  residualModelFormulaStr="~Media + num_genes_expressed",
                                  cores=detectCores())
 @ %def
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
 
@@ -969,6 +990,10 @@ clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,],
                                              cores = detectCores())
 @ %def
 
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 We will then select the top $1000$ significant genes as the ordering genes. 
 <<order_cells_dp_feature, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
 HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000] 
@@ -1007,6 +1032,10 @@ marker_diff <- markerDiffTable(HSMM_myo[HSMM_expressed_genes,],
 #semisup_clustering_genes <- row.names(subset(marker_diff, qval < 0.05))
 semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:1000] 
 @ %def
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
 <<semi_sup_ordering_trajectory, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 2, warning=FALSE, fig.align="center">>=
@@ -1090,6 +1119,10 @@ sig_genes <- subset(diff_test_res, qval < 0.1)
 sig_genes[,c("gene_short_name", "pval", "qval")]
 @ %def
 
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 So most of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
 
 <<plot_myog_jitter, eval=TRUE, fig.width = 4, fig.height = 2, fig.align="center">>=
@@ -1124,6 +1157,10 @@ diff_test_res <- differentialGeneTest(cds_subset,
                                       cores = detectCores())
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 @ %def
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
 
 Note that all the genes are significantly differentially expressed as a function of \Robject{CellType} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in myoblasts versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
@@ -1162,6 +1199,10 @@ diff_test_res <- differentialGeneTest(cds_subset,
                                       cores = detectCores())
 @ %def
 
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
 
 Once again, let's add in the gene annotations so it's easy to see which genes are significant.
@@ -1197,6 +1238,10 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
                         show_rownames = T)
 @ %def
 
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 \subsection{Multi-factorial differential expression analysis}
 
 Monocle can perform differential analysis in the presence of multiple factors, which can help you subtract some factors to see the effects of others.  In the simple example below, Monocle tests three genes for differential expression between myoblasts and fibroblasts, while subtracting the effect of \Robject{Hours}, which encodes the day on which each cell was collected. To do this, we must specify both the full model and the reduced model. The full model captures the effects of both \Robject{CellType} and \Robject{Hours}, while the reduced model only knows about \Robject{Hours}.  
@@ -1217,6 +1262,10 @@ plot_genes_jitter(cds_subset,
                   grouping="Hours", color_by="CellType", plot_trend=TRUE) + 
   facet_wrap( ~ feature_label, scales="free_y")
 @ %def 
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
 
 \section{Analyzing branches in single-cell trajectories} \label{BEAM_trajectory}
 
@@ -1239,6 +1288,10 @@ BEAM_res <- BEAM_res[order(BEAM_res$qval),]
 BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
 @ %def 
 
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
+
 You can visualize changes for all the genes that are significantly branch dependent using a special type of heatmap. This heatmap shows changes in both lineages at the same time. It also requires that you choose a branch point to inspect. Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.
 <<lung_beam_branched_heatmap, include=TRUE, eval=TRUE, fig.width = 6, fig.height = 8, fig.align="center", warning=FALSE>>=
 plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),], 
@@ -1248,6 +1301,10 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
                             use_gene_short_name = T, 
                             show_rownames = T)
 @ %def 
+
+<<include=FALSE, eval=TRUE>>=
+set.seed(0)
+ @ %def
 
 We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} (both known markers of fate in this system), using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. We also show \emph{Ccnd2}, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. 
 

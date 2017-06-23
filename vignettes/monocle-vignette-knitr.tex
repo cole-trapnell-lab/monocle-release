@@ -211,6 +211,8 @@ The following lines are an example of how to display a table that reports how ma
 \end{kframe}
 \end{knitrout}
  
+ 
+
  We then assign all the genes with a q-value below 0.05 to a variable and calculate the "specifity" of those
  genes to cell type listed in the CellTypeHierarchy. The "specificity" can range from 0 to 1, the closer it is to 1 the more restricted it is to the type in question. Afterwards, selectTopMarkers will return a data table
  of the genes with the highest specificity which you can then use to determine which genes you will use for clustering. It's often best to choose the top 10 to 20 genes that are the most specific for each cell type for clustering.
@@ -275,7 +277,9 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \end{alltt}
 \end{kframe}
 \end{knitrout}
- 
+
+
+
  \item Reduce Dimensionality of Data
  
 \begin{knitrout}
@@ -448,6 +452,8 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \end{kframe}
 \end{knitrout}
  
+ 
+
  You can visualize changes for all genes that are significantly branch-dependent with a special type of 
  heatmap. This heatmap will show both lineages simultaneously. This heatmap requires you to enter a specifc branch point. The start of the branch point is represented by the middle of the heatmap, going from the middle to the left is one branch and going from the middle to the right is the other branch.  
 \begin{knitrout}
@@ -463,6 +469,8 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
 \end{kframe}
 \end{knitrout}
  
+ 
+
  We can also plot these genes in pseudotime using plot\_genes\_branched\_pseudotime() which is quite similar to plot\_genes\_in\_pseudotime except that shows two kinetic trends, one for each lineage, instead of one.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1004,6 +1012,9 @@ First, we'll select a different set of genes to use for clustering the cells. Be
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
+
 The function \Rfunction{markerDiffTable} takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions. It then removes all the ``Unknown'' and ``Ambiguous'' functions before identifying genes that are differentially expressed between the types. Again, you can provide a residual model of effects to exclude from this test. The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering. Often it's best to pick the top 10 or 20 genes that are most specific for each cell type. This ensures that the clustering genes aren't dominated by markers for one cell type. You generally want a balanced panel of markers for each type if possible. Monocle provides a handy function for ranking genes by how restricted their expression is for each type.  
 
 
@@ -1595,6 +1606,8 @@ gene expression test as a way to extract the genes that distinguish them.
 \end{kframe}
 \end{knitrout}
 
+
+
 We will then select the top $1000$ significant genes as the ordering genes. 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -1651,6 +1664,8 @@ Now we select the set of genes that co-vary (in either direction) with these two
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 Using the top 1000 genes for ordering produces a trajectory that's highly similar to the one we obtained with unsupervised methods, but it's a little ``cleaner''.
 \begin{knitrout}
@@ -1785,6 +1800,8 @@ In the myoblast data, the cells collected at the outset of the experiment were c
 \end{kframe}
 \end{knitrout}
 
+
+
 So most of the 22 genes are significant at a 10\% false discovery rate! This isn't surprising, as most of the above genes are highly relevant in myogenesis. Monocle also provides some easy ways to plot the expression of a small set of genes grouped by the factors you use during differential analysis.  This helps you visualize the differences revealed by the tests above.  One type of plot is a ``jitter'' plot.
 
 \begin{knitrout}
@@ -1844,6 +1861,8 @@ To set up the test based on \Robject{CellType}, we simply call \Rfunction{differ
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
+
+
 
 Note that all the genes are significantly differentially expressed as a function of \Robject{CellType} except the housekeeping gene TBP, which we're using a negative control.  However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in myoblasts versus fibroblast specific genes.  We can again plot them with a jitter plot to see:
 
@@ -1906,6 +1925,8 @@ Again, we'll need to specify the model we want to use for differential analysis.
 \end{alltt}
 \end{kframe}
 \end{knitrout}
+
+
 
 The \Rfunction{sm.ns} function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress. We'll see what this trend looks like in just a moment. Other smoothing functions are available.
 
@@ -1975,6 +1996,8 @@ co-vary across pseudotime.
 
 \end{knitrout}
 
+
+
 \subsection{Multi-factorial differential expression analysis}
 
 Monocle can perform differential analysis in the presence of multiple factors, which can help you subtract some factors to see the effects of others.  In the simple example below, Monocle tests three genes for differential expression between myoblasts and fibroblasts, while subtracting the effect of \Robject{Hours}, which encodes the day on which each cell was collected. To do this, we must specify both the full model and the reduced model. The full model captures the effects of both \Robject{CellType} and \Robject{Hours}, while the reduced model only knows about \Robject{Hours}.  
@@ -2016,6 +2039,8 @@ When we plot the expression levels of these genes, we can modify the resulting o
 
 \end{knitrout}
 
+
+
 \section{Analyzing branches in single-cell trajectories} \label{BEAM_trajectory}
 
 Often, single-cell trajectories include branches. The branches occur because cells execute alternative gene expression programs. Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path. Monocle contains extensive functionality for analyzing these branching events. 
@@ -2054,6 +2079,8 @@ BEAM takes as input a CellDataSet that's been ordered with \Rfunction{orderCells
 \end{kframe}
 \end{knitrout}
 
+
+
 You can visualize changes for all the genes that are significantly branch dependent using a special type of heatmap. This heatmap shows changes in both lineages at the same time. It also requires that you choose a branch point to inspect. Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -2074,6 +2101,8 @@ You can visualize changes for all the genes that are significantly branch depend
 
 
 \end{knitrout}
+
+
 
 We can plot a couple of these genes, such as \emph{Pdpn} and \emph{Sftpb} (both known markers of fate in this system), using the \Rfunction{plot\_genes\_branched\_pseudotime} function, which works a lot like the \Rfunction{plot\_genes\_in\_pseudotime} function, except it shows two kinetic trends, one for each lineage, instead of one. We also show \emph{Ccnd2}, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. 
 
