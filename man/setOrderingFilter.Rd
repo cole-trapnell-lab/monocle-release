@@ -2,7 +2,7 @@
 % Please edit documentation in R/order_cells.R
 \name{setOrderingFilter}
 \alias{setOrderingFilter}
-\title{Sets the features (e.g. genes) to be used for ordering cells in pseudotime.}
+\title{Marks genes for clustering}
 \usage{
 setOrderingFilter(cds, ordering_genes)
 }
@@ -15,5 +15,6 @@ setOrderingFilter(cds, ordering_genes)
 an updated CellDataSet object
 }
 \description{
-Sets the features (e.g. genes) to be used for ordering cells in pseudotime.
+The function marks genes that will be used for clustering in subsequent calls to clusterCells. 
+The list of selected genes can be altered at any time.
 }

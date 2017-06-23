@@ -2,15 +2,11 @@
 % Please edit documentation in R/methods-CellTypeHierarchy.R
 \name{newCellTypeHierarchy}
 \alias{newCellTypeHierarchy}
-\alias{addCellType}
 \alias{classifyCells}
 \alias{calculateMarkerSpecificity}
 \title{Classify cells according to a set of markers}
 \usage{
 newCellTypeHierarchy()
-
-addCellType(cth, cell_type_name, classify_func,
-  parent_cell_type_name = "root")
 
 classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL,
   ...)
@@ -19,17 +15,6 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)
 }
 \arguments{
-\item{cth}{The CellTypeHierarchy object}
-
-\item{cell_type_name}{The name of the new cell type. Can't already exist in
-cth}
-
-\item{classify_func}{A function that returns true when a cell is of the new
-type}
-
-\item{parent_cell_type_name}{If this cell type is a subtype of another,
-provide its name here}
-
 \item{cds}{The CelllDataSet you want to classify}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
@@ -52,6 +37,16 @@ returns a dataframe with N x k rows. Each row contains a gene and a specifity
 score for one of the types.
 }
 \description{
+Creates a CellTypeHeirarchy object which can store
+cell types with the addCellType() function. When classifyCells
+is used with a CellDataSet and a CellTypeHeirarchy cells in the 
+CellDataSet can be classified as cell types found in the CellTypeHeirarchy
+
+classifyCells accepts a cellDataSet and and a cellTypeHierarchy.
+Each cell in the cellDataSet is checked against the functions in the cellTypeHeirarchy
+to determine each cell's type
+}
+\details{
 CellTypeHierarchy objects are Monocle's mechanism for
   classifying cells into types based on known markers. To classify the cells
   in a CellDataSet object according to known markers, first construct a
@@ -66,15 +61,11 @@ CellTypeHierarchy objects are Monocle's mechanism for
   another that's already been registered with a CellTypeHierarchy object,
   make that one the "parent" type with the \code{cell_type_name} argument. If
   you want two types to be mutually exclusive, make them "siblings" by giving
-  them the same parent.
-}
-\details{
-The classifcation functions in a CellTypeHierarchy must take a single argument, a matrix of
+  them the same parent. The classifcation functions in a CellTypeHierarchy must take a single argument, a matrix of
   expression values, as input. Note that this matrix could either be a 
   \code{\link[Matrix]{sparseMatrix}} or a dense matrix. Explicitly casting the input to a dense
   matrix inside a classification function is likely to drastically slow down 
   classifyCells and other routines that use CellTypeHierarhcy objects.
-  
   Successive calls to \code{addCellType} build up a tree of classification
   functions inside a CellTypeHierarchy. When two functions are siblings in 
   the tree, classifyCells expects that a cell will meet the classification
@@ -86,9 +77,7 @@ The classifcation functions in a CellTypeHierarchy must take a single argument, 
   adjusting your classification functions. For example, some cells are 
   defined by very high expression of a key gene that is expressed at lower
   levels in other cell types. Raising the threshold for this gene in a 
-  classification could resolve the ambiguities.
-  
-  A classification function
+  classification could resolve the ambiguities. A classification function
   can also have child functions. You can use this to specify subtypes of 
   cells. For example, T cells express the gene CD3, and there are many
   subtypes. You can encode each subset by first adding a general T cell
@@ -96,9 +85,7 @@ The classifcation functions in a CellTypeHierarchy must take a single argument, 
   function that recognizes CD4 (for CD4+ helper T cells), one for CD8 (to
   identify CD8+ cytotoxic T cells), and so on. \code{classifyCells} will
   aim to assign each cell to its most specific subtype in the "CellType" 
-  column. 
-  
-  By default, \code{classifyCells} applies the classification functions to
+  column. By default, \code{classifyCells} applies the classification functions to
   individual cells, but you can also apply it to cells in a "grouped" mode to 
   impute the type of cells that are missing expression of your known markers.
   You can specify additional (quoted) grouping variables to \code{classifyCells}.
@@ -113,8 +100,6 @@ The classifcation functions in a CellTypeHierarchy must take a single argument, 
 }
 \section{Functions}{
 \itemize{
-\item \code{addCellType}: Add a cell type to a CellTypeHierarchy
-
 \item \code{classifyCells}: Add a cell type to a CellTypeHierarchy
 
 \item \code{calculateMarkerSpecificity}: Calculate each gene's specificity for each cell type 
