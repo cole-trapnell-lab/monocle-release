@@ -11,37 +11,36 @@ plot_multiple_branches_pseudotime(cds, branches, branches_name = NULL,
   TPM = FALSE, cores = 1)
 }
 \arguments{
-\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
+\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with BEAM)}
 
-\item{branches}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
+\item{branches}{The terminal branches (states) on the developmental tree you want to investigate.}
 
-\item{branches_name}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
+\item{branches_name}{Name (for example, cell type) of branches you believe the cells on the branches are associated with.}
 
-\item{min_expr}{Whether to cluster the rows of the heatmap.}
+\item{min_expr}{The minimum level of expression to show in the plot}
 
-\item{cell_size}{The method used by pheatmap to perform hirearchical clustering of the rows.}
+\item{cell_size}{A number how large the cells should be in the plot}
 
-\item{norm_method}{Number of clusters for the heatmap of branch genes}
+\item{norm_method}{Determines how to transform expression values prior to rendering}
 
-\item{nrow}{The color scheme for drawing the heatmap.}
+\item{nrow}{the number of rows used when laying out the panels for each gene's expression}
 
-\item{ncol}{Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.}
+\item{ncol}{the number of columns used when laying out the panels for each gene's expression}
 
-\item{panel_order}{Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.}
+\item{panel_order}{the order in which genes should be layed out (left-to-right, top-to-bottom)}
 
-\item{color_by}{Whether to show the names for each row in the table.}
+\item{color_by}{the cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
 
-\item{trend_formula}{A formula string specifying the model used in fitting the spline curve for each gene/feature.}
+\item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
 
-\item{label_by_short_name}{A logic flag to decide whether or not the gene short name will be used.}
+\item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 
-\item{TPM}{Whether to return the pheatmap object to the user.}
+\item{TPM}{Whether to convert the expression value into TPM values.}
 
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
 }
 \value{
-A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
-annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
+a ggplot2 plot object
 }
 \description{
 Create a kinetic curves to demonstrate the bifurcation of gene expression along multiple branches
