@@ -13,11 +13,11 @@ plot_multiple_branches_heatmap(cds, branches, branches_name = NULL,
   cores = 1)
 }
 \arguments{
-\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
+\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with BEAM)}
 
-\item{branches}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
+\item{branches}{The terminal branches (states) on the developmental tree you want to investigate.}
 
-\item{branches_name}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
+\item{branches_name}{Name (for example, cell type) of branches you believe the cells on the branches are associated with.}
 
 \item{cluster_rows}{Whether to cluster the rows of the heatmap.}
 
