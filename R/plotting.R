@@ -2319,9 +2319,9 @@ plot_complex_cell_trajectory <- function(cds,
 # Modified function: Plot heatmap of 3 branches with the same coloring. Each CDS subset has to have the same set of genes.
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches
 #'
-#' @param cds CellDataSet for the experiment (normally only the branching genes detected with branchTest)
-#' @param branches The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".
-#' @param branches_name The two states to compare in the heatmap. Mutually exclusive with branch_point. 
+#' @param cds CellDataSet for the experiment (normally only the branching genes detected with BEAM)
+#' @param branches The terminal branches (states) on the developmental tree you want to investigate.
+#' @param branches_name Name (for example, cell type) of branches you believe the cells on the branches are associated with. 
 #' @param cluster_rows Whether to cluster the rows of the heatmap.
 #' @param hclust_method The method used by pheatmap to perform hirearchical clustering of the rows. 
 #' @param num_clusters Number of clusters for the heatmap of branch genes
@@ -2530,23 +2530,21 @@ plot_multiple_branches_heatmap <- function(cds,
 
 #'  Create a kinetic curves to demonstrate the bifurcation of gene expression along multiple branches
 #'
-#' @param cds CellDataSet for the experiment (normally only the branching genes detected with branchTest)
-#' @param branches The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".
-#' @param branches_name The two states to compare in the heatmap. Mutually exclusive with branch_point. 
-#' @param min_expr Whether to cluster the rows of the heatmap.
-#' @param cell_size The method used by pheatmap to perform hirearchical clustering of the rows. 
-#' @param norm_method Number of clusters for the heatmap of branch genes
-#' @param nrow The color scheme for drawing the heatmap.
-#' @param ncol Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.
-#' @param panel_order Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.
-#' @param color_by Whether to show the names for each row in the table.
-#' @param trend_formula A formula string specifying the model used in fitting the spline curve for each gene/feature.
-#' @param label_by_short_name A logic flag to decide whether or not the gene short name will be used. 
-#' @param TPM Whether to return the pheatmap object to the user. 
+#' @param cds CellDataSet for the experiment (normally only the branching genes detected with BEAM)
+#' @param branches The terminal branches (states) on the developmental tree you want to investigate. 
+#' @param branches_name Name (for example, cell type) of branches you believe the cells on the branches are associated with. 
+#' @param min_expr The minimum level of expression to show in the plot
+#' @param cell_size A number how large the cells should be in the plot 
+#' @param norm_method Determines how to transform expression values prior to rendering
+#' @param nrow the number of rows used when laying out the panels for each gene's expression
+#' @param ncol the number of columns used when laying out the panels for each gene's expression
+#' @param panel_order the order in which genes should be layed out (left-to-right, top-to-bottom)
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to be used to color each cell  
+#' @param trend_formula the model formula to be used for fitting the expression trend over pseudotime 
+#' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
+#' @param TPM Whether to convert the expression value into TPM values. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
-#' @return A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
-#' annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column). 
-#' @import pheatmap
+#' @return a ggplot2 plot object
 #' @export
 #'
 plot_multiple_branches_pseudotime <- function(cds, 
