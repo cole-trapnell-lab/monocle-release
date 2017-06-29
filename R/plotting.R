@@ -2082,7 +2082,9 @@ plot_pc_variance_explained <- function(cds,
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     theme(panel.background = element_rect(fill='white')) + xlab('components') + 
     ylab('Variance explained \n by each component')
-  # return(prop_varex = prop_varex, p = p)
+  
+  cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex # update CDS slot for variance_explained 
+
   if(return_all) {
     return(list(variance_explained = prop_varex, p = p))
   }
