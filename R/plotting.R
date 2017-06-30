@@ -1108,7 +1108,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     show_rownames = FALSE, 
                                     use_gene_short_name = TRUE,
                                     
-                                    norm_method = c("vstExprs", "log"), 
+                                    norm_method = c("log", "vstExprs"), 
                                     scale_max=3, 
                                     scale_min=-3, 
                                     
@@ -1117,7 +1117,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     return_heatmap=FALSE,
                                     cores=1){
   
-  pseudocount <- NA
+  pseudocount <- 1
   newdata <- data.frame(Pseudotime = seq(min(pData(cds_subset)$Pseudotime), max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
@@ -1664,7 +1664,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         use_gene_short_name = TRUE,
                                         scale_max=3, 
                                         scale_min=-3, 
-                                        norm_method = c("vstExprs", "log"), 
+                                        norm_method = c("log", "vstExprs"), 
                                         
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
@@ -2018,7 +2018,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 plot_pc_variance_explained <- function(cds, 
                             max_components=100, 
                             # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                            norm_method = c("vstExprs", "log", "none"), 
+                            norm_method = c("log", "vstExprs", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             return_all = F, 
@@ -2357,7 +2357,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            show_rownames = FALSE, 
                                            use_gene_short_name = TRUE,
                                            
-                                           norm_method = c("vstExprs", "log"), 
+                                           norm_method = c("log", "vstExprs"), 
                                            scale_max=3, 
                                            scale_min=-3, 
                                            
@@ -2365,6 +2365,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            
                                            return_heatmap=FALSE,
                                            cores=1){
+  pseudocount <- 1
   if(!(all(branches %in% pData(cds)$State)) & length(branches) == 1){
     stop('This function only allows to make multiple branch plots where branches is included in the pData')
   }
