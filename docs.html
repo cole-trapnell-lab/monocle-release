@@ -783,7 +783,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/lognormal_plot-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/lognormal_plot-1.png" width=500>
 </div>
 <br>
 
@@ -890,7 +890,7 @@ plot_ordering_genes(HSMM)
 
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_gene_pick-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_gene_pick-1.png" width=500>
 </div>
 <br>
 <br>
@@ -911,7 +911,7 @@ plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width=500 height=500>
 </div>
 
 {% highlight R %}
@@ -945,7 +945,7 @@ plot_cell_clusters(HSMM, 1, 2, color="Media")
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_media-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_media-1.png" width=500>
 </div>
 
 Monocle allows us to subtract the effects of "uninteresting" sources of variation to reduce their impact on the clustering.
@@ -963,7 +963,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_control_for_media-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_unsup_control_for_media-1.png" width=500>
 </div>
 
 <br>
@@ -1046,7 +1046,7 @@ plot_ordering_genes(HSMM)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width=500>
 </div>
 
 <br>
@@ -1063,7 +1063,7 @@ plot_pc_variance_explained(HSMM, return_all = F)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width=500 >
 </div>
 
 {% highlight R %}
@@ -1075,7 +1075,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=600>
+  <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=500>
 </div>
 
 <h3> 4.4 Imputing Cell Type </h3>
@@ -1251,7 +1251,7 @@ plot_ordering_genes(HSMM_myo)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/set_ordering_filter-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/set_ordering_filter-1.png" width=500>
 </div>
 
 <br>
@@ -1291,7 +1291,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_ordering_mst-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_ordering_mst-1.png" width=500>
 </div>
 
 <br>
@@ -1311,7 +1311,7 @@ The trajectory has a tree-like structure. We can see that the cells
  {% endhighlight %}
 
  <div class="text-center">
-   <img src="{{site.url}}/images/vignette/plot_ordering_mst_by_state-1.png" width=600>
+   <img src="{{site.url}}/images/vignette/plot_ordering_mst_by_state-1.png" width=500>
  </div>
 
 <br>
@@ -1332,7 +1332,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  {% endhighlight %}
 
  <div class="text-center">
-   <img src="{{site.url}}/images/vignette/plot_ordering_with_GM_state-1.png" width=600>
+   <img src="{{site.url}}/images/vignette/plot_ordering_with_GM_state-1.png" width=500>
  </div>
 
  <br>
@@ -1363,7 +1363,7 @@ plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/init_hsmm_jitter_state-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/init_hsmm_jitter_state-1.png" width=500>
 </div>
 
 <br>
@@ -1383,7 +1383,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_markers_linear-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_markers_linear-1.png" width=500>
 </div>
 
 <br>
@@ -1463,7 +1463,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/order_cells_pca_unsup-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/order_cells_pca_unsup-1.png" width=500>
 </div>
 
 <h3> 5.4 Unsupervized Feature Selection Based on Density Peak Clustering </h3>
@@ -1508,7 +1508,7 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_pc_variance-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_pc_variance-1.png" width=500>
 </div>
 
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.
@@ -1550,14 +1550,12 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 <br>
 <br>
 
-<div class="text-center">
-  <img src="{{site.url}}/images/vignette/check_the_clustering_results-1.png" width=600>
-</div>
-
-<div class="text-center">
-  <img src="{{site.url}}/images/vignette/check_the_clustering_results-2.png" width=600>
-</div>
-
+  <div class="text-center">
+    <img src="{{site.url}}/images/vignette/check_the_clustering_results-1.png" width=400>
+  </div>
+  <div class="text-center">
+    <img src="{{site.url}}/images/vignette/check_the_clustering_results-2.png" width=400>
+  </div>
 We also provide the decision plot for users to check the &Rho;, &Delta; for each cell and decide the threshold for defining the cell clusters.
 
 <br>
@@ -1568,7 +1566,7 @@ plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_rho_delta-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_rho_delta-1.png" width=400>
 </div>
 
 <br>
@@ -1598,11 +1596,11 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/check_clustering_again-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/check_clustering_again-1.png" width=400>
 </div>
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/check_clustering_again-2.png" width=600>
+  <img src="{{site.url}}/images/vignette/check_clustering_again-2.png" width=400>
 </div>
 
 
@@ -1638,7 +1636,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/order_cells_dp_feature-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/order_cells_dp_feature-1.png" width=400>
 </div>
 
 <h3> 5.5 Semi-Supervised Ordering with Known Marker Genes </h3>
@@ -1691,7 +1689,7 @@ plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="rig
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/semi_sup_ordering_trajectory-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/semi_sup_ordering_trajectory-1.png" width=800>
 </div>
 
 To confirm that the ordering is correct, we can select a couple of markers of
@@ -1762,7 +1760,7 @@ plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_myog_jitter-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_myog_jitter-1.png" width=500>
 </div>
 
 <br>
@@ -1825,7 +1823,7 @@ plot_genes_jitter(cds_subset, grouping="CellType", color_by="CellType",
 {%endhighlight%}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/jitter_plot_diff_res-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/jitter_plot_diff_res-1.png" width=760>
 </div>
 
 <br>
@@ -1938,7 +1936,7 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width=500>
 </div>
 
 <h3> 6.5 Multi-Factorial Differential Expression Analysis </h3>
@@ -1971,7 +1969,7 @@ plot_genes_jitter(cds_subset,
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_diff_res_multi-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/plot_diff_res_multi-1.png" width=800 >
 </div>
 
 <h2> 7 Analyzing Branches in Single-Cell Trajectories </h2>
@@ -1996,7 +1994,7 @@ plot_cell_trajectory(lung, color_by="Time")
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/init_treutlein-1.png" width=600>
+  <img src="{{site.url}}/images/vignette/init_treutlein-1.png" width=400>
 </div>
 
 <br>
