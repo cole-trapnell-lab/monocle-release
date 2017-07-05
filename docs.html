@@ -24,9 +24,8 @@ tags: [monocle, manual, vignette]
         <!-- main content area -->
         <div class="col-sm-8">
 
-<p> <a class="btn btn-primary btn-lg" href="{{ site.url }}/getting-started/" role="button">Install Instructions&raquo;</a> </p>
 
-<h2> 1 Abstract </h2>
+<h2>Abstract</h2>
 Single cell gene expression studies enable profiling of transcriptional regulation during complex biological processes and within highly hetergeneous cell populations. These studies allow discovery of genes that identify certain subtypes of cells, or that mark a particular intermediate states during a biological process. In many single cell studies, individual cells are executing through a gene expression program in an unsynchronized manner. In effect, each cell is a snapshot of the transcriptional program under study. The package <strong>Monocle</strong> provides tools for analyzing single-cell expression experiments. Monocle introduced the strategy of ordering single cells in <strong>pseudotime</strong>, placing them along a trajectory corresponding to a biological process such as cell differentiation. Monocle learns this trajectory directly from the data, in either a fully unsupervised or a semi-supervised manner. It also performs differential gene expression and clustering to identify important genes and cell states. It is designed for RNA-Seq studies, but can be used with other assays. For more information on the algorithm at the core of <strong>monocle</strong>, or to learn more about how to use single cell RNA-Seq to study a complex biological process, see Cole Trapnell and Davide Cacchiarelli et al (2014): The dynamics and regulators of cell fate decisions are revealed
 by pseudo-temporal ordering of single cells. Nature Biotechnology
 
@@ -38,7 +37,7 @@ data(HSMM_gene_annotation)
 data(HSMM_sample_sheet)
 {% endhighlight %}
 
-<h2> 2 Introduction </h2>
+<h2>Introduction</h2>
 
 The monocle package provides a toolkit for analyzing single cell gene expression experiments. This vignette provides an overview of a single cell RNA-Seq analysis workflow with Monocle. Monocle was originally developed to analyze dynamic biological processes such as cell differentiation, although it also supports simpler experimental settings.
 
@@ -54,14 +53,72 @@ Monocle can help you perform three main types of analysis:
 
 Before we look at Monocle's functions for each of these common analysis tasks, let's see how to load up single-cell datasets in Monocle.
 
-<h2> 3 Quick Start </h2>
+<h2> Installing Monocle </h2>
+
+<h3> Required software </h3>
+Monocle runs in the <a href="http://www.r-project.org/">R statistical computing environment</a>. You will need R version 3.4 or higher, Bioconductor version 3.5, and monocle 2.4.0 or higher to have access to the latest features. To install <a href="http://bioconductor.org/install/">Bioconductor</a>:
+
+{% highlight R %}
+source("http://bioconductor.org/biocLite.R")
+biocLite()
+{% endhighlight %}
+
+Once you've installed Bioconductor, you're ready to install Monocle and all of its required dependencies:
+
+{% highlight R %}
+> biocLite("monocle")
+{% endhighlight %}
+
+<h3> Testing the installation </h3>
+To ensure that Monocle was installed correctly, start a new R session and type:
+
+{% highlight R %}
+library(monocle)
+{% endhighlight %}
+
+<h3> Analyzing your data </h3>
+
+Now that you've installed Monocle, check out the <a href="/docs/">documentation</a> for how to load up your data and get going.
+
+<h3> Installing the latest Beta release</h3>
+The latest stable release of Monocle is available through Bioconductor, and we recommend you use that. However, you can also install our latest public beta build through GitHub as show below. Enter the following commands at the R console:
+
+{% highlight R %}
+install.packages("devtools")
+devtools::install_github("cole-trapnell-lab/monocle-release@develop")
+{% endhighlight %}
+
+Sometimes we add features that require you install certain additional packages. You may see errors when you try the above command. You can install the packages in the error message by typing (for example):
+
+{% highlight R %}
+biocLite(c("DDRTree", "pheatmap"))
+{% endhighlight %}
+
+
+<h2>Recommended analysis protocol</h2>
+
+<h4>Store Data in a CellDataSet Object</h4>
+
+<h4>Perform basic quality control</h4>
+
+<h4>Classify cells with known marker genes</h4>
+
+<h4>Order cells in pseudotime along a trajectory</h4>
+
+<h4>Differential Expression Analysis</h4>
+
+<!-- <h4>Classify Cells with CellTypeHierarchy </h4>
+
+<h4>Classify Cells with CellTypeHierarchy </h4>
+
+<h4>Classify Cells with CellTypeHierarchy </h4>
 
  This quick start will outline the default functions to execute in order to to analyze your data.
  If you are interested in how Monocle works and functions other than the default ones mentioned here, move onto section 3 "Getting Started with Monocle".
 <br>
 <br>
  <ol>
-   <b>1. Store Data in a CellDataSet Object</b>
+   <b>Store Data in a CellDataSet Object</b>
 <br>
 <br>
  Three files are required in order to create a CellDataSet object:
@@ -129,7 +186,7 @@ The following lines are an example of how to display a table that reports how ma
 <br>
 <br>
 
-<b>2. Classify Cells with CellTypeHierarchy </b>
+<b>Classify Cells with CellTypeHierarchy </b>
    <br>
    <br>
 
@@ -151,7 +208,7 @@ The following lines are an example of how to display a table that reports how ma
 
 <br>
 
-<b>3. Cluster Cells with Known Marker Genes</b>
+<b>Cluster Cells with Known Marker Genes</b>
 
 <br>
 <br>
@@ -237,7 +294,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
  {% endhighlight %}
 <br>
- <b>5. Reduce Dimensionality of Data</b>
+ <b>Reduce Dimensionality of Data</b>
 <br>
 <br>
  {% highlight R %}
@@ -245,14 +302,14 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  {% endhighlight %}
 <br>
 
- <b>6. Order Cells in Pseudotime</b>
+ <b>Order Cells in Pseudotime</b>
 <br>
 <br>
  {% highlight R %}
  HSMM_myo <- orderCells(HSMM_myo, reverse = FALSE)
  {% endhighlight %}
 <br>
-<b>7. Plot Genes in Pseudotime </b>
+<b>Plot Genes in Pseudotime </b>
   <br>
   <br>
  The first three lines are used to filter through the data so that only pseudotime is plotted for desired
@@ -267,7 +324,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
  {% endhighlight %}
 <br>
- <b>8. Determine Root of Branched Trajectory</b>
+ <b>Determine Root of Branched Trajectory</b>
    <br>
    <br>
  Monocle cannot tell which side of the cell trajectory is the beginning, however it contains methods for each scenario to make sure that the trajectory is lined up correctly with the axis.
@@ -377,7 +434,7 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
  plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
  {% endhighlight %}
 <br>
- <b>12. Analyzing Branches in Single-Cell Trajectories</b>
+ <b>Analyzing Branches in Single-Cell Trajectories</b>
 <br>
 <br>
  Monocle contains several tools for analyzing the branching events of trajectories with multiple outcomes.
@@ -414,14 +471,14 @@ To cluster the cells we'll choose the top ten markers for each of the cell types
                                 color_by = "Time",
                                 ncol = 1)
  {% endhighlight %}
- </li>
+ </li> -->
 
 
-<h2> 3 Getting Started with Monocle </h2>
+<h2>Getting Started with Monocle </h2>
 
 Monocle takes a matrix of gene expression values as calculated by Cufflinks or another gene expression estimation program. Monocle can work with relative expression values (e.g. FPKM or TPM units) or absolute transcript counts (e.g. from UMI experiments). Monocle also works "out-of-the-box" with the transcript count matrices produced by <a href="https://support.10xgenomics.com/single-cell/software/overview/welcome">CellRanger</a>, the software pipeline for analyzing experiments from the 10X Genomics Chromium instrument. Monocle also works well with data from other RNA-Seq workflows such as <a href="http://biorxiv.org/content/early/2017/02/02/104844">sci-RNA-Seq</a> and instruments like the Biorad ddSEQ. Although Monocle can be used with raw read counts, these are not directly proportional to expression values unless you normalize them by length, so some Monocle functions could produce nonsense results. If you don't have UMI counts, We recommend you load up FPKM or TPM values instead of raw read counts.
 
-<h3> 3.1 The CellDataSet class</h3>
+<h3>The CellDataSet class</h3>
 
 Monocle holds single cell expression data in objects of the <code>CellDataSet</code> class. The class is derived from the Bioconductor <code>ExpressionSet</code> class, which provides a common interface familiar to those who have analyzed microarray experiments with Bioconductor. The class requires three input files:
 <ul>
@@ -432,7 +489,7 @@ Monocle holds single cell expression data in objects of the <code>CellDataSet</c
 <br>
 <div class="panel panel-warning">
   <div class="panel-heading">
-    <h3 class="panel-title">Required dimensions for input files</h3>
+    <h3 class="panel-title" data-toc-skip>Required dimensions for input files</h3>
   </div>
   <div class="panel-body">
     The expression value matrix <strong>must</strong>:
@@ -460,7 +517,6 @@ HSMM_gene_annotation <- read.delim("gene_annotations.txt")
 {% endhighlight %}
 
 <br>
-<br>
 
 Once these tables are loaded, you can create the CellDataSet object like this:
 
@@ -469,8 +525,8 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
 {% endhighlight %}
+
 <br>
-SKIPPING SOME STUFF
 
 This will create a CellDataSet object with expression values measured in FPKM, a measure of relative expression reported by Cufflinks.
 By default, Monocle assumes that your expression data is in units of transcript counts and uses a negative binomial model to test for differential expression in downstream steps.
@@ -479,15 +535,19 @@ However, if you're using relative expression values such as TPM or FPKM data, se
 <br>
 <br>
 
-<strong>NOTE:</strong> if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
-You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
-You should <i>not</i> use <code>relative2abs()</code> as discussed below in section 3.4. Monocle will do all needed normalization steps internally.
-Normalizing it yourself risks breaking some of Monocle's key steps.
+<div class="panel panel-warning">
+  <div class="panel-heading">
+    <h3 class="panel-title" data-toc-skip>Don't normalize data yourself</h3>
+  </div>
+  <div class="panel-body">
+    if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
+    You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
+    You should <i>not</i> use <code>relative2abs()</code> as discussed below in section 3.4. Monocle will do all needed normalization steps internally.
+    Normalizing it yourself risks breaking some of Monocle's key steps.
+  </div>
+</div>
 
-<br>
-<br>
-
-<h3> 3.2 Choosing a Distribution for Expression Data </h3>
+<h3 data-toc-text="Choosing a distribution for your data">Choosing a distribution for your data <span class="label label-danger"''>Required</span></h3>
 
 Monocle works well with both relative expression data and count-based measures (e.g. UMIs).
 In general, it works best with transcript count data, especially UMI data.
@@ -544,7 +604,7 @@ HSMM <- newCellDataSet(count_matrix,
  <br>
  <br>
 
- <h3> 3.3 Working with Large Data Sets </h3>
+ <h3 data-toc-text="Working with large data sets">Working with large data sets <span class="label label-info"''>Recommended</span></h3>
 
  Some single-cell RNA-Seq experiments report measurements from tens of thousands of cells or more.
  As instrumentation improves and costs drop, experiments will become ever larger and more complex, with many conditions, controls, and replicates.
@@ -556,10 +616,9 @@ HSMM <- newCellDataSet(count_matrix,
 <br>
 To work with your data in a sparse format, simply provide it to Monocle as a sparse matrix from the <i>Matrix</i> package:
 <br>
-<br>
 
 {% highlight R %}
-HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+HSMM <- newCellDataSet(as(umi_matrix, "sparseMatrix"),
                         phenoData = pd,
                         featureData = fd,
                         lowerDetectionLimit=0.5,
@@ -569,20 +628,27 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
 <br>
 <br>
 
-<strong>NOTE: </strong> The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX).
-If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via <code>as.matrix()</code>, because that may exceed your available memeory.
-If you have 10X Genomics data and are using <i>cellrangerRkit</i>, you can use it to load your data and then pass that to Monocle as follows:
+<div class="panel panel-warning">
+  <div class="panel-heading">
+    <h3 class="panel-title" data-toc-skip>Don't accidentally convert to a dense expression matrix</h3>
+  </div>
+  <div class="panel-body">
+    The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX).
+    If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via <code>as.matrix()</code>, because that may exceed your available memeory.
+  </div>
+</div>
 
 <br>
 
+If you have 10X Genomics data and are using <i>cellrangerRkit</i>, you can use it to load your data and then pass that to Monocle as follows:
 {% highlight R %}
 
 cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
 gbm <- load_cellranger_matrix(cellranger_pipestance_path)
 
 gbm_cds <- newCellDataSet(exprs(gbm),
-                          phenoData = pData(gbm),
-                          featureData = fData(gbm),
+                          phenoData = new("AnnotatedDataFrame", data = pData(gbm)),
+                          phenoData = new("AnnotatedDataFrame", data = fData(gbm)),
                           lowerDetectionLimit=0.5,
                           expressionFamily=negbinomial.size())
 {% endhighlight %}
@@ -592,7 +658,7 @@ gbm_cds <- newCellDataSet(exprs(gbm),
 Monocle's sparse matrix support is provided by the <i>Matrix</i> package.
 Other sparse matrix packages, such as <i>slam</i> or <i>SparseM</i> are not supported.
 
-<h3> 3.4 Converting Relative Expression Values into mRna Counts </h3>
+<h3 data-toc-text="Converting TPM to mRNA counts">Converting TPM/FPKM values into mRNA counts <span class="label label-success">Optional</span></h3>
 
 If you performed your single-cell RNA-Seq experiment using <i>spike-in</i> standards, you can convert these measurements into mRNAs per cell (RPC).
 RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them.
@@ -643,7 +709,8 @@ HSMM <- estimateDispersions(HSMM)
 We're now ready to start using the <i>HSMM</i> object in our analysis.
 <br>
 
-<h3> 3.5 Filtering Low-Quality Cells </h3>
+<h3 data-toc-text="Filtering low-quality cells">Filtering low-quality cells <span class="label label-info"''>Recommended</span></h3>
+
 The first step in any single-cell RNA-Seq analysis is identifying poor-quality libraries from further analysis.
 Most single-cell workflows will include at least some libraries made from dead cells or empty wells in a plate.
 It's also crucial to remove doublets: libraries that were made from two or more cells accidentally.
@@ -787,7 +854,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 </div>
 <br>
 
-<h2>4 Classifying and Counting Cells</h2>
+<h2>Classifying and Counting Cells</h2>
 
 Single cell experiments are often performed on complex mixtures of multiple cell types.
 Dissociated tissue samples might contain two, three, or even many different cells types.
@@ -801,7 +868,7 @@ Likewise, fibroblasts express high levels of <i>ANPEP</i> (CD13), while myoblast
 <br>
 
 
-<h3> 4.1 Classifying Cells with CellTypeHierarchy </h3>
+<h3 data-toc-text="Classifying cells by type">Classifying cells by type <span class="label label-info"''>Recommended</span></h3>
 
 Monocle provides a simple system for tagging cells based on the expression of marker genes of your choosing.
 You simply provide a set of functions that Monocle can use to annotate each cell.
@@ -863,7 +930,8 @@ When a cell doesn't meet any of the criteria specified in your classification fu
 If it meets multiple functions' criteria, it's marked "Ambiguous". You could just exclude such cells, but you'd be throwing out a lot of your data.
 In this case, we'd lose more than half of the cells!
 
-<h3> 4.2 Unsupervised Cell Clustering </h3>
+<h3 data-toc-text="Clustering cells without marker genes">Clustering cells without marker genes <span class="label label-success"''>Optional</span></h3>
+
 Monocle provides an algorithm you can use to impute the types of the "Unknown" cells.
 This algorithm, implemented in the function <code>clusterCells</code>, groups cells together according to global expression profile.
 That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack <i>MYF5</i>, we can still recognize it as a myoblast.
@@ -989,7 +1057,7 @@ To help rule out the latter, let's try running <code>clusterCells</code> in its 
 
 <br>
 
-<h3> 4.3 Semi-Supervised Cell Clustering with Known Marker Genes </h3>
+<h3 data-toc-text="Clustering cells using marker genes">Clustering cells using marker genes <span class="label label-info"''>Recommended</span></h3>
 
 First, we'll select a different set of genes to use for clustering the cells.
 Before we just picked genes that were highly expressed and highly variable.
@@ -1078,7 +1146,8 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
   <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=500>
 </div>
 
-<h3> 4.4 Imputing Cell Type </h3>
+<h3 data-toc-text="Imputing cell type">Imputing cell type <span class="label label-success"''>Optional</span></h3>
+
 Note that we've reduce the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
 But what about the "Unknown" cells? If you provide  <code>clusterCells</code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
 Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
@@ -1133,7 +1202,7 @@ HSMM_myo <- estimateDispersions(HSMM_myo)
 
 {% endhighlight %}
 
-<h2> 5 Constructing Single Cell Trajectories </h2>
+<h2>Constructing Single Cell Trajectories </h2>
 During development, in response to stimuli, and througout life, cells transition from one functional "state" to another.
 Cells in different states express different sets of genes, producing a dynamic repetoire of proteins and metabolites that carry out their work.
 As cells move between states, undergo a process of transcriptional re-configuration, with some genes being silenced and others newly activated.
@@ -1154,15 +1223,29 @@ You can see how to analyze branches in section 9.6.
 Monocle relies on a machine learning technique called <em>reversed graph embedding</em> to construct single-cell trajectories.
 You can read more about the theoretical foundations of Monocle's approach in section 9, or consult the references shown at the end of the vignette.
 
-<h3> 5.1 "Pseudotime": A Measure of Progress Through a Biological Process </h3>
+<br>
+<br>
 
-In many biological processes, cells do not progress in perfect synchrony.  In single-cell expression studies of processes such as cell differentiation, captured cells might be widely distributed in terms of progress.  That is, in a population of cells captured at exactly the same time, some cells might be far along, while others might not yet even have begun the process.  This asynchrony creates major problems when you want to understand the sequence of regulatory changes that occur as cells transition from one state to the next. Tracking the expression across cells captured at the same time produces a very compressed sense of a gene's kinetics, and the apparent variability of that gene's expression will be very high.
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title">What is pseudotime?</h3>
+  </div>
+  <div class="panel-body">
+    Pseudotime is a measure of how much progress an individual cell has made through a process such as cell differentiation.
 
-By ordering each cell according to its progress along a learned trajectory, Monocle alleviates the problems that arise due to asynchrony. Instead of tracking changes in expression as a function of time, Monocle tracks changes as a function of progress along the trajectory, which we term ``pseudotime''. Pseudotime is an abstract unit of progress: it's simply the distance between a cell and the start of the trajectory, measured along the shortest path. The trajectory's total length is defined in terms of the total amount of transcriptional change that a cell undergoes as it moves from the starting state to the end state. For further details, see section 9.
+    In many biological processes, cells do not progress in perfect synchrony.  In single-cell expression studies of processes such as cell differentiation, captured cells might be widely distributed in terms of progress.  That is, in a population of cells captured at exactly the same time, some cells might be far along, while others might not yet even have begun the process.  This asynchrony creates major problems when you want to understand the sequence of regulatory changes that occur as cells transition from one state to the next. Tracking the expression across cells captured at the same time produces a very compressed sense of a gene's kinetics, and the apparent variability of that gene's expression will be very high.
 
-<h3> 5.2 The Ordering Algorithm </h3>
+    By ordering each cell according to its progress along a learned trajectory, Monocle alleviates the problems that arise due to asynchrony. Instead of tracking changes in expression as a function of time, Monocle tracks changes as a function of progress along the trajectory, which we term ``pseudotime''. Pseudotime is an abstract unit of progress: it's simply the distance between a cell and the start of the trajectory, measured along the shortest path. The trajectory's total length is defined in terms of the total amount of transcriptional change that a cell undergoes as it moves from the starting state to the end state. For further details, see section 9.
 
-<h4> 5.2.1 Choosing Genes for Ordering </h4>
+  </div>
+</div>
+
+<br>
+<br>
+
+<h3>The ordering workflow</h3>
+
+<h4>Step 1: choosing genes that define progress </h4>
 
 Inferring a single-cell trajectory is a hard machine learning problem.
 The first step is to select the genes Monocle will use as input for its machine learning approach.
@@ -1177,14 +1260,14 @@ We consider this mode "semi-supervised", because Monocle will augment the marker
 <br>
 <br>
 
-<h4> 5.2.2 Reducing the Dimensionality of the Data </h4>
+<h4>Step 2: reducing the dimensionality of the data </h4>
 Once we have selected the genes we will use to order the cells, Monocle applies a <em>dimensionality reduction</em> to the data, which will drastically improves the quality of the trajectory.
 Monocle reduces the dimensionality of the data with the <code>reduceDimension</code> function. This function has a number of options, so you should familiarize yourself with them by consulting the its manual page. You can choose from two algorithms in <code>reduceDimension</code>. The first, termed Independent Component Analysis, is a classic linear technique for decomposing data that powered the original version of Monocle. The second, called DDRTree, is a much more powerful nonlinear technique that is the default for Monocle 2.  For more on how these both work, see section 9.
 
 <br>
 <br>
 
-<h4> 5.2.3 Ordering the Cells in Pseudotime </h4>
+<h4>Step 3: ordering the cells in pseudotime </h4>
 With the expression data projected into a lower dimensional space, Monocle is ready to learn the trajectory that describes how cells transition from one state into another. Monocle assumes that the trajectory has a tree structure, with one end of it the "root", and the others the "leaves". A cell at the beginning of the biological process starts at the root and progresses along the trunk until it reaches the first branch, if there is one. It then chooses a branch, and moves further and further along the tree until it reaches a leaf. These mathematical assumptions translate into some important biological ones. First, that the data includes all the major stages of the biological process. If your experiment failed to capture any cells at a key developmental transition, Monocle won't know its there. Second, that gene expression changes are smooth as a cell moves from one stage to the next. This assumption is realistic: major discontinuities in the trajectory would amount to a cell almost instantaneously turning over its transcriptome, which probably doesn't happen in most biolgical processes.
 
 <br>
@@ -1194,7 +1277,7 @@ To order your cells, Monocle uses the <code>orderCells</code> function.
 This routine has one important argument, which allows you to set the root of the tree, and thus the beginning of the process.
 See the manual page for <code>orderCells</code> for more details.
 
-<h3> 5.3 Unsupervised Ordering </h3>
+<h3 data-toc-text="Ordering without marker genes">Ordering without marker genes <span class="label label-info"''>Recommended</span></h3>
 
 In this section, we discuss ordering cells in a completely unsupervised fashion.
 First, we must decide which genes we will use to define a cell's progress through myogenesis.
@@ -1223,21 +1306,6 @@ If the cells are asynchronously moving through our biological process (as is usu
 Below are two methods to select genes that require no knowledge of the design of the experiment at all.
 
 <br>
-<br>
-
-<h4> 5.3.1 Selecting Genes with High Dispersion Across Cells </h4>
-Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
-
-<br>
-<br>
-
-{% highlight R %}
-disp_table <- dispersionTable(HSMM_myo)
- ordering_genes <- subset(disp_table,
-                          mean_expression >= 0.5 &
-                          dispersion_empirical >= 1 * dispersion_fit)$gene_id
-{% endhighlight %}
-
 <br>
 
 Once we have a list of gene ids to be used for ordering, we need to set them in the <em>HSMM</em> object, because the next several functions will depend on them.
@@ -1396,77 +1464,8 @@ orientation of the entire process as it's being discovered from the data,
 so that the cells that would have been assigned to the end are instead assigned
 to the beginning, and so on.
 
-<h4> 5.3.2 Selecting Genes Based on PCA Loading </h4>
-A number of single-cell clustering studies have found that principal component
-analysis (PCA) is an effective way of finding genes that vary widely across cells. You
-can use PCA to pick out a good set of ordering genes in a completely unsupervised
-manner. The procedure below first normalizes the expression data by adding a
-pseudocount, log-transforming it, and then standardizing it so that all genes
-have roughly the same dynamic range.  Then, it uses the <i>irlba</i> package
-to perform the PCA. The code below is a little more complicated than just calling
-<code>prcomp</code>, but it has the advantage of performing the entire computation
-with sparse matrix operations. This is important for large, sparse CellDataSet
-objects like the ones common in droplet-based single-cell RNA-Seq.
 
-<br>
-<br>
-
-{% highlight R %}
-HSMM_myo <- HSMM_myo[HSMM_expressed_genes,]
-exprs_filtered <- t(t(exprs(HSMM_myo)/pData(HSMM_myo)$Size_Factor))
-#nz_genes <- which(exprs_filtered != 0, arr.ind = T)
-exprs_filtered@x <- log(exprs_filtered@x + 1)
-
-# Calculate the variance across genes without converting to a dense
-# matrix:
-expression_means <- Matrix::rowMeans(exprs_filtered)
-expression_vars <- Matrix::rowMeans((exprs_filtered - expression_means)^2)
-
-# Filter out genes that are constant across all cells:
-genes_to_keep <- expression_vars > 0
-exprs_filtered <- exprs_filtered[genes_to_keep,]
-expression_means <- expression_means[genes_to_keep]
-expression_vars <- expression_vars[genes_to_keep]
-
-# Here is how to take the top PCA loading genes, but using
-# sparseMatrix operations the whole time, using irlba. Note
-# that the v matrix from irlba is the loading matrix
-set.seed(0)
-irlba_pca_res <- irlba(t(exprs_filtered),
-                       nu=0,
-                       center=expression_means,
-                       scale=sqrt(expression_vars),
-                       right_only=TRUE)$v
-
-row.names(irlba_pca_res) <- row.names(exprs_filtered)
-
-# Here, we will just
-# take the top 200 genes from components 2 and 3.
-# Component 1 usually is driven by technical noise.
-# We could also use a more principled approach,
-# similar to what dpFeature does below
-PC2_genes <- names(sort(abs(irlba_pca_res[, 2]), decreasing = T))[1:200]
-PC3_genes <- names(sort(abs(irlba_pca_res[, 3]), decreasing = T))[1:200]
-
-ordering_genes <- union(PC2_genes, PC3_genes)
-{% endhighlight %}
-
-<br>
-
-Using these to order the cells as above yields the following trajectory:
-{% highlight R %}
-HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes)
-HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
-HSMM_myo <- orderCells(HSMM_myo)
-HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
-plot_cell_trajectory(HSMM_myo, color_by="Hours")
-{% endhighlight %}
-
-<div class="text-center">
-  <img src="{{site.url}}/images/vignette/order_cells_pca_unsup-1.png" width=500>
-</div>
-
-<h3> 5.4 Unsupervized Feature Selection Based on Density Peak Clustering </h3>
+<h3>Ordering based on genes that differ between clusters <span class="label label-success">Optional</span> </h3>
 
 Selecting genes for ordering cells using the techniques discussed above often
 works well in simple settings, but for more complex processes, we recommend a
@@ -1639,7 +1638,24 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
   <img src="{{site.url}}/images/vignette/order_cells_dp_feature-1.png" width=400>
 </div>
 
-<h3> 5.5 Semi-Supervised Ordering with Known Marker Genes </h3>
+
+<h4> Selecting genes with high dispersion across cells <span class="label label-success">Optional</span></h4>
+Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
+
+<br>
+<br>
+
+{% highlight R %}
+disp_table <- dispersionTable(HSMM_myo)
+ ordering_genes <- subset(disp_table,
+                          mean_expression >= 0.5 &
+                          dispersion_empirical >= 1 * dispersion_fit)$gene_id
+{% endhighlight %}
+
+<br>
+
+
+<h3 data-toc-text="Ordering with marker genes">Ordering with marker genes <span class="label label-success"''>Optional</span></h3>
 
 Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will often fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's "semi-supervised" ordering mode can help you focus on the aspects of the process you're interested in.
 
@@ -1714,10 +1730,11 @@ plot_genes_branched_pseudotime(cds_subset,
                                ncol=1)
 {% endhighlight %}
 
-<h2> 6 Differential Expression Analysis </h2>
+<h2>Differential Expression Analysis </h2>
 Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the <em>phenoData</em> table of each <em>CellDataSet</em>.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
 
-<h3> 6.1 Basic Differential Analysis </h3>
+
+<h3>Basic Differential Analysis </h3>
 Performing differential expression analysis on all genes in the human genome can take a substantial amount of time. For a dataset as large as the myoblast data from [1], which contains several hundred cells, the analysis can take several hours on a single CPU. Let's select a small set of genes that we know are important in myogenesis to demonstrate Monocle's capabilities:
 
 {% highlight R %}
@@ -1771,7 +1788,7 @@ In this section, we'll explore how to use Monocle to find genes that are differe
 
 To keep the vignette simple and fast, we'll be working with small sets of genes. Rest assured, however, that Monocle can analyze many thousands of genes even in large experiments, making it useful for discovering dynamically regulated genes during the biological process you're studying.
 
-<h3> 6.2 Finding Genes that Distinguish Cell Type or State </h3>
+<h3>Finding Genes that Distinguish Cell Type or State </h3>
 
 During a dynamic biological process such as differentiation, cells might assume distinct intermediate or final states.  Recall that earlier we distinguished myoblasts from contaminating fibroblasts on the basis of several key markers. Let's look at several other genes that should distinguish between fibroblasts and myoblasts.
 <br>
@@ -1849,7 +1866,7 @@ Occassionally, as we'll see later, it's useful to be able to call <code>fitModel
 
 The differential analysis procedure in Monocle is extremely flexible: the model formulae you use in your tests can include any term that exists as a column in the <code>pData</code> table, including those columns that are added by Monocle in other analysis steps. For example, if you use <code>clusterCells</code>, you can test for genes that differ between clusters by using <em>Cluster</em> as your model formula.
 
-<h3> 6.3 Finding Genes that Change as a Function of Pseudotime </h3>
+<h3>Finding Genes that Change as a Function of Pseudotime </h3>
 Monocle's main job is to put cells in order of progress through a biological process (such as cell differentiation) without knowing which genes to look at ahead of time.
 Once it's done so, you can analyze the cells to find genes that changes as the cells make progress.
 For example, you can find genes that are significantly upregulated as the cells "mature".  Let's look at a panel of genes important for myogenesis:
@@ -1909,7 +1926,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
   <img src="{{site.url}}/images/vignette/plot_diff_res_pt-1.png" width=600>
 </div>
 
-<h3> 6.4 Clustering Genes by Pseudotemporal Expression Pattern </h3>
+<h3>Clustering Genes by Pseudotemporal Expression Pattern </h3>
 
 A common question that arises when studying time-series gene expression studies is: "which genes follow similar kinetic trends"?
 Monocle can help you answer this question by grouping genes that have similar trends, so you can analyze these groups to see what they have in common.
@@ -1939,7 +1956,7 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
   <img src="{{site.url}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width=500>
 </div>
 
-<h3> 6.5 Multi-Factorial Differential Expression Analysis </h3>
+<h3>Multi-Factorial Differential Expression Analysis </h3>
 
 Monocle can perform differential analysis in the presence of multiple factors, which can help you subtract some factors to see the effects of others.
 In the simple example below, Monocle tests three genes for differential expression between myoblasts and fibroblasts, while subtracting the effect of <em>Hours</em>, which encodes the day on which each cell was collected.
@@ -1972,7 +1989,7 @@ plot_genes_jitter(cds_subset,
   <img src="{{site.url}}/images/vignette/plot_diff_res_multi-1.png" width=800 >
 </div>
 
-<h2> 7 Analyzing Branches in Single-Cell Trajectories </h2>
+<h2>Analyzing Branches in Single-Cell Trajectories </h2>
 Often, single-cell trajectories include branches.
 The branches occur because cells execute alternative gene expression programs.
 Branches appear in trajectories during development, when cells make fate choices: one developmental lineage proceeds down one path, while the other lineage produces a second path.
@@ -2065,7 +2082,8 @@ The <code>plot_clusters</code> function returns a ggplot2 object showing the sha
 The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red.
 
 
-<h2>8 Computing Expression Values for Single Cells </h2>
+<h2>Appendices</h2>
+<h3>Computing Expression Values for Single Cells </h3>
 
 To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use [RSEM](http://deweylab.biostat.wisc.edu/rsem/), [eXpress](http://bio.math.berkeley.edu/eXpress/), [Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/), or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression [here](http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html).
 
@@ -2075,7 +2093,7 @@ CELL_TXX_YYY.RZ.fastq.gz
 
 Where XX is the time point at which the cell was collected in our experiment, YY is the well of the 96-well plate used during library prep, and Z is either 1 or 2 depending on whether we are looking at the left mate or the right mate in a paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at the left mate file for a cell collected 24 hours into our experiment and which was prepped in well A01 of the 24-hour capture plate.
 
-<h3> 8.1 Aligning reads to the genome with TopHat </h3>
+<h3>Aligning reads to the genome with TopHat </h3>
 We begin by aligning each cell's reads separately, so we will have one BAM file for each cell. The commands below show how to run each cell's reads through TopHat. These alignment commands can take a while, but they can be run in parallel if you have access to a compute cluster. If so, contact your cluster administrator for more information on how to run TopHat in a cluster environment.
 
 {% highlight bash %}
@@ -2093,7 +2111,7 @@ The commands above show how to align the reads for each of three cells in the ex
 
 When the commands finish, there will be a BAM file in each cell's TopHat output directory. For example, CELL_T24_A01_thout/accepted_hits.bam will contain the alignments for cell T24_A01.
 
-<h3> 8.2 Computing gene expression using Cufflinks </h3>
+<h3>Computing gene expression using Cufflinks </h3>
 Now, we will use Cufflinks to estimate gene expression levels for each cell in your study.
 
 {% highlight bash %}
@@ -2116,16 +2134,16 @@ cuffnorm --use-sample-sheet -o sc_expr_out GENCODE.gtf sample_sheet.txt
 
 The option --use-sample-sheet tells cuffnorm that it should look in the file sample_sheet.txt for the expression files, to make the above command simpler. If you choose not to use a sample sheet, you will need to specify the expression files on the command line directly. The sample sheet is a tab-delimited file that looks like this:
 
-| sample_name | group |
-|:--------|:-------:|--------:|
-| CELL_T24_A01_cuffquant_out/abundances.cxb   | T24_A01 |
-| CELL_T24_A02_cuffquant_out/abundances.cxb   | T24_A02 |
-| CELL_T24_A03_cuffquant_out/abundances.cxb   | T24_A03 |
-
+<pre>
+sample_name                                   group
+CELL_T24_A01_cuffquant_out/abundances.cxb     T24_A01
+CELL_T24_A02_cuffquant_out/abundances.cxb     T24_A02
+CELL_T24_A03_cuffquant_out/abundances.cxb     T24_A03
+</pre>
 Now, you are ready to load the expression data into Monocle and start analyzing your experiment.
 
 
-<h2> 9 Major Changes Between Monocle Version 1 and Version 2 </h2>
+<h2>Major updates in Monocle 2 </h2>
 
 Monocle 2 is a near-complete re-write of Monocle 1. Monocle 2 is geared towards larger, more complex single-cell RNA-Seq experiments than those possible at the time Monocle 1 was written.
 It's also redesigned to support analysis of mRNA counts, which were hard to estimate experimentally in early versions of single-cell RNA-Seq.
@@ -2146,9 +2164,9 @@ Seurat [9] from Rahul Satija's lab.
 A manuscript describing Monocle 2 and the general stragegy of using reversed
 graph embedding for single-cell trajectory analysis is available on the bioRxiv [10].
 
-<h2> 10 Theory Behind Monocle </h2>
+<h2>Theory Behind Monocle </h2>
 
-<h3> 10.1 dpFeature: Selecting Features from Dense Cell Clusters </h3>
+<h3 data-toc-text="dpFeature">dpFeature: Selecting features from dense cell clusters </h3>
 
 Appling algorithms like t-SNE to cells transiting through a continuous process like cell differentiation often groups the cells into clusters that do not necessarily reflect their progression through the process. Nevertheless, the genes that are differentially expressed by cells the clusters are often highly informative markers of each cell's progress through the trajectory. That is, clustering algorithms like t-SNE can find often genes that vary over the trajectory, but not the trajectory itself. We designed a simple procedure to identify these genes for use in trajectory reconstruction.
 
@@ -2164,7 +2182,7 @@ These density peaks nucleate clusters: all other cells will be associated with t
 Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between using a generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't.
 We then select (by default) the top 1,000 significantly differentially expressed genes as the ordering genes for the trajectory reconstruction.
 
-<h3> 10.2 Reversed Graph Embedding </h3>
+<h3>Reversed graph embedding </h3>
 
 Single-cell expression datasets are some of the largest and most complex encountered
 in genomics. Even the smallest single-cell RNA-Seq experiments sample hundreds of cells, measuring the
@@ -2276,7 +2294,7 @@ of reversed graph embedding. Both are briefly summarized below. See the original
 paper on DDRTree for more details. Monocle 2 uses the second scheme, but can easily be
 run in a mode that corresponds to the first.
 
-<h3> 10.3 DRTree: Dimensionality Reduction via Learning a Tree </h3>
+<h3 data-toc-text="Short text">DRTree: Dimensionality Reduction via Learning a Tree </h3>
 The first scheme, called "DRTree" described by Mao <em>et al</em> learns principal graphs that are
 undirected trees, with one node per input data point, along with a linear function
 $f_\mathcal{G}$. Because the algorithm restricts the feasible set to trees,
@@ -2296,7 +2314,7 @@ and because the two terms can be minimized in an alternating fashion,
 solving it is generally very fast. However, for large input datasets, the graph
 can become complex, and so DRTree can run into scalability problems.
 
-<h3> 10.4 DDRTree: Discriminative Dimensionality Reduction via Learning a Tree </h3>
+<h3 data-toc-text="DDRTree">DDRTree: discriminative dimensionality reduction via learning a tree </h3>
 
 To overcome problems posed by large complex input datasets, Mao <em>et al</em>
 proposed a second scheme, "DDRTree". that Monocle 2 uses instead of DRTree. Recall that the
@@ -2347,7 +2365,7 @@ manifold in downstream analysis steps such as BEAM. A manuscript describing the
 general stragegy of using reversed graph embedding for single-cell trajectory
 analysis is available on bioRxiv [10].
 
-<h3> 10.5 Census </h3>
+<h3>Census </h3>
 In [8], we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with the negative binomial distribution can dramatically improve the differential expression test compared to using the negative binomial with read counts or the Tobit with TPM/FPKM values.
 Census aims to convert relative abundances $X_{ij}$ into lysate transcript counts $Y_{ij}$. Without loss of generality, we consider relative abundances is on the TPM scale, and assume that a gene's TPM value is proportional to the relative frequencies of its mRNA within the total pool of mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j = 1}Y_{ij}}$.  The generative model discussed in Qiu <em>et al.</em> predicts that when only a minority of the transcripts in a cell is captured in the library, signal from most detectably expressed genes will originate from a single mRNA.  Because the number of sequencing reads per transcript is proportionate to molecular frequency after normalizing for length (i.e. TPM or FPKM), all such genes in a given cell should have similar TPM values.
 
@@ -2390,7 +2408,7 @@ For more details about Census, including a generative model of the single-cell R
 Importantly, Census cannot control for non-linear amplification, and should therefore be considered as a simple but effective way to normalize relative expression levels so that they work better with the negative binomial distribution.
 Census counts should <em>not</em> be treated as absolute transcript counts.
 
-<h3> 10.6 BEAM </h3>
+<h3>BEAM </h3>
 Monocle 2 assigns each cell a pseudotime value and a "State" encoding the segment of the trajectory it resides upon based on a trajectory learning algorithm (See below).
 In Monocle 2, we develop BEAM to test for branch-dependent gene expression by formulating the problem as a contrast between two negative binomial GLMs.
 
@@ -2418,13 +2436,13 @@ In order to facilitate  downstream branch kinetic curve clusterin as well as bra
 In the current implmentation of monocle 2, we duplicate the progenitor cells and assign it to both lineage before spline fitting.
 The branch plots in section <em>Analyzing branches in single-cell trajectories</em> use this method.
 
-<h3> 9.7 Branch Time Point Detection </h3>
+<h3 data-toc-text="Branch times">Branch time point detection </h3>
 
 The branching time point for each gene can be quantified by fitting a separate spline curves for each branch from all the progenitor to each cell fate.
 To robustly detect the pseudotime point (<em>t<sub>beta</sub><sup>i</sup></em>) when a gene <em>i</em> with a branching expression pattern starts to diverge between two cell fates <em>L<sub>1</sub></em>, <em>L<sub>2</sub></em>, we developed the branch time point detection algorithm.
 The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the <em>supplementary note 1</em> for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene <em>i</em>'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, <br> $t_{\beta}^i$ , for that particular gene <em>i</em>.
 
-<h2> 11 Citation </h2>
+<h2>Citation </h2>
 
 If you use Monocle to analyze your experiments, please cite:
 
@@ -2448,59 +2466,14 @@ citation("monocle")
 
 {% endhighlight %}
 
-<h2> 12 Acknowledgements </h2>
+<h2>Acknowledgements </h2>
 Monocle was originally built by Cole Trapnell and Davide Cacchiarelli, with substantial design input John Rinn and Tarjei Mikkelsen. We are grateful to Sharif Bordbar, Chris Zhu, Amy Wagers and the Broad RNAi platform for technical assistance, and Magali Soumillon for helpful discussions. Cole Trapnell is a Damon Runyon Postdoctoral Fellow. Davide Cacchiarelli is a Human Frontier Science Program Fellow. Cacchiarelli and Mikkelsen were supported by the Harvard Stem Cell Institute. John Rinn is the Alvin and Esta Star Associate Professor. This work was supported by NIH grants 1DP2OD00667, P01GM099117, and P50HG006193-01. This work was also supported in part by the Single Cell Genomics initiative, a collaboration between the Broad Institute and Fluidigm Inc.
 
  Monocle 2 was developed by Cole Trapnell's lab. Significant portions were written by Xiaojie Qiu. The work was supported by NIH grant 1DP2HD088158 as well as an Alfred P. Sloan Foundation Research Fellowship.
 
  This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for <em>DESeq</em>, by Simon Anders and Wolfgang Huber.
 
- <h2> 13 Session Info </h2>
-
-{% highlight R %}
-
-sessionInfo()
-
-## R version 3.4.0 (2017-04-21)
-## Platform: x86_64-apple-darwin15.6.0 (64-bit)
-## Running under: OS X El Capitan 10.11.6
-##
-## Matrix products: default
-## BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
-## LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib ##
-## locale:
-## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
-##
-## attached base packages:
-## [1] splines stats4 parallel stats graphics grDevices utils
-## [8] datasets methods base
-##
-## other attached packages:
-## [1] bindrcpp_0.1               monocle_2.5.1         DDRTree_0.1.5
-## [4] irlba_2.2.1                VGAM_1.0-3            Matrix_1.2-10
-## [7] HSMMSingleCell_0.110.0     ggplot2_2.2.1         reshape2_1.4.2
-## [10] Biobase_2.36.2            BiocGenerics_0.22.0   knitr_1.16
-
-##
-## loaded via a namespace (and not attached):
-
-##  [1] Rcpp_0.12.11          bindr_0.1           compiler_3.4.0
-##  [4] RColorBrewer_1.1-2    plyr_1.8.4          highr_0.6
-##  [7] tools_3.4.0           digest_0.6.12       densityClust_0.2.1
-## [10] evaluate_0.10         Rtsne_0.13          tibble_1.3.3
-## [13] gtable_0.2.0          lattice_0.20-35     pkgconfig_2.0.1
-## [16] rlang_0.1.1           igraph_1.0.1        fastICA_1.2-0
-## [19] stringr_1.2.0         dplyr_0.7.0         cluster_2.0.6
-## [22] combinat_0.0-8        grid_3.4.0          glue_1.0.0
-## [25] R6_2.2.1              qlcMatrix_0.9.5     pheatmap_1.0.8
-## [28] limma_3.32.2          magrittr_1.5        matrixStats_0.52.2
-## [31] scales_0.4.1          assertthat_0.2.0    colorspace_1.3-2
-## [34] labeling_0.3          proxy_0.4-17        stringi_1.1.5
-## [37] lazyeval_0.2.0        munsell_0.4.3       slam_0.1-40
-
-{% endhighlight %}
-
-<h2>14  References </h2>
+<h2>References </h2>
 
 [1] Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang Li, Michael Morse, Niall J. Lennon, Kenneth J. Livak, Tarjei S. Mikkelsen, and John L. Rinn. The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells. Nature Biotechnology, 2014.
 <br>
