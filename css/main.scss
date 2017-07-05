@@ -9,6 +9,9 @@ $icon-font-path: "/node_modules/bootstrap-sass/assets/fonts/bootstrap/";
 /* custom variable */
 // $body-bg: red;
 
+@import "variables";
+@import "bootswatch";
+
 /* any style customization must be before the bootstrap import */
 @import "bootstrap";
 
@@ -19,7 +22,7 @@ $icon-font-path: "/node_modules/bootstrap-sass/assets/fonts/bootstrap/";
 .jumbotron p{
     color: #fff;
 }
-// 
+//
 // .token.function { ... }
 // .token.variable { ... }
 // .token.namespace { ... }
