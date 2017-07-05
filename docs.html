@@ -76,19 +76,20 @@ To ensure that Monocle was installed correctly, start a new R session and type:
 library(monocle)
 {% endhighlight %}
 
-<h3> Analyzing your data </h3>
-
-Now that you've installed Monocle, check out the <a href="/docs/">documentation</a> for how to load up your data and get going.
-
 <h3> Installing the latest Beta release</h3>
-The latest stable release of Monocle is available through Bioconductor, and we recommend you use that. However, you can also install our latest public beta build through GitHub as show below. Enter the following commands at the R console:
+The latest stable release of Monocle is available through Bioconductor, and we
+recommend you use that. However, you can also install our latest public beta
+build through GitHub as show below. Enter the following commands at the R
+console:
 
 {% highlight R %}
 install.packages("devtools")
 devtools::install_github("cole-trapnell-lab/monocle-release@develop")
 {% endhighlight %}
 
-Sometimes we add features that require you install certain additional packages. You may see errors when you try the above command. You can install the packages in the error message by typing (for example):
+Sometimes we add features that require you install certain additional packages.
+You may see errors when you try the above command. You can install the packages
+in the error message by typing (for example):
 
 {% highlight R %}
 biocLite(c("DDRTree", "pheatmap"))
@@ -97,15 +98,76 @@ biocLite(c("DDRTree", "pheatmap"))
 
 <h2>Recommended analysis protocol</h2>
 
-<h4>Store Data in a CellDataSet Object</h4>
+Monocle is a powerful toolkit for analyzing single-cell RNA-seq.  You don't need
+to use all of its features for every analysis, and there are more than one way
+to do some steps. The workflow is broken up into broad steps. When there's more than
+one way to do a certain step, we've labeled the options as follows:
 
-<h4>Perform basic quality control</h4>
+ <table class="table">
+   <!-- <thead>
+     <tr>
+       <th>Family function</th>
+       <th>Data type</th>
+       <th>Notes</th>
+     </tr>
+   </thead> -->
+   <tbody>
+     <tr>
+       <td><span class="label label-danger">Required</span></td>
+       <td>You need to do this.</td>
+     </tr>
+     <tr>
+       <td><span class="label label-info">Recommended</span> </td>
+       <td>Of the ways you could do this, we recommend you try this one first.</td>
+     </tr>
+     <tr>
+       <td><span class="label label-success">Optional</span></td>
+       <td>Of the ways you could do this, this way might work better than the one we usually recommend.</td>
+     </tr>
+   </tbody>
+ </table>
 
-<h4>Classify cells with known marker genes</h4>
+Below, you can see snippets of code that highlight the main steps of Monocle.
+Clink on the section headers to jump to the detailed sections describing each one.
 
-<h4>Order cells in pseudotime along a trajectory</h4>
+<h4><a href="{{ site.url }}/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
+The first step in working with Monocle is to load up your data into Monocle's
+main class, <code>CellDataSet</code>:
 
-<h4>Differential Expression Analysis</h4>
+{% highlight R %}
+pd <- new("AnnotatedDataFrame", data = sample_sheet)
+fd <- new("AnnotatedDataFrame", data = gene_annotation)
+cds <- newCellDataSet(expr_matrix, phenoData = pd, featureData = fd)
+{% endhighlight %}
+
+<h4><a href="{{ site.url }}/docs/#classifying-and-counting-cells">Classify cells with known marker genes</a></h4>
+Next, leverage your knowledge of key marker genes to quickly and easily classify your cells by type:
+{% highlight R %}
+cth <- newCellTypeHierarchy()
+
+MYF5_id <- row.names(subset(fData(cds), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(cds), gene_short_name == "ANPEP"))
+
+cth <- addCellType(cth, "Myoblast", classify_func = function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast",
+                   classify_func = function(x) {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1} )
+
+cds <- classifyCells(cds, cth, 0.1)
+{% endhighlight %}
+
+<h4><a href="{{ site.url }}/docs/#constructing-single-cell-trajectories">Order cells in pseudotime along a trajectory</a></h4>
+Now, put your cells in order by how much progress they've made through whatever process you're studying, such as differentiation,
+reprogramming, or an immune response.
+
+{% highlight R %}
+disp_table <- dispersionTable(cds)
+ordering_genes <- subset(disp_table, mean_expression >= 0.1)
+cds <- setOrderingFilter(cds, ordering_genes)
+cds <- reduceDimension(cds)
+cds <- orderCells(cds)
+{% endhighlight %}
+
+<h4>Peform differential expression analysis</h4>
 
 <!-- <h4>Classify Cells with CellTypeHierarchy </h4>
 
@@ -547,7 +609,7 @@ However, if you're using relative expression values such as TPM or FPKM data, se
   </div>
 </div>
 
-<h3 data-toc-text="Choosing a distribution for your data">Choosing a distribution for your data <span class="label label-danger"''>Required</span></h3>
+<h3 data-toc-text="Choosing a distribution for your data">Choosing a distribution for your data <span class="label label-danger">Required</span></h3>
 
 Monocle works well with both relative expression data and count-based measures (e.g. UMIs).
 In general, it works best with transcript count data, especially UMI data.
@@ -604,7 +666,7 @@ HSMM <- newCellDataSet(count_matrix,
  <br>
  <br>
 
- <h3 data-toc-text="Working with large data sets">Working with large data sets <span class="label label-info"''>Recommended</span></h3>
+ <h3 data-toc-text="Working with large data sets">Working with large data sets <span class="label label-info">Recommended</span></h3>
 
  Some single-cell RNA-Seq experiments report measurements from tens of thousands of cells or more.
  As instrumentation improves and costs drop, experiments will become ever larger and more complex, with many conditions, controls, and replicates.
@@ -658,7 +720,7 @@ gbm_cds <- newCellDataSet(exprs(gbm),
 Monocle's sparse matrix support is provided by the <i>Matrix</i> package.
 Other sparse matrix packages, such as <i>slam</i> or <i>SparseM</i> are not supported.
 
-<h3 data-toc-text="Converting TPM to mRNA counts">Converting TPM/FPKM values into mRNA counts <span class="label label-success">Optional</span></h3>
+<h3 data-toc-text="Converting TPM to mRNA counts">Converting TPM/FPKM values into mRNA counts <span class="label label-success">Alternative</span></h3>
 
 If you performed your single-cell RNA-Seq experiment using <i>spike-in</i> standards, you can convert these measurements into mRNAs per cell (RPC).
 RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them.
@@ -694,6 +756,18 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 <br>
 <br>
 
+<div class="panel panel-warning">
+  <div class="panel-heading">
+    <h3 class="panel-title" data-toc-skip>TPM/FPKM data and mRNA count data use different arguments to newCellDataSet()</h3>
+  </div>
+  <div class="panel-body">
+    Since we are using Census mRNA count values, we have changed the value of <code>lowerDetectionLimit</code> to reflect the new scale of expression.
+    Importantly, we have also set the <code>expressionFamily</code> to <code>negbinomial()</code>, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests.
+    Failing to change these two options can create problems later on, so make sure not to forget them when using Census counts.
+  </div>
+</div>
+
+
 Note that since we are using RPC values, we have changed the value of <i>lowerDetectionLimit</i> to reflect the new scale of expression.
 Importantly, we have also set the <i>expressionFamily</i> to <i>negbinomial()</i>, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests.
 Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
@@ -709,7 +783,7 @@ HSMM <- estimateDispersions(HSMM)
 We're now ready to start using the <i>HSMM</i> object in our analysis.
 <br>
 
-<h3 data-toc-text="Filtering low-quality cells">Filtering low-quality cells <span class="label label-info"''>Recommended</span></h3>
+<h3 data-toc-text="Filtering low-quality cells">Filtering low-quality cells <span class="label label-info">Recommended</span></h3>
 
 The first step in any single-cell RNA-Seq analysis is identifying poor-quality libraries from further analysis.
 Most single-cell workflows will include at least some libraries made from dead cells or empty wells in a plate.
@@ -868,7 +942,7 @@ Likewise, fibroblasts express high levels of <i>ANPEP</i> (CD13), while myoblast
 <br>
 
 
-<h3 data-toc-text="Classifying cells by type">Classifying cells by type <span class="label label-info"''>Recommended</span></h3>
+<h3 data-toc-text="Classifying cells by type">Classifying cells by type <span class="label label-info">Recommended</span></h3>
 
 Monocle provides a simple system for tagging cells based on the expression of marker genes of your choosing.
 You simply provide a set of functions that Monocle can use to annotate each cell.
@@ -930,7 +1004,7 @@ When a cell doesn't meet any of the criteria specified in your classification fu
 If it meets multiple functions' criteria, it's marked "Ambiguous". You could just exclude such cells, but you'd be throwing out a lot of your data.
 In this case, we'd lose more than half of the cells!
 
-<h3 data-toc-text="Clustering cells without marker genes">Clustering cells without marker genes <span class="label label-success"''>Optional</span></h3>
+<h3 data-toc-text="Clustering cells without marker genes">Clustering cells without marker genes <span class="label label-success">Alternative</span></h3>
 
 Monocle provides an algorithm you can use to impute the types of the "Unknown" cells.
 This algorithm, implemented in the function <code>clusterCells</code>, groups cells together according to global expression profile.
@@ -1057,7 +1131,7 @@ To help rule out the latter, let's try running <code>clusterCells</code> in its 
 
 <br>
 
-<h3 data-toc-text="Clustering cells using marker genes">Clustering cells using marker genes <span class="label label-info"''>Recommended</span></h3>
+<h3 data-toc-text="Clustering cells using marker genes">Clustering cells using marker genes <span class="label label-info">Recommended</span></h3>
 
 First, we'll select a different set of genes to use for clustering the cells.
 Before we just picked genes that were highly expressed and highly variable.
@@ -1146,7 +1220,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
   <img src="{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width=500>
 </div>
 
-<h3 data-toc-text="Imputing cell type">Imputing cell type <span class="label label-success"''>Optional</span></h3>
+<h3 data-toc-text="Imputing cell type">Imputing cell type <span class="label label-success">Alternative</span></h3>
 
 Note that we've reduce the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
 But what about the "Unknown" cells? If you provide  <code>clusterCells</code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
@@ -1277,7 +1351,7 @@ To order your cells, Monocle uses the <code>orderCells</code> function.
 This routine has one important argument, which allows you to set the root of the tree, and thus the beginning of the process.
 See the manual page for <code>orderCells</code> for more details.
 
-<h3 data-toc-text="Ordering without marker genes">Ordering without marker genes <span class="label label-info"''>Recommended</span></h3>
+<h3 data-toc-text="Step 1: Choose genes that define progress">Trajectory step 1: choose genes that define a cell's progress</h3>
 
 In this section, we discuss ordering cells in a completely unsupervised fashion.
 First, we must decide which genes we will use to define a cell's progress through myogenesis.
@@ -1288,15 +1362,23 @@ We ultimately want a set of genes that increase (or decrease) in expression as a
 <br>
 <br>
 
-Ideally, we'd like to use as little prior knowledge of the biology of the system under study as possible.
-We'd like to discover the important ordering genes from the data, rather than relying on literature and textbooks, because that might introduce bias in the ordering.
-One effective way to isolate a set of ordering genes is to simply compare the cells collected at the beginning of the process to those at the end and find the differentially expressed genes, as described above.
-The command below will find all genes that are differentially expressed in response to the switch from growth medium to differentiation medium:
+Ideally, we'd like to use as little prior knowledge of the biology of the system
+under study as possible. We'd like to discover the important ordering genes from
+the data, rather than relying on literature and textbooks, because that might
+introduce bias in the ordering. We'll start with one of the simpler ways to do
+this, but we generally recommend a somewhat more sophisticated approach called
+"<a href="#dpfeature">dpFeature</a>".
+
+One effective way to isolate a set of ordering
+genes is to simply compare the cells collected at the beginning of the process
+to those at the end and find the differentially expressed genes, as described
+above. The command below will find all genes that are differentially expressed
+in response to the switch from growth medium to differentiation medium:
 
 {% highlight R %}
 diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,],
                                        fullModelFormulaStr="~Media")
- ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
+ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 {% endhighlight %}
 
 <br>
@@ -1324,6 +1406,8 @@ plot_ordering_genes(HSMM_myo)
 
 <br>
 
+<h3 data-toc-text="Step 2: reduce dimension">Trajectory step 2: reduce data dimensionality </h3>
+
 The genes we've chosen to use for ordering define the <em>state space</em> of the cells in our data set.
 Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.
 So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.
@@ -1338,6 +1422,9 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
 {% endhighlight %}
 
 <br>
+
+<h3 data-toc-text="Step 3: order cells">Trajectory step 3: order cells along the trajectory </h3>
+
 
 Now that the space is reduced, it's time to order the cells using the <code>orderCells</code> function as shown below.
 <br>
@@ -1464,17 +1551,17 @@ orientation of the entire process as it's being discovered from the data,
 so that the cells that would have been assigned to the end are instead assigned
 to the beginning, and so on.
 
+<h3 data-toc-text="Alternative choices for ordering genes">Other ways to select genes that define a cell's progress</h3>
 
-<h3>Ordering based on genes that differ between clusters <span class="label label-success">Optional</span> </h3>
+<h4 id="dpfeature">Ordering based on genes that differ between clusters <span class="label label-info">Recommended</span> </h4>
 
-Selecting genes for ordering cells using the techniques discussed above often
-works well in simple settings, but for more complex processes, we recommend a
-new procedure called "dpFeature". This procedure works by first projecting
-cells into two dimensions using t-SNE and then detecting clusters using the
-"densityPeak'' algorithm of Rodriguez and Laio [4]. The
-resulting clusters of cells are compared using Monocle's differential expression
-analysis functions to find genes that distinguish them. The top of these are
-then used to order cells.
+We generally recommend users a order cells using genes selected by an
+unsupervised procedure called "dpFeature". This procedure works by first
+projecting cells into two dimensions using t-SNE and then detecting clusters
+using the "densityPeak'' algorithm of Rodriguez and Laio [4]. The resulting
+clusters of cells are compared using Monocle's differential expression analysis
+functions to find genes that distinguish them. The top of these are then used to
+order cells.
 
 <br>
 <br>
@@ -1639,7 +1726,7 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 </div>
 
 
-<h4> Selecting genes with high dispersion across cells <span class="label label-success">Optional</span></h4>
+<h4> Selecting genes with high dispersion across cells <span class="label label-success">Alternative</span></h4>
 Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
 
 <br>
@@ -1655,9 +1742,9 @@ disp_table <- dispersionTable(HSMM_myo)
 <br>
 
 
-<h3 data-toc-text="Ordering with marker genes">Ordering with marker genes <span class="label label-success"''>Optional</span></h3>
+<h4 data-toc-text="Ordering with marker genes">Ordering cells using known marker genes <span class="label label-success">Alternative</span></h4>
 
-Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will often fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's "semi-supervised" ordering mode can help you focus on the aspects of the process you're interested in.
+Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will sometimes fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's "semi-supervised" ordering mode can help you focus on the aspects of the process you're interested in.
 
 Ordering your cells in a semi-supervised manner is very simple. You first define genes that mark progress using the <em>CellTypeHierchy</em> system, very similar to how we used it for cell type classification. Then, you use it to select ordering genes that co-vary with these markers. Finally, you order the cell based on these genes just as we do in unsupervised ordering. So the only difference between unsupervised and semi-supervised ordering is in which genes we use for ordering.
 
