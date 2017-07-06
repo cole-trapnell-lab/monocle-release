@@ -143,7 +143,7 @@ one way to do a certain step, we've labeled the options as follows:
        <td>Of the ways you could do this, we recommend you try this one first.</td>
      </tr>
      <tr>
-       <td><span class="label label-success">Optional</span></td>
+       <td><span class="label label-success">Alternative</span></td>
        <td>Of the ways you could do this, this way might work better than the one we usually recommend.</td>
      </tr>
    </tbody>
@@ -357,7 +357,7 @@ HSMM <- newCellDataSet(count_matrix,
  We generally recommend the use of sparseMatrices for most users, as it speeds up many computations even for more modestly sized datasets.
 <br>
 <br>
-To work with your data in a sparse format, simply provide it to Monocle as a sparse matrix from the <i>Matrix</i> package:
+To work with your data in a sparse format, simply provide it to Monocle as a sparse matrix from the <code>Matrix</code> package:
 <br>
 
 {% highlight R %}
@@ -383,7 +383,7 @@ HSMM <- newCellDataSet(as(umi_matrix, "sparseMatrix"),
 
 <br>
 
-If you have 10X Genomics data and are using <i>cellrangerRkit</i>, you can use it to load your data and then pass that to Monocle as follows:
+If you have 10X Genomics data and are using <code>cellrangerRkit</code>, you can use it to load your data and then pass that to Monocle as follows:
 {% highlight R %}
 
 cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
@@ -398,8 +398,8 @@ gbm_cds <- newCellDataSet(exprs(gbm),
 
 <br>
 
-Monocle's sparse matrix support is provided by the <i>Matrix</i> package.
-Other sparse matrix packages, such as <i>slam</i> or <i>SparseM</i> are not supported.
+Monocle's sparse matrix support is provided by the <code>Matrix</code> package.
+Other sparse matrix packages, such as <code>slam</code> or <code>SparseM</code> are not supported.
 
 <h3 data-toc-text="Converting TPM to mRNA counts">Converting TPM/FPKM values into mRNA counts <span class="label label-success">Alternative</span></h3>
 
@@ -407,7 +407,7 @@ Other sparse matrix packages, such as <i>slam</i> or <i>SparseM</i> are not supp
 If you performed your single-cell RNA-Seq experiment using <i>spike-in</i> standards, you can convert these measurements into mRNAs per cell (RPC).
 RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them.
 In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment.
-Monocle 2 includes an algorithm called <i>Census</i> which performs this conversion (Qiu <i>et al</i>, submitted).
+Monocle 2 includes an algorithm called <i>Census</i> which performs this conversion [8].
 You can convert to RPC values before creating your CellDataSet object using the <code>relative2abs()</code> function, as follows:
 
 <br>
@@ -450,8 +450,8 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 </div>
 
 
-Note that since we are using RPC values, we have changed the value of <i>lowerDetectionLimit</i> to reflect the new scale of expression.
-Importantly, we have also set the <i>expressionFamily</i> to <i>negbinomial()</i>, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests.
+Note that since we are using RPC values, we have changed the value of <code>lowerDetectionLimit</code> to reflect the new scale of expression.
+Importantly, we have also set the <code>expressionFamily</code> to <code>negbinomial()</code>, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests.
 Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
 <br>
 <br>
@@ -462,7 +462,7 @@ HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
 {% endhighlight %}
 <br>
-We're now ready to start using the <i>HSMM</i> object in our analysis.
+We're now ready to start using the <code>HSMM</code> object in our analysis.
 <br>
 
 <h3 data-toc-text="Filtering low-quality cells">Filtering low-quality cells <span class="label label-info">Recommended</span></h3>
@@ -502,9 +502,9 @@ expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
 <br>
 <br>
 
-The vector <i>expressed_genes</i> now holds the identifiers for genes expressed in at least 50 cells of the data set.
+The vector <code>expressed_genes</code> now holds the identifiers for genes expressed in at least 50 cells of the data set.
 We will use this list later when we put the cells in order of biological progress.
-It is also sometimes convenient to exclude genes expressed in few if any cells from the <i>CellDataSet</i> object so as not to waste CPU time analyzing them for differential expression.
+It is also sometimes convenient to exclude genes expressed in few if any cells from the <code>CellDataSet</code> object so as not to waste CPU time analyzing them for differential expression.
 <br>
 <br>
 Let's start trying to remove unwanted, poor quality libraries from the CellDataSet.
@@ -517,8 +517,8 @@ It's also a good idea to check that each cell's RNA-seq library was sequenced to
 While there is no widely accepted minimum level for what constitutes seequencing "deeply enough", use your judgement: a cell sequenced with only a few thousand reads is unlikely to yield meaningful measurements.
 <br>
 <br>
-<i>CellDataSet</i> objects provide a convenient place to store per-cell scoring data: the <i>phenoData</i> slot.
-Simply include scoring attributes as columns in the data frome you used to create your <i>CellDataSet</i> container.
+<code>CellDataSet</code> objects provide a convenient place to store per-cell scoring data: the <code>phenoData</code> slot.
+Simply include scoring attributes as columns in the data frome you used to create your <code>CellDataSet</code> container.
 You can then easily filter out cells that don't pass quality control.
 You might also filter cells based on metrics from high throughput sequencing quality assessment packages such as FastQC.
 Such tools can often identify RNA-Seq libraries made from heavily degraded RNA, or where the library contains an abnormally large amount of ribosomal, mitochondrial, or other RNA type that you might not be interested in.
@@ -589,7 +589,7 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
 
 We've gone ahead and removed the few cells with either very low mRNA recovery or far more mRNA that the typical cell. Often, doublets or triplets have roughly twice the mRNA recovered as true single cells, so the latter filter is another means of excluding all but single cells from the analysis. Such filtering is handy if your protocol doesn't allow directly visualization of cell after they've been captured. Note that these thresholds of 10,000 and 40,000 mRNAs are specific to this dataset. You may need to adjust filter thresholds based on your experimental protocol.
 
-Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your <i>CellDataSet</i> follow a distribution that is roughly lognormal:
+Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your <code>CellDataSet</code> follow a distribution that is roughly lognormal:
 
 {% highlight R %}
  # Log-transform each value in the expression matrix.
@@ -607,7 +607,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 {% endhighlight %}
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/lognormal_plot-1.png" width=500>
+  <img src="{{site.url}}/images/vignette/lognormal_plot-1.png" width=300>
 </div>
 
 <br>
@@ -648,7 +648,7 @@ MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
 
 <br>
 
-The functions are organized into a small data structure called a <i>CellTypeHierarchy</i>, that Monocle uses to classify the cells.
+The functions are organized into a small data structure called a <code>CellTypeHierarchy</code>, that Monocle uses to classify the cells.
 You first initialize a new CellTypeHierarchy object, then register your gating functions within it.
 Once the data structure is set up, you can use it to classify all the cells in the experiment:
 
@@ -658,7 +658,7 @@ HSMM <- classifyCells(HSMM, cth, 0.1)
 
 <br>
 
-The function <code>classifyCells</code> applies each gating function to each cell, classifies the cells according to the gating functions, and returns the <i>CellDataSet</i> with a new column, <i>CellType</i> in its <i>pData</i> table.
+The function <code>classifyCells</code> applies each gating function to each cell, classifies the cells according to the gating functions, and returns the <code>CellDataSet</code> with a new column, <code>CellType</code> in its <code>pData</code> table.
 We can now count how many cells of each type there are in the experiment.
 
 <br>
@@ -777,7 +777,7 @@ plot_cell_clusters(HSMM, 1, 2, color="Media")
 </div>
 
 Monocle allows us to subtract the effects of "uninteresting" sources of variation to reduce their impact on the clustering.
-You can do this with the <i>residualModelFormulaStr</i> argument to <code>clusterCells</code> and several other Monocle functions.
+You can do this with the <code>residualModelFormulaStr</code> argument to <code>clusterCells</code> and several other Monocle functions.
 This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
 
 <br>
@@ -1024,82 +1024,62 @@ vignette. </p>
 
 <h3>The ordering workflow</h3>
 
+Before we get into the details of ordering cells along a trajectory, it's
+important to understand what Monocle is doing. The ordering workflow has three
+main steps, each of which involve a significant machine learning task.
+
 <h4>Step 1: choosing genes that define progress </h4>
 
-<p>    Inferring a single-cell trajectory is a hard machine learning problem. The
+<p>    Inferring a single-cell trajectory is a machine learning problem. The
 first step is to select the genes Monocle will use as input for its machine
 learning approach. This is called <em>feature selection</em>, and it has a major
 impact in the shape of the trajectory. In single-cell RNA-Seq, genes expressed
-at low levels are often very noisy, but some may contain important information
-regarding the state of the cell. If we simply provide all the input data,
-Monocle might get confused by the noise, or fix on a feature of the data that
-isn't biologically meaningful, such as batch effects arising from collecting
-data on different days. Monocle provides you with a variety of tools to select
-genes that will yield a robust, accurate, and biologically meaningful
-trajectory. You can use these tools to either perform a completely
-"unsupervised" analysis, in which Monocle has no forehand knowledge of which
-gene you consider important. Alternatively, you can make use of expert knowledge
-in the form of genes that are already known to define biolgical progress to
-shape Monocle's trajectory. We consider this mode "semi-supervised", because
-Monocle will augment the markers you provide with other, related genes. Monocle
-then uses these genes to produce trajectories consistent with known biology but
-that often reveal new regulatory structure. We return to the muscle data to
-illustrate both of these modes.</p>
+at low levels are often very noisy, but some contain important information
+regarding the state of the cell. Monocle orders cells by examining the pattern
+of expression of these genes across the cell population. Monocle looks for genes
+that vary in "interesting" (i.e. not just noisy) ways, and uses these to
+structure the data. Monocle provides you with a variety of tools to select genes
+that will yield a robust, accurate, and biologically meaningful trajectory. You
+can use these tools to either perform a completely "unsupervised" analysis, in
+which Monocle has no forehand knowledge of which gene you consider important.
+Alternatively, you can make use of expert knowledge in the form of genes that
+are already known to define biolgical progress to shape Monocle's trajectory. We
+consider this mode "semi-supervised", because Monocle will augment the markers
+you provide with other, related genes. </p>
 
 <br>
 
 <h4>Step 2: reducing the dimensionality of the data </h4>
 
-<p>    Once we have selected the genes we will use to order the cells, Monocle applies
-a <em>dimensionality reduction</em> to the data, which will drastically improves
-the quality of the trajectory. Monocle reduces the dimensionality of the data
-with the <code>reduceDimension</code> function. This function has a number of
-options, so you should familiarize yourself with them by consulting the its
-manual page. You can choose from two algorithms in <code>reduceDimension</code>.
-The first, termed Independent Component Analysis, is a classic linear technique
-for decomposing data that powered the original version of Monocle. The second,
-called DDRTree, is a much more powerful nonlinear technique that is the default
-for Monocle 2.  For more on how these both work, go to the sections <a href = "{{
-site.url }}/docs/#reversed-graph-embedding"> Reversed Graph Embedding </a> and
-<a href = "{{ site.url
-}}/docs/#ddrtree-discriminative-dimensionality-reduction-via-learning-a-tree">
-DDRTree: Discriminative Dimensionality Reduction via Learning a Tree </a>. </p>
+<p>    Once we have selected the genes we will use to order the cells, Monocle
+applies a <em>dimensionality reduction</em> to the data.  Monocle uses a
+recently developed algoithm called <a href = "{{ site.url
+}}/docs/#reversed-graph-embedding"> Reversed Graph Embedding </a> to reduce the
+data's dimensionality.</p>
 
 <br>
 
 <h4>Step 3: ordering the cells in pseudotime </h4>
 
-<p>    With the expression data projected into a lower dimensional space, Monocle
-is ready to learn the trajectory that describes how cells transition from one
-state into another. Monocle assumes that the trajectory has a tree structure,
-with one end of it the "root", and the others the "leaves". A cell at the
-beginning of the biological process starts at the root and progresses along the
-trunk until it reaches the first branch, if there is one. It then chooses a
-branch, and moves further and further along the tree until it reaches a leaf.
-These mathematical assumptions translate into some important biological ones.
-First, that the data includes all the major stages of the biological process. If
-your experiment failed to capture any cells at a key developmental transition,
-Monocle won't know its there. Second, that gene expression changes are smooth as
-a cell moves from one stage to the next. This assumption is realistic: major
-discontinuities in the trajectory would amount to a cell almost instantaneously
-turning over its transcriptome, which probably doesn't happen in most biolgical
-processes. </p>
+<p>    With the expression data projected into a lower dimensional space,
+Monocle is ready to learn the trajectory that describes how cells transition
+from one state into another. Monocle assumes that the trajectory has a tree
+structure, with one end of it the "root", and the others the "leaves". Monocle's
+job is to fit the best tree it can to the data. This task is called <em>manifold
+learning</em> A cell at the beginning of the biological process starts at the
+root and progresses along the trunk until it reaches the first branch, if there
+is one. That cell must then choose a path, and moves further and further along
+the tree until it reaches a leaf. A cell's pseudotime value is the distance it
+would have to travel to get back to the root. </p>
 
 <br>
 
-<p>    To order your cells, Monocle uses the <code>orderCells</code> function. This
-routine has one important argument, which allows you to set the root of the
-tree, and thus the beginning of the process. See the manual page for
-<code>orderCells</code> for more details. </p>
-
 <h3 data-toc-text="Step 1: Choose genes that define progress">Trajectory step 1: choose genes that define a cell's progress</h3>
 
-
-In this section, we discuss ordering cells in a completely unsupervised fashion.
-First, we must decide which genes we will use to define a cell's progress through myogenesis.
-Monocle orders cells by examining the pattern of expression of these genes across the cell population.
-Monocle looks for genes that vary in "interesting" (i.e. not just noisy) ways, and uses these to structure the data.
-We ultimately want a set of genes that increase (or decrease) in expression as a function of progress through the process we're studying.
+First, we must decide which genes we will use to define a cell's progress
+through myogenesis. We ultimately want a set of genes that increase (or
+decrease) in expression as a function of progress through the process we're
+studying.
 
 <br>
 
@@ -1124,14 +1104,19 @@ ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 
 <br>
 
-Choosing genes based on differential analysis of time points is often highly effective, but what if we don't have time series data?
-If the cells are asynchronously moving through our biological process (as is usually the case), Monocle can often reconstruct their trajectory from a single population captured all at the same time.
-Below are two methods to select genes that require no knowledge of the design of the experiment at all.
+Choosing genes based on differential analysis of time points is often highly
+effective, but what if we don't have time series data? If the cells are
+asynchronously moving through our biological process (as is usually the case),
+Monocle can often reconstruct their trajectory from a single population captured
+all at the same time. Below are two methods to select genes that require no
+knowledge of the design of the experiment at all.
 
 <br>
 <br>
 
-Once we have a list of gene ids to be used for ordering, we need to set them in the <em>HSMM</em> object, because the next several functions will depend on them.
+Once we have a list of gene ids to be used for ordering, we need to set them in
+the <em>HSMM</em> object, because the next several functions will depend on
+them.
 
 <br>
 <br>
@@ -1149,11 +1134,8 @@ plot_ordering_genes(HSMM_myo)
 
 <h3 data-toc-text="Step 2: reduce dimension">Trajectory step 2: reduce data dimensionality </h3>
 
-The genes we've chosen to use for ordering define the <em>state space</em> of the cells in our data set.
-Each cell is a point in this space, which has dimensionality equal to the number of genes we've chosen.
-So if there are 500 genes used for ordering, each cell is a point in a 500-dimensional space.
-For a number of reasons, Monocle works better if we can <em>reduce</em> the dimensionality of that space before we try to put the cells in order.
-In this case, we will reduce the space down to one with two dimensions, which we will be able to easily visualize and interpret while Monocle is ordering the cells.
+Next, we will reduce the space down to one with two dimensions, which we will be
+able to easily visualize and interpret while Monocle is ordering the cells.
 
 <br>
 <br>
@@ -1166,8 +1148,9 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
 
 <h3 data-toc-text="Step 3: order cells">Trajectory step 3: order cells along the trajectory </h3>
 
+Now that the space is reduced, it's time to order the cells using the
+<code>orderCells</code> function as shown below.
 
-Now that the space is reduced, it's time to order the cells using the <code>orderCells</code> function as shown below.
 <br>
 <br>
 
@@ -1192,13 +1175,13 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 <br>
 
-The trajectory has a tree-like structure. We can see that the cells
- collected at time zero are located near one of the tips of the tree, while the
- others are distributed amongst the two "branches".  Monocle doesn't know
- <em>a priori</em> which of the trajectory of the tree to call the "beginning",
- so we often have to call <code>orderCells</code> again using the
- <code>root_state</code> argument to specify the beginning. First, we plot the
- trajectory, this time coloring the cells by "State":
+The trajectory has a tree-like structure. We can see that the cells collected at
+time zero are located near one of the tips of the tree, while the others are
+distributed amongst the two "branches".  Monocle doesn't know <em>a priori</em>
+which of the trajectory of the tree to call the "beginning", so we often have to
+call <code>orderCells</code> again using the <code>root_state</code> argument to
+specify the beginning. First, we plot the trajectory, this time coloring the
+cells by "State":
 
 <br>
 
@@ -1212,7 +1195,9 @@ The trajectory has a tree-like structure. We can see that the cells
 
 <br>
 
- "State" is just Monocle's term for the segment of the tree. The function below is handy for identifying the State which contains most of the cells from time zero. We can then pass that to <code>orderCells</code>:
+ "State" is just Monocle's term for the segment of the tree. The function below
+ is handy for identifying the State which contains most of the cells from time
+ zero. We can then pass that to <code>orderCells</code>:
 
 <br>
 
@@ -1233,7 +1218,9 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
 
  <br>
 
- If there are a ton of states in your tree, it can be a little hard to make out where each one falls on the tree.  Sometimes it can be handy to "facet" the trajectory plot so it's easier to see where each of the states are located:
+ If there are a ton of states in your tree, it can be a little hard to make out
+ where each one falls on the tree.  Sometimes it can be handy to "facet" the
+ trajectory plot so it's easier to see where each of the states are located:
 
 <br>
 
@@ -1248,10 +1235,13 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  <br>
  <br>
 
- And if you don't have a timeseries, you might need to set the root based on where certain marker genes are expressed, using your biological knowledge of the system.
- For example, in this experiment, a highly proliferative population of progenitor cells are generating two types of post-mitotic cells.
- So the root should have cells that express high levels of proliferation markers.
- We can use the jitter plot to pick figure out which state corresponds to rapid proliferation:
+ And if you don't have a timeseries, you might need to set the root based on
+ where certain marker genes are expressed, using your biological knowledge of
+ the system. For example, in this experiment, a highly proliferative population
+ of progenitor cells are generating two types of post-mitotic cells. So the root
+ should have cells that express high levels of proliferation markers. We can use
+ the jitter plot to pick figure out which state corresponds to rapid
+ proliferation:
 
 {% highlight R %}
 blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
@@ -1284,25 +1274,32 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 
 <br>
 
-<strong>Note:</strong> in the event that Monocle produces a linear trajectory, there will only
-be one state. In this case, you can tell it which end is the beginning of the
-trajectory by passing <code>orderCells</code> an optional argument argument: the
-<i>reverse</i> flag. The <i>reverse</i> flag tells Monocle to reverse the
-orientation of the entire process as it's being discovered from the data,
-so that the cells that would have been assigned to the end are instead assigned
-to the beginning, and so on.
+<div class="panel panel-info">
+  <div class="panel-heading">
+
+    <h3 class="panel-title" data-toc-skip>How to reverse a linear trajectory</h3>
+
+  </div>
+  <div class="panel-body">
+    In the event that Monocle produces a linear trajectory, there will only
+    be one state. In this case, you can tell it which end is the beginning of the
+    trajectory by passing <code>orderCells</code> an optional argument argument: the
+    <code>reverse</code> flag. The <code>reverse</code> flag tells Monocle to reverse the
+    orientation of the entire process as it's being discovered from the data,
+    so that the cells that would have been assigned to the end are instead assigned
+    to the beginning, and so on.
+
+  </div>
+</div>
+
+
 
 <h3 data-toc-text="Alternative choices for ordering genes">Other ways to select genes that define a cell's progress</h3>
 
 <h4 id="dpfeature">Ordering based on genes that differ between clusters <span class="label label-info">Recommended</span> </h4>
 
-We generally recommend users a order cells using genes selected by an
-unsupervised procedure called "dpFeature". This procedure works by first
-projecting cells into two dimensions using t-SNE and then detecting clusters
-using the "densityPeak'' algorithm of Rodriguez and Laio [4]. The resulting
-clusters of cells are compared using Monocle's differential expression analysis
-functions to find genes that distinguish them. The top of these are then used to
-order cells.
+We recommend users a order cells using genes selected by an
+unsupervised procedure called "<a href="#dpfeature">dpFeature</a>"".
 
 <br>
 <br>
@@ -1335,7 +1332,7 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 <br>
 
 <div class="text-center">
-  <img src="{{site.url}}/images/vignette/plot_pc_variance-1.png" width=300>
+  <img src="{{site.url}}/images/vignette/plot_pc_variance-1.png" width=375>
 </div>
 
 We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions.
@@ -1349,12 +1346,17 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num
 
 <br>
 
-Then we can run density peak clustering to identify the clusters on the 2-D t-SNE space. Density peak algorithm clusters cells based on each
-cell''s local density (&Rho;) and the nearest distance &Delta; of a cell to another cell with higher distance. We can set a threshold for
-the &Rho;, &Delta; and define any cell with a higher local density and distance than the thresholds as the density peaks. Those peaks are then
-used to define the clusters for all cells. By default, <code>clusterCells</code> choose <em>95%</em> of &Rho; and &Delta; to define
-the thresholds. We can also set a number of clusters <em>(n)</em> we want to cluster. In this setting, we will find the top <em>n</em> cells with high
-&Delta; with &Delta; among the top <em>50%</em> range. The default setting often gives good clustering.
+Then we can run density peak clustering to identify the clusters on the 2-D
+t-SNE space. The densityPeak algorithm clusters cells based on each cell's local
+density (&Rho;) and the nearest distance (&Delta); of a cell to another cell
+with higher distance. We can set a threshold for the &Rho;, &Delta; and define
+any cell with a higher local density and distance than the thresholds as the
+density peaks. Those peaks are then used to define the clusters for all cells.
+By default, <code>clusterCells</code> choose <em>95%</em> of &Rho; and &Delta;
+to define the thresholds. We can also set a number of clusters <em>(n)</em> we
+want to cluster. In this setting, we will find the top <em>n</em> cells with
+high &Delta; with &Delta; among the top <em>50%</em> range. The default setting
+often gives good clustering.
 
 <br>
 <br>
@@ -1379,8 +1381,6 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 
   <div class="text-center">
     <img src="{{site.url}}/images/vignette/check_the_clustering_results-1.png" width=300>
-  </div>
-  <div class="text-center">
     <img src="{{site.url}}/images/vignette/check_the_clustering_results-2.png" width=300>
   </div>
 We also provide the decision plot for users to check the &Rho;, &Delta; for each cell and decide the threshold for defining the cell clusters.
@@ -1424,9 +1424,6 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 
 <div class="text-center">
   <img src="{{site.url}}/images/vignette/check_clustering_again-1.png" width=300>
-</div>
-
-<div class="text-center">
   <img src="{{site.url}}/images/vignette/check_clustering_again-2.png" width=300>
 </div>
 
@@ -1469,7 +1466,10 @@ plot_cell_trajectory(HSMM_myo, color_by="Hours")
 
 <h4> Selecting genes with high dispersion across cells <span class="label label-success">Alternative</span></h4>
 
-Genes that vary a lot are often highly informative for identifying cell subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's variance typically depends on its mean, so we have to be a bit careful about how we select genes based on their variance.
+Genes that vary a lot are often highly informative for identifying cell
+subpopulations or ordering cells along a trajectory. In RNA-Seq, a gene's
+variance typically depends on its mean, so we have to be a bit careful about how
+we select genes based on their variance.
 
 <br>
 <br>
@@ -1486,11 +1486,28 @@ disp_table <- dispersionTable(HSMM_myo)
 
 <h4 data-toc-text="Ordering with marker genes">Ordering cells using known marker genes <span class="label label-success">Alternative</span></h4>
 
-Unsupervised ordering is desirable because it avoids introducing bias into the analysis. However, unsupervised machine learning will sometimes fix on a strong feature of the data that's not the focus of your experiment. For example, where each cell is in the cell cycle has a major impact on the shape of the trajectory when you use unsupervised learning. But what if you wish to focus on cycle-independent effects in your biological process? Monocle's "semi-supervised" ordering mode can help you focus on the aspects of the process you're interested in.
+Unsupervised ordering is desirable because it avoids introducing bias into the
+analysis. However, unsupervised machine learning will sometimes fix on a strong
+feature of the data that's not the focus of your experiment. For example, where
+each cell is in the cell cycle has a major impact on the shape of the trajectory
+when you use unsupervised learning. But what if you wish to focus on
+cycle-independent effects in your biological process? Monocle's
+"semi-supervised" ordering mode can help you focus on the aspects of the process
+you're interested in.
 
-Ordering your cells in a semi-supervised manner is very simple. You first define genes that mark progress using the <em>CellTypeHierchy</em> system, very similar to how we used it for cell type classification. Then, you use it to select ordering genes that co-vary with these markers. Finally, you order the cell based on these genes just as we do in unsupervised ordering. So the only difference between unsupervised and semi-supervised ordering is in which genes we use for ordering.
+Ordering your cells in a semi-supervised manner is very simple. You first define
+genes that mark progress using the <em>CellTypeHierchy</em> system, very similar
+to how we used it for cell type classification. Then, you use it to select
+ordering genes that co-vary with these markers. Finally, you order the cell
+based on these genes just as we do in unsupervised ordering. So the only
+difference between unsupervised and semi-supervised ordering is in which genes
+we use for ordering.
 
-As we saw before, myoblasts begin differnentation by exiting the cell cycle and then proceed through a sequence of regulatory events that leads to expression of some key muscle-specific proteins needed for contraction. We can mark cycling cells with cyclin B2 <em>(CCNB2)</em> and recognize myotubes as those cells expressed high levels of myosin heavy chain 3 <em>(MYH3)</em>.
+As we saw before, myoblasts begin differnentation by exiting the cell cycle and
+then proceed through a sequence of regulatory events that leads to expression of
+some key muscle-specific proteins needed for contraction. We can mark cycling
+cells with cyclin B2 <em>(CCNB2)</em> and recognize myotubes as those cells
+expressed high levels of myosin heavy chain 3 <em>(MYH3)</em>.
 <br>
 <br>
 {% highlight R %}
@@ -1633,7 +1650,7 @@ cds_subset <- HSMM[to_be_tested,]
 
 <br>
 
-To test the effects of <i>CellType</i> on gene expression, we simply call <code>differentialGeneTest</code> on the genes we've selected.
+To test the effects of <code>CellType</code> on gene expression, we simply call <code>differentialGeneTest</code> on the genes we've selected.
 However, we have to specify a <em>model formula</em> in the call to tell Monocle that we care about genes with expression levels that depends on <em>CellType</em>.
 Monocle's differential expression analysis works essentially by fitting two models to the expression values for each gene, working through each gene independently.
 The first of the two models is called the <em>full</em> model.
@@ -1926,19 +1943,44 @@ The topographic lines highlight the distributions of the kinetic patterns relati
 <h2>Appendices</h2>
 <h3>Computing Expression Values for Single Cells </h3>
 
+To use Monocle, you must first compute the expression of each gene in each cell
+for your experiment. There are a number of ways to do this for RNA-Seq. We
+recommend using Cufflinks, but you could also use
+<a href="http://deweylab.biostat.wisc.edu/rsem/">RSEM</a>,
+<a href="http://bio.math.berkeley.edu/eXpress/">eXpress</a>,
+<a href="http://www.cs.cmu.edu/~ckingsf/software/sailfish/">Sailfish</a>, or another tool
+for estimating gene and transcript expression levels from aligned reads. Here,
+we'll show a simplified workflow for using TopHat and Cufflinks to estimate
+expression. You can read more about how to use TopHat and Cufflinks to calculate
+expression
+<a href="http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html">here</a>.
 
-To use Monocle, you must first compute the expression of each gene in each cell for your experiment. There are a number of ways to do this for RNA-Seq. We recommend using Cufflinks, but you could also use [RSEM](http://deweylab.biostat.wisc.edu/rsem/), [eXpress](http://bio.math.berkeley.edu/eXpress/), [Sailfish](http://www.cs.cmu.edu/~ckingsf/software/sailfish/), or another tool for estimating gene and transcript expression levels from aligned reads. Here, we'll show a simplified workflow for using TopHat and Cufflinks to estimate expression. You can read more about how to use TopHat and Cufflinks to calculate expression [here](http://www.nature.com/nprot/journal/v7/n3/full/nprot.2012.016.html).
+To estimate gene and transcript expression levels for single-cell RNA-Seq using
+<a href="http://ccb.jhu.edu/software/tophat/index.shtml">TopHat</a> and
+<a href="http://cufflinks.cbcb.umd.edu/">Cufflinks</a>, you must have a file of RNA-Seq
+reads for each cell you captured. If you performed paired-end RNA-Seq, you
+should have two files for each cell. Depending on how the base calling was
+performed, the naming conventions for these files may differ. In the examples
+below, we assume that each file follows the format:
 
-To estimate gene and transcript expression levels for single-cell RNA-Seq using [TopHat](http://ccb.jhu.edu/software/tophat/index.shtml) and [Cufflinks](http://cufflinks.cbcb.umd.edu/), you must have a file of RNA-Seq reads for each cell you captured. If you performed paired-end RNA-Seq, you should have two files for each cell. Depending on how the base calling was performed, the naming conventions for these files may differ. In the examples below, we assume that each file follows the format:
+<code>CELL_TXX_YYY.RZ.fastq.gz</code>
 
-CELL_TXX_YYY.RZ.fastq.gz
-
-Where XX is the time point at which the cell was collected in our experiment, YY is the well of the 96-well plate used during library prep, and Z is either 1 or 2 depending on whether we are looking at the left mate or the right mate in a paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at the left mate file for a cell collected 24 hours into our experiment and which was prepped in well A01 of the 24-hour capture plate.
+Where XX is the time point at which the cell was collected in our experiment, YY
+is the well of the 96-well plate used during library prep, and Z is either 1 or
+2 depending on whether we are looking at the left mate or the right mate in a
+paired end sequencing run. So CELL_T24_A01.R1.fastq.gz means we are looking at
+the left mate file for a cell collected 24 hours into our experiment and which
+was prepped in well A01 of the 24-hour capture plate.
 
 
 <h3>Aligning reads to the genome with TopHat </h3>
 
-We begin by aligning each cell's reads separately, so we will have one BAM file for each cell. The commands below show how to run each cell's reads through TopHat. These alignment commands can take a while, but they can be run in parallel if you have access to a compute cluster. If so, contact your cluster administrator for more information on how to run TopHat in a cluster environment.
+We begin by aligning each cell's reads separately, so we will have one BAM file
+for each cell. The commands below show how to run each cell's reads through
+TopHat. These alignment commands can take a while, but they can be run in
+parallel if you have access to a compute cluster. If so, contact your cluster
+administrator for more information on how to run TopHat in a cluster
+environment.
 
 {% highlight bash %}
 tophat -o CELL_T24_A01_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A01.R1.fastq.gz CELL_T24_A01.R2.fastq.gz
@@ -1946,14 +1988,23 @@ tophat -o CELL_T24_A02_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A02.R1.fast
 tophat -o CELL_T24_A03_thout -G GENCODE.gtf bowtie-hg19-idx CELL_T24_A03.R1.fastq.gz CELL_T24_A03.R2.fastq.gz
 {% endhighlight %}
 
-The commands above show how to align the reads for each of three cells in the experiment. You will need to run a similar command for each cell you wish to include in your analysis. These TopHat alignment commands are simplified for brevity - there are options to control the number of CPUs used by TopHat and otherwise control how TopHat aligns reads that you may want to explore on the TopHat manual. The key components of the above commands are:
+The commands above show how to align the reads for each of three cells in the
+experiment. You will need to run a similar command for each cell you wish to
+include in your analysis. These TopHat alignment commands are simplified for
+brevity - there are options to control the number of CPUs used by TopHat and
+otherwise control how TopHat aligns reads that you may want to explore on the
+TopHat manual. The key components of the above commands are:
 
-- The -o option, which sets the directory in which each cell's output will be written.
-- The gene annotation file, specified with -G, which tells TopHat where to look for splice junctions.
-- The Bowtie index for genome of your organism, in this case build hg19 of the human genome.
-- The read files for each cell as mentioned above.
+<ul>
+  <li>The <code>-o</code> option, which sets the directory in which each cell's output will be written.
+  <li>The gene annotation file, specified with -G, which tells TopHat where to look for splice junctions.
+  <li>The Bowtie index for genome of your organism, in this case build hg19 of the human genome.
+  <li>The read files for each cell as mentioned above.
+</ul>
 
-When the commands finish, there will be a BAM file in each cell's TopHat output directory. For example, CELL_T24_A01_thout/accepted_hits.bam will contain the alignments for cell T24_A01.
+When the commands finish, there will be a BAM file in each cell's TopHat output
+directory. For example, <code>CELL_T24_A01_thout/accepted_hits.bam</code> will contain the
+alignments for cell T24_A01.
 
 
 <h3>Computing gene expression using Cufflinks </h3>
@@ -1968,17 +2019,24 @@ cuffquant -o CELL_T24_A03_cuffquant_out GENCODE.gtf CELL_T24_A03_thout/accepted_
 
 The commands above show how to convert aligned reads for each cell into gene expression values for that cell. You will need to run a similar command for each cell you wish to include in your analysis. These commands are simplified for brevity - there are options to control the number of CPUs used by the cuffquant utility and otherwise control how cuffquant estimates expression that you may want to explore on the [Cufflinks](http://cufflinks.cbcb.umd.edu/) manual. The key components of the above commands are:
 
-- The -o option, which sets the directory in which each cell's output will be written.
-- The gene annotation file, which tells cuffquant what the gene structures are in the genome.
-- The BAM file containing the aligned reads.
+<ul>
+    <li>The -o option, which sets the directory in which each cell's output will be written.
+    <li>The gene annotation file, which tells cuffquant what the gene structures are in the genome.
+    <li>The BAM file containing the aligned reads.
+</ul>
 
-Next, you will need to merge the expression estimates into a single table for use with Monocle. You can do this with the following command:
+Next, you will need to merge the expression estimates into a single table for
+use with Monocle. You can do this with the following command:
 
 {% highlight bash %}
 cuffnorm --use-sample-sheet -o sc_expr_out GENCODE.gtf sample_sheet.txt
 {% endhighlight %}
 
-The option --use-sample-sheet tells cuffnorm that it should look in the file sample_sheet.txt for the expression files, to make the above command simpler. If you choose not to use a sample sheet, you will need to specify the expression files on the command line directly. The sample sheet is a tab-delimited file that looks like this:
+The option <code>--use-sample-sheet</code> tells cuffnorm that it should look in the file
+sample_sheet.txt for the expression files, to make the above command simpler. If
+you choose not to use a sample sheet, you will need to specify the expression
+files on the command line directly. The sample sheet is a tab-delimited file
+that looks like this:
 
 <pre>
 sample_name                                   group
