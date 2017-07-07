@@ -394,14 +394,12 @@ If you have 10X Genomics data and are using <code>cellrangerRkit</code>, you can
 
 cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
 gbm <- load_cellranger_matrix(cellranger_pipestance_path)
-<p>
 gbm_cds <- newCellDataSet(exprs(gbm),
                           phenoData = new("AnnotatedDataFrame", data = pData(gbm)),
                           phenoData = new("AnnotatedDataFrame", data = fData(gbm)),
                           lowerDetectionLimit=0.5,
                           expressionFamily=negbinomial.size())
 {% endhighlight %}
-</p>
 
 Monocle's sparse matrix support is provided by the <code>Matrix</code> package.
 Other sparse matrix packages, such as <code>slam</code> or <code>SparseM</code> are not supported.
@@ -420,17 +418,17 @@ You can convert to RPC values before creating your CellDataSet object using the 
 
 {% highlight R %}
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
- fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
- # First create a CellDataSet from the relative expression levels
- HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),
                         phenoData = pd,
                         featureData = fd,
                         lowerDetectionLimit=0.1,
                         expressionFamily=tobit(Lower=0.1))
 
- # Next, use it to estimate RNA counts
- rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
 
  # Now, make a new CellDataSet using the RNA counts
  HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
@@ -554,14 +552,17 @@ This dataset has already been filtered using the following commands:
 <p>
 {% highlight R %}
 valid_cells <- row.names(subset(pData(HSMM),
-  Cells.in.Well == 1 & Control == FALSE & Clump == FALSE & Debris == FALSE & Mapped.Fragments > 1000000))
-
+                    Cells.in.Well == 1 &
+                    Control == FALSE &
+                    Clump == FALSE &
+                    Debris == FALSE &
+                    Mapped.Fragments > 1000000))
 HSMM <- HSMM[,valid_cells]
 {% endhighlight %}
 </p>
 
 
-<p> If you are using RPC values to measure expresion, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells: </p>
+<p> If you are using RPC values to measure expression, as we are in this vignette, it's also good to look at the distribution of mRNA totals across the cells: </p>
 
 <p>
 {% highlight R %}
@@ -569,8 +570,10 @@ pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 
 HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
-upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
-lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) +
+    2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) -
+    2*sd(log10(pData(HSMM)$Total_mRNAs)))
 qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") +
    geom_vline(xintercept=lower_bound) +
    geom_vline(xintercept=upper_bound)
@@ -648,12 +651,12 @@ Here's an example of such a set of "gating" functions:
 <p>
 {% highlight R %}
 MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
- ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
 
- cth <- newCellTypeHierarchy()
- cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
- cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
-        {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+         {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
 {% endhighlight %}
 </p>
 
@@ -748,8 +751,7 @@ plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 {% highlight R %}
 HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6,
                         reduction_method = 'tSNE', verbose = T)
-HSMM <- clusterCells(HSMM,
-                     num_clusters=2)
+HSMM <- clusterCells(HSMM, num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType", markers=c("MYF5", "ANPEP"))
 {% endhighlight %}
 
@@ -783,8 +785,10 @@ This argument accepts an R model formula string specifying the effects you want 
 
 
 {% highlight R %}
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2, reduction_method = 'tSNE',
-                       residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) #
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 2,
+                       reduction_method = 'tSNE',
+                       residualModelFormulaStr="~Media + num_genes_expressed",
+                       verbose = T)
 HSMM <- clusterCells(HSMM, num_clusters=2)
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
 {% endhighlight %}
@@ -829,9 +833,9 @@ In a sense, we'll be building a large list of genes to use as markers, so that e
 
 {% highlight R %}
 marker_diff <- markerDiffTable(HSMM[expressed_genes,],
-                                 cth,
-                                 residualModelFormulaStr="~Media + num_genes_expressed",
-                                 cores=1)
+                    cth,
+                    residualModelFormulaStr="~Media + num_genes_expressed",
+                    cores=1)
 {% endhighlight%}
 
 
@@ -893,8 +897,10 @@ plot_pc_variance_explained(HSMM, return_all = F)
 </div>
 
 {% highlight R %}
-HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log', reduction_method = 'tSNE',
-                       residualModelFormulaStr="~Media + num_genes_expressed", verbose = T)
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log',
+          reduction_method = 'tSNE',
+          residualModelFormulaStr="~Media + num_genes_expressed",
+          verbose = T)
 HSMM <- clusterCells(HSMM, num_clusters=2)
 
 plot_cell_clusters(HSMM, 1, 2, color="CellType")
@@ -1068,33 +1074,29 @@ is one. That cell must then choose a path, and moves further and further along
 the tree until it reaches a leaf. A cell's pseudotime value is the distance it
 would have to travel to get back to the root. </p>
 
-<br>
-
 <h3 data-toc-text="Step 1: Choose genes that define progress">Trajectory step 1: choose genes that define a cell's progress</h3>
 
-First, we must decide which genes we will use to define a cell's progress
+<p> First, we must decide which genes we will use to define a cell's progress
 through myogenesis. We ultimately want a set of genes that increase (or
 decrease) in expression as a function of progress through the process we're
-studying.
+studying. </p>
 
-<br>
-
-Ideally, we'd like to use as little prior knowledge of the biology of the system
+<p> Ideally, we'd like to use as little prior knowledge of the biology of the system
 under study as possible. We'd like to discover the important ordering genes from
 the data, rather than relying on literature and textbooks, because that might
 introduce bias in the ordering. We'll start with one of the simpler ways to do
 this, but we generally recommend a somewhat more sophisticated approach called
-"<a href="{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
+"<a href="{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>". </p>
 
-One effective way to isolate a set of ordering
+<p> One effective way to isolate a set of ordering
 genes is to simply compare the cells collected at the beginning of the process
 to those at the end and find the differentially expressed genes, as described
 above. The command below will find all genes that are differentially expressed
-in response to the switch from growth medium to differentiation medium:
+in response to the switch from growth medium to differentiation medium: </p>
 
 {% highlight R %}
 diff_test_res <- differentialGeneTest(HSMM_myo[expressed_genes,],
-                                       fullModelFormulaStr="~Media")
+                      fullModelFormulaStr="~Media")
 ordering_genes <- row.names (subset(diff_test_res, qval < 0.01))
 {% endhighlight %}
 
@@ -1189,11 +1191,13 @@ cells by "State":
 <br>
 
  {% highlight R %}
- GM_state <- function(cds){
+GM_state <- function(cds){
   if (length(unique(pData(cds)$State)) > 1){
     T0_counts <- table(pData(cds)$State, pData(cds)$Hours)[,"0"]
     return(as.numeric(names(T0_counts)[which(T0_counts == max(T0_counts))]))
-  }else { return (1) }
+  }else {
+    return (1)
+  }
 }
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
@@ -1226,7 +1230,8 @@ plot_cell_trajectory(HSMM_myo, color_by="Pseudotime")
  We can use the jitter plot to pick figure out which state corresponds to rapid proliferation: </p>
 
 {% highlight R %}
-blast_genes <- row.names(subset(fData(HSMM_myo), gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
+blast_genes <- row.names(subset(fData(HSMM_myo),
+    gene_short_name %in% c("CCNB2", "MYOD1", "MYOG")))
 plot_genes_jitter(HSMM_myo[blast_genes,], grouping="State", min_expr=0.1)
 {% endhighlight %}
 
@@ -1240,12 +1245,11 @@ To confirm that the ordering is correct we can select a couple of markers of myo
 Plotting these genes demonstrates that ordering looks good:
 
 {% highlight R %}
-HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo), num_cells_expressed >= 10))
+HSMM_expressed_genes <-  row.names(subset(fData(HSMM_myo),
+        num_cells_expressed >= 10))
 HSMM_filtered <- HSMM_myo[HSMM_expressed_genes,]
-
 my_genes <- row.names(subset(fData(HSMM_filtered),
-                              gene_short_name %in% c("CDK1", "MEF2C", "MYH3")))
-
+                  gene_short_name %in% c("CDK1", "MEF2C", "MYH3")))
 cds_subset <- HSMM_filtered[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 {% endhighlight %}
@@ -1309,7 +1313,7 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 
 {% highlight R %}
 HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log',
-num_dim = 3, reduction_method = 'tSNE', verbose = T)
+                num_dim = 3, reduction_method = 'tSNE', verbose = T)
 {% endhighlight %}
 
 <br>
@@ -1396,8 +1400,8 @@ clustering_DEG_genes <- differentialGeneTest(HSMM_myo[HSMM_expressed_genes,],
 <p> We will then select the top <em>1000</em> significant genes as the ordering genes. </p>
 
 {% highlight R %}
-HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000]
-
+HSMM_ordering_genes <-
+      row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000]
 HSMM_myo <- setOrderingFilter(HSMM_myo, ordering_genes = HSMM_ordering_genes)
 HSMM_myo <- reduceDimension(HSMM_myo, method = 'DDRTree')
 HSMM_myo <- orderCells(HSMM_myo)
@@ -1420,7 +1424,7 @@ we select genes based on their variance. </p>
 
 {% highlight R %}
 disp_table <- dispersionTable(HSMM_myo)
- ordering_genes <- subset(disp_table,
+ordering_genes <- subset(disp_table,
                           mean_expression >= 0.5 &
                           dispersion_empirical >= 1 * dispersion_fit)$gene_id
 {% endhighlight %}
@@ -1456,9 +1460,11 @@ CCNB2_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "CCNB2"))
 MYH3_id <- row.names(subset(fData(HSMM_myo), gene_short_name == "MYH3"))
 
 cth <- newCellTypeHierarchy()
-cth <- addCellType(cth, "Cycling myoblast", classify_func=function(x) {x[CCNB2_id,] >= 1})
+cth <- addCellType(cth, "Cycling myoblast",
+      classify_func=function(x) {x[CCNB2_id,] >= 1})
 cth <- addCellType(cth, "Myotube", classify_func=function(x) {x[MYH3_id,] >=1})
-cth <- addCellType(cth, "Reserve cell", classify_func=function(x) {x[MYH3_id,] == 0 & x[CCNB2_id,] == 0})
+cth <- addCellType(cth, "Reserve cell",
+      classify_func=function(x) {x[MYH3_id,] == 0 & x[CCNB2_id,] == 0})
 HSMM_myo <- classifyCells(HSMM_myo, cth)
 {% endhighlight %}
 
@@ -1477,7 +1483,8 @@ semisup_clustering_genes <- row.names(marker_diff)[order(marker_diff$qval)][1:10
 {% highlight R %}
 HSMM_myo <- setOrderingFilter(HSMM_myo, semisup_clustering_genes)
 #plot_ordering_genes(HSMM_myo)
-HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree', norm_method = 'log')
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2,
+      method = 'DDRTree', norm_method = 'log')
 HSMM_myo <- orderCells(HSMM_myo)
 HSMM_myo <- orderCells(HSMM_myo, root_state=GM_state(HSMM_myo))
 plot_cell_trajectory(HSMM_myo, color_by="CellType") + theme(legend.position="right")
@@ -1548,7 +1555,7 @@ sig_genes[,c("gene_short_name", "pval", "qval")]
 
 {% highlight R %}
 MYOG_ID1 <- HSMM_myo[row.names(subset(fData(HSMM_myo),
-                                      gene_short_name %in% c("MYOG", "CCNB2"))),]
+               gene_short_name %in% c("MYOG", "CCNB2"))),]
 plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 {% endhighlight %}
 
@@ -1578,7 +1585,7 @@ presented.  See the <em>ggplot2</em> book <a href =
 
 {%highlight R%}
 to_be_tested <- row.names(subset(fData(HSMM),
-                                 gene_short_name %in% c("UBC", "NCAM1", "ANPEP")))
+                      gene_short_name %in% c("UBC", "NCAM1", "ANPEP")))
 cds_subset <- HSMM[to_be_tested,]
 {%endhighlight%}
 
@@ -1663,7 +1670,7 @@ For example, you can find genes that are significantly upregulated as the cells 
 
 {% highlight R %}
 to_be_tested <- row.names(subset(fData(HSMM),
-                                 gene_short_name %in% c("MYH3", "MEF2C", "CCNB2", "TNNT1")))
+      gene_short_name %in% c("MYH3", "MEF2C", "CCNB2", "TNNT1")))
 cds_subset <- HSMM_myo[to_be_tested,]
 {% endhighlight %}
 
@@ -1672,7 +1679,8 @@ cds_subset <- HSMM_myo[to_be_tested,]
 
 
 {% highlight R %}
-diff_test_res <- differentialGeneTest(cds_subset,  fullModelFormulaStr="~sm.ns(Pseudotime)")
+diff_test_res <- differentialGeneTest(cds_subset,
+    fullModelFormulaStr="~sm.ns(Pseudotime)")
 {% endhighlight %}
 
 The <code>sm.ns</code> function states that Monocle should fit a natural spline through the expression values to help it describe the changes in expression as a function of progress.
@@ -1712,11 +1720,8 @@ co-vary across pseudotime. </p>
 
 {% highlight R %}
 diff_test_res <- differentialGeneTest(HSMM_myo[marker_genes,],
-                                      fullModelFormulaStr="~sm.ns(Pseudotime)")
-
+                      fullModelFormulaStr="~sm.ns(Pseudotime)")
 sig_gene_names <- row.names(subset(diff_test_res, qval < 0.1))
-
-
 plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
                         num_clusters = 3,
                         cores = 1,
@@ -1740,7 +1745,7 @@ The full model captures the effects of both <em>CellType</em> and <em>Hours</em>
 
 {% highlight R %}
 to_be_tested <- row.names(subset(fData(HSMM),
-                                 gene_short_name %in% c("TPM1", "MYH3", "CCNB2", "GAPDH")))
+                      gene_short_name %in% c("TPM1", "MYH3", "CCNB2", "GAPDH")))
 cds_subset <- HSMM[to_be_tested,]
 
 diff_test_res <- differentialGeneTest(cds_subset,
@@ -1819,7 +1824,8 @@ We also show <em>Ccnd2</em>, a cell cycle gene, which is downregulated in both b
 
 
 {% highlight R %}
-lung_genes <- row.names(subset(fData(lung), gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
+lung_genes <- row.names(subset(fData(lung),
+                  gene_short_name %in% c("Ccnd2", "Sftpb", "Pdpn")))
 plot_genes_branched_pseudotime(lung[lung_genes,],
                                branch_point=1,
                                color_by="Time",
