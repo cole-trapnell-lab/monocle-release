@@ -42,8 +42,8 @@ manner. It also performs differential gene expression and clustering to identify
 important genes and cell states. It is designed for RNA-Seq studies, but can be
 used with other assays. For more information on the algorithm at the core of
 <strong>monocle</strong>, or to learn more about how to use single cell RNA-Seq
-to study a complex biological process, <a href="{{ site.url }}/papers/">our
-publications</a></p>
+to study a complex biological process, explore <a href="{{ site.url }}/papers/">our
+publications</a>.</p>
 
 <h2>Introduction</h2>
 
@@ -67,7 +67,7 @@ experiments containing tens of thousands of cells or even more.</p>
 </ul>
 
 Before we look at Monocle's functions for each of these common analysis tasks,
-let's see how to load up single-cell datasets in Monocle.
+let's see how to install Monocle.
 
 <h2> Installing Monocle </h2>
 
@@ -284,7 +284,7 @@ data, see below for how to tell Monocle how to model it in downstream steps.</p>
   <div class="panel-body">
     if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
     You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
-    You should <i>not</i> use <code>relative2abs()</code> as discussed below in the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-optional"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
+    You should <i>not</i> use <code>relative2abs()</code> as discussed below in the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
     Normalizing it yourself risks breaking some of Monocle's key steps.
   </div>
 </div>
@@ -350,7 +350,7 @@ HSMM <- newCellDataSet(count_matrix,
    <div class="panel-body">
      <strong>Using the wrong expressionFamily for your data will lead to bad results</strong>, errors from Monocle, or both.
      However, if you have FPKM/TPM data, you can still use negative binomial if you first convert your relative expression values to transcript counts using <code>relative2abs()</code>.
-     This often leads to much more accurate results than using <code>tobit()</code>. See the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-optional"> Converting TPM to mRNA Counts</a> for details.
+     This often leads to much more accurate results than using <code>tobit()</code>. See the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a> for details.
    </div>
  </div>
 </p>
@@ -910,7 +910,7 @@ plot_cell_clusters(HSMM, 1, 2, color="CellType")
 <p> Note that we've reduce the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
 But what about the "Unknown" cells? If you provide  <code>clusterCells</code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
 Essentially, cluserCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
-When a cluster is composed of more than a certain percentage (in this case, 10\%) of a certain type, all the cells in the cluster are set to that type.
+When a cluster is composed of more than a certain percentage (in this case, 10%) of a certain type, all the cells in the cluster are set to that type.
 If a cluster is composed of more than one cell type, the whole thing is marked "Ambiguous".
 If there's no cell type thats above the threshold, the cluster is marked "Unknown".
 Thus, Monocle helps you impute the type of each cell even in the presence of missing marker data. </p>
@@ -1084,7 +1084,7 @@ under study as possible. We'd like to discover the important ordering genes from
 the data, rather than relying on literature and textbooks, because that might
 introduce bias in the ordering. We'll start with one of the simpler ways to do
 this, but we generally recommend a somewhat more sophisticated approach called
-"<a href="#dpfeature">dpFeature</a>".
+"<a href="{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
 
 One effective way to isolate a set of ordering
 genes is to simply compare the cells collected at the beginning of the process
@@ -1281,7 +1281,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 <h4 id="dpfeature">Ordering based on genes that differ between clusters <span class="label label-info">Recommended</span> </h4>
 
 <p> We recommend users a order cells using genes selected by an
-unsupervised procedure called "<a href="#dpfeature">dpFeature</a>"".
+unsupervised procedure called "<a href="{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
 
 <p> To use dpFeature, we first select superset of feature genes as genes expressed
 in at least <em>5%</em> of all the cells. </p>
@@ -1951,7 +1951,7 @@ Now, with spike controls or UMIs, gene expression can  be measured in mRNA count
 Numerous Monocle functions have been re-written to take advantage of the nicer statistical properties of mRNA counts.
 For example, we adopt the dispersion modeling and variance-stabilization techniques introduced by DESeq <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106">[6]</a> during differential analysis, dimensionality reduction, and other steps.
 
-<p>Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree <a href= "http://delivery.acm.org/10.1145/2790000/2783309/p765-mao.pdf?ip=108.179.169.101&id=2783309&acc=ACTIVE%20SERVICE&key=B63ACEF81C6334F5%2EF43F328D6C8418D0%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35&CFID=957119639&CFTOKEN=38084106&__acm__=1499364977_573d3d11f3425183e91767483546ef5a">[7]</a>, described below in the section <a href = "{{ site.url }}/docs/#theory-behind-monocle"> Theory Behind Monocle </a>. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1.
+<p>Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree <a href= "http://dl.acm.org/citation.cfm?id=2783309">[7]</a>, described below in the section <a href = "{{ site.url }}/docs/#theory-behind-monocle"> Theory Behind Monocle </a>. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1.
 The algorithm is also far less sensitive to outliers, so careful QC and selection of high quality cells is less critical.
 Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment.
 Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
@@ -2345,7 +2345,7 @@ Monocle was originally built by Cole Trapnell and Davide Cacchiarelli, with subs
 [6] Simon Anders and Wolfgang Huber. <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106"> Differential expression analysis for sequence count data</a>. Genome Biol., 11(10):R106, 2010.
 <br>
 <br>
-[7] Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. <a href= "http://delivery.acm.org/10.1145/2790000/2783309/p765-mao.pdf?ip=108.179.169.101&id=2783309&acc=ACTIVE%20SERVICE&key=B63ACEF81C6334F5%2EF43F328D6C8418D0%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35&CFID=957119639&CFTOKEN=38084106&__acm__=1499364977_573d3d11f3425183e91767483546ef5a"> Dimensionality reduction via graph structure learning</a>. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015.
+[7] Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. <a href= "http://dl.acm.org/citation.cfm?id=2783309"> Dimensionality reduction via graph structure learning</a>. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015.
 <br>
 <br>
 [8] X Qiu, A Hill, J Packer, D Lin, YA Ma, and C Trapnell. <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287"> Single-cell mrna quantification and differential analysis with census</a>. Nature methods, 2017.
