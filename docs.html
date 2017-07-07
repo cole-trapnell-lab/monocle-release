@@ -1010,7 +1010,7 @@ vignette. </p>
 
     In many biological processes, cells do not progress in perfect synchrony.  In single-cell expression studies of processes such as cell differentiation, captured cells might be widely distributed in terms of progress.  That is, in a population of cells captured at exactly the same time, some cells might be far along, while others might not yet even have begun the process.  This asynchrony creates major problems when you want to understand the sequence of regulatory changes that occur as cells transition from one state to the next. Tracking the expression across cells captured at the same time produces a very compressed sense of a gene's kinetics, and the apparent variability of that gene's expression will be very high.
 
-    By ordering each cell according to its progress along a learned trajectory, Monocle alleviates the problems that arise due to asynchrony. Instead of tracking changes in expression as a function of time, Monocle tracks changes as a function of progress along the trajectory, which we term ``pseudotime''. Pseudotime is an abstract unit of progress: it's simply the distance between a cell and the start of the trajectory, measured along the shortest path. The trajectory's total length is defined in terms of the total amount of transcriptional change that a cell undergoes as it moves from the starting state to the end state. For further details, see section 9.
+    By ordering each cell according to its progress along a learned trajectory, Monocle alleviates the problems that arise due to asynchrony. Instead of tracking changes in expression as a function of time, Monocle tracks changes as a function of progress along the trajectory, which we term ``pseudotime''. Pseudotime is an abstract unit of progress: it's simply the distance between a cell and the start of the trajectory, measured along the shortest path. The trajectory's total length is defined in terms of the total amount of transcriptional change that a cell undergoes as it moves from the starting state to the end state.
 
   </div>
 </div>
@@ -1258,7 +1258,7 @@ plot_genes_in_pseudotime(cds_subset, color_by="Hours")
 
 
 
-<h3 data-toc-text="Alternative choices for ordering genes">Other ways to select genes that define a cell's progress</h3>
+<h3 data-toc-text="Alternative choices for ordering genes">Alternative choices for ordering genes</h3>
 
 <h4 id="dpfeature">Ordering based on genes that differ between clusters <span class="label label-info">Recommended</span> </h4>
 
@@ -1296,7 +1296,7 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log',
 
 <p>Then we can run density peak clustering to identify the clusters on the 2-D
 t-SNE space. The densityPeak algorithm clusters cells based on each cell's local
-density (&Rho;) and the nearest distance (&Delta); of a cell to another cell
+density (&Rho;) and the nearest distance (&Delta;) of a cell to another cell
 with higher distance. We can set a threshold for the &Rho;, &Delta; and define
 any cell with a higher local density and distance than the thresholds as the
 density peaks. Those peaks are then used to define the clusters for all cells.
