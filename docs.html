@@ -1308,8 +1308,8 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 <p> We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions. </p>
 
 {% highlight R %}
-HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log', num_dim = 3,
-                              reduction_method = 'tSNE', verbose = T)
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, norm_method = 'log',
+num_dim = 3, reduction_method = 'tSNE', verbose = T)
 {% endhighlight %}
 
 <br>
