@@ -454,10 +454,6 @@ pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
   </div>
 </div>
 
-
-Note that since we are using RPC values, we have changed the value of <code>lowerDetectionLimit</code> to reflect the new scale of expression.
-Importantly, we have also set the <code>expressionFamily</code> to <code>negbinomial()</code>, which tells Monocle to use the negative binomial distribution in certain downstream statistical tests.
-Failing to change these two options can create problems later on, so make sure not to forget them when using RPC values.
 <br>
 <br>
 Finally, we'll also call two functions that pre-calculate some information about the data.
@@ -593,7 +589,14 @@ HSMM <- detectGenes(HSMM, min_expr = 0.1)
 {% endhighlight %}
 </p>
 
-We've gone ahead and removed the few cells with either very low mRNA recovery or far more mRNA that the typical cell. Often, doublets or triplets have roughly twice the mRNA recovered as true single cells, so the latter filter is another means of excluding all but single cells from the analysis. Such filtering is handy if your protocol doesn't allow directly visualization of cell after they've been captured. Note that these thresholds of 10,000 and 40,000 mRNAs are specific to this dataset. You may need to adjust filter thresholds based on your experimental protocol.
+We've gone ahead and removed the few cells with either very low mRNA recovery or
+far more mRNA that the typical cell. Often, doublets or triplets have roughly
+twice the mRNA recovered as true single cells, so the latter filter is another
+means of excluding all but single cells from the analysis. Such filtering is
+handy if your protocol doesn't allow directly visualization of cell after
+they've been captured. Note that these thresholds of 10,000 and 40,000 mRNAs are
+specific to this dataset. You may need to adjust filter thresholds based on your
+experimental protocol.
 
 Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your <code>CellDataSet</code> follow a distribution that is roughly lognormal:
 
@@ -872,9 +875,12 @@ plot_ordering_genes(HSMM)
   <img src="{{site.url}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width=400>
 </div>
 
-<p> Note that we've got smaller set of genes, and some of them are not especially highly expressed or variable across the experiment.
-However, they are great for distinguishing cells that express <i>MYF5</i> from those that have <i>ANPEP</i>.
-We've already marked them for use in clustering, but even if we hadn't, we could still use them by providing them directly to <code>clusterCells</code>. </p>
+<p> Note that we've got smaller set of genes, and some of them are not
+especially highly expressed or variable across the experiment. However, they are
+great for distinguishing cells that express <i>MYF5</i> from those that have
+<i>ANPEP</i>. We've already marked them for use in clustering, but even if we
+hadn't, we could still use them by providing them directly to
+<code>clusterCells</code>. </p>
 
 
 
@@ -1551,7 +1557,14 @@ plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 </div>
 
 
-<p> Note that we can control how to layout the genes in the plot by specifying the number of rows and columns.  See the man page on <code>plot_genes_jitter</code> for more details on controlling its layout. Most if not all of Monocle's plotting routines return a plot object from the <em>ggplot2</em> package.  This package uses a grammar of graphics to control various aspects of a plot, and makes it easy to customize how your data is presented.  See the <em>ggplot2</em> book <a href = "http://www.springer.com/us/book/9780387981413"> [5] </a> for more details. </p>
+<p> Note that we can control how to layout the genes in the plot by specifying
+the number of rows and columns.  See the man page on
+<code>plot_genes_jitter</code> for more details on controlling its layout. Most
+if not all of Monocle's plotting routines return a plot object from the
+<em>ggplot2</em> package.  This package uses a grammar of graphics to control
+various aspects of a plot, and makes it easy to customize how your data is
+presented.  See the <em>ggplot2</em> book <a href =
+"http://www.springer.com/us/book/9780387981413"> [5] </a> for more details. </p>
 
 <p> In this section, we'll explore how to use Monocle to find genes that are differentially expressed according to several different criteria. First, we'll look at how to use our previous classification of the cells by type to find genes that distinguish fibroblasts and myoblasts. Second, we'll look at how to find genes that are differentially expressed as a function of pseudotime, such as those that become activated or repressed during differentiation.  Finally, you'll see how to perform multi-factorial differential analysis, which can help subtract the effects of confounding variables in your experiment. </p>
 
@@ -1599,8 +1612,12 @@ diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr="~CellType
 diff_test_res[,c("gene_short_name", "pval", "qval")]
 {% endhighlight %}
 
-<p> Note that all the genes are significantly differentially expressed as a function of <em>CellType</em> except the housekeeping gene TBP, which we're using a negative control.
-However, we don't know which genes correspond to myoblast-specific genes (those more highly expressed in myoblasts versus fibroblast specific genes.  We can again plot them with a jitter plot to see: </p>
+<p> Note that all the genes are significantly differentially expressed as a
+function of <em>CellType</em> except the housekeeping gene TBP, which we're
+using a negative control. However, we don't know which genes correspond to
+myoblast-specific genes (those more highly expressed in myoblasts versus
+fibroblast specific genes.  We can again plot them with a jitter plot to see:
+</p>
 
 {%highlight R%}
 plot_genes_jitter(cds_subset, grouping="CellType", color_by="CellType",
@@ -1611,9 +1628,13 @@ plot_genes_jitter(cds_subset, grouping="CellType", color_by="CellType",
   <img src="{{site.url}}/images/vignette/jitter_plot_diff_res-1.png" width=760>
 </div>
 
-<p> Note that we could also simply compute summary statistics such as mean or median expression level on a per-<em>CellType</em> basis to see this, which might be handy if we are looking at more than a handful of genes.
-Of course, we could test for genes that change as a function of <em>Hours</em> to find time-varying genes, or <em>Media</em> to identify genes that are responsive to the serum switch.
-In general, model formulae can contain terms in the pData table of the CellDataSet. </p>
+<p> We could also simply compute summary statistics such as mean or
+median expression level on a per-<em>CellType</em> basis to see this, which
+might be handy if we are looking at more than a handful of genes. Of course, we
+could test for genes that change as a function of <em>Hours</em> to find
+time-varying genes, or <em>Media</em> to identify genes that are responsive to
+the serum switch. In general, model formulae can contain terms in the pData
+table of the CellDataSet. </p>
 
 The <code>differentialGeneTest</code> function is actually quite simple "under the hood".  The call above is equivalent to:
 {% highlight R %}
@@ -2142,25 +2163,51 @@ analysis is available on bioRxiv <a href="http://www.biorxiv.org/content/early/2
 
 <h3>Census </h3>
 
-<p> In <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we introduced Census, a normalization method to convert of single-cell mRNA transcript to relative transcript counts. Using relative transcript counts (or spike-in derived counts or UMI counts if available) with the negative binomial distribution can dramatically improve the differential expression test compared to using the negative binomial with read counts or the Tobit with TPM/FPKM values.
-Census aims to convert relative abundances $X_{ij}$ into lysate transcript counts $Y_{ij}$. Without loss of generality, we consider relative abundances is on the TPM scale, and assume that a gene's TPM value is proportional to the relative frequencies of its mRNA within the total pool of mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j = 1}Y_{ij}}$.  The generative model discussed in Qiu <em>et al.</em> predicts that when only a minority of the transcripts in a cell is captured in the library, signal from most detectably expressed genes will originate from a single mRNA.  Because the number of sequencing reads per transcript is proportionate to molecular frequency after normalizing for length (i.e. TPM or FPKM), all such genes in a given cell should have similar TPM values. </p>
+<p> In <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we
+introduced Census, a normalization method to convert of single-cell mRNA
+transcript to relative transcript counts. Using relative transcript counts (or
+spike-in derived counts or UMI counts if available) with the negative binomial
+distribution can dramatically improve the differential expression test compared
+to using the negative binomial with read counts or the Tobit with TPM/FPKM
+values. Census aims to convert relative abundances $X_{ij}$ into lysate
+transcript counts $Y_{ij}$. Without loss of generality, we consider relative
+abundances is on the TPM scale, and assume that a gene's TPM value is
+proportional to the relative frequencies of its mRNA within the total pool of
+mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j =
+1}Y_{ij}}$.  The generative model discussed in Qiu <em>et al.</em> predicts that
+when only a minority of the transcripts in a cell is captured in the library,
+signal from most detectably expressed genes will originate from a single mRNA.
+Because the number of sequencing reads per transcript is proportionate to
+molecular frequency after normalizing for length (i.e. TPM or FPKM), all such
+genes in a given cell should have similar TPM values. </p>
 
 
-<p> Census works by first identifying the (log-transformed) TPM value in each cell $i$, written as $x_i^*$, that corresponds to genes from which signal originates from a single transcript.
-Because our generative model predicts that these most detectable genes should fall into this category, we simply estimate $x_i^*$ as the mode of the log-transformed TPM distribution for cell $i$.
-This mode is obtained by log-transforming the TPM values, performing a Gaussian kernel density estimation and then identifying the peak of the distribution.
-Given the TPM value for a single transcript in cell $i$, it is straightforward to convert all relative abundances to their lysate transcript counts.
-The total number of mRNAs captured for cell $i$ can be estimated as: </p>
+<p> Census works by first identifying the (log-transformed) TPM value in each
+cell $i$, written as $x_i^*$, that corresponds to genes from which signal
+originates from a single transcript. Because our generative model predicts that
+these most detectable genes should fall into this category, we simply estimate
+$x_i^*$ as the mode of the log-transformed TPM distribution for cell $i$. This
+mode is obtained by log-transforming the TPM values, performing a Gaussian
+kernel density estimation and then identifying the peak of the distribution.
+Given the TPM value for a single transcript in cell $i$, it is straightforward
+to convert all relative abundances to their lysate transcript counts. The total
+number of mRNAs captured for cell $i$ can be estimated as: </p>
 
 \begin{equation}
 M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,j}dX}
 \end{equation}
 
-where (&Epsilon;) is a TPM value below which no mRNA is believed to be present (by default, $0.1$), $n_i$ is the number of genes with TPM values in the interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed genes in a single cell.
-That is, we could estimate the total mRNA counts as the total number of single-mRNA genes divided by their combined expression relative to all genes, as illustrated in Figure 1A of <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>.
-However, cDNA and PCR amplification steps during library prep can lead to superlinear growth in the relative abundance of a transcript as a function of copy number.
-In practice, the above formula often over-estimates total mRNAs in the lysate.
-To alleviate this issue, we used an alternative formula in Census:
+where (&Epsilon;) is a TPM value below which no mRNA is believed to be present
+(by default, $0.1$), $n_i$ is the number of genes with TPM values in the
+interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed
+genes in a single cell. That is, we could estimate the total mRNA counts as the
+total number of single-mRNA genes divided by their combined expression relative
+to all genes, as illustrated in Figure 1A of <a
+href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. However, cDNA and
+PCR amplification steps during library prep can lead to superlinear growth in
+the relative abundance of a transcript as a function of copy number. In
+practice, the above formula often over-estimates total mRNAs in the lysate. To
+alleviate this issue, we used an alternative formula in Census:
 
 \begin{equation}
 %\begin{align*}\textsc{}
@@ -2169,24 +2216,47 @@ M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}
 %\end{align*}
 \end{equation}
 
-where $F_{X_i}$ represents the cumulative distribution function for the TPM values of genes expressed above (&Epsilon;) for cell $i$.
-Effectively, this simple approach estimates the pre-amplification cDNA count as the number of genes expressed above (&Epsilon;). Although this is necessarily an underestimate, in practice it is typically close to the true total (as shown in Figure 1c in <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>), since a large fraction of genes are expressed at 1 cDNA copy. Note that we also scale the cDNA count by 1/(&Theta;) to yield an estimate for the number of mRNAs that were in the cell's lysate, including those that were not actually captured. This scaling step is performed mainly to facilitate comparison with spike-in derived estimates. While we do not know the capture rate (&Theta;) a priori, it is a highly protocol-dependent quantity that appears to have little dependence on cell type or state. In the original study <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we assume a value of <em>0.25</em>, which is close to the lung and neuron experiments of Truetlein et al.
+where $F_{X_i}$ represents the cumulative distribution function for the TPM
+values of genes expressed above (&Epsilon;) for cell $i$. Effectively, this
+simple approach estimates the pre-amplification cDNA count as the number of
+genes expressed above (&Epsilon;). Although this is necessarily an
+underestimate, in practice it is typically close to the true total (as shown in
+Figure 1c in <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>),
+since a large fraction of genes are expressed at 1 cDNA copy. Note that we also
+scale the cDNA count by 1/(&Theta;) to yield an estimate for the number of mRNAs
+that were in the cell's lysate, including those that were not actually captured.
+This scaling step is performed mainly to facilitate comparison with spike-in
+derived estimates. While we do not know the capture rate (&Theta;) a priori, it
+is a highly protocol-dependent quantity that appears to have little dependence
+on cell type or state. In the original study <a
+href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we assume a value
+of <em>0.25</em>, which is close to the lung and neuron experiments of Truetlein
+et al.
 
-With an estimate of the total lysate mRNAs <em>M<sub>i</sub></em> in cell <em>i</em>, we simply rescale its TPM values into mRNA counts for each gene:
+With an estimate of the total lysate mRNAs <em>M<sub>i</sub></em> in cell
+<em>i</em>, we simply rescale its TPM values into mRNA counts for each gene:
 
 \begin{equation}
 \hat{Y}_{ij} = X_{ij} \cdot \frac{M_i} {10^6}
 \end{equation}
 
-<p><For more details about Census, including a generative model of the single-cell RNA-seq process, and some discussion of Census's limitations, please see the original study <a href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>.
-Importantly, Census cannot control for non-linear amplification, and should therefore be considered as a simple but effective way to normalize relative expression levels so that they work better with the negative binomial distribution.
-Census counts should <em>not</em> be treated as absolute transcript counts.
+<p>For more details about Census, including a generative model of the
+single-cell RNA-seq process, and some discussion of Census's limitations, please
+see the original study <a
+href="https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. Importantly, Census
+cannot control for non-linear amplification, and should therefore be considered
+as a simple but effective way to normalize relative expression levels so that
+they work better with the negative binomial distribution. Census counts should
+<em>not</em> be treated as absolute transcript counts.
 
 
 <h3>BEAM </h3>
 
-Monocle 2 assigns each cell a pseudotime value and a "State" encoding the segment of the trajectory it resides upon based on a trajectory learning algorithm (See below).
-In Monocle 2, we develop BEAM to test for branch-dependent gene expression by formulating the problem as a contrast between two negative binomial GLMs.
+Monocle 2 assigns each cell a pseudotime value and a "State" encoding the
+segment of the trajectory it resides upon based on a trajectory learning
+algorithm (See below). In Monocle 2, we develop BEAM to test for
+branch-dependent gene expression by formulating the problem as a contrast
+between two negative binomial GLMs.
 
 The null model
 \begin{equation}
