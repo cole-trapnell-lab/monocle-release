@@ -18,9 +18,9 @@ email: coletrap@uw.edu
 description: > # this means to ignore newlines until "baseurl:"
   Monocle -  powerful software toolkit for single-cell analysis
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username:  jekyll
+url: "http://http://cole-trapnell-lab.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+#twitter_username: coletrapnell
+#github_username:  ctrapnell
 
 # Build settings
 sass:
