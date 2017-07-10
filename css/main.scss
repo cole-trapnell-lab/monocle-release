@@ -22,6 +22,16 @@ $icon-font-path: "/node_modules/bootstrap-sass/assets/fonts/bootstrap/";
 .jumbotron p{
     color: #fff;
 }
+
+.navbar .nav > li > a:hover {
+    color: #00ffff
+    !important;
+}
+
+.navbar-inverse .navbar-brand:hover {
+    color: #00ffff
+    !important;
+}
 //
 // .token.function { ... }
 // .token.variable { ... }
