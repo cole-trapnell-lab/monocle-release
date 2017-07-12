@@ -30,18 +30,20 @@ tags: [monocle, manual, vignette]
 regulation in complex biological processes and  highly hetergeneous
 cell populations. These studies facilitate the discovery of genes that identify certain
 subtypes of cells, or that mark intermediate states during a
-biological process. In many single cell studies, individual cells are executing
+biological process as well as bifurcate between two alternative cellular fates.
+In many single cell studies, individual cells are executing
 through a gene expression program in an unsynchronized manner. In effect, each
 cell is a snapshot of the transcriptional program under study. The package
 <strong>Monocle</strong> provides tools for analyzing single-cell expression
 experiments. Monocle introduced the strategy of ordering single cells in
 <strong>pseudotime</strong>, placing them along a trajectory corresponding to a
-biological process such as cell differentiation. Monocle learns this trajectory
-directly from the data, taking advantage of how cells often progress through gene
-regulatory programs in an asynchronous manner. Monocle also performs clustering
-(i.e. using t-SNE and density peaks), and differential gene expression testing, allowing one to
-identify cell states and genres that are differentially expressed between them.
-Monocle is designed for single-cell RNA-Seq studies, but can be
+biological process such as cell differentiation by taking advantage of individual cell's asynchronous
+progression of those processes. Monocle orders cells by learning an explicit principal graph from the
+single cell genomics data with advanced machine learning techniques (Reversed Graph Embedding), which
+robustly and accurately resolves complicated biological processes. Monocle also performs clustering
+(i.e. using t-SNE and density peaks clustering). Monocle then performs differential gene expression testing, allowing one to
+identify genes that are differentially expressed between different state, along a biological process as well as
+alternative cell fates. Monocle is designed for single cell RNA-Seq studies, but can be
 used with other assays. For more information on the algorithm at the core of
 <strong>Monocle</strong>, or to learn more about how to use single cell RNA-Seq
 to study complex biological processes, explore <a href= "{{ site.url }}/papers/">our
