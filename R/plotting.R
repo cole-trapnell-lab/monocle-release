@@ -32,7 +32,7 @@ monocle_theme_opts <- function()
 #' @param cell_name_size the size of cell name labels
 #' @param state_number_size 
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
-#' @param theta includeDescrip
+#' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1949,7 +1949,8 @@ plot_cell_clusters <- function(cds,
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
-    theme(panel.background = element_rect(fill='white'))
+    theme(panel.background = element_rect(fill='white')) +
+    theme(text = element_text(size = 15))
   g
 }
 
@@ -2114,7 +2115,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
-#' @param theta includeDescrip
+#' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
