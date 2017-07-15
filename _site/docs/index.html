@@ -58,28 +58,18 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="http://localhost:4000/">Monocle</a>
       </div>
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <!-- <li class="active"><a href="#">Home</a></li> -->
-          <li><a href="http://localhost:4000/intro/">Introduction</a></li>
-          <li><a href="http://localhost:4000/install/">Installation</a></li>
-          <li><a href="http://localhost:4000/flow/">Workflow</a></li>
           <li><a href="http://localhost:4000/docs/">Documentation</a></li>
           <!-- <li><a href="/features/">Features</a></li> -->
           <!-- <li><a href="/getting-started/">Getting started</a></li> -->
 
           <li><a href="http://localhost:4000/papers/">Publications</a></li>
           <li><a href="http://localhost:4000/tutorials/">Tutorials</a></li>
-          <li><a href="http://localhost:4000/cite/">Citation & Contact</a></li>
-          <li><a href="http://localhost:4000/info/">More Information</a></li>
           <li><a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub</a></li>
         </ul>
       </div><!--/.nav-collapse -->
@@ -105,18 +95,6 @@
         </label>
 
         <div class="trigger">
-          
-            
-            
-          
-            
-            
-          
-            
-            
-          
-            
-            
           
             
             
@@ -231,6 +209,56 @@ experiments containing tens of thousands of cells or more.</p>
  <li> <strong>Differential expression analysis.</strong> Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
 </ul>
 
+Before we look at Monocle's functions for each of these common analysis tasks,
+let's see how to install Monocle.
+
+<h2> Installing Monocle </h2>
+
+<h3> Required software </h3>
+
+<p>Monocle runs in the <a href= "http://www.r-project.org/">R statistical
+computing environment</a>. You will need R version 3.4 or higher, Bioconductor
+version 3.5, and monocle 2.4.0 or higher to have access to the latest features.
+To install <a href= "http://bioconductor.org/install/">Bioconductor</a>:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">source</span><span class="p">(</span><span class="s2">"http://bioconductor.org/biocLite.R"</span><span class="p">)</span><span class="w">
+</span><span class="n">biocLite</span><span class="p">()</span></code></pre></figure>
+
+<p>Once you've installed Bioconductor, you're ready to install Monocle and all
+of its required dependencies:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="o">&gt;</span><span class="w"> </span><span class="n">biocLite</span><span class="p">(</span><span class="s2">"monocle"</span><span class="p">)</span></code></pre></figure>
+
+<h3> Testing the installation </h3>
+
+<p>To ensure that Monocle was installed correctly, start a new R session and type:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">library</span><span class="p">(</span><span class="n">monocle</span><span class="p">)</span></code></pre></figure>
+
+<h3> Installing the latest Beta release</h3>
+<p>The latest stable release of Monocle is available through Bioconductor, and we
+recommend you use that. However, you can also install our latest public beta
+build through GitHub as show below. Enter the following commands at the R
+console:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">install.packages</span><span class="p">(</span><span class="s2">"devtools"</span><span class="p">)</span><span class="w">
+</span><span class="n">devtools</span><span class="o">::</span><span class="n">install_github</span><span class="p">(</span><span class="s2">"cole-trapnell-lab/monocle-release@develop"</span><span class="p">)</span></code></pre></figure>
+
+<p>Sometimes we add features that require you install certain additional packages.
+You may see errors when you try the above command. You can install the packages
+in the error message by typing (for example):
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">biocLite</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s2">"DDRTree"</span><span class="p">,</span><span class="w"> </span><span class="s2">"pheatmap"</span><span class="p">))</span></code></pre></figure>
+
+<h2> Getting help </h2>
+
+<p>Questions about Monocle should be posted on our <a
+href= "https://groups.google.com/forum/#!forum/monocle-users">Google Group</a>.
+Please use <a href= "mailto:monocle.users@gmail.com">monocle.users@gmail.com</a>
+for private communications that cannot be addressed by the Monocle user
+community. Please do not email technical questions to Monocle contributors
+directly.
+
 <h2>Recommended analysis protocol</h2>
 
 <p>Monocle is a powerful toolkit for analyzing single-cell RNA-seq.  You don't need
@@ -261,6 +289,51 @@ one way to do a certain step, we've labeled the options as follows:
      </tr>
    </tbody>
  </table>
+
+<h3>Workflow steps at a glance</h3>
+<p>Below, you can see snippets of code that highlight the main steps of Monocle.
+Clink on the section headers to jump to the detailed sections describing each one. </p>
+
+<h4><a href= "http://localhost:4000/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
+The first step in working with Monocle is to load up your data into Monocle's
+main class, <code>CellDataSet</code>:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">pd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">new</span><span class="p">(</span><span class="s2">"AnnotatedDataFrame"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sample_sheet</span><span class="p">)</span><span class="w">
+</span><span class="n">fd</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">new</span><span class="p">(</span><span class="s2">"AnnotatedDataFrame"</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">gene_annotation</span><span class="p">)</span><span class="w">
+</span><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">newCellDataSet</span><span class="p">(</span><span class="n">expr_matrix</span><span class="p">,</span><span class="w"> </span><span class="n">phenoData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pd</span><span class="p">,</span><span class="w"> </span><span class="n">featureData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fd</span><span class="p">)</span></code></pre></figure>
+
+<h4><a href= "http://localhost:4000/docs/#classifying-and-counting-cells">Classify cells with known marker genes</a></h4>
+Next, leverage your knowledge of key marker genes to quickly and easily classify your cells by type:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">cth</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">newCellTypeHierarchy</span><span class="p">()</span><span class="w">
+
+</span><span class="n">MYF5_id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">row.names</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">fData</span><span class="p">(</span><span class="n">cds</span><span class="p">),</span><span class="w"> </span><span class="n">gene_short_name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"MYF5"</span><span class="p">))</span><span class="w">
+</span><span class="n">ANPEP_id</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">row.names</span><span class="p">(</span><span class="n">subset</span><span class="p">(</span><span class="n">fData</span><span class="p">(</span><span class="n">cds</span><span class="p">),</span><span class="w"> </span><span class="n">gene_short_name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">"ANPEP"</span><span class="p">))</span><span class="w">
+
+</span><span class="n">cth</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">addCellType</span><span class="p">(</span><span class="n">cth</span><span class="p">,</span><span class="w"> </span><span class="s2">"Myoblast"</span><span class="p">,</span><span class="w"> </span><span class="n">classify_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">MYF5_id</span><span class="p">,]</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">})</span><span class="w">
+</span><span class="n">cth</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">addCellType</span><span class="p">(</span><span class="n">cth</span><span class="p">,</span><span class="w"> </span><span class="s2">"Fibroblast"</span><span class="p">,</span><span class="w">
+                   </span><span class="n">classify_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">MYF5_id</span><span class="p">,]</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">[</span><span class="n">ANPEP_id</span><span class="p">,]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">)</span><span class="w">
+
+</span><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">classifyCells</span><span class="p">(</span><span class="n">cds</span><span class="p">,</span><span class="w"> </span><span class="n">cth</span><span class="p">,</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span></code></pre></figure>
+
+<h4><a href= "http://localhost:4000/docs/#clustering-cells">Cluster your cells</a></h4>
+You can easily cluster your cells to find new types:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">clusterCells</span><span class="p">(</span><span class="n">cds</span><span class="p">)</span></code></pre></figure>
+
+<h4><a href= "http://localhost:4000/docs/#constructing-single-cell-trajectories">Order cells in pseudotime along a trajectory</a></h4>
+Now, put your cells in order by how much progress they've made through whatever process you're studying, such as differentiation,
+reprogramming, or an immune response.
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">disp_table</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">dispersionTable</span><span class="p">(</span><span class="n">cds</span><span class="p">)</span><span class="w">
+</span><span class="n">ordering_genes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">disp_table</span><span class="p">,</span><span class="w"> </span><span class="n">mean_expression</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span><span class="w">
+</span><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">setOrderingFilter</span><span class="p">(</span><span class="n">cds</span><span class="p">,</span><span class="w"> </span><span class="n">ordering_genes</span><span class="p">)</span><span class="w">
+</span><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">reduceDimension</span><span class="p">(</span><span class="n">cds</span><span class="p">)</span><span class="w">
+</span><span class="n">cds</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orderCells</span><span class="p">(</span><span class="n">cds</span><span class="p">)</span></code></pre></figure>
+
+<h4><a href= "http://localhost:4000/docs/#differential-expression-analysis">Perform differential expression analysis</a></h4>
+Compare groups of cells in myriad ways to find differentially expressed genes,
+controlling for batch effects and treatments as you like:
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">diff_test_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">differentialGeneTest</span><span class="p">(</span><span class="n">cds</span><span class="p">,</span><span class="w"> </span><span class="n">fullModelFormulaStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"~Media"</span><span class="p">)</span><span class="w">
+</span><span class="n">sig_genes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">diff_test_res</span><span class="p">,</span><span class="w"> </span><span class="n">qval</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span></code></pre></figure>
 
 
 <h2>Getting Started with Monocle </h2>
@@ -898,7 +971,7 @@ hadn't, we could still use them by providing them directly to
 <h3 data-toc-text= "Imputing cell type">Imputing cell type <span class= "label label-success">Alternative</span></h3>
 
 
-<p> Note that we've reduce the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
+<p> Note that we've reduced the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
 But what about the "Unknown" cells? If you provide  <code>clusterCells</code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
 Essentially, clusterCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
 When a cluster is composed of more than a certain percentage (in this case, 10%) of a certain type, all the cells in the cluster are set to that type.
@@ -1426,27 +1499,7 @@ about tools for dealing with branched trajectories in the section <a href = "htt
                                </span><span class="n">color_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hours"</span><span class="p">,</span><span class="w">
                                </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span></code></pre></figure>
 
-<h3>Learning Trajectories Using Other Dimension Reduction Methods</h3>
-
-<p> Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument <code>initial_method</code> in <code>reduceDimension</code>. For example, we can use the nice package <em>destiny</em>, from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the <em>reduceDimension</em> function. </p>
-
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#run L1 graph
-</span><span class="w">  </span><span class="n">library</span><span class="p">(</span><span class="n">destiny</span><span class="p">)</span><span class="w">
-  </span><span class="n">run_dpt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">branching</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">T</span><span class="p">,</span><span class="w"> </span><span class="n">norm_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'log'</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">F</span><span class="p">){</span><span class="w">
-    </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w">
-    </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="o">!</span><span class="n">duplicated</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
-    </span><span class="n">dm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">DiffusionMap</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="w">
-    </span><span class="nf">return</span><span class="p">(</span><span class="n">dm</span><span class="o">@</span><span class="n">eigenvectors</span><span class="p">)</span><span class="w">
-  </span><span class="p">}</span></code></pre></figure>
-
-  <p>Result after applying DDRTree:</p>
-
-  <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w">  </span><span class="c1">#run DDRTree
-</span><span class="w">  </span><span class="n">lung</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">reduceDimension</span><span class="p">(</span><span class="n">lung</span><span class="p">,</span><span class="w"> </span><span class="n">norm_method</span><span class="o">=</span><span class="s2">"log"</span><span class="p">,</span><span class="w"> </span><span class="n">pseudo_expr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">reduction_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DDRTree'</span><span class="p">,</span><span class="w"> </span><span class="n">initial_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">run_dpt</span><span class="p">)</span><span class="w"> </span><span class="c1">#
-</span><span class="w">  </span><span class="n">lung</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orderCells</span><span class="p">(</span><span class="n">lung</span><span class="p">)</span><span class="w">
-  </span><span class="n">plot_cell_trajectory</span><span class="p">(</span><span class="n">lung</span><span class="p">,</span><span class="w"> </span><span class="n">color_by</span><span class="o">=</span><span class="s2">"Time"</span><span class="p">)</span><span class="w">
-  </span></code></pre></figure>
-
+<br>
 <br>
 
 <h2>Differential Expression Analysis </h2>
@@ -1833,7 +1886,410 @@ CELL_T24_A03_cuffquant_out/abundances.cxb     T24_A03
 
 <p>Now, you are ready to load the expression data into Monocle and start analyzing your experiment.
 
+<h2>Major updates in Monocle 2 </h2>
 
+
+<p>Monocle 2 is a near-complete re-write of Monocle 1. Monocle 2 is geared towards larger, more complex single-cell RNA-Seq experiments than those possible at the time Monocle 1 was written.
+It's also redesigned to support analysis of mRNA counts, which were hard to estimate experimentally in early versions of single-cell RNA-Seq.
+Now, with spike controls or UMIs, gene expression can  be measured in mRNA counts. Analysis of these counts is typically easier and more accurate than relative expression values, and we encourage all users to adopt an mRNA-count centered workflow.
+Numerous Monocle functions have been re-written to take advantage of the nicer statistical properties of mRNA counts.
+For example, we adopt the dispersion modeling and variance-stabilization techniques introduced by DESeq <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106">[6]</a> during differential analysis, dimensionality reduction, and other steps.
+
+<p>Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree <a href= "http://dl.acm.org/citation.cfm?id= 2783309">[7]</a>, described below in the section <a href = "http://localhost:4000/docs/#theory-behind-monocle"> Theory Behind Monocle </a>. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1.
+The algorithm is also far less sensitive to outliers, so careful QC and selection of high quality cells is less critical.
+Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment.
+Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
+
+<p>Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings.
+
+<p>Monocle 2 also includes functionality that is inspired by other packages that weren't available when Monocle 1 was written. For example, much of Monocle 2's clustering strategy is similar to
+Seurat <a href= "https://www.ncbi.nlm.nih.gov/pubmed/25867923">[9]</a> from Rahul Satija's lab.
+
+<p>A manuscript describing Monocle 2 and the general stragegy of using reversed
+graph embedding for single-cell trajectory analysis is available on the bioRxiv <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668">[10]</a>.
+
+<h2>Theory Behind Monocle </h2>
+
+<h3 data-toc-text= "dpFeature">dpFeature: Selecting features from dense cell clusters </h3>
+
+
+<p>Appling algorithms like t-SNE to cells transiting through a continuous process like cell differentiation often groups the cells into clusters that do not necessarily reflect their progression through the process. Nevertheless, the genes that are differentially expressed by cells the clusters are often highly informative markers of each cell's progress through the trajectory. That is, clustering algorithms like t-SNE can find often genes that vary over the trajectory, but not the trajectory itself. We designed a simple procedure to identify these genes for use in trajectory reconstruction.
+
+<p>The dpFeature procedure works as follows.
+First, dpFeature excludes genes that only expressed in a very small percentage of cells (by default, <em>5%</em>).
+Second, dpFeature performs PCA on the remaining genes in order to identify the principal components that explain a substantial amount of variance in the data.
+These top PCs are then used to initialize t-SNE, which projects the cells into two-dimensional t-SNE space.
+Next, dpFeature uses a recently developed clustering algorithm, called "density peak" clustering <a href = "http://science.sciencemag.org/content/344/6191/1492">[4]</a> to cluster the cells in the two-dimensional t-SNE space.
+The density peak clustering algorithm calculates each cell's local density (&Rho;) and its distance (&Delta;) to another cell with higher density.
+The &Rho; and &Delta; values for each cell can be plotted in a so-called "decision plot" in order to select thresholds that define "peaks" in the t-SNE space.
+Cells with high local density that are far away from other cells with high local density correspond to the density peaks.
+These density peaks nucleate clusters: all other cells will be associated with the nearest density peak cell.
+Finally, we identify genes that differ between the clusters by performing a likelihood ratio test between using a generalized linear model that knows the cluster to which each cell is assigned and a model that doesn't.
+We then select (by default) the top 1,000 significantly differentially expressed genes as the ordering genes for the trajectory reconstruction.
+
+
+<h3>Reversed graph embedding </h3>
+
+
+<p> Single-cell expression datasets are some of the largest and most complex encountered
+in genomics. Even the smallest single-cell RNA-Seq experiments sample hundreds of cells, measuring the
+expression level of the more than 20,000 genes in each cell. Visualizing these
+datasets, identifying cells of different types, and comparing them to one another
+all pose major bioinformatics challenges. </p>
+
+<p> <em>Manifold learning</em> is a common strategy for dealing with complex, high-dimensional
+data. The premise of this approach is simple: the data may reside in a very high-dimensional space,
+but the intrinsic structure of the dataset is much simpler. Moreover, the data
+are not random - they are generated by a process that can be understood by
+inspecting the global structure of the dataset. For example, a single single-cell RNA-Seq
+experiment may reside in 20,000 dimensions, but the cells might all lie on or "near"
+a curve <em>embedded</em> within a much lower dimensional space. For example, we
+might expect that cells in different phases of the cell cycle be distributed along
+a closed loop. Indeed a recent large-scale single-cell RNA-Seq study found exactly
+that <a href= "https://www.ncbi.nlm.nih.gov/pubmed/26000488">[11]</a>. </p>
+
+<p>Manifold learning often involves <em>dimensionality reduction</em> techniques as a
+first step. Conventional dimensionality reduction approaches (for
+example, PCA, ICA, Isomap, LLE, etc.) are limited in their ability to explictly
+recover the intrinisic structure from the data. </p>
+
+<p>Monocle 2 uses a technique called <em>reversed graph embedding</em> <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668">[10,</a> <a href= "http://ieeexplore.ieee.org/document/7769209/?reload=true">12]</a>  to learn the
+structure of the manifold that describes a single-cell experiment. It simultaneously: </p>
+
+<ol>
+  <li> Reduces high dimensional expression data into a lower dimension space.
+  <li> Learns an explicit, smooth manifold that generates the data.
+  <li> Assigns each cell to its position on that manifold
+</ol>
+
+<p>Together, these tasks allow Monocle 2 to order cells in pseudotime in an entirely
+unsupervised, data-driven way. Importantly, Monocle 2 learns manifolds that are
+trees without needing any <em>a priori</em> information about the structure of the
+tree. Users do not need to provide Monocle 2 with constraints on the number of branches, etc.
+These are learned from the data. This allows Monocle 2 to to discriminate between
+linear and branched trajectories automatically. To our knowledge, Monocle 2 is the first
+trajectory reconstruction algorithm to learn smooth tree-like manifolds without
+needing to know its high-level structure ahead of time.
+
+<p>Reversed graph embedding simultaneously learns a <em>principal graph</em> that
+approximates the manifold, as well as a function that maps points on the graph
+(which is embedded in low dimensions) back to the original high dimensional space.
+Reversed graph embedding aims to learn both a set of <em>latent points</em>
+ $$ \mathcal{Z} = \{\mathbf{z}_1, ..., \mathbf{z}_M\}$$corresponding to the input data
+that reside in the low-dimensional space along with a graph $\mathcal{G}$ that
+connects them. This graph approximates the manifold. In order to map points on
+the manifold back to the original high-dimensional input space, we also need to
+learn a function $f_{\mathcal{G}}$.
+
+<p>Learning a good reversed graph embedding can be described as an optimization problem that
+joint captures the positions of the latent points $\mathbf{z}$, the graph $\mathcal{G}$, and the function
+$f_\mathcal{G}$.
+
+<p>To learn the positions of the latent points $\mathbf{z}$, we must optimize:
+
+\begin{equation}
+\mathop{min}_{f_g \in \mathcal{F}} \mathop{min}_{\{\mathbf{z}_1, ...,
+\mathbf{z}_M\}} \sum_{i = 1}^N ||\mathbf{x}_i - f_g (\mathbf{z}_i)||^2
+\end{equation}
+
+<p>Given a set of latent point coordinates, the optimization of graph inference can
+be represented as:
+
+\begin{equation} \label{eq:mintree}
+\mathop{min}_{f_\mathcal{G} \in \mathcal{F}} \mathop{min}_{\{\mathbf{z}_1, ..., \mathbf{z}_M\}} \sum_{(V_i, V_j) \in
+\mathcal{E}} b_{i,j}||f_g(\mathbf{z}_i) - f_g(\mathbf{z}_j)||^2
+\end{equation}
+
+<p>where
+$\mathcal{X} = \{ \mathbf{x}_1, ..., \mathbf{x}_N\}$ are the original
+single-cell expression profiles. The $V_i$ are the the vertices of the
+undirected graph $\mathcal{G} = (\mathcal{V}, \mathcal{E})$. The weights for the
+edge in $\mathcal{E}$ are encoded as $b_{ij}$.
+
+<p>The first optimization problem aims to position the latent points such that their
+image under $f_\mathcal{G}$ (that is, their corresponding positions in the high-dimensional space)
+will be "close" to the input data. The second optimization aims to keep latent
+points that are close to one another in the low dimensional space close to one
+another in the high dimensional space as well. These two goals must be balanced
+against one another. Reversed graph embedding achieves this through the parameter
+$\lambda$
+
+\begin{equation}
+\mathop{min}_{\mathcal{G} \in \hat{\mathcal{G}}_b}\mathop{min}_{f_g \in \mathcal{F}} \mathop{min}_{\{\mathbf{z}_1, ...,
+\mathbf{z}_M\}} \sum_{i = 1}^N ||\mathbf{x}_i - f_g (\mathbf{z}_i)||^2 + \frac{\lambda}{2} \sum_{(V_i, V_j) \in \mathcal{E}}
+b_{i,j}||f_g(\mathbf{z}_i) - f_g(\mathbf{z}_j)||^2
+\end{equation}
+
+<p>Reversed graph embedding requires a feasible set $\hat{\mathcal{G}}_b$ of graphs and a
+mapping function $f_\mathcal{G}$. In practice, implementing reversed graph embedding
+requires that we place some constraints on $\hat{\mathcal{G}}_b$ and $f_\mathcal{G}$.
+As work on reversed graph embedding continues, we anticipate that more general
+schemes that consider a wider range of feasible graphs and mapping functions will
+become available. Monocle users should expect more general reversed graph embedding
+schemes in future versions.
+
+<p>Mao <em>et al</em> initially described two specific ways to implement the general framework
+of reversed graph embedding. Both are briefly summarized below. See the original
+paper on DDRTree for more details. Monocle 2 uses the second scheme, but can easily be
+run in a mode that corresponds to the first.
+
+
+<h3 data-toc-text= "Short text">DRTree: Dimensionality Reduction via Learning a Tree </h3>
+
+<p>The first scheme, called "DRTree" described by Mao <em>et al</em> learns principal graphs that are
+undirected trees, with one node per input data point, along with a linear function
+$f_\mathcal{G}$. Because the algorithm restricts the feasible set to trees,
+optimization problem 2 is solved by simply finding the minimum spanning tree.
+This can be solved quickly via Kruskal's algoritm. DRTree uses a
+linear projection model $f_\mathcal{G} (\mathbf{z}) = \mathbf{Wz}$ as
+the mapping function. The scheme optimizes:
+
+\begin{equation}
+\mathop{min}_{\mathbf{W}, \mathbf{Z}, \mathbf{B}} \sum_{i = 1}^N ||\mathbf{x}_i  - \mathbf{W}\mathbf{z}_i||^2 + \frac{\lambda}{2} \sum_{i,j}b_{i,j}||\mathbf{W} \mathbf{z}_i - \mathbf{W} \mathbf{z}_j||^2
+\end{equation}
+
+<p>where $\mathbf{W} = [\mathbf{w}_1, ..., \mathbf{w}_d] \in
+\mathcal{R}^{D \times d}$ is an orthogonal set of $d$ linear basis vectors.
+Because several key steps of the above optimization can be solved analytically,
+and because the two terms can be minimized in an alternating fashion,
+solving it is generally very fast. However, for large input datasets, the graph
+can become complex, and so DRTree can run into scalability problems.
+
+
+<h3 data-toc-text= "DDRTree">DDRTree: discriminative dimensionality reduction via learning a tree </h3>
+
+
+<p> To overcome problems posed by large complex input datasets, Mao <em>et al</em>
+proposed a second scheme, "DDRTree". that Monocle 2 uses instead of DRTree. Recall that the
+graph in DRTree contains one node per input data point. To avoid long computations and large memory footprints that come with DRTree, the second scheme
+learns a graph on a second, smaller set of latent points $\{\mathbf{y}_k\}_{k = 1}^K$.
+These points are treated by the algorithm as the centers of $\{\mathbf{z}_i\}^N_{i = 1}$.
+The number of these points is controlled through the <em>ncenter</em> argument
+to <code>reduceDimension()</code> in Monocle 2. Using this algorithm drastically
+speeds up the computations in <code>reduceDimension()</code>, and also serves
+to regularize the manifold, often producing cleaner, more accurate single-cell
+trajectories. </p>
+
+<p>
+The DDRTree scheme works via the following optimization:
+
+\begin{equation}\label{eq:DDRTree_opt}
+\mathop{min}_{\mathbf{W}, \mathbf{Z}, \mathbf{B}, \mathbf{Y}, \mathbf{R}} \sum_{i = 1}^N ||\mathbf{x}_i - \mathbf{W} \mathbf{z}_i||^2 +
+\frac{\lambda}{2} \sum_{k, k'}b_{k, k'}||\mathbf{W} \mathbf{y}_k - \mathbf{W} \mathbf{y}_k'||^2 +
+\gamma\Big[\sum_{k = 1}^K \sum_{i = 1}^N r_{i, k} ||\mathbf{z}_i - \mathbf{y}_k||^2 + \sigma \Omega (\mathbf{R})\Big]
+\end{equation}
+</p>
+
+<p> The optimization is constrained such that $\mathbf{W}^T \mathbf{W} = \mathbf{I}, \sum_{k = 1}^K r_{i, k} = 1,
+r_{i, k} \leq 0, \forall i, \forall k$. The matrix $\mathbf{R} \in \mathcal{R}^{N \times N}$ is used to regularize the graph, through the <em>negative entropy regularization</em> $\Omega(\mathbf{R}) = \sum_{i = 1}^N \sum_{k = 1}^k r_{i, k} \log \ r_{i, k}$.
+In effect, DDRTree uses the latent points $\{\mathbf{y}_k\}_{k = 1}^K$ as the
+centers of $K$ clusters. That is, the algorithm acts as soft K-means clustering
+on the points $\{\mathbf{z}_i\}^N_{i = 1}$, and jointly learns a graph on the $K$
+cluster centers. The matrix $\mathbf{R}$ transforms the hard assignments used in
+K-means into soft assignments with $\sigma > 0$ as a regularization parameter. </p>
+
+
+<p> Problem 5 again contains a number of analytical steps, and can be solved by
+alternating between the terms. Moreover, because some of the  more expensive
+numerical operations involve matrices that are $K$ dimensional (instead of $N$ dimensional),
+they have complexity that is invariant of the size of the input data. </p>
+
+<p> Our accessory package <em>DDRTree</em> implements the DDRTree algorithm using
+a number of key performance optimizations. Monocle 2 calls DDRTree to learn the
+core manifold describing a <em>CellDataSet</em>, and then computes pseudotime
+coordinates and branch assignments using this manifold. Monocle also uses the
+manifold in downstream analysis steps such as BEAM. A manuscript describing the
+general stragegy of using reversed graph embedding for single-cell trajectory
+analysis is available on bioRxiv <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668">[10]</a>. </p>
+
+
+<h3>Census </h3>
+
+<p> In <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we
+introduced Census, a normalization method to convert of single-cell mRNA
+transcript to relative transcript counts. Using relative transcript counts (or
+spike-in derived counts or UMI counts if available) with the negative binomial
+distribution can dramatically improve the differential expression test compared
+to using the negative binomial with read counts or the Tobit with TPM/FPKM
+values. Census aims to convert relative abundances $X_{ij}$ into lysate
+transcript counts $Y_{ij}$. Without loss of generality, we consider relative
+abundances is on the TPM scale, and assume that a gene's TPM value is
+proportional to the relative frequencies of its mRNA within the total pool of
+mRNA in a given cell's lysate, i.e., $TPM_{ij} \propto \frac{Y_{ij}}{\sum_{j =
+1}Y_{ij}}$.  The generative model discussed in Qiu <em>et al.</em> predicts that
+when only a minority of the transcripts in a cell is captured in the library,
+signal from most detectably expressed genes will originate from a single mRNA.
+Because the number of sequencing reads per transcript is proportionate to
+molecular frequency after normalizing for length (i.e. TPM or FPKM), all such
+genes in a given cell should have similar TPM values. </p>
+
+
+<p> Census works by first identifying the (log-transformed) TPM value in each
+cell $i$, written as $x_i^*$, that corresponds to genes from which signal
+originates from a single transcript. Because our generative model predicts that
+these most detectable genes should fall into this category, we simply estimate
+$x_i^*$ as the mode of the log-transformed TPM distribution for cell $i$. This
+mode is obtained by log-transforming the TPM values, performing a Gaussian
+kernel density estimation and then identifying the peak of the distribution.
+Given the TPM value for a single transcript in cell $i$, it is straightforward
+to convert all relative abundances to their lysate transcript counts. The total
+number of mRNAs captured for cell $i$ can be estimated as: </p>
+
+\begin{equation}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{\frac{1}{T} \int_{\epsilon}^{X_i^*}X_{i,j}dX}
+\end{equation}
+
+where (&Epsilon;) is a TPM value below which no mRNA is believed to be present
+(by default, $0.1$), $n_i$ is the number of genes with TPM values in the
+interval ($\epsilon, x_i^*$) and $T$ is the sum of TPM values of all expressed
+genes in a single cell. That is, we could estimate the total mRNA counts as the
+total number of single-mRNA genes divided by their combined expression relative
+to all genes, as illustrated in Figure 1A of <a
+href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. However, cDNA and
+PCR amplification steps during library prep can lead to superlinear growth in
+the relative abundance of a transcript as a function of copy number. In
+practice, the above formula often over-estimates total mRNAs in the lysate. To
+alleviate this issue, we used an alternative formula in Census:
+
+\begin{equation}
+%\begin{align*}\textsc{}
+M_i = \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*) - F_{X_i}(\epsilon)}
+= \frac{1}{\theta} \cdot \frac{n_i}{F_{X_i}(X_i^*)}\quad\quad\quad\quad (x \geq \epsilon)
+%\end{align*}
+\end{equation}
+
+where $F_{X_i}$ represents the cumulative distribution function for the TPM
+values of genes expressed above (&Epsilon;) for cell $i$. Effectively, this
+simple approach estimates the pre-amplification cDNA count as the number of
+genes expressed above (&Epsilon;). Although this is necessarily an
+underestimate, in practice it is typically close to the true total (as shown in
+Figure 1c in <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>),
+since a large fraction of genes are expressed at 1 cDNA copy. Note that we also
+scale the cDNA count by 1/(&Theta;) to yield an estimate for the number of mRNAs
+that were in the cell's lysate, including those that were not actually captured.
+This scaling step is performed mainly to facilitate comparison with spike-in
+derived estimates. While we do not know the capture rate (&Theta;) a priori, it
+is a highly protocol-dependent quantity that appears to have little dependence
+on cell type or state. In the original study <a
+href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>, we assume a value
+of <em>0.25</em>, which is close to the lung and neuron experiments of Truetlein
+et al.
+
+With an estimate of the total lysate mRNAs <em>M<sub>i</sub></em> in cell
+<em>i</em>, we simply rescale its TPM values into mRNA counts for each gene:
+
+\begin{equation}
+\hat{Y}_{ij} = X_{ij} \cdot \frac{M_i} {10^6}
+\end{equation}
+
+<p>For more details about Census, including a generative model of the
+single-cell RNA-seq process, and some discussion of Census's limitations, please
+see the original study <a
+href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. Importantly, Census
+cannot control for non-linear amplification, and should therefore be considered
+as a simple but effective way to normalize relative expression levels so that
+they work better with the negative binomial distribution. Census counts should
+<em>not</em> be treated as absolute transcript counts.
+
+
+<h3>BEAM </h3>
+
+Monocle 2 assigns each cell a pseudotime value and a "State" encoding the
+segment of the trajectory it resides upon based on a trajectory learning
+algorithm (See below). In Monocle 2, we develop BEAM to test for
+branch-dependent gene expression by formulating the problem as a contrast
+between two negative binomial GLMs.
+
+The null model
+\begin{equation}
+expression \sim sm.ns(Pseudotime)
+\end{equation}
+for the test assumes the gene being tested is not a branch specific gene, whereas the alternative model:
+\begin{equation}
+expression \sim sm.ns(Pseudotime) + Branch + sm.ns(Pseudotime) : Branch
+\end{equation}
+
+assumes that the gene is a branch specific gene where <em>:</em>  represents an interaction term between branch and transformed pseudotime. Each model includes a natural spline (here with three degrees of freedom) describing smooth changes in mean expression as a function of pseudotime. The null model fits only a single curve, whereas the alternative will fit a distinct curve for each branch. Our current implementation of Monocle 2 relies on VGAM's "smart" spline fitting functionality, hence the use of the sm.ns() function instead of the more widely used ns() function from the splines package in R. Likelihood ratio testing was performed with the VGAM lrtest() function, similar to Monocle's other differential expression tests. A significant branch-dependent genes means that the gene has distinct expression dynamics along each branch, with smoothed curves that have different shapes.
+
+<p> To fit the full model, each cell must be assigned to the appropriate branch, which is coded through the factor "Branch" in the above model formula.
+Monocle's function for testing branch dependence accepts an argument specifying which branches are to be compared.
+These arguments are specified using the 'State' attribute assigned by Monocle during trajectory reconstructions.
+For example, in our analysis of the Truetlein et al data, Monocle 2 reconstructed a trajectory with two branches <em>L<sub>AT1</sub></em>, <em>L<sub>AT2</sub></em> for AT1 and AT2 lineages, respectively), and three states (<em>S<sub>BP</sub></em>, <em>L<sub>AT1</sub></em>, <em>L<sub>AT2</sub></em> for progenitor, AT1, or AT2 cells).
+The user specifies that he or she wants to compare <em>L<sub>AT1</sub></em> and <em>L<sub>AT2</sub></em> by providing <em>S<sub>AT1</sub></em> and <em>S<sub>AT2</sub></em> as arguments to the function. Alternatively, the user can specify a branch point leading to the two states. Monocle then assigns all the cells with state <em>S<sub>AT1</sub></em> to branch <em>L<sub>AT1</sub></em> and similarly for the <em>AT2</em> cells. However, the cells with <em>S<sub>BP</sub></em> must be members of both branches, because they are on the path from each branch back to the root of the tree. In order to ensure the independence of data points required for the LRT as well as the robustness and stability of our algorithm, we implemented a strategy to partition the progenitor cells into two groups, with each branch receiving a group. The groups are computed by simply ranking the progenitor cells by pseudotime and assigning the odd-numbered cells to one group and the even numbered cells to the other. We assign the first progenitor to both branches to ensure they start at the same time which is required for spline fitting involved in the test. </p>
+
+
+In order to facilitate  downstream branch kinetic curve clusterin as well as branch time point detection.
+In the current implmentation of monocle 2, we duplicate the progenitor cells and assign it to both lineage before spline fitting.
+The branch plots in the section <a href = "http://localhost:4000/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing Branches in Single-Cell Trajectories </a> use this method.
+
+
+<h3 data-toc-text= "Branch times">Branch time point detection </h3>
+
+
+The branching time point for each gene can be quantified by fitting a separate spline curves for each branch from all the progenitor to each cell fate.
+To robustly detect the pseudotime point (<em>t<sub>beta</sub><sup>i</sup></em>) when a gene <em>i</em> with a branching expression pattern starts to diverge between two cell fates <em>L<sub>1</sub></em>, <em>L<sub>2</sub></em>, we developed the branch time point detection algorithm.
+The algorithm starts from the end of stretched pseudotime (pseudotime $t = 10$ , see the <em>supplementary note 1</em> for details) to calculate the divergence ($D_i(t = 100) = x_{L_1}(t = 100) - x_{L_2}(t = 100)$) of gene <em>i</em>'s expression ($x_{L_1}(t = 100), x_{L_2}(t = 100)$) between two cell fates, $L_1, L_2$ , (for a branching gene, the divergence at this moment should be large if not the largest across pseudotime). It then moves backwards to find the latest intersection point between two fitted spline curves, which corresponds to the time when the gene starts to diverge between two branches. To add further flexibility, the algorithm moves forward to find the time point when the gene expression diverges up to a user controllable threshold ($\epsilon$), or $D_i(t) \geq \epsilon (t)$, and defines this time point as the branch time point, $t_{\beta}^i$ , for that particular gene <em>i</em>.
+
+
+<h2>Citation </h2>
+
+
+If you use Monocle to analyze your experiments, please cite:
+
+<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">citation</span><span class="p">(</span><span class="s2">"monocle"</span><span class="p">)</span><span class="w">
+
+</span><span class="c1">##   Cole Trapnell and Davide Cacchiarelli et al (2014): The dynamics
+##   and regulators of cell fate decisions are revealed by
+##   pseudo-temporal ordering of single cells. Nature Biotechnology
+##
+##   Xiaojie Qiu, Andrew Hill, Cole Trapnell et al (2017):
+##   Single-cell mRNA quantification and differential analysis with
+##   Census. Nature Methods
+##
+##   Xiaojie Qiu, Cole Trapnell et al (2017): Reverse graph embedding
+## resolves complex single-cell developmental trajectories. BioRxiv ##
+## To see these entries in BibTeX format, use 'print(&lt;citation&gt;,
+## bibtex=TRUE)', 'toBibtex(.)', or set
+</span><span class="err">##</span><span class="w"> </span><span class="s1">'options(citation.bibtex.max= 999)'</span><span class="n">.</span></code></pre></figure>
+
+
+<h2>Acknowledgements </h2>
+
+Monocle was originally built by Cole Trapnell and Davide Cacchiarelli, with substantial design input John Rinn and Tarjei Mikkelsen. We are grateful to Sharif Bordbar, Chris Zhu, Amy Wagers and the Broad RNAi platform for technical assistance, and Magali Soumillon for helpful discussions. Cole Trapnell is a Damon Runyon Postdoctoral Fellow. Davide Cacchiarelli is a Human Frontier Science Program Fellow. Cacchiarelli and Mikkelsen were supported by the Harvard Stem Cell Institute. John Rinn is the Alvin and Esta Star Associate Professor. This work was supported by NIH grants 1DP2OD00667, P01GM099117, and P50HG006193-01. This work was also supported in part by the Single Cell Genomics initiative, a collaboration between the Broad Institute and Fluidigm Inc.
+
+ Monocle 2 was developed by Cole Trapnell's lab. Significant portions were written by Xiaojie Qiu. The work was supported by NIH grant 1DP2HD088158 as well as an Alfred P. Sloan Foundation Research Fellowship.
+
+ This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for <em>DESeq</em>, by Simon Anders and Wolfgang Huber.
+
+
+<h2>References </h2>
+
+
+<p> [1] Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang Li, Michael Morse, Niall J. Lennon, Kenneth J. Livak, Tarjei S. Mikkelsen, and John L. Rinn. <a href = "http://www.nature.com/nbt/journal/v32/n4/abs/nbt.2859.html"> The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells</a>. Nature Biotechnology, 2014. </p>
+
+<p> [2] Cole Trapnell, Adam Roberts, Loyal Goff, Geo Pertea, Daehwan Kim, David R Kelley, Harold Pimentel, Steven L Salzberg, John L Rinn, and Lior Pachter. <a href = "https://www.ncbi.nlm.nih.gov/pubmed/22383036"> Differential gene and transcript expression analysis of RNA-seq experiments with TopHat and Cufflinks</a>. Nature Protocols, 7(3):562–578, March 2012. </p>
+
+<p> [3] Laurens van der Maaten and Geoffrey Hinton. <a href = "http://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf"> Visualizing data using t-SNE</a>. J. Mach. Learn. Res., 9(Nov):2579– 2605, 2008. </p>
+
+<p> [4] Alex Rodriguez. Alessandro Laio. <a href = "http://science.sciencemag.org/content/344/6191/1492"> Clustering by fast search and find of density peaks</a>. Science, 344:1492–1496, 2014. </p>
+
+<p> [5] Hadley Wickham. <a href = "http://www.springer.com/us/book/9780387981413"> ggplot2: Elegant Graphics for Data Analysis</a>. Springer-Verlag New York, 2009. </p>
+
+<p> [6] Simon Anders and Wolfgang Huber. <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106"> Differential expression analysis for sequence count data</a>. Genome Biol., 11(10):R106, 2010. </p>
+
+<p> [7] Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. <a href= "http://dl.acm.org/citation.cfm?id= 2783309"> Dimensionality reduction via graph structure learning</a>. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015. </p>
+
+<p> [8] X Qiu, A Hill, J Packer, D Lin, YA Ma, and C Trapnell. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287"> Single-cell mrna quantification and differential analysis with census</a>. Nature methods, 2017. </p>
+
+<p> [9] Rahul Satija, Jeffrey A Farrell, David Gennert, Alexander F Schier, and Aviv Regev. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/25867923"> Spatial reconstruction of single-cell gene expression data</a>. Nat. Biotechnol., 33(5):495–502, May 2015. </p>
+
+<p> [10] Xiaojie Qiu, Qi Mao, Ying Tang, Li Wang, Raghav Chawla, Hannah Pliner, and Cole Trapnell. <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668"> Reversed graph embedding resolves complex single-cell developmental trajectories</a>. 21 February 2017. </p>
+
+<p> [11] Evan Z Macosko, Anindita Basu, Rahul Satija, James Nemesh, Karthik Shekhar, Melissa Goldman, Itay Tirosh, Allison R Bialas, Nolan Kamitaki, Emily M Martersteck, John J Trombetta, David A Weitz, Joshua R Sanes, Alex K Shalek, Aviv Regev, and Steven A McCarroll. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/26000488">Highly parallel genome-wide expression profiling of individual cells using nanoliter droplets</a>. Cell, 161(5):1202–1214, 2015. </p>
+
+<p> [12] Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. <a href= "http://ieeexplore.ieee.org/document/7769209/?reload=true">Principal graph and structure learning based on reversed graph embedding </a>. IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016. </p>
+
+<p> [13] Cabili, Moran N. et al. <a href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3185964/">Integrative Annotation of Human Large Intergenic Noncoding RNAs Reveals Global Properties and Specific Subclasses</a>. Genes & Development 25.18 (2011): 1915–1927. PMC. Web. 21 June 2017. </p>
 
 
 </div>
