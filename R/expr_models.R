@@ -353,7 +353,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @importFrom stats glm Gamma
-parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
+parametricDispersionFit <- function( disp_table, verbose, initial_coefs=c(1e-6, 1) )
 {
   coefs <- initial_coefs
   iter <- 0
@@ -361,8 +361,13 @@ parametricDispersionFit <- function( disp_table, initial_coefs=c(1e-6, 1) )
     residuals <- disp_table$disp / ( coefs[1] + coefs[2] / disp_table$mu )
     good <- disp_table[which( (residuals > initial_coefs[1]) & (residuals < 10000) ),]
     #good <- disp_table
+    if(verbose)
     fit <- glm( disp ~ I(1/mu), data=good,
                 family=Gamma(link="identity"), start=coefs )
+    else
+     suppressWarnings(fit <- glm( disp ~ I(1/mu), data=good,
+                family=Gamma(link="identity"), start=coefs ))
+                   
     oldcoefs <- coefs
     coefs <- coefficients(fit)
     if (coefs[1] < initial_coefs[1]){
@@ -501,7 +506,7 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 #' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
 #' @param removeOutliers a boolean it determines whether or not outliers from the data should be removed
 #' @param cores the number of cores to be used while testing each gene for differential expression.
-estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores)
+estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores, verbose = F)
 {
   
   # if (cores > 1){
@@ -542,7 +547,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       stop("Parametric dispersion fitting failed, please set a different lowerDetectionLimit")
     #disp_table <- do.call(rbind.data.frame, disp_table)
     disp_table <- subset(disp_table, is.na(mu) == FALSE)
-    res <- parametricDispersionFit(disp_table)
+    res <- parametricDispersionFit(disp_table, verbose)
     fit <- res[[1]]
     coefs <- res[[2]]
     #removeOutliers = TRUE
@@ -554,7 +559,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       #print (head(names(CD[CD > cooksCutoff])))
       message (paste("Removing", length(CD[CD > cooksCutoff]), "outliers"))
       outliers <- union(names(CD[CD > cooksCutoff]), setdiff(row.names(disp_table), names(CD))) 
-      res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,])
+      res <- parametricDispersionFit(disp_table[row.names(disp_table) %in% outliers == FALSE,], verbose)
       fit <- res[[1]]
       coefs <- res[[2]]
     }

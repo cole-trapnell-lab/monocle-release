@@ -355,7 +355,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param branch_point includeDescrip
+#' @param branch_point the point where two branches diverge
 #' @param trajectory_states States corresponding to two branches 
 #' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
@@ -498,7 +498,7 @@ calABCs <- function(cds,
 #'
 #' @param cds CellDataSet for the experiment
 #' @param trend_formula trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.
-#' @param branch_point includeDescrip
+#' @param branch_point the point where two branches diverge
 #' @param trajectory_states states corresponding to two branches 
 #' @param relative_expr A logic flag to determine whether or not the relative expressed should be used when we fitting the spline curves 
 #' @param stretch a logic flag to determine whether or not each branch should be stretched
