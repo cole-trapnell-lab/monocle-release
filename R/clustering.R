@@ -57,7 +57,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
 #' @param verbose Verbose parameter for DDRTree
 #' @param cell_type_hierarchy A data structure used for organizing functions that can be used for organizing cells 
-#' @param enrichment_thresh includeDescrip
+#' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @param method method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
 #' The other method is based on DDRTree. 
@@ -210,7 +210,7 @@ clusterCells <- function(cds,
   }
   
   else{
-    stop('Cluster method', method, 'is not implemented')
+    stop('Cluster method ', method, ' is not implemented')
   }
 }
 
