@@ -56,28 +56,18 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="http://localhost:4000/">Monocle</a>
       </div>
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <!-- <li class="active"><a href="#">Home</a></li> -->
-          <li><a href="http://localhost:4000/intro/">Introduction</a></li>
-          <li><a href="http://localhost:4000/install/">Installation</a></li>
-          <li><a href="http://localhost:4000/flow/">Workflow</a></li>
           <li><a href="http://localhost:4000/docs/">Documentation</a></li>
           <!-- <li><a href="/features/">Features</a></li> -->
           <!-- <li><a href="/getting-started/">Getting started</a></li> -->
 
           <li><a href="http://localhost:4000/papers/">Publications</a></li>
           <li><a href="http://localhost:4000/tutorials/">Tutorials</a></li>
-          <li><a href="http://localhost:4000/cite/">Citation & Contact</a></li>
-          <li><a href="http://localhost:4000/info/">More Information</a></li>
           <li><a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub</a></li>
         </ul>
       </div><!--/.nav-collapse -->
@@ -103,18 +93,6 @@
         </label>
 
         <div class="trigger">
-          
-            
-            
-          
-            
-            
-          
-            
-            
-          
-            
-            
           
             
             
@@ -194,15 +172,9 @@
 
           <div class="row featurette">
             <div class="col-md-4">
-              <img class="featurette-image img-responsive center-block" src="http://localhost:4000/images/olsson-complex-plot.png" alt="Monocle 1" style="width:400px;height:370px;padding-top:10;"/>
+              <img class="featurette-image img-responsive center-block" src="http://localhost:4000/images/olsson-complex-plot.png" alt="Monocle 1" height = 400/>
             </div>
             <div class="col-md-8">
-<<<<<<< HEAD
-              <h3 data-toc-skip><a href = "https://github.com/cole-trapnell-lab/monocle2-rge-paper/blob/master/Olsson_dataset_analysis.ipynb">The Haematopoiesis Process</a></h3>
-              <br>
-              <p> In this tutorial, we demonstrate how to use reversed graph embedding (RGE) in Monocle 2 to resolve the complicated haematopoiesis process which involves two major branch points. In regards to the branch points, HSC bifurcates into either megakaryote/erythroid progenitor (MEP) or granulocyte/monocyte progenitor (GMP) and the bifurcation from GMP into either granulocyte and monocyte progenitor.
-                The reconstructed developmental trajectory is learned in four dimensions but can be visualized in two dimensions. With the trajectory learned, we are able to identify genes showing significant a bifurcation pattern during each lineage bifurcation through <a href = "http://localhost:4000/papers/">BEAM</a>. We can further combine ChIP-seq datasets and Irf8 (monocyte master regulator) for Gfi1 (granulocyte master regulator) as well as the transcription factors to build a regulatory network from master regulators to other important downstream regulators and then those regulators to their downstream targets. This network hierarchy is promising to resolve the fundamental regulatory mechanism for the hematopoiesis. We also provided a multi-way heatmap and multi-way kinetic curves to visualize important marker genes over the differentiation process. Some additional analyses are included, which are used for the tutorial on analyzing the Paul dataset.
-=======
               <h3 data-toc-skip>Olsson Dataset Analysis</h3>
               <br>
               <p> In this tutorial, we demonstrate how to use reversed graph embedding (RGE) in Monocle 2 to resolve the complicated haematopoiesis process which involves two major branch points. In regards to the branch points, HSC bifurcates into either megakaryote/erythroid progenitor (MEP) or granulocyte/monocyte progenitor (GMP) and the bifurcation from GMP into either granulocyte and monocyte progenitor.
@@ -212,8 +184,6 @@
                   <a class="btn btn-default btn-sm" href="http://localhost:4000/Olsson_dataset_analysis_final.html" role="button">HTML</a>
                   <a class="btn btn-default btn-sm" href="https://github.com/cole-trapnell-lab/monocle2-rge-paper/blob/master/Olsson_dataset_analysis_final.ipynb" role="button">ipynb</a>
                 </div>
-
->>>>>>> 7d54bf3d47958ccff95f59af9882a8cc5e3da2a3
             </div>
           </div>
 
@@ -223,26 +193,12 @@
 
           <div class="row featurette">
             <div class="col-md-4">
-<<<<<<< HEAD
-              <img class="featurette-image img-responsive center-block" src="http://localhost:4000/images/paul-plot-complex.png" alt="Monocle 1" style="width:350px;height:350px;"/>
-            </div>
-            <div class="col-md-8">
-              <h3 data-toc-skip><a href = "https://github.com/cole-trapnell-lab/monocle2-rge-paper/blob/master/Reproduce%2BFig16%2Bcomplex%2Btree.ipynb">Paul Data Analysis (fix after Xiaojie adds changes)</a></h3>
-              <br>
-              <p> In this tutorial, we demonstrate how to use Monocle 2 to resolve the complicated haematopoiesis process that contains five branch points by applying reversed graph embedding (RGE). To demonstrate this we will be analyzing the Paul dataset.
-                The reconstructed developmental trajectory is learned in ten dimensions, selected based on PC variance explained, but can be visualized in two dimensions using a tree layout.
-                We show that the structure of the tree we reconstructed matches well with the cell type assignment from the original paper.
-                When we use genes based on the Paul dataset to define stemness or lineage specificity for each cell on the tree, we can see the smooth transition of cell differentation.
-                Multi-way kinetic curves and multi-way heatmaps visualize the dynamics of six different cell fate commitments.
-            </div>
-          </div>
-=======
-              <img class="featurette-image img-responsive center-block" src="http://localhost:4000/images/paul-a-c.png" alt="Monocle 1" style="width:430px;height:350px;"/>
+              <img class="featurette-image img-responsive center-block" src="http://localhost:4000/images/paul-a-c.png" alt="Monocle 1" height = 400/>
             </div>
             <div class="col-md-8">
               <h3 data-toc-skip>Paul Dataset Analysis</h3>
               <br>
-              <p> In this tutorial, we demonstrate how to use Monocle 2 to resolve the complicated haematopoiesis process that contains five branch points by applying reversed graph embedding (RGE). To demonstrate this we will be analyzing the Paul dataset. The reconstructed developmental trajectory is learned in ten dimensions, selected based on PC variance explained, but can be visualized in two dimensions using a tree layout. We show that the structure of the tree we reconstructed matches well with the cell type assignment from the original paper (could you specify which paper you're talking about, the original monocle paper). When we use genes based on the Paul dataset to define stemness or lineage specificity for each cell on the tree, we can see the smooth transition of cell differentation. Multi-way kinetic curves and multi-way heatmaps visualize the dynamics of six different cell fate commitments.
+              <p> In this tutorial, we demonstrate how to use Monocle 2 to resolve the complicated haematopoiesis process that contains five branch points by applying reversed graph embedding (RGE). To demonstrate this we will be analyzing the Paul dataset. The reconstructed developmental trajectory is learned in ten dimensions, selected based on PC variance explained, but can be visualized in two dimensions using a tree layout. We show that the structure of the tree we reconstructed matches well with the cell type assignment from the <a href = "http://www.cell.com/cell/abstract/S0092-8674(15)01493-2">original paper</a>. When we use genes based on the Olsson dataset to define stemness or lineage specificity for each cell on the tree, we can see the smooth transition of cell differentation. Multi-way kinetic curves and multi-way heatmaps visualize the dynamics of six different cell fate commitments.
 
                 <div class="text-center">
                   <a class="btn btn-default btn-sm" href="http://localhost:4000/Paul_dataset_analysis_final.html" role="button">HTML</a>
@@ -253,5 +209,4 @@
           </div>
 
           <br>
->>>>>>> 7d54bf3d47958ccff95f59af9882a8cc5e3da2a3
 

@@ -58,37 +58,18 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
-<<<<<<< HEAD
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-=======
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
         </button>
         <a class="navbar-brand" href="http://localhost:4000/">Monocle</a>
       </div>
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <!-- <li class="active"><a href="#">Home</a></li> -->
-<<<<<<< HEAD
-          <li><a href="http://localhost:4000/intro/">Introduction</a></li>
-          <li><a href="http://localhost:4000/install/">Installation</a></li>
-          <li><a href="http://localhost:4000/flow/">Workflow</a></li>
-=======
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
           <li><a href="http://localhost:4000/docs/">Documentation</a></li>
           <!-- <li><a href="/features/">Features</a></li> -->
           <!-- <li><a href="/getting-started/">Getting started</a></li> -->
 
           <li><a href="http://localhost:4000/papers/">Publications</a></li>
           <li><a href="http://localhost:4000/tutorials/">Tutorials</a></li>
-<<<<<<< HEAD
-          <li><a href="http://localhost:4000/cite/">Citation & Contact</a></li>
-          <li><a href="http://localhost:4000/info/">More Information</a></li>
-=======
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
           <li><a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub</a></li>
         </ul>
       </div><!--/.nav-collapse -->
@@ -135,21 +116,6 @@
           
             
             
-<<<<<<< HEAD
-          
-            
-            
-          
-            
-            
-          
-            
-            
-          
-            
-            
-=======
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
           
             
             
@@ -243,8 +209,6 @@ experiments containing tens of thousands of cells or more.</p>
  <li> <strong>Differential expression analysis.</strong> Characterizing new cell types and states begins with comparing them to other, better understood cells. Monocle includes a sophisticated but easy to use system for differential expression.
 </ul>
 
-<<<<<<< HEAD
-=======
 Before we look at Monocle's functions for each of these common analysis tasks,
 let's see how to install Monocle.
 
@@ -295,7 +259,6 @@ for private communications that cannot be addressed by the Monocle user
 community. Please do not email technical questions to Monocle contributors
 directly.
 
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
 <h2>Recommended analysis protocol</h2>
 
 <p>Monocle is a powerful toolkit for analyzing single-cell RNA-seq.  You don't need
@@ -327,8 +290,6 @@ one way to do a certain step, we've labeled the options as follows:
    </tbody>
  </table>
 
-<<<<<<< HEAD
-=======
 <h3>Workflow steps at a glance</h3>
 <p>Below, you can see snippets of code that highlight the main steps of Monocle.
 Clink on the section headers to jump to the detailed sections describing each one. </p>
@@ -374,7 +335,6 @@ controlling for batch effects and treatments as you like:
 <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="n">diff_test_res</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">differentialGeneTest</span><span class="p">(</span><span class="n">cds</span><span class="p">,</span><span class="w"> </span><span class="n">fullModelFormulaStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"~Media"</span><span class="p">)</span><span class="w">
 </span><span class="n">sig_genes</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">subset</span><span class="p">(</span><span class="n">diff_test_res</span><span class="p">,</span><span class="w"> </span><span class="n">qval</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="m">0.1</span><span class="p">)</span></code></pre></figure>
 
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
 
 <h2>Getting Started with Monocle </h2>
 
@@ -1316,7 +1276,6 @@ Plotting these genes demonstrates that ordering looks good: </p>
 
 <div class= "panel panel-info">
   <div class= "panel-heading">
-<<<<<<< HEAD
 
     <h3 class= "panel-title" data-toc-skip>How to reverse a linear trajectory</h3>
 
@@ -1339,30 +1298,6 @@ Plotting these genes demonstrates that ordering looks good: </p>
 
 <h4 id= "dpfeature">Ordering based on genes that differ between clusters <span class= "label label-info">Recommended</span> </h4>
 
-=======
-
-    <h3 class= "panel-title" data-toc-skip>How to reverse a linear trajectory</h3>
-
-  </div>
-  <div class= "panel-body">
-    In the event that Monocle produces a linear trajectory, there will only
-    be one state. In this case, you can tell it which end is the beginning of the
-    trajectory by passing <code>orderCells</code> an optional argument argument: the
-    <code>reverse</code> flag. The <code>reverse</code> flag tells Monocle to reverse the
-    orientation of the entire process as it's being discovered from the data,
-    so that the cells that would have been assigned to the end are instead assigned
-    to the beginning, and so on.
-
-  </div>
-</div>
-
-
-
-<h3 data-toc-text= "Alternative choices for ordering genes">Alternative choices for ordering genes</h3>
-
-<h4 id= "dpfeature">Ordering based on genes that differ between clusters <span class= "label label-info">Recommended</span> </h4>
-
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
 <p> We recommend users a order cells using genes selected by an
 unsupervised procedure called "<a href= "http://localhost:4000/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
 
@@ -1563,31 +1498,8 @@ about tools for dealing with branched trajectories in the section <a href = "htt
                                </span><span class="n">branch_point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w">
                                </span><span class="n">color_by</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Hours"</span><span class="p">,</span><span class="w">
                                </span><span class="n">ncol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span></code></pre></figure>
-<<<<<<< HEAD
 
-<h3>Learning Trajectories Using Other Dimension Reduction Methods</h3>
-
-<p> Recently, a few groups have applied some non-linear dimension reduction methods, including diffusion maps, LLE (local linear embedding), etc., to facilitate trajectory reconstruction. Monocle 2 provides a very convinient way for users who are interested in them to seamlessly integrate RGE with those methods by simplying passing a dimension reduction method to the argument <code>initial_method</code> in <code>reduceDimension</code>. For example, we can use the nice package <em>destiny</em>, from the Fabian group, to perform the diffusion map dimension reduction and a function as following to the <em>reduceDimension</em> function. </p>
-
-<figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="c1">#run L1 graph
-</span><span class="w">  </span><span class="n">library</span><span class="p">(</span><span class="n">destiny</span><span class="p">)</span><span class="w">
-  </span><span class="n">run_dpt</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="k">function</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">branching</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">T</span><span class="p">,</span><span class="w"> </span><span class="n">norm_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'log'</span><span class="p">,</span><span class="w"> </span><span class="n">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">F</span><span class="p">){</span><span class="w">
-    </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">t</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="w">
-    </span><span class="n">data</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="o">!</span><span class="n">duplicated</span><span class="p">(</span><span class="n">data</span><span class="p">),</span><span class="w"> </span><span class="p">]</span><span class="w">
-    </span><span class="n">dm</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">DiffusionMap</span><span class="p">(</span><span class="n">as.matrix</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="w">
-    </span><span class="nf">return</span><span class="p">(</span><span class="n">dm</span><span class="o">@</span><span class="n">eigenvectors</span><span class="p">)</span><span class="w">
-  </span><span class="p">}</span></code></pre></figure>
-
-  <p>Result after applying DDRTree:</p>
-
-  <figure class="highlight"><pre><code class="language-r" data-lang="r"><span class="w">  </span><span class="c1">#run DDRTree
-</span><span class="w">  </span><span class="n">lung</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">reduceDimension</span><span class="p">(</span><span class="n">lung</span><span class="p">,</span><span class="w"> </span><span class="n">norm_method</span><span class="o">=</span><span class="s2">"log"</span><span class="p">,</span><span class="w"> </span><span class="n">pseudo_expr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span><span class="p">,</span><span class="w"> </span><span class="n">reduction_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DDRTree'</span><span class="p">,</span><span class="w"> </span><span class="n">initial_method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">run_dpt</span><span class="p">)</span><span class="w"> </span><span class="c1">#
-</span><span class="w">  </span><span class="n">lung</span><span class="w"> </span><span class="o">&lt;-</span><span class="w"> </span><span class="n">orderCells</span><span class="p">(</span><span class="n">lung</span><span class="p">)</span><span class="w">
-  </span><span class="n">plot_cell_trajectory</span><span class="p">(</span><span class="n">lung</span><span class="p">,</span><span class="w"> </span><span class="n">color_by</span><span class="o">=</span><span class="s2">"Time"</span><span class="p">)</span><span class="w">
-  </span></code></pre></figure>
-=======
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
-
+<br>
 <br>
 
 <h2>Differential Expression Analysis </h2>
@@ -1971,10 +1883,6 @@ CELL_T24_A01_cuffquant_out/abundances.cxb     T24_A01
 CELL_T24_A02_cuffquant_out/abundances.cxb     T24_A02
 CELL_T24_A03_cuffquant_out/abundances.cxb     T24_A03
 </pre>
-<<<<<<< HEAD
-
-<p>Now, you are ready to load the expression data into Monocle and start analyzing your experiment.
-=======
 
 <p>Now, you are ready to load the expression data into Monocle and start analyzing your experiment.
 
@@ -2282,12 +2190,10 @@ cannot control for non-linear amplification, and should therefore be considered
 as a simple but effective way to normalize relative expression levels so that
 they work better with the negative binomial distribution. Census counts should
 <em>not</em> be treated as absolute transcript counts.
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
 
 
+<h3>BEAM </h3>
 
-<<<<<<< HEAD
-=======
 Monocle 2 assigns each cell a pseudotime value and a "State" encoding the
 segment of the trajectory it resides upon based on a trajectory learning
 algorithm (See below). In Monocle 2, we develop BEAM to test for
@@ -2385,7 +2291,6 @@ Monocle was originally built by Cole Trapnell and Davide Cacchiarelli, with subs
 
 <p> [13] Cabili, Moran N. et al. <a href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3185964/">Integrative Annotation of Human Large Intergenic Noncoding RNAs Reveals Global Properties and Specific Subclasses</a>. Genes & Development 25.18 (2011): 1915–1927. PMC. Web. 21 June 2017. </p>
 
->>>>>>> ca979e8ec88bed19ce3c70a9a5101946dc88858f
 
 </div>
 </div>
