@@ -8456,15 +8456,15 @@ label {
 }
 /* Flexible box model classes */
 /* Taken from Alex Russell http://infrequently.org/2009/08/css-3-progress/ */
-/* This file is a compatability layer.  It allows the usage of flexible box 
+/* This file is a compatability layer.  It allows the usage of flexible box
 model layouts accross multiple browsers, including older browsers.  The newest,
 universal implementation of the flexible box model is used when available (see
-`Modern browsers` comments below).  Browsers that are known to implement this 
+`Modern browsers` comments below).  Browsers that are known to implement this
 new spec completely include:
 
     Firefox 28.0+
     Chrome 29.0+
-    Internet Explorer 11+ 
+    Internet Explorer 11+
     Opera 17.0+
 
 Browsers not listed, including Safari, are supported via the styling under the
@@ -11214,7 +11214,7 @@ div#pager .ui-resizable-handle {
   background: #f7f7f7;
   border-top: 1px solid #cfcfcf;
   border-bottom: 1px solid #cfcfcf;
-  /* This injects handle bars (a short, wide = symbol) for 
+  /* This injects handle bars (a short, wide = symbol) for
         the resize handle. */
 }
 div#pager .ui-resizable-handle::after {
@@ -11649,7 +11649,7 @@ ul.typeahead-list > li > a {
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
     </style>
 <style type="text/css">
-    
+
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
 .ansi-black-fg { color: #3E424D; }
 .ansi-black-bg { background-color: #3E424D; }
@@ -11705,14 +11705,14 @@ div#notebook {
   div.cell {
     display: block;
     page-break-inside: avoid;
-  } 
-  div.output_wrapper { 
-    display: block;
-    page-break-inside: avoid; 
   }
-  div.output { 
+  div.output_wrapper {
     display: block;
-    page-break-inside: avoid; 
+    page-break-inside: avoid;
+  }
+  div.output {
+    display: block;
+    page-break-inside: avoid;
   }
 }
 </style>
@@ -11801,7 +11801,7 @@ div#notebook {
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1"># this RData is from Maren Büttner (https://github.com/theislab/scAnalysisTutorial)</span>
-<span class="kp">load</span><span class="p">(</span><span class="s">&#39;./Paul_Cell_MARSseq_GSE72857.RData&#39;</span><span class="p">)</span> 
+<span class="kp">load</span><span class="p">(</span><span class="s">&#39;./Paul_Cell_MARSseq_GSE72857.RData&#39;</span><span class="p">)</span>
 <span class="c1"># the following code is used to select feature genes used by Maren </span>
 gene.names <span class="o">&lt;-</span><span class="kp">sapply</span><span class="p">(</span><span class="kp">strsplit</span><span class="p">(</span><span class="kp">rownames</span><span class="p">(</span>data.debatched<span class="p">),</span> <span class="s">&quot;;&quot;</span><span class="p">),</span> <span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="m">1</span><span class="p">)</span>
 is.informative <span class="o">&lt;-</span> gene.names <span class="o">%in%</span> info.genes<span class="p">[</span><span class="kp">order</span><span class="p">(</span>info.genes<span class="p">)]</span>
@@ -11851,19 +11851,19 @@ fd <span class="o">&lt;-</span> new<span class="p">(</span><span class="s">&quot
 pd <span class="o">&lt;-</span> new<span class="p">(</span><span class="s">&quot;AnnotatedDataFrame&quot;</span><span class="p">,</span> data <span class="o">=</span> valid_design_mat<span class="p">)</span>
 
 <span class="c1"># create a CDS with data.info.genes </span>
-valid_subset_GSE72857_cds <span class="o">&lt;-</span> newCellDataSet<span class="p">(</span>as<span class="p">(</span><span class="kp">as.matrix</span><span class="p">(</span>data.info.genes<span class="p">[</span>common_genes<span class="p">,</span> <span class="p">]),</span> <span class="s">&#39;sparseMatrix&#39;</span><span class="p">),</span> 
-                                            phenoData <span class="o">=</span> pd<span class="p">,</span> 
+valid_subset_GSE72857_cds <span class="o">&lt;-</span> newCellDataSet<span class="p">(</span>as<span class="p">(</span><span class="kp">as.matrix</span><span class="p">(</span>data.info.genes<span class="p">[</span>common_genes<span class="p">,</span> <span class="p">]),</span> <span class="s">&#39;sparseMatrix&#39;</span><span class="p">),</span>
+                                            phenoData <span class="o">=</span> pd<span class="p">,</span>
                                             featureData <span class="o">=</span> fd<span class="p">,</span>
                                             lowerDetectionLimit<span class="o">=</span><span class="m">1</span><span class="p">,</span>
                                             expressionFamily<span class="o">=</span>negbinomial.size<span class="p">())</span>
 valid_subset_GSE72857_cds <span class="o">&lt;-</span> estimateSizeFactors<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span>
 valid_subset_GSE72857_cds <span class="o">&lt;-</span> estimateDispersions<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span>
 
-pData<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span><span class="o">$</span>cell_type <span class="o">&lt;-</span> revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span> 
-                                                      <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> 
+pData<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span><span class="o">$</span>cell_type <span class="o">&lt;-</span> revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span>
+                                                      <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;erythroid&#39;</span><span class="p">,</span>
                                                         <span class="s">&quot;7&quot;</span> <span class="o">=</span> <span class="s">&#39;CMP&#39;</span><span class="p">,</span> <span class="s">&quot;8&quot;</span> <span class="o">=</span> <span class="s">&#39;CMP&#39;</span><span class="p">,</span> <span class="s">&quot;9&quot;</span> <span class="o">=</span> <span class="s">&#39;CMP&#39;</span><span class="p">,</span> <span class="s">&quot;10&quot;</span> <span class="o">=</span> <span class="s">&#39;CMP&#39;</span><span class="p">,</span>
-                                                        <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span> 
-                                                        <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> 
+                                                        <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span>
+                                                        <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
                                                         <span class="s">&quot;19&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span>
 
 <span class="c1">#remove all lymphoid cells as it is not belong to myeloid lineage </span>
@@ -11909,7 +11909,7 @@ valid_subset_GSE72857_cds <span class="o">&lt;-</span> valid_subset_GSE72857_cds
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">4</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">3</span><span class="p">)</span>
 plot_pc_variance_explained<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">)</span> <span class="o">+</span> geom_vline<span class="p">(</span>xintercept <span class="o">=</span> <span class="m">10</span><span class="p">)</span>
-valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">10</span><span class="p">)</span> 
+valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>valid_subset_GSE72857_cds<span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">10</span><span class="p">)</span>
 valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> orderCells<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> reverse <span class="o">=</span> <span class="bp">T</span><span class="p">)</span>
 </pre></div>
 
@@ -11937,7 +11937,7 @@ valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> orderCells<span class="p
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAFoCAIAAAAAVb93AAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nO3deXxTZb4/8Cd7szdpulMESgsqqAhYKwjDoKKCDGUflRGv44jCnav9DRWQAdRR
 sEJl7kW8KOOCgnhfAgMOqLiMgDYVC4KIBVpZu6VpkybNvv7++I7n5ralnK5J6ef9B6/kOec5
@@ -12314,20 +12314,20 @@ AGIUAjQAQIz6/1TaMnc9mTcPAAAAAElFTkSuQmCC"
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span>detailed_cell_type_color <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;B&quot;</span> <span class="o">=</span> <span class="s">&quot;#E088B8&quot;</span><span class="p">,</span> <span class="s">&quot;DC&quot;</span> <span class="o">=</span> <span class="s">&quot;#46C7EF&quot;</span><span class="p">,</span> <span class="s">&quot;E&quot;</span> <span class="o">=</span> <span class="s">&quot;#EFAD1E&quot;</span><span class="p">,</span> <span class="s">&quot;Ery&quot;</span> <span class="o">=</span> <span class="s">&quot;#8CB3DF&quot;</span><span class="p">,</span> <span class="s">&quot;M&quot;</span> <span class="o">=</span> <span class="s">&quot;#53C0AD&quot;</span><span class="p">,</span> <span class="s">&quot;MP/EP&quot;</span> <span class="o">=</span> <span class="s">&quot;#4EB859&quot;</span><span class="p">,</span> <span class="s">&quot;GMP&quot;</span> <span class="o">=</span> <span class="s">&quot;#D097C4&quot;</span><span class="p">,</span> <span class="s">&quot;MK&quot;</span> <span class="o">=</span> <span class="s">&quot;#ACC436&quot;</span><span class="p">,</span> <span class="s">&quot;N&quot;</span> <span class="o">=</span> <span class="s">&quot;#F5918A&quot;</span><span class="p">)</span>
 
-pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>cell_type2 <span class="o">&lt;-</span> revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span> 
-                                                        <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> 
+pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>cell_type2 <span class="o">&lt;-</span> revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span>
+                                                        <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span>
                                                           <span class="s">&quot;7&quot;</span> <span class="o">=</span> <span class="s">&#39;MP/EP&#39;</span><span class="p">,</span> <span class="s">&quot;8&quot;</span> <span class="o">=</span> <span class="s">&#39;MK&#39;</span><span class="p">,</span> <span class="s">&quot;9&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;10&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
-                                                          <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span> 
-                                                          <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;E&#39;</span><span class="p">,</span> 
+                                                          <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span>
+                                                          <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;B&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;N&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;E&#39;</span><span class="p">,</span>
                                                           <span class="s">&quot;19&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span>
 
 <span class="c1"># we find a typo where the number labels of states 4 and 1 are swapped in the figure 16A, we will correct this. </span>
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">3</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">4</span><span class="p">)</span>
-plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;State&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> 
-                             cell_size <span class="o">=</span> <span class="m">0.5</span><span class="p">,</span> cell_link_size <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> root_states <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">))</span>  
+plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;State&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span>
+                             cell_size <span class="o">=</span> <span class="m">0.5</span><span class="p">,</span> cell_link_size <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> root_states <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">))</span>
 
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">4</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">3</span><span class="p">)</span>
-plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;as.factor(cell_type2)&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> 
+plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;as.factor(cell_type2)&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span>
                              cell_size <span class="o">=</span> <span class="m">0.5</span><span class="p">,</span> cell_link_size <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> root_states <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">10</span><span class="p">))</span> <span class="o">+</span> scale_size<span class="p">(</span>range <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span> <span class="m">0.2</span><span class="p">))</span> <span class="o">+</span>
   theme<span class="p">(</span>axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">30</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">))</span> <span class="o">+</span>
   theme <span class="p">(</span>legend.position<span class="o">=</span><span class="s">&quot;left&quot;</span><span class="p">,</span> legend.title<span class="o">=</span>element_blank<span class="p">())</span> <span class="o">+</span> scale_color_manual<span class="p">(</span>values <span class="o">=</span> detailed_cell_type_color<span class="p">)</span>
@@ -12363,7 +12363,7 @@ plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<s
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAHgCAIAAAAHZGA3AAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd3xT5foA8Oeck6RJ9x5pC6W0ZU9ZZapMQauoDBEUFcdPcFzuFeQ60IsTAcWL
 E9dVQIZSGS4QWULZIHsU6N67TZp1zvv7IyWkaZKeN6tp+3z/6Cc5OeNN2zx5zzuelyGEAEII
@@ -12807,10 +12807,12 @@ JENwAIBkCA4AkAzBAQCSITgAQDIEBwBI9j+VZSunesbZsgAAAABJRU5ErkJggg=="
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-sm-5 col-sm-offset-1">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAFoCAIAAAAAVb93AAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOydd3wc1dX3z522vartrrpsS+4NF9wwGGxsQ2ycYgcwCUlobwjPQ/xQkxBI6E5w
 CKE8xISQJxhjwJgOLhAbY8u923K3+qrurrbvTrnvHyOvVitZbSXtSr5f+MDszN2ZM5L2N2fP
@@ -13393,11 +13395,11 @@ QmCC"
 <div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span>annotation_row <span class="o">=</span> <span class="kt">data.frame</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> 
+<div class=" highlight hl-r"><pre><span></span>annotation_row <span class="o">=</span> <span class="kt">data.frame</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span>
                                           <span class="s">&quot;7&quot;</span> <span class="o">=</span> <span class="s">&#39;MP/EP&#39;</span><span class="p">,</span> <span class="s">&quot;8&quot;</span> <span class="o">=</span> <span class="s">&#39;MK&#39;</span><span class="p">,</span> <span class="s">&quot;9&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;10&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
-                                          <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span> 
-                                          <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;Eos&#39;</span><span class="p">,</span> 
-                                          <span class="s">&quot;19&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span> 
+                                          <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span>
+                                          <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;Eos&#39;</span><span class="p">,</span>
+                                          <span class="s">&quot;19&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span>
 state_cluster_stat <span class="o">&lt;-</span> <span class="kp">table</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)[,</span> <span class="kt">c</span><span class="p">(</span><span class="s">&#39;State&#39;</span><span class="p">,</span> <span class="s">&#39;cluster&#39;</span><span class="p">)])</span>
 
 state_cluster_stat <span class="o">&lt;-</span> <span class="kp">apply</span><span class="p">(</span>state_cluster_stat<span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">)</span> x <span class="o">/</span> <span class="kp">sum</span><span class="p">(</span>x<span class="p">))</span>
@@ -13405,13 +13407,15 @@ state_cluster_stat_ordered <span class="o">&lt;-</span> <span class="kp">t</span
 detailed_cell_type_color <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Bas&quot;</span> <span class="o">=</span> <span class="s">&quot;#E088B8&quot;</span><span class="p">,</span> <span class="s">&quot;DC&quot;</span> <span class="o">=</span> <span class="s">&quot;#46C7EF&quot;</span><span class="p">,</span> <span class="s">&quot;Eos&quot;</span> <span class="o">=</span> <span class="s">&quot;#EFAD1E&quot;</span><span class="p">,</span> <span class="s">&quot;Ery&quot;</span> <span class="o">=</span> <span class="s">&quot;#8CB3DF&quot;</span><span class="p">,</span> <span class="s">&quot;M&quot;</span> <span class="o">=</span> <span class="s">&quot;#53C0AD&quot;</span><span class="p">,</span> <span class="s">&quot;MP/EP&quot;</span> <span class="o">=</span> <span class="s">&quot;#4EB859&quot;</span><span class="p">,</span> <span class="s">&quot;GMP&quot;</span> <span class="o">=</span> <span class="s">&quot;#D097C4&quot;</span><span class="p">,</span> <span class="s">&quot;MK&quot;</span> <span class="o">=</span> <span class="s">&quot;#ACC436&quot;</span><span class="p">,</span> <span class="s">&quot;Neu&quot;</span> <span class="o">=</span> <span class="s">&quot;#F5918A&quot;</span><span class="p">)</span>
 annotation_colors <span class="o">=</span> <span class="kt">list</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> detailed_cell_type_color<span class="p">)</span>
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">4</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">4</span><span class="p">)</span>
-pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_stat_ordered<span class="p">,</span> cluster_cols <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> cluster_rows <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> color <span class="o">=</span> colorRampPalette<span class="p">(</span>RColorBrewer<span class="o">::</span>brewer.pal<span class="p">(</span>n<span class="o">=</span><span class="m">9</span><span class="p">,</span> name<span class="o">=</span><span class="s">&#39;Greys&#39;</span><span class="p">))(</span><span class="m">10</span><span class="p">),</span> 
+pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_stat_ordered<span class="p">,</span> cluster_cols <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> cluster_rows <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> color <span class="o">=</span> colorRampPalette<span class="p">(</span>RColorBrewer<span class="o">::</span>brewer.pal<span class="p">(</span>n<span class="o">=</span><span class="m">9</span><span class="p">,</span> name<span class="o">=</span><span class="s">&#39;Greys&#39;</span><span class="p">))(</span><span class="m">10</span><span class="p">),</span>
                    annotation_row <span class="o">=</span> annotation_row<span class="p">,</span> annotation_colors <span class="o">=</span> annotation_colors<span class="p">)</span>
 </pre></div>
 
 </div>
 </div>
 </div>
+
+<br>
 
 <div class="output_wrapper">
 <div class="output">
@@ -13420,7 +13424,7 @@ pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_s
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAeAAAAHgCAIAAADytinCAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeUBU9fo/8GdYBwZZFYhiEUVAIEMQJAVMCc1r4hL2I81rt77XMvfcvdctKzcU
 07Q9c6msTEXBcAcX0iTUVFRAEURll30Zhvn98cm507ANzHLODO/XX5wzZx6eGeCZw+d8zucR
@@ -13835,11 +13839,11 @@ BgjqB5f04+idAPNHAAAAAElFTkSuQmCC"
 <div class="prompt input_prompt">In&nbsp;[7]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span>annotation_row <span class="o">=</span> <span class="kt">data.frame</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Ery (1)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (2)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (3)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (4)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (5)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (6)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> 
+<div class=" highlight hl-r"><pre><span></span>annotation_row <span class="o">=</span> <span class="kt">data.frame</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Ery (1)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (2)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (3)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (4)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (5)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span> <span class="s">&quot;Ery (6)&quot;</span> <span class="o">=</span> <span class="s">&#39;Ery&#39;</span><span class="p">,</span>
                                           <span class="s">&quot;MP/EP (7)&quot;</span> <span class="o">=</span> <span class="s">&#39;MP/EP&#39;</span><span class="p">,</span> <span class="s">&quot;MK (8)&quot;</span> <span class="o">=</span> <span class="s">&#39;MK&#39;</span><span class="p">,</span> <span class="s">&quot;GMP (9)&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> <span class="s">&quot;GMP (10)&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
-                                          <span class="s">&quot;DC (11)&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span> 
-                                          <span class="s">&quot;Bas (12)&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;Bas (13)&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;M (14)&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;M (15)&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;Neu (16)&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;Neu (17)&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;Eos (18)&quot;</span> <span class="o">=</span> <span class="s">&#39;Eos&#39;</span><span class="p">,</span> 
-                                          <span class="s">&quot;lymphoid (19)&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span> 
+                                          <span class="s">&quot;DC (11)&quot;</span> <span class="o">=</span> <span class="s">&#39;DC&#39;</span><span class="p">,</span>
+                                          <span class="s">&quot;Bas (12)&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;Bas (13)&quot;</span> <span class="o">=</span> <span class="s">&#39;Bas&#39;</span><span class="p">,</span> <span class="s">&quot;M (14)&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;M (15)&quot;</span> <span class="o">=</span> <span class="s">&#39;M&#39;</span><span class="p">,</span> <span class="s">&quot;Neu (16)&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;Neu (17)&quot;</span> <span class="o">=</span> <span class="s">&#39;Neu&#39;</span><span class="p">,</span> <span class="s">&quot;Eos (18)&quot;</span> <span class="o">=</span> <span class="s">&#39;Eos&#39;</span><span class="p">,</span>
+                                          <span class="s">&quot;lymphoid (19)&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span>
 state_cluster_stat <span class="o">&lt;-</span> <span class="kp">table</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)[,</span> <span class="kt">c</span><span class="p">(</span><span class="s">&#39;State&#39;</span><span class="p">,</span> <span class="s">&#39;cluster&#39;</span><span class="p">)])</span>
 
 state_cluster_stat <span class="o">&lt;-</span> <span class="kp">apply</span><span class="p">(</span>state_cluster_stat<span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">)</span> x <span class="o">/</span> <span class="kp">sum</span><span class="p">(</span>x<span class="p">))</span>
@@ -13850,13 +13854,15 @@ detailed_cell_type_color <span class="o">&lt;-</span> <span class="kt">c</span><
 annotation_colors <span class="o">=</span> <span class="kt">list</span><span class="p">(</span><span class="sb">`Lineage`</span> <span class="o">=</span> detailed_cell_type_color<span class="p">)</span>
 
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">5</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">4</span><span class="p">)</span>
-pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_stat_ordered<span class="p">,</span> cluster_cols <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> cluster_rows <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> color <span class="o">=</span> colorRampPalette<span class="p">(</span>RColorBrewer<span class="o">::</span>brewer.pal<span class="p">(</span>n<span class="o">=</span><span class="m">9</span><span class="p">,</span> name<span class="o">=</span><span class="s">&#39;Greys&#39;</span><span class="p">))(</span><span class="m">10</span><span class="p">),</span> 
+pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_stat_ordered<span class="p">,</span> cluster_cols <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> cluster_rows <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> color <span class="o">=</span> colorRampPalette<span class="p">(</span>RColorBrewer<span class="o">::</span>brewer.pal<span class="p">(</span>n<span class="o">=</span><span class="m">9</span><span class="p">,</span> name<span class="o">=</span><span class="s">&#39;Greys&#39;</span><span class="p">))(</span><span class="m">10</span><span class="p">),</span>
                    annotation_row <span class="o">=</span> annotation_row<span class="p">,</span> annotation_colors <span class="o">=</span> annotation_colors<span class="p">)</span>
 </pre></div>
 
 </div>
 </div>
 </div>
+
+<br>
 
 <div class="output_wrapper">
 <div class="output">
@@ -13865,7 +13871,7 @@ pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_s
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAHgCAIAAAD2dYQOAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzda1xTV9Yw8BUg4SqXgEChgFIRrIAVlMurgCMq6qAiAmrrOKXOPLQWFR0vVaso
 OoM3rAoovdhaddqnLQJFQdHaAi2ijoBWBREUBRGVq8gtCZD3wx7Pc5obgZwkBNf/1w85JzuL
@@ -14559,7 +14565,7 @@ pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><
 plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;ery_meg_lineage_score&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> cell_link_size <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> cell_size <span class="o">=</span> <span class="m">0.0001</span><span class="p">,</span> root_states <span class="o">=</span> <span class="m">10</span><span class="p">)</span> <span class="o">+</span>
   scale_colour_gradient2<span class="p">()</span> <span class="o">+</span> scale_size<span class="p">(</span>range <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span> <span class="m">0.2</span><span class="p">))</span> <span class="o">+</span>
    theme<span class="p">(</span>axis.text.x <span class="o">=</span> element_text<span class="p">(</span>angle <span class="o">=</span> <span class="m">30</span><span class="p">,</span> hjust <span class="o">=</span> <span class="m">1</span><span class="p">))</span> <span class="o">+</span> theme <span class="p">(</span>legend.position<span class="o">=</span><span class="s">&quot;right&quot;</span><span class="p">,</span> legend.title<span class="o">=</span>element_blank<span class="p">())</span> <span class="o">+</span>
-  theme<span class="p">(</span>legend.position<span class="o">=</span><span class="s">&quot;top&quot;</span><span class="p">,</span> legend.title<span class="o">=</span>element_blank<span class="p">())</span> 
+  theme<span class="p">(</span>legend.position<span class="o">=</span><span class="s">&quot;top&quot;</span><span class="p">,</span> legend.title<span class="o">=</span>element_blank<span class="p">())</span>
 
 <span class="c1">#normalize UMI to TPM:</span>
 tpm_exprs_valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> esApply<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> <span class="m">2</span><span class="p">,</span> <span class="kr">function</span><span class="p">(</span>x<span class="p">)</span> x <span class="o">/</span> <span class="kp">sum</span><span class="p">(</span>x<span class="p">)</span> <span class="o">*</span> <span class="m">1e6</span><span class="p">)</span>
@@ -14568,7 +14574,7 @@ cell_stemness_score <span class="o">&lt;-</span> <span class="kp">apply</span><s
 
 pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>cell_stemness_score <span class="o">&lt;-</span> <span class="kp">log2</span><span class="p">(</span>cell_stemness_score<span class="p">)</span>
 pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>no_expression <span class="o">&lt;-</span> cell_stemness_score <span class="o">==</span> <span class="m">0</span>
-    
+
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">5</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">4</span><span class="p">)</span>
 plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;cell_stemness_score&#39;</span><span class="p">,</span> show_branch_points <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> cell_link_size <span class="o">=</span> <span class="m">0.3</span><span class="p">,</span> cell_size <span class="o">=</span> <span class="m">0.0001</span><span class="p">,</span> root_states <span class="o">=</span> <span class="m">10</span><span class="p">)</span> <span class="o">+</span>
   scale_colour_gradientn<span class="p">(</span>colours <span class="o">=</span> terrain.colors<span class="p">(</span><span class="m">10</span><span class="p">))</span> <span class="o">+</span> facet_wrap<span class="p">(</span><span class="o">~</span>no_expression<span class="p">)</span> <span class="o">+</span> scale_size<span class="p">(</span>range <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="m">0.2</span><span class="p">,</span> <span class="m">0.2</span><span class="p">))</span> <span class="o">+</span>
@@ -14596,10 +14602,12 @@ plot_complex_cell_trajectory<span class="p">(</span>valid_subset_GSE72857_cds2<s
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAWgAAAHgCAIAAAAHZGA3AAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzde3xcV30o+t9vrf2al96SJdmyg5w4gUAJDcQYwkkDpORBQ1KelwYohfb2AC00
 JQkpJKSFHmgg6YFLW1LacG4hTXL4YIfwOoRyTQjFF+dBAhxIHONYlizJsmS9RjP7sdb6nT/W
@@ -15174,10 +15182,12 @@ g8HQMMZwGAyGhjGGw2AwNMz/BzlcdXTuvtX4AAAAAElFTkSuQmCC"
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-sm-4 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAHgCAIAAAD2dYQOAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeXwU5f048M8zM3tvNsfmviAJBAkCAnKEQwXxgCrigVq1aj3w1korHm2tfq1a
 +f5K612LVfvVqliRUxAQEVQCBCQQLslB7muzR7L3zvH8/piwriFAhM1OyHzer7zymnl2duaz
@@ -16080,7 +16090,7 @@ p1EhJIQQ0qdRISSEENKn/T8xlHcpB3Yl+gAAAABJRU5ErkJggg=="
 <span class="kp">which</span><span class="p">(</span>pData<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">)</span><span class="o">$</span>Pseudotime <span class="o">==</span> <span class="m">0</span><span class="p">)</span> <span class="c1"># this should be 449</span>
 marseq_complex_tree_ery_meg_lineage_score_kinetic_curves_cols <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Neu&quot;</span> <span class="o">=</span> <span class="s">&quot;#6BBE44&quot;</span><span class="p">,</span> <span class="s">&quot;DC&quot;</span> <span class="o">=</span> <span class="s">&quot;#31C5F4&quot;</span><span class="p">,</span> <span class="s">&quot;Baso&quot;</span> <span class="o">=</span> <span class="s">&quot;#D493C0&quot;</span><span class="p">,</span> <span class="s">&quot;Mono&quot;</span> <span class="o">=</span> <span class="s">&quot;#F58F89&quot;</span><span class="p">,</span> <span class="s">&quot;MK&quot;</span> <span class="o">=</span> <span class="s">&quot;#4CBD8E&quot;</span><span class="p">,</span> <span class="s">&quot;Ery&quot;</span> <span class="o">=</span> <span class="s">&quot;#BCC132&quot;</span><span class="p">)</span>
 
-valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> orderCells<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> root_state <span class="o">=</span> <span class="m">10</span><span class="p">)</span> 
+valid_subset_GSE72857_cds2 <span class="o">&lt;-</span> orderCells<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">,</span> root_state <span class="o">=</span> <span class="m">10</span><span class="p">)</span>
 
 <span class="kp">options</span><span class="p">(</span>repr.plot.width<span class="o">=</span><span class="m">8</span><span class="p">,</span> repr.plot.height<span class="o">=</span><span class="m">2</span><span class="p">)</span>
 plot_multiple_branches_pseudotime<span class="p">(</span>valid_subset_GSE72857_cds2<span class="p">[</span><span class="kt">c</span><span class="p">(</span><span class="s">&#39;Car1&#39;</span><span class="p">,</span> <span class="s">&#39;Elane&#39;</span><span class="p">,</span> <span class="s">&#39;Car2&#39;</span><span class="p">,</span> <span class="s">&#39;Prtn3&#39;</span><span class="p">),],</span>
@@ -16732,7 +16742,7 @@ plot_multiple_branches_heatmap<span class="p">(</span>valid_subset_GSE72857_cds2
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
+<div class="col-md-6 col-md-offset-2">
 <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA8AAAAWgCAIAAAAekL2sAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeVxUVf8H8O+AgjMDKDCDCyjkkqI+5lpmASqKWwqaueGCuWSWuaVWshiPYGIq
 aplbmpAmhiC5/iTGcU3MJfNBrSAVcWOGTZhBNuf3x9HbbWZARGYu4Of9mte8zpx77rnfezkX
@@ -19402,30 +19412,30 @@ locale:
 [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 attached base packages:
- [1] splines   stats4    parallel  stats     graphics  grDevices utils    
- [8] datasets  methods   base     
+ [1] splines   stats4    parallel  stats     graphics  grDevices utils
+ [8] datasets  methods   base
 
 other attached packages:
- [1] dplyr_0.5.0         plyr_1.8.4          monocle_2.5.3      
- [4] DDRTree_0.1.5       irlba_2.2.1         VGAM_1.0-3         
+ [1] dplyr_0.5.0         plyr_1.8.4          monocle_2.5.3
+ [4] DDRTree_0.1.5       irlba_2.2.1         VGAM_1.0-3
  [7] ggplot2_2.2.1       Biobase_2.34.0      BiocGenerics_0.20.0
-[10] Matrix_1.2-10      
+[10] Matrix_1.2-10
 
 loaded via a namespace (and not attached):
- [1] Rcpp_0.12.11           RColorBrewer_1.1-2     tools_3.3.2           
- [4] densityClust_0.2.1     digest_0.6.12          uuid_0.1-2            
- [7] jsonlite_1.4           evaluate_0.10          Rtsne_0.13            
-[10] tibble_1.3.1           gtable_0.2.0           lattice_0.20-35       
-[13] rlang_0.1.1            igraph_1.0.1           IRdisplay_0.4.4       
+ [1] Rcpp_0.12.11           RColorBrewer_1.1-2     tools_3.3.2
+ [4] densityClust_0.2.1     digest_0.6.12          uuid_0.1-2
+ [7] jsonlite_1.4           evaluate_0.10          Rtsne_0.13
+[10] tibble_1.3.1           gtable_0.2.0           lattice_0.20-35
+[13] rlang_0.1.1            igraph_1.0.1           IRdisplay_0.4.4
 [16] DBI_0.6-1              IRkernel_0.7.1         HSMMSingleCell_0.108.0
-[19] fastICA_1.2-0          cluster_2.0.6          repr_0.12.0           
-[22] stringr_1.2.0          combinat_0.0-8         grid_3.3.2            
-[25] R6_2.2.1               qlcMatrix_0.9.5        pheatmap_1.0.8        
-[28] limma_3.30.13          pbdZMQ_0.2-6           reshape2_1.4.2        
-[31] magrittr_1.5           matrixStats_0.52.2     scales_0.4.1          
-[34] assertthat_0.2.0       colorspace_1.3-2       labeling_0.3          
-[37] proxy_0.4-17           stringi_1.1.5          lazyeval_0.2.0        
-[40] munsell_0.4.3          slam_0.1-40            crayon_1.3.2          
+[19] fastICA_1.2-0          cluster_2.0.6          repr_0.12.0
+[22] stringr_1.2.0          combinat_0.0-8         grid_3.3.2
+[25] R6_2.2.1               qlcMatrix_0.9.5        pheatmap_1.0.8
+[28] limma_3.30.13          pbdZMQ_0.2-6           reshape2_1.4.2
+[31] magrittr_1.5           matrixStats_0.52.2     scales_0.4.1
+[34] assertthat_0.2.0       colorspace_1.3-2       labeling_0.3
+[37] proxy_0.4-17           stringi_1.1.5          lazyeval_0.2.0
+[40] munsell_0.4.3          slam_0.1-40            crayon_1.3.2
 [43] Cairo_1.5-9           </pre>
 </div>
 

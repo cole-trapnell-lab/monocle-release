@@ -8456,15 +8456,15 @@ label {
 }
 /* Flexible box model classes */
 /* Taken from Alex Russell http://infrequently.org/2009/08/css-3-progress/ */
-/* This file is a compatability layer.  It allows the usage of flexible box 
+/* This file is a compatability layer.  It allows the usage of flexible box
 model layouts accross multiple browsers, including older browsers.  The newest,
 universal implementation of the flexible box model is used when available (see
-`Modern browsers` comments below).  Browsers that are known to implement this 
+`Modern browsers` comments below).  Browsers that are known to implement this
 new spec completely include:
 
     Firefox 28.0+
     Chrome 29.0+
-    Internet Explorer 11+ 
+    Internet Explorer 11+
     Opera 17.0+
 
 Browsers not listed, including Safari, are supported via the styling under the
@@ -11214,7 +11214,7 @@ div#pager .ui-resizable-handle {
   background: #f7f7f7;
   border-top: 1px solid #cfcfcf;
   border-bottom: 1px solid #cfcfcf;
-  /* This injects handle bars (a short, wide = symbol) for 
+  /* This injects handle bars (a short, wide = symbol) for
         the resize handle. */
 }
 div#pager .ui-resizable-handle::after {
@@ -11649,7 +11649,7 @@ ul.typeahead-list > li > a {
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
     </style>
 <style type="text/css">
-    
+
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
 .ansi-black-fg { color: #3E424D; }
 .ansi-black-bg { background-color: #3E424D; }
@@ -11705,14 +11705,14 @@ div#notebook {
   div.cell {
     display: block;
     page-break-inside: avoid;
-  } 
-  div.output_wrapper { 
-    display: block;
-    page-break-inside: avoid; 
   }
-  div.output { 
+  div.output_wrapper {
     display: block;
-    page-break-inside: avoid; 
+    page-break-inside: avoid;
+  }
+  div.output {
+    display: block;
+    page-break-inside: avoid;
   }
 }
 </style>
@@ -11944,7 +11944,7 @@ URMM_all_fig1b <span class="o">&lt;-</span> clusterCells<span class="p">(</span>
 plot_cell_clusters<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;as.factor(Cluster)&#39;</span><span class="p">)</span> <span class="c1"># show_density = F,</span>
 plot_cell_clusters<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;cluster&#39;</span><span class="p">)</span>
 plot_cell_clusters<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;Type&#39;</span><span class="p">)</span>
-plot_rho_delta<span class="p">(</span>URMM_all_fig1b<span class="p">)</span> 
+plot_rho_delta<span class="p">(</span>URMM_all_fig1b<span class="p">)</span>
 
 URMM_all_fig1b<span class="o">@</span>expressionFamily <span class="o">&lt;-</span> negbinomial.size<span class="p">()</span>
 pData<span class="p">(</span>URMM_all_fig1b<span class="p">)</span><span class="o">$</span>Cluster <span class="o">&lt;-</span> <span class="kp">factor</span><span class="p">(</span>pData<span class="p">(</span>URMM_all_fig1b<span class="p">)</span><span class="o">$</span>Cluster<span class="p">)</span>
@@ -11964,7 +11964,7 @@ URMM_ordering_genes <span class="o">&lt;-</span> <span class="kp">row.names</spa
 
 <div class="output_area"><div class="prompt"></div>
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Distance cutoff calculated to 1.588421 
+<pre>Distance cutoff calculated to 1.588421
 </pre>
 </div>
 </div>
@@ -11991,8 +11991,8 @@ URMM_ordering_genes <span class="o">&lt;-</span> <span class="kp">row.names</spa
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" id = "cluster-1" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeXxU1d0G8N85996ZrISEBJKwJGyRHYIiQXaBiktVLKilolRsfV1qX7eqb9W2
 2lpttXXfKtS6VHABVFRkkV1QEGQnBJJASMhGQvaZufee8/4xIZnMkky2STI834+flrl37pkz
 k0zmmbMyKSUBAAAAQNfHO7oCAAAAANA2EOwAAAAAggSCHQAAAECQQLADAAAACBIIdgAAAABB
@@ -13466,11 +13466,14 @@ u/v555/3+XyzZs1KTVM3wE80TXP+/Pm6rr/44os9PT1ffvnlz372s+rq6r179+az+6RJk0Rk
 W1u7fPny9DvYzizYrV+/fvr06bqun3feecuWLcu4JW6AnxiLxX7961/X1tb6/f6ampo77rjj
 0KFDee7+9ttvX3TRRcl2u37+fAQ7YFhiuhMAOIkpQgAMadxjBwAA4BEEOwAAAI8g2AEAAHgE
 99gBAAB4BC12AAAAHkGwAwAA8AiCHQAAgEcQ7AAAADyCYAcAAOARBDsAAACPINgBAAB4BMEO
-AADAI/4f9wo36135LEMAAAAASUVORK5CYII="
->
+AADAI/4f9wo36135LEMAAAAASUVORK5CYII=" height = "500" width = "500">
+
+
 </div>
 
 </div>
+
+<br>
 
 <div class="output_area"><div class="prompt"></div>
 
@@ -13481,8 +13484,8 @@ AADAI/4f9wo36135LEMAAAAASUVORK5CYII="
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd5xU1f0//te5d2Z2tncWWFh6FUFAECmKDQEpoigWrNF8EjUmpn7MJ/Gjyedn
 YoyffE38/jQiRgkWFFjAQrWgIIJIF6TXXbb3OjP3nO8fs8zOzt6Zndm+w+v54MFj55x7zz13
 7pT3nHaFUgpERERE1PVpHV0BIiIiImodDOyIiIiIwgQDOyIiIqIwwcCOiIiIKEwwsCMiIiIK
@@ -14980,23 +14983,22 @@ Qz7kgV6I9zyAKOVyuZYvXz5hwoTExESHwzF8+PAlS5Y0n9yuuLj4hz/84YABA2JjY7Ozs5cu
 XdrwCraOBbs1a9Zcc801Dodj8ODBS5YsaXJJXCef0e12//SnP83Ozo6Njc3KynrggQdOnDjR
 xt23bNkyfPhw/3m7Vv75CHZAr8R0JwBQjylCAPRoXGMHAABgEQQ7AAAAiyDYAQAAWATX2AEA
 AFgEZ+wAAAAsgmAHAABgEQQ7AAAAiyDYAQAAWATBDgAAwCIIdgAAABZBsAMAALAIgh0AAIBF
-/H/pI4R5YY6OiAAAAABJRU5ErkJggg=="
->
+/H/pI4R5YY6OiAAAAABJRU5ErkJggg==" height = "500" width = "500">
 </div>
 
 </div>
 
 <div class="output_area"><div class="prompt"></div>
 
-
+<br>
 
 </div>
 
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeWCU1b0+8Oe8s2Vmksm+kkASCPsOAiqKiLhvuGGt2kVra7W32upP763XW71d
 tNVarVrLrbt1F3BptS6giIoiCLIECAmE7Ps6mfV9z++PCclklpBlsg3P5w/NnPMu3xeYzHfO
 KqSUICIiIqKxTxnpAIiIiIgoMpjYEREREUUJJnZEREREUYKJHREREVGUYGJHREREFCWY2BER
@@ -16488,11 +16490,13 @@ H10gu9iqL5JxAAAAAElFTkSuQmCC"
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzde5SkZWHg/7pXd/VtuntuzIWRkYtEgwbDuoPGoFHxQDJxUDKJe1BY/kgU9eyO
 MmjWg5v96QZmZY64JhvPwY1rJhzYBQZnY9aNmw3RZQfFCwgICMptBma6p+9VXdV1e39/vGvZ
 6RmGZpju6n7m8/mr+u2urqene6q+9bzP+77JKIoSAAAsf6l2DwAAgJND2AEABELYAQAEQtgB
@@ -17069,7 +17073,7 @@ FEVRFgQVdoqiKIqiKAuCCjtFURRFUZQFQYWdoiiKoijKgqDCTlEURVEUZUFQYacoiqIoirIg
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span>URMM_all_fig1b <span class="o">&lt;-</span> setOrderingFilter<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> ordering_genes <span class="o">=</span> <span class="kt">c</span><span class="p">(</span>URMM_ordering_genes<span class="p">))</span>
-URMM_all_fig1b <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> scaling <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">4</span><span class="p">,</span> maxIter <span class="o">=</span> <span class="m">100</span><span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span>  lambda <span class="o">=</span> <span class="m">20</span> <span class="o">*</span> <span class="kp">ncol</span><span class="p">(</span>URMM_all_fig1b<span class="p">))</span> 
+URMM_all_fig1b <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> scaling <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">4</span><span class="p">,</span> maxIter <span class="o">=</span> <span class="m">100</span><span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span>  lambda <span class="o">=</span> <span class="m">20</span> <span class="o">*</span> <span class="kp">ncol</span><span class="p">(</span>URMM_all_fig1b<span class="p">))</span>
 URMM_all_fig1b <span class="o">&lt;-</span> orderCells<span class="p">(</span>URMM_all_fig1b<span class="p">)</span>
 plot_cell_trajectory<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;Type&#39;</span><span class="p">)</span>
 plot_cell_trajectory<span class="p">(</span>URMM_all_fig1b<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;cluster&#39;</span><span class="p">)</span> <span class="o">+</span> facet_wrap<span class="p">(</span><span class="o">~</span>cluster<span class="p">)</span>
@@ -17090,6 +17094,8 @@ plot_cell_trajectory<span class="p">(</span>URMM_all_fig1b<span class="p">,</spa
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
@@ -17099,8 +17105,8 @@ plot_cell_trajectory<span class="p">(</span>URMM_all_fig1b<span class="p">,</spa
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img height = "500" width = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd2AUZd4H8N8z2ze9F5JAEnrvBJGuIMVDlCYKeIfiqQinZ329Q/EsYIWznKKC
 Iiq9H3hYECJFOqGThBDSe92+M8/7x4YlJBsIYbObbL6fP+52nnlm9jeJwtdn5nmGcc4JAAAA
 AJo/wd0FAAAAAIBzINgBAAAAeAgEOwAAAAAPgWAHAAAA4CEQ7AAAAAA8BIIdAAAAgIdAsAMA
@@ -18158,6 +18164,8 @@ EjsAAACDILEDAAAwCBI7AAAAgyCxAwAAMAgSOwAAAIP4H5QUzw/y2oEiAAAAAElFTkSuQmCC
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
@@ -18167,8 +18175,8 @@ EjsAAACDILEDAAAwCBI7AAAAgyCxAwAAMAgSOwAAAIP4H5QUzw/y2oEiAAAAAElFTkSuQmCC
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd1wU19oH8DNbYOlKl94EEQVBUREQTFHUiA31WtPsJcYUE6/GFl+NGo2mXFs0
 0Yuxgy2W2FBBRUURQSwLiHQElQ7b5v1jkr3rAssubWH8ff/gw04588zunJ1n55w5Q9E0TQAA
 AACg/eNoOwAAAAAAaB5I7AAAAABYAokdAAAAAEsgsQMAAABgCSR2AAAAACyBxA4AAACAJZDY
@@ -19431,11 +19439,13 @@ gJlAYQcAAABgJlDYAQAAAJgJFHYAAAAAZuL/ALRFIzzfuvq4AAAAAElFTkSuQmCC"
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd1gU1/oH8DOzu/QOitJBBUHFFlFEwGtFsYt4FUtiTNSIxsTEaJotsUaN5cYW
 r8EfdgWxgTF2UbHFBgYrgggISF1g6/z+GN27LrDswsIuy/fz+PiwU868sztn591zZs5QDMMQ
 AAAAAGj8aG0HAAAAAACagcQOAAAAQE8gsQMAAADQE0jsAAAAAPQEEjsAAAAAPYHEDgAAAEBP
@@ -20738,7 +20748,7 @@ YII="
 <div class=" highlight hl-r"><pre><span></span>pData<span class="p">(</span>URMM_all_abs<span class="p">)[</span><span class="kp">colnames</span><span class="p">(</span>URMM_all_fig1b<span class="p">),</span> <span class="s">&#39;paper_cluster&#39;</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>URMM_all_fig1b<span class="p">)[,</span> <span class="s">&#39;cluster&#39;</span><span class="p">])</span>
 
 URMM_all_abs <span class="o">&lt;-</span> setOrderingFilter<span class="p">(</span>URMM_all_abs<span class="p">,</span> ordering_genes <span class="o">=</span> URMM_ordering_genes<span class="p">)</span>
-URMM_all_abs <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>URMM_all_abs<span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> scaling <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> maxIter <span class="o">=</span> <span class="m">100</span><span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">4</span><span class="p">,</span> param.gamma <span class="o">=</span> <span class="m">100</span><span class="p">,</span> lambda <span class="o">=</span> <span class="m">14</span> <span class="o">*</span> <span class="kp">ncol</span><span class="p">(</span>URMM_all_fig1b<span class="p">))</span> 
+URMM_all_abs <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>URMM_all_abs<span class="p">,</span> verbose <span class="o">=</span> <span class="bp">F</span><span class="p">,</span> scaling <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> maxIter <span class="o">=</span> <span class="m">100</span><span class="p">,</span> norm_method <span class="o">=</span> <span class="s">&#39;log&#39;</span><span class="p">,</span> max_components <span class="o">=</span> <span class="m">4</span><span class="p">,</span> param.gamma <span class="o">=</span> <span class="m">100</span><span class="p">,</span> lambda <span class="o">=</span> <span class="m">14</span> <span class="o">*</span> <span class="kp">ncol</span><span class="p">(</span>URMM_all_fig1b<span class="p">))</span>
 URMM_all_abs <span class="o">&lt;-</span> orderCells<span class="p">(</span>URMM_all_abs<span class="p">)</span>
 plot_cell_trajectory<span class="p">(</span>URMM_all_abs<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;Type&#39;</span><span class="p">)</span>
 plot_cell_trajectory<span class="p">(</span>URMM_all_abs<span class="p">,</span> color_by <span class="o">=</span> <span class="s">&#39;Type&#39;</span><span class="p">)</span> <span class="o">+</span> facet_wrap<span class="p">(</span><span class="o">~</span>paper_cluster<span class="p">)</span>
@@ -20764,11 +20774,14 @@ plot_cell_trajectory<span class="p">(</span>URMM_all_abs<span class="p">,</span>
 
 </div>
 
+<br>
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdV3wU9f7/8c9sSyUhlCT03kQBkSqgFEUBaQqiiHr0eDzHo576O1Y46jlgRz22
 vx0LKhBIIDRBmrTQi/ReAmmUkJ6t879YXJZkN9mEZCe7eT0fuZidmf3uZ3Zmd9+Z8h1FVVUB
 AABA4NNpXQAAAACqBsEOAAAgSBDsAAAAggTBDgAAIEgQ7AAAAIIEwQ4AACBIEOwAAACCBMEO
@@ -21548,11 +21561,13 @@ gg=="
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeVwU9f8H8PfsLsshl6ASIKIoomh4IYgKiKIpqEmaZtFt329qPupraVrZr6y+
 lVeHWum30soKFQHv+0BEPAAP8AQVOeQQUFhYjj3m98fotMICC6zM7vJ6Pvhjdo7Pvof97Mx7
 P/OZzzAsyxIAAAAAGD+R0AEAAAAAgH4gsQMAAAAwEUjsAAAAAEwEEjsAAAAAE4HEDgAAAMBE
@@ -22906,7 +22921,7 @@ fAQSOwAAAAAfgcQOAAAAwEf8fyxUY4PxI+GOAAAAAElFTkSuQmCC"
 type_cols <span class="o">&lt;-</span> RColorBrewer<span class="o">::</span>brewer.pal<span class="p">(</span><span class="m">9</span><span class="p">,</span> name <span class="o">=</span> <span class="s">&#39;Set1&#39;</span><span class="p">)</span>
 type_cols<span class="p">[</span><span class="m">6</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="s">&quot;#6A3D9A&quot;</span>
 <span class="kp">names</span><span class="p">(</span>type_cols<span class="p">)</span> <span class="o">&lt;-</span> type_vec
- 
+
 cluster_vec <span class="o">&lt;-</span> <span class="kp">unique</span><span class="p">(</span>pData<span class="p">(</span>URMM_all_fig1b<span class="p">)</span><span class="o">$</span>cluster<span class="p">)</span>
 cluster_cols <span class="o">&lt;-</span> type_cols
 cluster_cols<span class="p">[</span><span class="m">10</span><span class="p">]</span> <span class="o">&lt;-</span> <span class="s">&quot;#0600FC&quot;</span>
@@ -22939,11 +22954,13 @@ plot_complex_cell_trajectory<span class="p">(</span>URMM_all_abs<span class="p">
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd3xT9f7H8e9J0r1LZbS0QNlcQWUKCCgKIjJEGYI4EJV7ERT9eRHvTxTUi4JX
 /CFcZYiLIYi0FmUJKBvZU6bM0kGhpXtlnN8fB44xHaRtmjQnr+fDh4/krHxO8qF55+R8TyRZ
 lgUAAADcn87VBQAAAMAxCHYAAAAaQbADAADQCIIdAACARhDsAAAANIJgBwAAoBEEOwAAAI0g
@@ -23864,11 +23881,13 @@ QMpitLNaAAAAAElFTkSuQmCC"
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdd3xT5f4H8O/J6KADumlLaaFAKVO2BRnKEFSmAgqo13W9iiCiF+V3LyguFJV7
 4TpQnIAgCK2gAgqysTJb9rKs7r3SNvv5/XHgGJI0TdI0aZ9+3i9evE7OePJ8zzdNvnnOiMAY
 IwAAAABo+mSe7gAAAAAAuAYKOwAAAABOoLADAAAA4AQKOwAAAABOoLADAAAA4AQKOwAAAABO
@@ -25102,11 +25121,13 @@ plot_cell_trajectory<span class="p">(</span>URMM_all_abs<span class="p">[,</span
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeXwb5Z0/8Gd0S5Ys2ZYtS7Jk2Y7t2I6dw0lMknJsW45QEgrbHyGQlgK/Xlzt
 dreUsqUF2le3wJb+KO0uR+lFCARC3AQSGq5yJyHxFdux4/uQfEg+ZOu2jvn9MUEoljQ6fMSR
 P++X/7BmnnnmGWkkffWcFE3TBAAAAAAufJzzXQAAAAAAmB8I7AAAAABSBAI7AAAAgBSBwA4A
@@ -27779,11 +27800,13 @@ AAAAYIkAwg4AAAAAAGCJAMIOAAAAAABgifD/A5BGW0YMNQgQAAAAAElFTkSuQmCC"
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOy9eZAr2V3vmam9tO+7VCWptJRqUa19b982bug23V54w/CIGSBsHAEDb8JjDBMx
 MZh5TDw8BPNM2M+8sHEEdjgGzDQRMGOCAQJ3m9c2xr3f2lVVkkpLaZeqtO/7kvPHeRZJpkql
 urdW3fP5qyqVOnmkTJ385jm/3/eHYhiGQCAQCAQCgUDuP5Tb7gAEAoFAIBAI5GqAwg4CgUAg
@@ -31423,9 +31446,10 @@ pheatmap<span class="o">::</span>pheatmap<span class="p">(</span>state_cluster_s
 
 <div class="output_area"><div class="prompt"></div>
 
+<br>
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdfXRV5aHg4fcUUCABQ5DwKaSpCCqCECTSGqDaBZZSqc4KLFsuU1dnejs6QGuV
 qddeaqutVqHSL29nWudabcel1tJLSRi03oIWGbny1SKIgQKhlG/BQALhK/PHXsSQBBIRcsLL
 8/yVvc979nnju4K/tffZ56Sqq6sDAADnv4+kewIAAJwdwg4AIP0mTZqUSqU+5EFan5WpAABw
@@ -31760,9 +31784,10 @@ QBIEOwAAAEkQ7AAAACRBsAMAAJAEwQ4AAEAS/wEnNpPaxB5FQQAAAABJRU5ErkJggg=="
 
 <div class="output_area"><div class="prompt"></div>
 
+<br>
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzde3SV5b3g8WcLyCUBc5FwU6A5RVDxwkUirQGqLrAcKtVZwLLlMHV1pqejA7TW
 OvXY0punWoVKb57OtM6x2o5LPZYeSsKg9RT0KEsqF3sQxEiRoMMdQiAJIcCeP95FDEkgESE7
 PHw+f3TxvvvZ7/5lvWvb73rfvZNUOp0OAACc/c7L9AAAAJwewg4AIPOmT5+eSqU+4kE6npZR
@@ -32206,9 +32231,10 @@ plot_complex_cell_trajectory<span class="p">(</span>URMM_all_fig1b<span class="p
 
 <div class="output_area"><div class="prompt"></div>
 
+<br>
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdaXBk6V3v+f9zttw3LaWSVKXauqq73Xvb7cYGu2HAhhuAr9vcMDGAfZnra2Yu
 DBETDhiI8MwbXhC8gRe8mgkI4kJjxmF83QMxA5hhcUMY2jYYb9VdvVRXlWpRaVfumWd75sWR
 UqmUqkqqkpSpk9/Pi4rMkydPPkddnfrVs/wfpbUWAAAAHH1GvxsAAACA/UGwAwAAiAmCHQAA
@@ -33083,11 +33109,13 @@ hNAagYEdQgghhNAagYEdQgghhNAa8f8BmElxJMCbxU0AAAAASUVORK5CYII="
 
 </div>
 
+<br>
+
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdeXwdVf3/8c+ZuWv2rWm6r2lLKdCytywFKojgAkgBW0BAxK8gXxW+VlDgixaU
 RaosgggoKnyBH0IRRBAo0IJUSlkKLdB9SdO02Ze73ztzfn/c5PYmuUnTNmm909fzkUecOTNz
 zpmbmryZM3NGaa0FAAAA2c/Y3x0AAABA/yDYAQAAOATBDgAAwCEIdgAAAA5BsAMAAHAIgh0A
@@ -34226,8 +34254,8 @@ plot_multiple_branches_heatmap<span class="p">(</span>URMM_all_fig1b<span class=
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOydd1gUVxeHz9J3l6osWCgWNKLEEAtRjICCvYAFY8EWjRqNFdEYa4wYBYktsaCx
 EY0YBBUFA4JrMPphJ4oVoiEqyC6dXTr7/XFlHGd2l0WBIXDeh4fnzm1zZmYH7t577u/wFAoF
 IAiCIAiCIP99tLg2AEEQBEEQBKkdcGCHIAiCIAjSSMCBHYIgCIIgSCMBB3YIgiAIgiCNBBzY
@@ -36209,8 +36237,8 @@ plot.netbiov<span class="p">(</span>res<span class="p">)</span> <span class="c1"
 <div class="output_area"><div class="prompt"></div>
 
 
-<div class="output_png output_subarea ">
-<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
+<div class="col-md-6 col-md-offset-2">
+<img width = "500" height = "500" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAIAAAByhViMAAAABmJLR0QA/wD/AP+gvaeTAAAg
 AElEQVR4nOzdZ5Rd13Un+P8+5977UuWAQqGqABQykRkAMIlBYrBE2Qr2eNqWl61px5Z67Fke
 S+3lNWrHGUstt0dWsN2SNZIt2ZJFW6klSqRIgpmESILIoRAKQKEiKtcLN52z58N9lcBMAig8
 YP8WFle9V/e+d159eOvPfc7Zh5gZQgghhBCi8qmFHoAQQgghhLgwJNgJIYQQQlwhJNgJIYQQ
@@ -39979,30 +40007,30 @@ locale:
 [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 attached base packages:
- [1] splines   stats4    parallel  stats     graphics  grDevices utils    
- [8] datasets  methods   base     
+ [1] splines   stats4    parallel  stats     graphics  grDevices utils
+ [8] datasets  methods   base
 
 other attached packages:
- [1] netbiov_1.8.0       igraph_1.0.1        plyr_1.8.4         
- [4] stringr_1.2.0       monocle_2.5.3       DDRTree_0.1.5      
- [7] irlba_2.2.1         VGAM_1.0-3          ggplot2_2.2.1      
-[10] Biobase_2.34.0      BiocGenerics_0.20.0 Matrix_1.2-10      
+ [1] netbiov_1.8.0       igraph_1.0.1        plyr_1.8.4
+ [4] stringr_1.2.0       monocle_2.5.3       DDRTree_0.1.5
+ [7] irlba_2.2.1         VGAM_1.0-3          ggplot2_2.2.1
+[10] Biobase_2.34.0      BiocGenerics_0.20.0 Matrix_1.2-10
 
 loaded via a namespace (and not attached):
- [1] Rcpp_0.12.11           RColorBrewer_1.1-2     tools_3.3.2           
- [4] densityClust_0.2.1     digest_0.6.12          uuid_0.1-2            
- [7] jsonlite_1.4           evaluate_0.10          Rtsne_0.13            
-[10] tibble_1.3.1           gtable_0.2.0           lattice_0.20-35       
-[13] rlang_0.1.1            IRdisplay_0.4.4        DBI_0.6-1             
-[16] IRkernel_0.7.1         HSMMSingleCell_0.108.0 fastICA_1.2-0         
-[19] cluster_2.0.6          repr_0.12.0            dplyr_0.5.0           
-[22] combinat_0.0-8         grid_3.3.2             R6_2.2.1              
-[25] qlcMatrix_0.9.5        pheatmap_1.0.8         limma_3.30.13         
-[28] pbdZMQ_0.2-6           reshape2_1.4.2         magrittr_1.5          
-[31] MASS_7.3-47            matrixStats_0.52.2     scales_0.4.1          
-[34] assertthat_0.2.0       colorspace_1.3-2       labeling_0.3          
-[37] proxy_0.4-17           stringi_1.1.5          lazyeval_0.2.0        
-[40] munsell_0.4.3          slam_0.1-40            crayon_1.3.2          
+ [1] Rcpp_0.12.11           RColorBrewer_1.1-2     tools_3.3.2
+ [4] densityClust_0.2.1     digest_0.6.12          uuid_0.1-2
+ [7] jsonlite_1.4           evaluate_0.10          Rtsne_0.13
+[10] tibble_1.3.1           gtable_0.2.0           lattice_0.20-35
+[13] rlang_0.1.1            IRdisplay_0.4.4        DBI_0.6-1
+[16] IRkernel_0.7.1         HSMMSingleCell_0.108.0 fastICA_1.2-0
+[19] cluster_2.0.6          repr_0.12.0            dplyr_0.5.0
+[22] combinat_0.0-8         grid_3.3.2             R6_2.2.1
+[25] qlcMatrix_0.9.5        pheatmap_1.0.8         limma_3.30.13
+[28] pbdZMQ_0.2-6           reshape2_1.4.2         magrittr_1.5
+[31] MASS_7.3-47            matrixStats_0.52.2     scales_0.4.1
+[34] assertthat_0.2.0       colorspace_1.3-2       labeling_0.3
+[37] proxy_0.4-17           stringi_1.1.5          lazyeval_0.2.0
+[40] munsell_0.4.3          slam_0.1-40            crayon_1.3.2
 [43] Cairo_1.5-9           </pre>
 </div>
 
