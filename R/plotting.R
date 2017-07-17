@@ -2609,11 +2609,11 @@ plot_multiple_branches_pseudotime <- function(cds,
             path_cells <- row.names(pc_ind)[paste('Y_', pc_ind[, 1], sep = '') %in% path_cells]
         }
         
-        if(is.null(pData(URMM_all_fig1b)$no_expression)) {
-            cds_subset <- cds[, path_cells]      
-        } else {
-            cds_subset <- cds[, path_cells %in% colnames(cds)[!pData(cds)$no_expression]]      
-        }
+        #if(is.null(pData(cds)$no_expression)) {
+        cds_subset <- cds[, path_cells]      
+        # } else {
+        #     cds_subset <- cds[, path_cells %in% colnames(cds)[!pData(cds)$no_expression]]      
+        # }
         
         newdata <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, row.names = colnames(cds_subset))
         
