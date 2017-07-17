@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.4.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2017-07-15T00:27:41-07:00</updated><id>http://localhost:4000/</id><title type="html">Monocle</title><subtitle>Monocle -  powerful software toolkit for single-cell analysis
+</subtitle><entry><title type="html">Monocle 2.2.0 available through GitHub and Bioconductor</title><link href="http://localhost:4000/articles/2016/10/25/v2.2.0.html" rel="alternate" type="text/html" title="Monocle 2.2.0 available through GitHub and Bioconductor" /><published>2016-10-25T00:00:00-07:00</published><updated>2016-10-25T00:00:00-07:00</updated><id>http://localhost:4000/articles/2016/10/25/v2.2.0</id><content type="html" xml:base="http://localhost:4000/articles/2016/10/25/v2.2.0.html">&lt;p&gt;Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to through &lt;a href=&quot;https://bioconductor.org/packages/release/bioc/html/monocle.html&quot;&gt;Bioconductor&lt;/a&gt;, in version 3.4.&lt;/p&gt;
+
+&lt;h2 id=&quot;features&quot;&gt;FEATURES&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Monocle’s algorithm for converting relative expression values (e.g. TPMs)
+  into absolute transcript counts, called “Census” has been once again been re-designed. 
+  The new version improves robustness across different protocols and experimental 
+  designs. Census is available through the relative2abs() function. Expect 
+  values from this function to change, but differential expression 
+  results to be largely the same or slightly better.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Major expansion of the vignette, including a whole new section on the theory 
+  behind Monocle 2’s new trajectory reconstruction algorithm.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;bugfixes&quot;&gt;BUGFIXES&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Fixed an problem where reduceDimension() would return different results on 
+repeated runs given the same inputs. The problem was actually in DDRTree in 
+two places: kmeans and irlba. We now call irlba with deterministically 
+initialized eigenvectors and kmeans with deterministically selected rows of 
+the input.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Fixed a problem in classifyCells() related to joining factors and levels. This
+would generate annoying warnings.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Fixed the check for valid sizeFactors prior to differentialGeneTest(). Without
+this check, differentialGeneTest would report FAIL on all genes because of
+factors not having enough levels.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This is the second public release of Monocle 2 through GitHub. You can check out a full list of features &lt;a href=&quot;http://localhost:4000/features/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;To upgrade, please see the &lt;a href=&quot;http://localhost:4000/getting-started/&quot;&gt;getting started&lt;/a&gt; page. As usual please report any issues through the issue tracker on the Monocle &lt;a href=&quot;https://github.com/cole-trapnell-lab/monocle-release&quot;&gt;GitHub page&lt;/a&gt;.&lt;/p&gt;</content><author><name></name></author><category term="articles" /><category term="releases" /><category term="v2.2.0" /><summary type="html">Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to through Bioconductor, in version 3.4.</summary></entry><entry><title type="html">Monocle 2.1.0 available through GitHub</title><link href="http://localhost:4000/articles/2016/04/21/v2.1.0.html" rel="alternate" type="text/html" title="Monocle 2.1.0 available through GitHub" /><published>2016-04-21T00:00:00-07:00</published><updated>2016-04-21T00:00:00-07:00</updated><id>http://localhost:4000/articles/2016/04/21/v2.1.0</id><content type="html" xml:base="http://localhost:4000/articles/2016/04/21/v2.1.0.html">&lt;p&gt;Monocle 2.1.0 introduces some significant improvements and bugfixes, mainly centered around Census, our algorithm for converting relative expression values to transcript counts.&lt;/p&gt;
+
+&lt;h2 id=&quot;features&quot;&gt;FEATURES&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Monocle’s algorithm for converting relative expression values (e.g. TPMs)
+  into absolute transcript counts, called “Census” has been re-designed. The
+  new version is much more accurate. Census is available through the 
+  relative2abs() function. The interface to this function has changed, and
+  the output values will be quite different from the old version. The main
+  change is that the version in 1.99.0 reported cDNA counts, as estimated 
+  in each cell’s cDNA library. Now, relative2abs reports estimates of mRNA
+  counts in the lysate. These are easier to compare with experiments that
+  estimate mRNA counts via the use of spike-in controls.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;A new heatmap function plot_pseudotime_heatmap() replaces the old 
+  plot_genes_heatmap().&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Lots of new documentation. More to follow in upcoming releases.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;bugfixes&quot;&gt;BUGFIXES&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Ordering cells with DDRTree no longer compresses cells at the tips of
+  trajectories.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Pseudo counts are now applied correctly no matter what the underlying 
+  distribution used to model expression is.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Variance stabilization is applied correctly when a CellDataSet object’s
+  expressionFamily is negbinomial.size().&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;The gene_id field in results from calculateMarkerSpecificity is now a
+  character instead of a factor. This was leading to indexing errors and 
+  nonsensical semi-supervised clustering and ordering results.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;BEAM() and plot_branched_heatmap() now use cBind instead of cbind, fixing an 
+  issue with sparse matrices.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This is the second public release of Monocle 2 through GitHub. You can check out a full list of features &lt;a href=&quot;http://localhost:4000/features/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;To upgrade, please see the &lt;a href=&quot;http://localhost:4000/getting-started/&quot;&gt;getting started&lt;/a&gt; page. As usual please report any issues through the issue tracker on the Monocle &lt;a href=&quot;https://github.com/cole-trapnell-lab/monocle-release&quot;&gt;GitHub page&lt;/a&gt;.&lt;/p&gt;</content><author><name></name></author><category term="articles" /><category term="releases" /><category term="v2.1.0" /><summary type="html">Monocle 2.1.0 introduces some significant improvements and bugfixes, mainly centered around Census, our algorithm for converting relative expression values to transcript counts.</summary></entry><entry><title type="html">Monocle 2.0.0 available through GitHub</title><link href="http://localhost:4000/articles/2016/04/21/v2.0.0.html" rel="alternate" type="text/html" title="Monocle 2.0.0 available through GitHub" /><published>2016-04-21T00:00:00-07:00</published><updated>2016-04-21T00:00:00-07:00</updated><id>http://localhost:4000/articles/2016/04/21/v2.0.0</id><content type="html" xml:base="http://localhost:4000/articles/2016/04/21/v2.0.0.html">&lt;p&gt;Monocle 2 is a near-total re-write of the Monocle single-cell RNA-Seq analysis toolkit. It includes a number of new features:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Dramatically better trajectory analysis&lt;/strong&gt;. Monocle 2 is powered by DDRTree, a nonlinear manifold learning algorithm. Monocle 2’s trajectories are much more accurate and consistent than Monocle 1’s. You can also learn trajectories on experiments with thousands of cells.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Extensive support for mRNA count analysis&lt;/strong&gt;. Analyzing mRNA counts from experiments that use unique molecular identifiers (UMIs) or spike-in standards is typically far more accurate than experiments using read counts.  Monocle 2’s functions have been re-written to take full advantage of mRNA count data. The package even includes an algorithm to convert relative expression values (e.g. FPKM) into mRNA counts &lt;em&gt;without the use of spike-ins&lt;/em&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;New tools for analyzing branched trajectories&lt;/strong&gt;. Monocle 2’s new trajectory reconstruction algorithm is far better at finding branches in single-cell processes. We now include an advanced statistical technique, BEAM, for identifying the genes affected by branches, along with some new visualization tools for tracking these changes.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Cell classification and counting&lt;/strong&gt;. Classifying cells by type based on their global expression profiles can reveal new cell types as well as help you track changes in cell frequencies in your experiment. Monocle 2 includes an easy to use system for classifying your cells either in an unsupervised manner or with the assistance of known cell-type specific markers.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;This is just the first public release of Monocle 2 through GitHub. As we work towards distribution through Bioconductor, expect bug fixes and improvements in documentation. We also have some exciting new features in the pipeline as well as papers describing our new techniques that will hopefully appear over the coming months. You can check out a full list of features &lt;a href=&quot;http://localhost:4000/features/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;To try out Monocle 2, please see the &lt;a href=&quot;http://localhost:4000/getting-started/&quot;&gt;getting started&lt;/a&gt; page. As usual please report any issues through the issue tracker on the Monocle &lt;a href=&quot;https://github.com/cole-trapnell-lab/monocle-release&quot;&gt;GitHub page&lt;/a&gt;.&lt;/p&gt;</content><author><name></name></author><category term="articles" /><category term="releases" /><category term="v2.0.0" /><summary type="html">Monocle 2 is a near-total re-write of the Monocle single-cell RNA-Seq analysis toolkit. It includes a number of new features:</summary></entry><entry><title type="html">Monocle has moved!</title><link href="http://localhost:4000/articles/2014/12/10/new-monocle-website.html" rel="alternate" type="text/html" title="Monocle has moved!" /><published>2014-12-10T00:00:00-08:00</published><updated>2014-12-10T00:00:00-08:00</updated><id>http://localhost:4000/articles/2014/12/10/new-monocle-website</id><content type="html" xml:base="http://localhost:4000/articles/2014/12/10/new-monocle-website.html">&lt;p&gt;The Monocle project has moved to GitHub!  The repository for Monocle’s source code lives &lt;a href=&quot;https://github.com/cole-trapnell-lab/monocle-release&quot;&gt;here&lt;/a&gt;.  We welcome contributions from the user community. If you’d like to contribute, please make a pull request through the repository page. Monocle’s website is now hosted through GitHub Pages.&lt;/p&gt;</content><author><name></name></author><category term="articles" /><summary type="html">The Monocle project has moved to GitHub! The repository for Monocle’s source code lives here. We welcome contributions from the user community. If you’d like to contribute, please make a pull request through the repository page. Monocle’s website is now hosted through GitHub Pages.</summary></entry><entry><title type="html">Monocle 1.0.0 released</title><link href="http://localhost:4000/articles/2014/09/23/v1.0.0.html" rel="alternate" type="text/html" title="Monocle 1.0.0 released" /><published>2014-09-23T00:00:00-07:00</published><updated>2014-09-23T00:00:00-07:00</updated><id>http://localhost:4000/articles/2014/09/23/v1.0.0</id><content type="html" xml:base="http://localhost:4000/articles/2014/09/23/v1.0.0.html">&lt;p&gt;Monocle is now distributed through the Bioconductor Project. Upgrading to the current release is recommended for all users.&lt;/p&gt;
+
+&lt;p&gt;You can upgrade Monocle as follows:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-r&quot; data-lang=&quot;r&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;source&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;http://bioconductor.org/biocLite.R&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; 
+&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;biocLite&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;</content><author><name></name></author><category term="articles" /><category term="releases" /><category term="v1.0.0" /><summary type="html">Monocle is now distributed through the Bioconductor Project. Upgrading to the current release is recommended for all users.</summary></entry><entry><title type="html">Monocle 0.99.0 released</title><link href="http://localhost:4000/articles/2014/03/23/v0.99.0.html" rel="alternate" type="text/html" title="Monocle 0.99.0 released" /><published>2014-03-23T00:00:00-07:00</published><updated>2014-03-23T00:00:00-07:00</updated><id>http://localhost:4000/articles/2014/03/23/v0.99.0</id><content type="html" xml:base="http://localhost:4000/articles/2014/03/23/v0.99.0.html">&lt;p&gt;The first public release of Monocle is now available for download. Monocle is a toolkit for analyzing single cell expression experiments. It runs on the R statistical computing platform.
+Monocle takes as input a matrix of gene or transcript expression values, along with information about each cell in the experiment, and some annotation about each gene/transcript, both provided as simple tables. It is designed for single-cell RNA-Seq experiments, but in principle Monocle can be used with other data types such as qPCR. For RNA-Seq, you can use &lt;a href=&quot;http://cufflinks.cbcb.umd.edu&quot;&gt;Cufflinks&lt;/a&gt; to estimate your expression values.
+This software is a work in progress - it is a beta release, and new features will continue to be added over the next couple of weeks. To suggest a feature or report a bug, please post your comments on the Monocle user’s group.&lt;/p&gt;</content><author><name></name></author><category term="articles" /><category term="releases" /><category term="v0.99.0" /><summary type="html">The first public release of Monocle is now available for download. Monocle is a toolkit for analyzing single cell expression experiments. It runs on the R statistical computing platform. Monocle takes as input a matrix of gene or transcript expression values, along with information about each cell in the experiment, and some annotation about each gene/transcript, both provided as simple tables. It is designed for single-cell RNA-Seq experiments, but in principle Monocle can be used with other data types such as qPCR. For RNA-Seq, you can use Cufflinks to estimate your expression values. This software is a work in progress - it is a beta release, and new features will continue to be added over the next couple of weeks. To suggest a feature or report a bug, please post your comments on the Monocle user’s group.</summary></entry></feed>
