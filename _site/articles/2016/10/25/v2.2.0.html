@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <!-- <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Monocle 2.2.0 available through GitHub and Bioconductor</title>
+  <meta name="description" content="Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to thr...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://localhost:4000/articles/2016/10/25/v2.2.0.html">
+  <link rel="alternate" type="application/rss+xml" title="Monocle" href="/feed.xml">
+
+  
+</head> -->
+
+<head>
+   <meta charset="utf-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+   <title>Monocle 2.2.0 available through GitHub and Bioconductor</title>
+   <meta name="description" content="Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to thr...">
+   <!-- <link rel="icon" href="../../favicon.ico"> -->
+
+   <title>Theme Template for Bootstrap</title>
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="http://localhost:4000/node_modules/prismjs/themes/base16-atelierlakeside.light.css" />
+  <link rel="stylesheet" href="https://cdn.rawgit.com/afeld/bootstrap-toc/v0.4.1/dist/bootstrap-toc.min.css">
+  <!-- add after bootstrap.min.js -->
+  <link rel="canonical" href="http://localhost:4000/articles/2016/10/25/v2.2.0.html">
+
+
+   <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+   <!--[if lt IE 9]>
+     <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+     <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+   <![endif]-->
+
+   <!--  -->
+ </head>
+
+
+  <body>
+    <!-- <header class="site-header" role="banner"> -->
+  <div class="container-fullwidth">
+  <nav class="navbar navbar-inverse navbar-static-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="http://localhost:4000/">Monocle</a>
+      </div>
+      <div id="navbar" class="collapse navbar-collapse">
+        <ul class="nav navbar-nav">
+          <!-- <li class="active"><a href="#">Home</a></li> -->
+          <li><a href="http://localhost:4000/docs/">Documentation</a></li>
+          <!-- <li><a href="/features/">Features</a></li> -->
+          <!-- <li><a href="/getting-started/">Getting started</a></li> -->
+
+          <li><a href="http://localhost:4000/papers/">Publications</a></li>
+          <li><a href="http://localhost:4000/tutorials/">Tutorials</a></li>
+          <li><a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub</a></li>
+        </ul>
+      </div><!--/.nav-collapse -->
+    </div>
+  </nav>
+  </div>
+  <!-- <div class="wrapper">
+    
+    
+    <a class="site-title" href="/">Monocle</a>
+
+    
+      <nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+              <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+              <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger">
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+        </div>
+      </nav>
+    
+  </div> -->
+</header>
+
+<!--
+    <main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <div class="container">
+          <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Monocle 2.2.0 available through GitHub and Bioconductor</h1>
+    <p class="post-meta">
+      <time datetime="2016-10-25T00:00:00-07:00" itemprop="datePublished">
+        
+        Oct 25, 2016
+      </time>
+      </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to through <a href="https://bioconductor.org/packages/release/bioc/html/monocle.html">Bioconductor</a>, in version 3.4.</p>
+
+<h2 id="features">FEATURES</h2>
+
+<ul>
+  <li>
+    <p>Monocle’s algorithm for converting relative expression values (e.g. TPMs)
+  into absolute transcript counts, called “Census” has been once again been re-designed. 
+  The new version improves robustness across different protocols and experimental 
+  designs. Census is available through the relative2abs() function. Expect 
+  values from this function to change, but differential expression 
+  results to be largely the same or slightly better.</p>
+  </li>
+  <li>
+    <p>Major expansion of the vignette, including a whole new section on the theory 
+  behind Monocle 2’s new trajectory reconstruction algorithm.</p>
+  </li>
+</ul>
+
+<h2 id="bugfixes">BUGFIXES</h2>
+
+<ul>
+  <li>
+    <p>Fixed an problem where reduceDimension() would return different results on 
+repeated runs given the same inputs. The problem was actually in DDRTree in 
+two places: kmeans and irlba. We now call irlba with deterministically 
+initialized eigenvectors and kmeans with deterministically selected rows of 
+the input.</p>
+  </li>
+  <li>
+    <p>Fixed a problem in classifyCells() related to joining factors and levels. This
+would generate annoying warnings.</p>
+  </li>
+  <li>
+    <p>Fixed the check for valid sizeFactors prior to differentialGeneTest(). Without
+this check, differentialGeneTest would report FAIL on all genes because of
+factors not having enough levels.</p>
+  </li>
+</ul>
+
+<p>This is the second public release of Monocle 2 through GitHub. You can check out a full list of features <a href="http://localhost:4000/features/">here</a>.</p>
+
+<p>To upgrade, please see the <a href="http://localhost:4000/getting-started/">getting started</a> page. As usual please report any issues through the issue tracker on the Monocle <a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub page</a>.</p>
+
+  </div>
+
+  
+</article>
+
+        </div>
+      </div>
+    </main> -->
+
+    <div class="container">
+    <article class="post" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title" itemprop="name headline">Monocle 2.2.0 available through GitHub and Bioconductor</h1>
+    <p class="post-meta">
+      <time datetime="2016-10-25T00:00:00-07:00" itemprop="datePublished">
+        
+        Oct 25, 2016
+      </time>
+      </p>
+  </header>
+
+  <div class="post-content" itemprop="articleBody">
+    <p>Monocle 2.2.0 fixes some problems in Census, adds new documentation, and fixes a few other minor issues. This is the first official release of Monocle to through <a href="https://bioconductor.org/packages/release/bioc/html/monocle.html">Bioconductor</a>, in version 3.4.</p>
+
+<h2 id="features">FEATURES</h2>
+
+<ul>
+  <li>
+    <p>Monocle’s algorithm for converting relative expression values (e.g. TPMs)
+  into absolute transcript counts, called “Census” has been once again been re-designed. 
+  The new version improves robustness across different protocols and experimental 
+  designs. Census is available through the relative2abs() function. Expect 
+  values from this function to change, but differential expression 
+  results to be largely the same or slightly better.</p>
+  </li>
+  <li>
+    <p>Major expansion of the vignette, including a whole new section on the theory 
+  behind Monocle 2’s new trajectory reconstruction algorithm.</p>
+  </li>
+</ul>
+
+<h2 id="bugfixes">BUGFIXES</h2>
+
+<ul>
+  <li>
+    <p>Fixed an problem where reduceDimension() would return different results on 
+repeated runs given the same inputs. The problem was actually in DDRTree in 
+two places: kmeans and irlba. We now call irlba with deterministically 
+initialized eigenvectors and kmeans with deterministically selected rows of 
+the input.</p>
+  </li>
+  <li>
+    <p>Fixed a problem in classifyCells() related to joining factors and levels. This
+would generate annoying warnings.</p>
+  </li>
+  <li>
+    <p>Fixed the check for valid sizeFactors prior to differentialGeneTest(). Without
+this check, differentialGeneTest would report FAIL on all genes because of
+factors not having enough levels.</p>
+  </li>
+</ul>
+
+<p>This is the second public release of Monocle 2 through GitHub. You can check out a full list of features <a href="http://localhost:4000/features/">here</a>.</p>
+
+<p>To upgrade, please see the <a href="http://localhost:4000/getting-started/">getting started</a> page. As usual please report any issues through the issue tracker on the Monocle <a href="https://github.com/cole-trapnell-lab/monocle-release">GitHub page</a>.</p>
+
+  </div>
+
+  
+</article>
+
+    </div>
+
+    <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+<script src="/node_modules/bootstrap-sass/assets/javascripts/bootstrap.min.js"></script>
+<script src="/node_modules/prismjs/prism.js"></script>
+<script src="/node_modules/prismjs/prism.r.js" type="text/javascript"></script>
+<script src="https://cdn.rawgit.com/afeld/bootstrap-toc/v0.4.1/dist/bootstrap-toc.min.js"></script>
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<footer class="site-footer">
+
+  <div class="wrapper">
+
+    <!-- <h2 class="footer-heading">Monocle</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li>
+            
+              Monocle
+            
+            </li>
+            
+            <li><a href="mailto:coletrap@uw.edu">coletrap@uw.edu</a></li>
+            
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        <ul class="social-media-list">
+          
+
+          
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p>Monocle -  powerful software toolkit for single-cell analysis
+</p>
+      </div>
+    </div> -->
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
