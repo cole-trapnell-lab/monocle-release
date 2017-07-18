@@ -46,7 +46,7 @@ identify genes that are differentially expressed between different state, along 
 alternative cell fates. Monocle is designed for single cell RNA-Seq studies, but can be
 used with other assays. For more information on the algorithm at the core of
 <strong>Monocle</strong>, or to learn more about how to use single cell RNA-Seq
-to study complex biological processes, explore <a href= "{{ site.url }}/papers/">our
+to study complex biological processes, explore <a href= "{{ site.baseurl }}/papers/">our
 publications</a>.</p>
 
 <h2>Introduction</h2>
@@ -165,7 +165,7 @@ one way to do a certain step, we've labeled the options as follows:
 <p>Below, you can see snippets of code that highlight the main steps of Monocle.
 Clink on the section headers to jump to the detailed sections describing each one. </p>
 
-<h4><a href= "{{ site.url }}/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
+<h4><a href= "{{ site.baseurl }}/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
 The first step in working with Monocle is to load up your data into Monocle's
 main class, <code>CellDataSet</code>:
 
@@ -175,7 +175,7 @@ fd <- new("AnnotatedDataFrame", data = gene_annotation)
 cds <- newCellDataSet(expr_matrix, phenoData = pd, featureData = fd)
 {% endhighlight %}
 
-<h4><a href= "{{ site.url }}/docs/#classifying-and-counting-cells">Classify cells with known marker genes</a></h4>
+<h4><a href= "{{ site.baseurl }}/docs/#classifying-and-counting-cells">Classify cells with known marker genes</a></h4>
 Next, leverage your knowledge of key marker genes to quickly and easily classify your cells by type:
 {% highlight R %}
 cth <- newCellTypeHierarchy()
@@ -190,13 +190,13 @@ cth <- addCellType(cth, "Fibroblast",
 cds <- classifyCells(cds, cth, 0.1)
 {% endhighlight %}
 
-<h4><a href= "{{ site.url }}/docs/#clustering-cells">Cluster your cells</a></h4>
+<h4><a href= "{{ site.baseurl }}/docs/#clustering-cells">Cluster your cells</a></h4>
 You can easily cluster your cells to find new types:
 {% highlight R %}
 cds <- clusterCells(cds)
 {% endhighlight %}
 
-<h4><a href= "{{ site.url }}/docs/#constructing-single-cell-trajectories">Order cells in pseudotime along a trajectory</a></h4>
+<h4><a href= "{{ site.baseurl }}/docs/#constructing-single-cell-trajectories">Order cells in pseudotime along a trajectory</a></h4>
 Now, put your cells in order by how much progress they've made through whatever process you're studying, such as differentiation,
 reprogramming, or an immune response.
 
@@ -208,7 +208,7 @@ cds <- reduceDimension(cds)
 cds <- orderCells(cds)
 {% endhighlight %}
 
-<h4><a href= "{{ site.url }}/docs/#differential-expression-analysis">Perform differential expression analysis</a></h4>
+<h4><a href= "{{ site.baseurl }}/docs/#differential-expression-analysis">Perform differential expression analysis</a></h4>
 Compare groups of cells in myriad ways to find differentially expressed genes,
 controlling for batch effects and treatments as you like:
 {% highlight R %}
@@ -288,7 +288,7 @@ data, see below for how to tell Monocle how to model it in downstream steps.</p>
   <div class= "panel-body">
     if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
     You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
-    You should <i>not</i> use <code>relative2abs()</code> as discussed below in the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
+    You should <i>not</i> use <code>relative2abs()</code> as discussed below in the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
     Normalizing it yourself risks breaking some of Monocle's key steps.
   </div>
 </div>
@@ -354,7 +354,7 @@ HSMM <- newCellDataSet(count_matrix,
    <div class= "panel-body">
      <strong>Using the wrong expressionFamily for your data will lead to bad results</strong>, errors from Monocle, or both.
      However, if you have FPKM/TPM data, you can still use negative binomial if you first convert your relative expression values to transcript counts using <code>relative2abs()</code>.
-     This often leads to much more accurate results than using <code>tobit()</code>. See the section on  <a href = "{{ site.url }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a> for details.
+     This often leads to much more accurate results than using <code>tobit()</code>. See the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a> for details.
    </div>
  </div>
 </p>
@@ -580,7 +580,7 @@ qplot(Total_mRNAs, data = pData(HSMM), color = Hours, geom = "density") +
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/show_mRNA_totals-1.png" width= 600>
+  <img src= "{{site.baseurl}}/images/vignette/show_mRNA_totals-1.png" width= 600>
 </div>
 </p>
 
@@ -619,7 +619,7 @@ Once you've excluded cells that do not pass your quality control filters, you sh
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/lognormal_plot-1.png" width = 300>
+  <img src= "{{site.baseurl}}/images/vignette/lognormal_plot-1.png" width = 300>
 </div>
 
 <br>
@@ -691,7 +691,7 @@ table(pData(HSMM)$CellType)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/count_cells_unsup_readout-1.png" width = 450>
+  <img src= "{{site.baseurl}}/images/vignette/count_cells_unsup_readout-1.png" width = 450>
 </div>
 
 
@@ -728,7 +728,7 @@ plot_ordering_genes(HSMM)
 
 <p>
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_unsup_gene_pick-1.png" width= 400 height= 350>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_unsup_gene_pick-1.png" width= 400 height= 350>
 </div>
 </p>
 
@@ -745,7 +745,7 @@ plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width= 325 height= 325>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_unsup_no_covariate-1.png" width= 325 height= 325>
 </div>
 
 {% highlight R %}
@@ -760,7 +760,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "CellType", markers = c("MYF5", "ANPEP"))
 
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/replacement_plot.png" width= 625>
+  <img src= "{{site.baseurl}}/images/vignette/replacement_plot.png" width= 625>
 </div>
 
 <p> The cells tagged as myoblasts by our gating functions are marked in green, while the fibroblasts are tagged in red. The cells that don't express either marker are blue. In many experiments, cells of different types are clearly separate from one another. Unfortunately, in this experiment, the cells don't simply cluster by type - there's not a clear space between the green cells and the red cells. This isn't all that surprising, because myoblasts and contaminating interstitial fibroblasts express many of the same genes in these culture conditions, and there are multiple culture conditions in the experiment. That is, there are other sources of variation in the experiment that might be driving the clustering. One source of variation in the experiment stems from the experimental design. To initiate myoblast differentiation, we switch media from a high-mitogen growth medium (GM) to a low-mitogen differentiation medium (DM). Perhaps the cells are clustering based on the media they're cultured in? </p>
@@ -774,7 +774,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "Media")
 
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_media-1.png" width= 350>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_unsup_plot_by_media-1.png" width= 350>
 </div>
 
 
@@ -794,7 +794,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "CellType")
 
 <p>
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_unsup_control_for_media-1.png" width= 400>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_unsup_control_for_media-1.png" width= 400>
 </div>
 </p>
 
@@ -810,7 +810,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "Cluster") + facet_wrap(~CellType)
 
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_unsup_plot_by_cell_type-1.png" width= 600>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_unsup_plot_by_cell_type-1.png" width= 600>
 </div>
 
 
@@ -875,7 +875,7 @@ plot_ordering_genes(HSMM)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width= 400>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_semisup_pick_genes-1.png" width= 400>
 </div>
 
 <p> Note that we've got smaller set of genes, and some of them are not
@@ -892,7 +892,7 @@ plot_pc_variance_explained(HSMM, return_all = F)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width= 375 >
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_semisup_clustering_no_impute-1.png" width= 375 >
 </div>
 
 {% highlight R %}
@@ -906,7 +906,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "CellType")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width= 375>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_semisup_clustering_no_impute-2.png" width= 375>
 </div>
 
 <h3 data-toc-text= "Imputing cell type">Imputing cell type <span class= "label label-success">Alternative</span></h3>
@@ -931,7 +931,7 @@ HSMM <- clusterCells(HSMM,
 </p>
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/cluster_cells_semisup_clustering_with_impute-1.png" width= 600>
+  <img src= "{{site.baseurl}}/images/vignette/cluster_cells_semisup_clustering_with_impute-1.png" width= 600>
 </div>
 
 
@@ -949,7 +949,7 @@ pie <- ggplot(pData(HSMM), aes(x = factor(1), fill = factor(CellType))) +
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/count_cells_semisup_pie-1.png" width= 450>
+  <img src= "{{site.baseurl}}/images/vignette/count_cells_semisup_pie-1.png" width= 450>
 </div>
 
 
@@ -990,17 +990,17 @@ process. Once it has learned the overall "trajectory" of gene expression
 changes, Monocle can place each cell at its proper position in the trajectory.
 You can then use Monocle's differential analysis toolkit to find genes regulated
 over the course of the trajectory, as described in the section <a href = "{{
-site.url }}/docs/#finding-genes-that-change-as-a-function-of-pseudotime">
+site.baseurl }}/docs/#finding-genes-that-change-as-a-function-of-pseudotime">
 Finding Genes that Change as a Function of Pseudotime </a>. If there are
 multiple outcome for the process, Monocle will reconstruct a "branched"
 trajectory. These branches correspond to cellular "decisions", and Monocle
 provides powerful tools for identifying the genes affected by them and involved
 in making them. You can see how to analyze branches in the section <a href = "{{
-site.url }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing
+site.baseurl }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing
 Branches in Single-Cell Trajectories </a>. Monocle relies on a machine learning
 technique called <em>reversed graph embedding</em> to construct single-cell
 trajectories. You can read more about the theoretical foundations of Monocle's
-approach in the section <a href = "{{ site.url }}/docs/#theory-behind-monocle">
+approach in the section <a href = "{{ site.baseurl }}/docs/#theory-behind-monocle">
 Theory Behind Monocle </a> , or consult the references shown at the end of the
 vignette. </p>
 
@@ -1050,7 +1050,7 @@ you provide with other, related genes. </p>
 
 <p>    Once we have selected the genes we will use to order the cells, Monocle
 applies a <em>dimensionality reduction</em> to the data.  Monocle uses a
-recently developed algoithm called <a href = "{{ site.url
+recently developed algoithm called <a href = "{{ site.baseurl
 }}/docs/#reversed-graph-embedding"> Reversed Graph Embedding </a> to reduce the
 data's dimensionality.</p>
 
@@ -1080,7 +1080,7 @@ under study as possible. We'd like to discover the important ordering genes from
 the data, rather than relying on literature and textbooks, because that might
 introduce bias in the ordering. We'll start with one of the simpler ways to do
 this, but we generally recommend a somewhat more sophisticated approach called
-"<a href= "{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>". </p>
+"<a href= "{{ site.baseurl }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>". </p>
 
 <p> One effective way to isolate a set of ordering
 genes is to simply compare the cells collected at the beginning of the process
@@ -1118,7 +1118,7 @@ plot_ordering_genes(HSMM_myo)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/set_ordering_filter-1.png" width= 300 height= 300>
+  <img src= "{{site.baseurl}}/images/vignette/set_ordering_filter-1.png" width= 300 height= 300>
 </div>
 
 
@@ -1153,7 +1153,7 @@ plot_cell_trajectory(HSMM_myo, color_by = "Hours")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_ordering_mst-1.png" width= 400>
+  <img src= "{{site.baseurl}}/images/vignette/plot_ordering_mst-1.png" width= 400>
 </div>
 
 
@@ -1171,7 +1171,7 @@ cells by "State": </p>
  {% endhighlight %}
 
  <div class= "text-center">
-   <img src= "{{site.url}}/images/vignette/plot_ordering_mst_by_state-1.png" width= 400>
+   <img src= "{{site.baseurl}}/images/vignette/plot_ordering_mst_by_state-1.png" width= 400>
  </div>
 
  <p> "State" is just Monocle's term for the segment of the tree. The function below
@@ -1192,7 +1192,7 @@ plot_cell_trajectory(HSMM_myo, color_by = "Pseudotime")
  {% endhighlight %}
 
  <div class= "text-center">
-   <img src= "{{site.url}}/images/vignette/plot_ordering_with_GM_state-1.png" width= 350>
+   <img src= "{{site.baseurl}}/images/vignette/plot_ordering_with_GM_state-1.png" width= 350>
  </div>
 
 <p> If there are a ton of states in your tree, it can be a little hard to make out
@@ -1204,7 +1204,7 @@ plot_cell_trajectory(HSMM_myo, color_by = "Pseudotime")
  {% endhighlight %}
 
  <div class= "text-center">
-   <img src= "{{site.url}}/images/vignette/init_hsmm_facet_state-1.png" width= 625>
+   <img src= "{{site.baseurl}}/images/vignette/init_hsmm_facet_state-1.png" width= 625>
  </div>
 
 
@@ -1220,7 +1220,7 @@ plot_genes_jitter(HSMM_myo[blast_genes,], grouping = "State", min_expr = 0.1)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/init_hsmm_jitter_state-1.png" width= 350>
+  <img src= "{{site.baseurl}}/images/vignette/init_hsmm_jitter_state-1.png" width= 350>
 </div>
 
 
@@ -1238,7 +1238,7 @@ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_markers_linear-1.png" width= 400 >
+  <img src= "{{site.baseurl}}/images/vignette/plot_markers_linear-1.png" width= 400 >
 </div>
 
 <br>
@@ -1268,7 +1268,7 @@ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
 <h4 id= "dpfeature">Ordering based on genes that differ between clusters <span class= "label label-info">Recommended</span> </h4>
 
 <p> We recommend users a order cells using genes selected by an
-unsupervised procedure called "<a href= "{{ site.url }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
+unsupervised procedure called "<a href= "{{ site.baseurl }}/docs/#dpfeature-selecting-features-from-dense-cell-clusters">dpFeature</a>".
 
 <p> To use dpFeature, we first select superset of feature genes as genes expressed
 in at least <em>5%</em> of all the cells. </p>
@@ -1289,7 +1289,7 @@ plot_pc_variance_explained(HSMM_myo, return_all = F)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_pc_variance-1.png" width= 375>
+  <img src= "{{site.baseurl}}/images/vignette/plot_pc_variance-1.png" width= 375>
 </div>
 
 <p> We will then run reduceDimension with t-SNE as the reduction method on those top PCs and project them further down to two dimensions. </p>
@@ -1325,8 +1325,8 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 
 <p>
   <div class= "text-center">
-    <img src= "{{site.url}}/images/vignette/check_the_clustering_results-1.png" width= 300>
-    <img src= "{{site.url}}/images/vignette/check_the_clustering_results-2.png" width= 300>
+    <img src= "{{site.baseurl}}/images/vignette/check_the_clustering_results-1.png" width= 300>
+    <img src= "{{site.baseurl}}/images/vignette/check_the_clustering_results-2.png" width= 300>
   </div>
 </p>
 
@@ -1337,7 +1337,7 @@ plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_rho_delta-1.png" width= 300>
+  <img src= "{{site.baseurl}}/images/vignette/plot_rho_delta-1.png" width= 300>
 </div>
 
 
@@ -1361,8 +1361,8 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/check_clustering_again-1.png" width= 300>
-  <img src= "{{site.url}}/images/vignette/check_clustering_again-2.png" width= 300>
+  <img src= "{{site.baseurl}}/images/vignette/check_clustering_again-1.png" width= 300>
+  <img src= "{{site.baseurl}}/images/vignette/check_clustering_again-2.png" width= 300>
 </div>
 
 
@@ -1391,7 +1391,7 @@ plot_cell_trajectory(HSMM_myo, color_by = "Hours")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/order_cells_dp_feature-1.png" width= 350>
+  <img src= "{{site.baseurl}}/images/vignette/order_cells_dp_feature-1.png" width= 350>
 </div>
 
 
@@ -1475,14 +1475,14 @@ plot_cell_trajectory(HSMM_myo, color_by = "CellType") +
 <br>
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/semi_sup_ordering_trajectory-1.png" width= 700>
+  <img src= "{{site.baseurl}}/images/vignette/semi_sup_ordering_trajectory-1.png" width= 700>
 </div>
 
 <p> To confirm that the ordering is correct, we can select a couple of markers of
 myogenic progress. In this experiment, one of the branches corresponds to cells
 that successfully fuse to form myotubes, and the other to those that fail to
 fully differentiate. We will exclude the latter for now, but you can learn more
-about tools for dealing with branched trajectories in the section <a href = "{{ site.url }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing Branches in Single-Cell Trajectories </a>. </p>
+about tools for dealing with branched trajectories in the section <a href = "{{ site.baseurl }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing Branches in Single-Cell Trajectories </a>. </p>
 
 
 {% highlight R %}
@@ -1542,7 +1542,7 @@ plot_genes_jitter(MYOG_ID1, grouping = "Media", ncol= 2)
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_myog_jitter-1.png" width= 500>
+  <img src= "{{site.baseurl}}/images/vignette/plot_myog_jitter-1.png" width= 500>
 </div>
 
 
@@ -1614,7 +1614,7 @@ plot_genes_jitter(cds_subset, grouping = "CellType", color_by = "CellType",
 {%endhighlight%}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/jitter_plot_diff_res-1.png" width= 760>
+  <img src= "{{site.baseurl}}/images/vignette/jitter_plot_diff_res-1.png" width= 760>
 </div>
 
 <p> We could also simply compute summary statistics such as mean or
@@ -1682,7 +1682,7 @@ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_diff_res_pt-1.png" width= 400>
+  <img src= "{{site.baseurl}}/images/vignette/plot_diff_res_pt-1.png" width= 400>
 </div>
 
 
@@ -1709,7 +1709,7 @@ plot_pseudotime_heatmap(HSMM_myo[sig_gene_names,],
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width= 550>
+  <img src= "{{site.baseurl}}/images/vignette/plot_diff_res_pt_heatmap-1.png" width= 550>
 </div>
 
 
@@ -1738,7 +1738,7 @@ plot_genes_jitter(cds_subset,
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/plot_diff_res_multi-1.png" width= 700 >
+  <img src= "{{site.baseurl}}/images/vignette/plot_diff_res_multi-1.png" width= 700 >
 </div>
 
 
@@ -1762,7 +1762,7 @@ plot_cell_trajectory(lung, color_by = "Time")
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/init_treutlein-1.png" width= 400>
+  <img src= "{{site.baseurl}}/images/vignette/init_treutlein-1.png" width= 400>
 </div>
 
 <p> BEAM takes as input a CellDataSet that's been ordered with <code>orderCells</code> and the name of a branch point in the trajectory.
@@ -1796,7 +1796,7 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/lung_beam_branched_heatmap-1.png" width= 650>
+  <img src= "{{site.baseurl}}/images/vignette/lung_beam_branched_heatmap-1.png" width= 650>
 </div>
 
 <p> We can plot a couple of these genes, such as <em>Pdpn</em> and <em>Sftpb</em> (both known markers of fate in this system), using the <code>plot_genes_branched_pseudotime</code> function, which works a lot like the <code>plot_genes_in_pseudotime</code> function, except it shows two kinetic trends, one for each lineage, instead of one.
@@ -1813,7 +1813,7 @@ plot_genes_branched_pseudotime(lung[lung_genes,],
 {% endhighlight %}
 
 <div class= "text-center">
-  <img src= "{{site.url}}/images/vignette/lung_beam_branched_pseudotime-1.png" width= 450>
+  <img src= "{{site.baseurl}}/images/vignette/lung_beam_branched_pseudotime-1.png" width= 450>
 </div>
 
 <p> The <code>plot_clusters</code> function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.
@@ -1934,7 +1934,7 @@ Now, with spike controls or UMIs, gene expression can  be measured in mRNA count
 Numerous Monocle functions have been re-written to take advantage of the nicer statistical properties of mRNA counts.
 For example, we adopt the dispersion modeling and variance-stabilization techniques introduced by DESeq <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106">[6]</a> during differential analysis, dimensionality reduction, and other steps.
 
-<p>Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree <a href= "http://dl.acm.org/citation.cfm?id= 2783309">[7]</a>, described below in the section <a href = "{{ site.url }}/docs/#theory-behind-monocle"> Theory Behind Monocle </a>. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1.
+<p>Trajectory reconstruction in Monocle 2 is vastly more robust, faster, and more powerful than in Monocle 1. Monocle 2 uses an advanced nonlinear reconstruction algorithm called DDRTree <a href= "http://dl.acm.org/citation.cfm?id= 2783309">[7]</a>, described below in the section <a href = "{{ site.baseurl }}/docs/#theory-behind-monocle"> Theory Behind Monocle </a>. This algorithm can expose branches that are hard to see with the less powerful linear technique used in Monocle 1.
 The algorithm is also far less sensitive to outliers, so careful QC and selection of high quality cells is less critical.
 Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment.
 Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
@@ -2259,7 +2259,7 @@ The user specifies that he or she wants to compare <em>L<sub>AT1</sub></em> and 
 
 In order to facilitate  downstream branch kinetic curve clusterin as well as branch time point detection.
 In the current implmentation of monocle 2, we duplicate the progenitor cells and assign it to both lineage before spline fitting.
-The branch plots in the section <a href = "{{ site.url }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing Branches in Single-Cell Trajectories </a> use this method.
+The branch plots in the section <a href = "{{ site.baseurl }}/docs/#analyzing-branches-in-single-cell-trajectories"> Analyzing Branches in Single-Cell Trajectories </a> use this method.
 
 
 <h3 data-toc-text= "Branch times">Branch time point detection </h3>

@@ -19,7 +19,7 @@
     <div class="carousel-inner" role="listbox">
       <div class="item active">
         <div class="text-center">
-        <img class="first-slide" src="{{site.url}}/images/cell_type_impute.png" alt="First slide">
+        <img class="first-slide" src="{{site.baseurl}}/images/cell_type_impute.png" alt="First slide">
       </div>
         <div class="container">
           <div class="carousel-caption">
@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="item">
-        <img class="second-slide" src="{{site.url}}/images/all_cells_marker_heatmap.png" alt="Second slide">
+        <img class="second-slide" src="{{site.baseurl}}/images/all_cells_marker_heatmap.png" alt="Second slide">
         <div class="container">
           <div class="carousel-caption">
             <h1>Another example headline.</h1>
@@ -40,7 +40,7 @@
         </div>
       </div>
       <div class="item">
-        <img class="third-slide" src="{{site.url}}/images/branch_trajectory.png" alt="Third slide">
+        <img class="third-slide" src="{{site.baseurl}}/images/branch_trajectory.png" alt="Third slide">
         <div class="container">
           <div class="carousel-caption">
             <h1>One more for good measure.</h1>
@@ -104,7 +104,7 @@
         <p>In the plot above, we can recognize some cells as fibroblasts and others as myoblasts on the basis of a few key marker genes. Even though these markers drop-out in many cells, Monocle 2 can still identify cells that lack them by clustering all the cells together based on global expression profile.</p>
       </div>
       <div class="col-md-5 col-md-pull-7">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/cell_type_impute.png" width=300 height=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/cell_type_impute.png" width=300 height=300 alt="Generic placeholder image">
       </div>
     </div>
 
@@ -118,7 +118,7 @@
             <p>Monocle allows you to compare groups of cells to identify genes that differ between them, even after controlling for other variables in the experiment. For example, the plot above shows genes that differ between two conditions, but only one of them, LAG3, is **also** different between cell types, even after subtracting the other effects. You can use Monocle's differential expression system to zero in on the genes that are most relevant in your experiment.</p>
           </div>
           <div class="col-md-5">
-            <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/example_T_cell_differential_genes.png" width=300 height=300 alt="Generic placeholder image">
+            <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/example_T_cell_differential_genes.png" width=300 height=300 alt="Generic placeholder image">
           </div>
         </div>
 
@@ -134,7 +134,7 @@
 
       </div>
       <div class="col-md-5 col-md-pull-7">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/all_cells_marker_heatmap.png" height=300 width=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/all_cells_marker_heatmap.png" height=300 width=300 alt="Generic placeholder image">
       </div>
     </div>
 
@@ -155,10 +155,10 @@
 
       </div>
       <div class="col-md-5">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/neuron_mst.png" width=300 height=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/neuron_mst.png" width=300 height=300 alt="Generic placeholder image">
       </div>
       <div class="col-md-5">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/neuron_pseudotime_changes.png" width=300 height=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/neuron_pseudotime_changes.png" width=300 height=300 alt="Generic placeholder image">
       </div>
     </div>
 
@@ -174,11 +174,11 @@
 
       </div>
       <div class="col-md-5 col-md-pull-7">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/branch_trajectory.png" height=300 width=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/branch_trajectory.png" height=300 width=300 alt="Generic placeholder image">
       </div>
 
       <div class="col-md-5 col-md-pull-7">
-        <img class="featurette-image img-responsive center-block" src="{{site.url}}/images/branched_pseudotime.png" height=300 width=300 alt="Generic placeholder image">
+        <img class="featurette-image img-responsive center-block" src="{{site.baseurl}}/images/branched_pseudotime.png" height=300 width=300 alt="Generic placeholder image">
       </div>
 
     </div>
@@ -196,7 +196,7 @@
 <!--
 Monocle is a toolkit for analyzing large, complex single-cell RNA-Seq experiments. It includes functions that can help you tackle the challenges that are common in most such experiments. Recently, we overhauled Monocle to support the next generation of single-cell RNA-Seq. The new improved algorithms in Monocle 2 can handle much larger and complex experiments. With Monocle 2, you can:
 
-<p style="text-align:center"><img src="{{site.url}}/images/neuron_pseudotime_changes.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/neuron_pseudotime_changes.png"/></p>
 
 Essentially, Monocle treats each cell as a separate time point in an ultra-high resolution time series. Instead of three or four time points, you get three or four thousand - one for each cell in the experiment. This resolution allows you distinguish genes regulated early in a complex cascade of transcriptional changes from those more downstream. For example, in the plot above you can see that Neurod1 is downregulated before cells enter an immature neuronal state, after which Gng8 is upregulated. As the cells reach maturity, Cnga2 becomes highly expressed.
 
@@ -204,16 +204,16 @@ Essentially, Monocle treats each cell as a separate time point in an ultra-high 
 
 Single-cell trajectory analysis not only exposes transient events as cells move from one state to another. It reveals how cells choose between one of several possible end states. For example, in development, multipotent cells make fate choices, ultimately differentiating into one of a number of terminal cell types. The new reconstruction algorithms introduced in Monocle 2 can robustly reveal branching trajectories. Inspecting the branch points helps you dissect the gene regulatory circuits that cells use to navigate these decisions.
 
-<p style="text-align:center"><img src="{{site.url}}/images/branch_trajectory.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/branch_trajectory.png"/></p>
 
 
 Here, you can see cells that start at a common state (shown in pink) and move through a branched trajectory to one of several functionally distinct outcomes. Which genes are affected at the branches? Monocle 2 includes a new statistical procedure, called Branched Expression Analysis Modeling (BEAM), that reports all genes that change around a selected branch. BEAM can be used to track genes along two lineages in parallel from both a **global** perspective:
 
-<p style="text-align:center"><img src="{{site.url}}/images/BEAM_heatmap.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/BEAM_heatmap.png"/></p>
 
 As well as a on a **gene-by-gene** basis:
 
-<p style="text-align:center"><img src="{{site.url}}/images/branched_pseudotime.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/branched_pseudotime.png"/></p>
 
 In both plots, you can see the progressive lineage restriction of the genes along the two branches as a function of pseudotime. Further analyzing these genes can lead to insights about how the lineage choice is made in development.
 
@@ -221,7 +221,7 @@ In both plots, you can see the progressive lineage restriction of the genes alon
 
 In RNA-Seq, we measure expression by counting how many sequencing reads originate from each gene.  But what really matters is how many mRNAs there were for each gene. Spiking in "alien" transcripts such as the [ERCC spike-in controls](https://www.thermofisher.com/order/catalog/product/4456740) allows you to transform expression measurements from read counts into mRNA counts. However, spike-in controls can be tricky to use correctly, and they aren't always reliable. Monocle allows you to analyze mRNA counts *without the need for spike-in controls*. It includes an algorithm motivated by some surprising and fundamental statistical properties of the single-cell mRNA sampling process that lets you recover mRNA counts via inference rather than an exogenous ladder. These counts are generally as or more reliable than those obtained with spikes.
 
-<p style="text-align:center"><img src="{{site.url}}/images/spike_free_consistency.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/spike_free_consistency.png"/></p>
 
 Here, you can see that mRNA counts from Monocle's spike-free algorithm are actually more consistent across cells over a range of sequencing depths than those from spike-in controls or a measure of relative expression.
 
@@ -229,6 +229,6 @@ Here, you can see that mRNA counts from Monocle's spike-free algorithm are actua
 
 With current single-cell RNA-Seq techniques such as [Drop-Seq](http://mccarrolllab.com/dropseq/) / [inDrop](http://www.cell.com/cell/abstract/S0092-8674(15)00500-0), you can easily capture thousands or even tens of thousands of cells in a single experiment. Such experiments often include many different conditions and controls meant to probe the structure of a complex cellular community. Analyzing such datasets is extremely challenging, in part because of their sheer size. For example, the plot below is from an experiment with more than 50,000 cells!
 
-<p style="text-align:center"><img src="{{site.url}}/images/cell_counts_10X.png"/></p>
+<p style="text-align:center"><img src="{{site.baseurl}}/images/cell_counts_10X.png"/></p>
 
 Monocle 2 has been re-engineered from the ground up to support large, sparse RNA-Seq datasets. All of the major steps in the Monocle workflow including cell clustering, differential expression, and trajectory analysis can be performed on a single PC, even for huge datasets.  -->
