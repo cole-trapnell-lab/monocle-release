@@ -25,7 +25,6 @@ Xiaojie Qiu\\[1em]University of Washington,\\ Seattle, Washington, USA\\
 \texttt{xqiu@uw.edu}
 }
 \begin{document}
-\SweaveOpts{concordance=TRUE}
 
 <<include=FALSE>>=
 library(knitr)
