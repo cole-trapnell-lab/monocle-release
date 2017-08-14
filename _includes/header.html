@@ -15,7 +15,20 @@
       <div id="navbar" class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
           <!-- <li class="active"><a href="#">Home</a></li> -->
-          <li><a href="{{ site.baseurl }}/docs/">Documentation</a></li>
+
+          <script>
+
+          function mobileDetect() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
+              window.location.href = "{{ site.baseurl }}/docs_mobile/"
+            } else {
+              window.location.href = "{{ site.baseurl }}/docs/"
+            }
+          }
+
+          </script>
+
+          <li><a href="javascript:void(0)" onclick="mobileDetect();">Documentation</a></li>
           <!-- <li><a href="{{ my_page.url }}/features/">Features</a></li> -->
           <!-- <li><a href="{{ my_page.url }}/getting-started/">Getting started</a></li> -->
 
