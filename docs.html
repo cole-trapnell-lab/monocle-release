@@ -163,7 +163,7 @@ one way to do a certain step, we've labeled the options as follows:
 
 <h3>Workflow steps at a glance</h3>
 <p>Below, you can see snippets of code that highlight the main steps of Monocle.
-Clink on the section headers to jump to the detailed sections describing each one. </p>
+Click on the section headers to jump to the detailed sections describing each one. </p>
 
 <h4><a href= "{{ site.baseurl }}/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
 The first step in working with Monocle is to load up your data into Monocle's
@@ -288,7 +288,7 @@ data, see below for how to tell Monocle how to model it in downstream steps.</p>
   <div class= "panel-body">
     if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
     You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
-    You should <i>not</i> use <code>relative2abs()</code> as discussed below in the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
+    You should <i>not</i> use <code><a href = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code> as discussed below in the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
     Normalizing it yourself risks breaking some of Monocle's key steps.
   </div>
 </div>
@@ -300,7 +300,7 @@ data, see below for how to tell Monocle how to model it in downstream steps.</p>
 In general, it works best with transcript count data, especially UMI data.
 Whatever your data type, it is <i>critical</i> that specify the appropriate distribution for it.
 FPKM/TPM values are generally log-normally distributed, while UMIs or read counts are better modeled with the negative binomial.
-To work with count data, specify the negative binomial distribution as the <code>expressionFamily</code> argument to <code>newCellDataSet</code>: </p>
+To work with count data, specify the negative binomial distribution as the <code>expressionFamily</code> argument to <code><a href = "https://rdrr.io/bioc/monocle/man/newCellDataSet.html">newCellDataSet</a></code>: </p>
 <p>
 {% highlight R %}
 #Do not run
@@ -325,12 +325,12 @@ HSMM <- newCellDataSet(count_matrix,
    <tbody>
      <tr>
        <td><code>negbinomial.size()</code></td>
-       <td>UMIs, Transcript counts from experiments with spike-ins or <code>relative2abs()</code>, raw read counts</td>
+       <td>UMIs, Transcript counts from experiments with spike-ins or <code><a href = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code>, raw read counts</td>
        <td>Negative binomial distribution with fixed variance (which is automatically calculated by Monocle). Recommended for most users.</td>
      </tr>
      <tr>
        <td><code>negbinomial()</code></td>
-       <td>UMIs, Transcript counts from experiments with spike-ins or <code>relative2abs</code>, raw read counts</td>
+       <td>UMIs, Transcript counts from experiments with spike-ins or <code><a href = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs</a></code>, raw read counts</td>
        <td>Slightly more accurate than <code>negbinomial.size()</code>, but much, much slower. Not recommended except for very small datasets.</td>
      </tr>
      <tr>
@@ -353,7 +353,7 @@ HSMM <- newCellDataSet(count_matrix,
    </div>
    <div class= "panel-body">
      <strong>Using the wrong expressionFamily for your data will lead to bad results</strong>, errors from Monocle, or both.
-     However, if you have FPKM/TPM data, you can still use negative binomial if you first convert your relative expression values to transcript counts using <code>relative2abs()</code>.
+     However, if you have FPKM/TPM data, you can still use negative binomial if you first convert your relative expression values to transcript counts using <code><a href = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code>.
      This often leads to much more accurate results than using <code>tobit()</code>. See the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a> for details.
    </div>
  </div>
@@ -415,7 +415,7 @@ Other sparse matrix packages, such as <code>slam</code> or <code>SparseM</code> 
 RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them.
 In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment.
 Monocle 2 includes an algorithm called <i>Census</i> which performs this conversion <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>.
-You can convert to RPC values before creating your CellDataSet object using the <code>relative2abs()</code> function, as follows: </p>
+You can convert to RPC values before creating your CellDataSet object using the <code><a href  = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code> function, as follows: </p>
 
 
 {% highlight R %}
@@ -706,9 +706,9 @@ In this case, we'd lose more than half of the cells!
 
 
 <p> Monocle provides an algorithm you can use to impute the types of the "Unknown" cells.
-This algorithm, implemented in the function <code>clusterCells</code>, groups cells together according to global expression profile.
+This algorithm, implemented in the function <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code>, groups cells together according to global expression profile.
 That way, if your cell expresses lots of genes specific to myoblasts, but just happens to lack <i>MYF5</i>, we can still recognize it as a myoblast.
-<code>clusterCells</code> can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge.
+<code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> can be used in an unsupervised manner, as well as in a ``semi-supervised'' mode, which allows to assist the algorithm with some expert knowledge.
 Let's look at the unsupervised mode first. </p>
 
 
@@ -732,8 +732,8 @@ plot_ordering_genes(HSMM)
 </div>
 </p>
 
-<p> The <code>setOrderingFilter</code> function marks genes that will be used for clustering in subsequent calls to <code>clusterCells</code>, although we will be able to provide other lists of genes if we want.
-The <code>plot_ordering_genes</code> function shows how variability (dispersion) in a gene's expression depends on the average expression across cells.
+<p> The <code><a href = "https://rdrr.io/bioc/monocle/man/setOrderingFilter.html">setOrderingFilter</a></code> function marks genes that will be used for clustering in subsequent calls to <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code>, although we will be able to provide other lists of genes if we want.
+The <code><a href = "https://rdrr.io/bioc/monocle/man/plot_ordering_genes.html">plot_ordering_genes</a></code> function shows how variability (dispersion) in a gene's expression depends on the average expression across cells.
 The red line shows Monocle's expectation of the dispersion based on this relationship.
 The genes we marked for use in clustering are shown as black dots, while the others are shown as grey dots. </p>
 
@@ -779,7 +779,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "Media")
 
 
 <p>Monocle allows us to subtract the effects of "uninteresting" sources of variation to reduce their impact on the clustering.
-You can do this with the <code>residualModelFormulaStr</code> argument to <code>clusterCells</code> and several other Monocle functions.
+You can do this with the <code>residualModelFormulaStr</code> argument to <code> <a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> and several other Monocle functions.
 This argument accepts an R model formula string specifying the effects you want to subtract prior to clustering.
 
 
@@ -817,7 +817,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "Cluster") + facet_wrap(~CellType)
 <p> Now, most of the myoblasts are in one cluster, most of the fibroblasts are in the other, and the unknowns are spread across both.
 However, we still see some cells of both types in each cluster.
 This could be due to lack of specificity in our marker genes and our CellTypeHierarchy functions, but it could also be due to suboptimal clustering.
-To help rule out the latter, let's try running <code>clusterCells</code> in its semi-supervised mode. </p>
+To help rule out the latter, let's try running <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> in its semi-supervised mode. </p>
 
 
 <h3 data-toc-text= "Clustering cells using marker genes">Clustering cells using marker genes <span class= "label label-info">Recommended</span></h3>
@@ -838,7 +838,7 @@ marker_diff <- markerDiffTable(HSMM[expressed_genes,],
 {% endhighlight%}
 
 
-<p> The function <code>markerDiffTable</code> takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions.
+<p> The function <code><a href = "https://rdrr.io/bioc/monocle/man/markerDiffTable.html">markerDiffTable</a></code> takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions.
 It then removes all the "Unknown" and "Ambiguous" functions before identifying genes that are differentially expressed between the types.
 Again, you can provide a residual model of effects to exclude from this test.
 The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering.
@@ -883,7 +883,7 @@ especially highly expressed or variable across the experiment. However, they are
 great for distinguishing cells that express <i>MYF5</i> from those that have
 <i>ANPEP</i>. We've already marked them for use in clustering, but even if we
 hadn't, we could still use them by providing them directly to
-<code>clusterCells</code>. </p>
+<code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code>. </p>
 
 
 
@@ -913,7 +913,7 @@ plot_cell_clusters(HSMM, 1, 2, color = "CellType")
 
 
 <p> Note that we've reduced the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
-But what about the "Unknown" cells? If you provide  <code>clusterCells</code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
+But what about the "Unknown" cells? If you provide <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
 Essentially, clusterCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
 When a cluster is composed of more than a certain percentage (in this case, 10%) of a certain type, all the cells in the cluster are set to that type.
 If a cluster is composed of more than one cell type, the whole thing is marked "Ambiguous".
@@ -1137,7 +1137,7 @@ HSMM_myo <- reduceDimension(HSMM_myo, max_components = 2, method = 'DDRTree')
 <h3 data-toc-text= "Step 3: order cells">Trajectory step 3: order cells along the trajectory </h3>
 
 <p>Now that the space is reduced, it's time to order the cells using the
-<code>orderCells</code> function as shown below.
+<code><a href = "https://rdrr.io/bioc/monocle/man/orderCells.html">orderCells</a></code> function as shown below.
 
 {% highlight R %}
 HSMM_myo <- orderCells(HSMM_myo)
@@ -1161,7 +1161,7 @@ plot_cell_trajectory(HSMM_myo, color_by = "Hours")
 time zero are located near one of the tips of the tree, while the others are
 distributed amongst the two "branches".  Monocle doesn't know <em>a priori</em>
 which of the trajectory of the tree to call the "beginning", so we often have to
-call <code>orderCells</code> again using the <code>root_state</code> argument to
+call <code><a href = "https://rdrr.io/bioc/monocle/man/orderCells.html">orderCells</a></code> again using the <code>root_state</code> argument to
 specify the beginning. First, we plot the trajectory, this time coloring the
 cells by "State": </p>
 
@@ -1176,7 +1176,7 @@ cells by "State": </p>
 
  <p> "State" is just Monocle's term for the segment of the tree. The function below
  is handy for identifying the State which contains most of the cells from time
- zero. We can then pass that to <code>orderCells</code>: </p>
+ zero. We can then pass that to <code><a href = "https://rdrr.io/bioc/monocle/man/orderCells.html">orderCells</a></code>: </p>
 
  {% highlight R %}
 GM_state <- function(cds){
@@ -1252,7 +1252,7 @@ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
   <div class= "panel-body">
     In the event that Monocle produces a linear trajectory, there will only
     be one state. In this case, you can tell it which end is the beginning of the
-    trajectory by passing <code>orderCells</code> an optional argument argument: the
+    trajectory by passing <code><a href = "https://rdrr.io/bioc/monocle/man/orderCells.html">orderCells</a></code> an optional argument argument: the
     <code>reverse</code> flag. The <code>reverse</code> flag tells Monocle to reverse the
     orientation of the entire process as it's being discovered from the data,
     so that the cells that would have been assigned to the end are instead assigned
@@ -1305,7 +1305,7 @@ density (&Rho;) and the nearest distance (&Delta;) of a cell to another cell
 with higher distance. We can set a threshold for the &Rho;, &Delta; and define
 any cell with a higher local density and distance than the thresholds as the
 density peaks. Those peaks are then used to define the clusters for all cells.
-By default, <code>clusterCells</code> choose <em>95%</em> of &Rho; and &Delta;
+By default, <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> choose <em>95%</em> of &Rho; and &Delta;
 to define the thresholds. We can also set a number of clusters <em>(n)</em> we
 want to cluster. In this setting, we will find the top <em>n</em> cells with
 high &Delta; with &Delta; among the top <em>50%</em> range. The default setting
@@ -1548,7 +1548,7 @@ plot_genes_jitter(MYOG_ID1, grouping = "Media", ncol= 2)
 
 <p> Note that we can control how to layout the genes in the plot by specifying
 the number of rows and columns.  See the man page on
-<code>plot_genes_jitter</code> for more details on controlling its layout. Most
+<code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_jitter.html">plot_genes_jitter</a></code> for more details on controlling its layout. Most
 if not all of Monocle's plotting routines return a plot object from the
 <em>ggplot2</em> package.  This package uses a grammar of graphics to control
 various aspects of a plot, and makes it easy to customize how your data is
@@ -1573,7 +1573,7 @@ cds_subset <- HSMM[to_be_tested,]
 
 
 <p>To test the effects of <code>CellType</code> on gene expression, we simply
-call <code>differentialGeneTest</code> on the genes we've selected.
+call <code><a href = "https://rdrr.io/bioc/monocle/man/differentialGeneTest.html">differentialGeneTest</a></code> on the genes we've selected.
 
 <p>However, we have to specify a <em>model formula</em> in the call to tell
 Monocle that we care about genes with expression levels that depends on
@@ -1594,7 +1594,7 @@ cell, the more significant the differential expression result. This is a common
 strategy in differential analysis, and we leave a detailed statistical
 exposition of such methods to others. </p>
 
-<p> To set up the test based on <em>CellType</em>, we simply call <code>differentialGeneTest</code> with a string specifying <em>fullModelFormulaStr</em>.  We don't have to specify the reduced model in this case, because the default of <em>~1</em> is what we want here. </p>
+<p> To set up the test based on <em>CellType</em>, we simply call <code><a href = "https://rdrr.io/bioc/monocle/man/differentialGeneTest.html">differentialGeneTest</a></code> with a string specifying <em>fullModelFormulaStr</em>.  We don't have to specify the reduced model in this case, because the default of <em>~1</em> is what we want here. </p>
 
 {% highlight R %}
 diff_test_res <- differentialGeneTest(cds_subset, fullModelFormulaStr = "~CellType")
@@ -1625,7 +1625,7 @@ time-varying genes, or <em>Media</em> to identify genes that are responsive to
 the serum switch. In general, model formulae can contain terms in the pData
 table of the CellDataSet. </p>
 
-The <code>differentialGeneTest</code> function is actually quite simple "under the hood".  The call above is equivalent to:
+The <code><a href = "https://rdrr.io/bioc/monocle/man/differentialGeneTest.html">differentialGeneTest</a></code> function is actually quite simple "under the hood".  The call above is equivalent to:
 {% highlight R %}
 full_model_fits <- fitModel(cds_subset,  modelFormulaStr = "~CellType")
 reduced_model_fits <- fitModel(cds_subset, modelFormulaStr = "~1")
@@ -1635,7 +1635,7 @@ diff_test_res
 
 <p> Occassionally, as we'll see later, it's useful to be able to call <code>fitModel</code> directly. </p>
 
-The differential analysis procedure in Monocle is extremely flexible: the model formulae you use in your tests can include any term that exists as a column in the <code>pData</code> table, including those columns that are added by Monocle in other analysis steps. For example, if you use <code>clusterCells</code>, you can test for genes that differ between clusters by using <em>Cluster</em> as your model formula.
+The differential analysis procedure in Monocle is extremely flexible: the model formulae you use in your tests can include any term that exists as a column in the <code>pData</code> table, including those columns that are added by Monocle in other analysis steps. For example, if you use <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code>, you can test for genes that differ between clusters by using <em>Cluster</em> as your model formula.
 
 
 <h3>Finding Genes that Change as a Function of Pseudotime </h3>
@@ -1674,7 +1674,7 @@ diff_test_res[,c("gene_short_name", "pval", "qval")]
 {% endhighlight %}
 </p>
 
-We can plot the expression levels of these genes, all of which show significant changes as a function of differentiation, using the function <code>plot_genes_in_pseudotime</code>.
+We can plot the expression levels of these genes, all of which show significant changes as a function of differentiation, using the function <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_in_pseudotime.html">plot_genes_in_pseudotime</a></code>.
 This function has a number of cosmetic options you can use to control the layout and appearance of your plot.
 
 {% highlight R %}
@@ -1692,8 +1692,8 @@ plot_genes_in_pseudotime(cds_subset, color_by = "Hours")
 <p> A common question that arises when studying time-series gene expression studies is: "which genes follow similar kinetic trends"?
 Monocle can help you answer this question by grouping genes that have similar trends, so you can analyze these groups to see what they have in common.
 Monocle provides a convenient way to visualize all pseudotime-dependent genes. The function
-<code>plot_pseudotime_heatmap</code> takes a CellDataSet object (usually containing a only subset of significant genes)
-and generates smooth expression curves much like  <code>plot_genes_in_pseudotime</code>. Then, it clusters these genes
+<code><a href = "https://rdrr.io/bioc/monocle/man/plot_pseudotime_heatmap.html">plot_pseudotime_heatmap</a></code> takes a CellDataSet object (usually containing a only subset of significant genes)
+and generates smooth expression curves much like  <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_in_pseudotime.html">plot_genes_in_pseudotime</a></code>. Then, it clusters these genes
 and plots them using the <em>pheatmap</em> package.  This allows you to visualize modules of genes that
 co-vary across pseudotime. </p>
 
@@ -1721,7 +1721,7 @@ In the simple example below, Monocle tests three genes for differential expressi
 To do this, we must specify both the full model and the reduced model.
 The full model captures the effects of both <em>CellType</em> and <em>Hours</em>, while the reduced model only knows about <em>Hours</em>. </p>
 
-<p> When we plot the expression levels of these genes, we can modify the resulting object returned by <code>plot_genes_jitter</code> to allow them to have independent y-axis ranges, to better highlight the differences between cell states. </p>
+<p> When we plot the expression levels of these genes, we can modify the resulting object returned by <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_jitter.html">plot_genes_jitter</a></code> to allow them to have independent y-axis ranges, to better highlight the differences between cell states. </p>
 
 {% highlight R %}
 to_be_tested <- row.names(subset(fData(HSMM),
@@ -1765,7 +1765,7 @@ plot_cell_trajectory(lung, color_by = "Time")
   <img src= "{{site.baseurl}}/images/vignette/init_treutlein-1.png" width= 400>
 </div>
 
-<p> BEAM takes as input a CellDataSet that's been ordered with <code>orderCells</code> and the name of a branch point in the trajectory.
+<p> BEAM takes as input a CellDataSet that's been ordered with <a href = "https://rdrr.io/bioc/monocle/man/orderCells.html"><code>orderCells</code></a> and the name of a branch point in the trajectory.
 It returns a table of significance scores for each gene.
 Genes that score significant are said to be <em>branch-dependent</em> in their expression. </p>
 
@@ -1799,7 +1799,7 @@ plot_genes_branched_heatmap(lung[row.names(subset(BEAM_res, qval < 1e-4)),],
   <img src= "{{site.baseurl}}/images/vignette/lung_beam_branched_heatmap-1.png" width= 650>
 </div>
 
-<p> We can plot a couple of these genes, such as <em>Pdpn</em> and <em>Sftpb</em> (both known markers of fate in this system), using the <code>plot_genes_branched_pseudotime</code> function, which works a lot like the <code>plot_genes_in_pseudotime</code> function, except it shows two kinetic trends, one for each lineage, instead of one.
+<p> We can plot a couple of these genes, such as <em>Pdpn</em> and <em>Sftpb</em> (both known markers of fate in this system), using the <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_branched_pseudotime.html">plot_genes_branched_pseudotime</a></code> function, which works a lot like the <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_in_pseudotime.html">plot_genes_in_pseudotime</a></code> function, except it shows two kinetic trends, one for each lineage, instead of one.
 We also show <em>Ccnd2</em>, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. </p>
 
 
@@ -1816,7 +1816,7 @@ plot_genes_branched_pseudotime(lung[lung_genes,],
   <img src= "{{site.baseurl}}/images/vignette/lung_beam_branched_pseudotime-1.png" width= 450>
 </div>
 
-<p> The <code>plot_clusters</code> function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.
+<p> The <code><a href = "https://rdrr.io/bioc/monocle/man/plot_clusters.html">plot_clusters</a></code> function returns a ggplot2 object showing the shapes of the expression patterns followed by the 100 genes we've picked out.
 The topographic lines highlight the distributions of the kinetic patterns relative to the overall trend lines, shown in red. </p>
 
 <h2>Appendices</h2>
@@ -2104,8 +2104,8 @@ graph in DRTree contains one node per input data point. To avoid long computatio
 learns a graph on a second, smaller set of latent points $\{\mathbf{y}_k\}_{k = 1}^K$.
 These points are treated by the algorithm as the centers of $\{\mathbf{z}_i\}^N_{i = 1}$.
 The number of these points is controlled through the <em>ncenter</em> argument
-to <code>reduceDimension()</code> in Monocle 2. Using this algorithm drastically
-speeds up the computations in <code>reduceDimension()</code>, and also serves
+to <code><a href = "https://rdrr.io/bioc/monocle/man/reduceDimension.html">reduceDimension()</a></code> in Monocle 2. Using this algorithm drastically
+speeds up the computations in <code><a href = "https://rdrr.io/bioc/monocle/man/reduceDimension.html">reduceDimension()</a></code>, and also serves
 to regularize the manifold, often producing cleaner, more accurate single-cell
 trajectories. </p>
 
