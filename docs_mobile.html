@@ -162,9 +162,9 @@ tags: [monocle, manual, vignette]
         <p>Below, you can see snippets of code that highlight the main steps of Monocle.
         Click on the section headers to jump to the detailed sections describing each one. </p>
 
-        <h4><a href= "{{ site.baseurl }}/docs/#getting-started-with-monocle">Store Data in a CellDataSet Object</a></h4>
+        <h4><a href= "{{ site.baseurl }}/docs/#getting-started-with-monocle">Store Data in a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> Object</a></h4>
         The first step in working with Monocle is to load up your data into Monocle's
-        main class, <code>CellDataSet</code>:
+        main class, <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code>:
 
         {% highlight R %}
         pd <- new("AnnotatedDataFrame", data = sample_sheet)
@@ -220,7 +220,7 @@ tags: [monocle, manual, vignette]
 
         <h3>The CellDataSet class</h3>
 
-        Monocle holds single cell expression data in objects of the <code>CellDataSet</code> class. The class is derived from the Bioconductor <code>ExpressionSet</code> class, which provides a common interface familiar to those who have analyzed microarray experiments with Bioconductor. The class requires three input files:
+        Monocle holds single cell expression data in objects of the <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> class. The class is derived from the Bioconductor <code>ExpressionSet</code> class, which provides a common interface familiar to those who have analyzed microarray experiments with Bioconductor. The class requires three input files:
         <ul>
         <li> <code>exprs</code>, a numeric matrix of expression values, where rows are genes, and columns are cells
         <li> <code>phenoData</code>, an <code>AnnotatedDataFrame</code> object, where rows are cells, and columns are cell attributes (such as cell type, culture condition, day captured, etc.)
@@ -249,7 +249,7 @@ tags: [monocle, manual, vignette]
         </div>
         </div>
 
-        <p>You can create a new <code>CellDataSet</code> object as follows:</p>
+        <p>You can create a new <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> object as follows:</p>
 
         <p>
         {% highlight R %}
@@ -260,7 +260,7 @@ tags: [monocle, manual, vignette]
         {% endhighlight %}
         </p>
 
-        <p>Once these tables are loaded, you can create the CellDataSet object like this:</p>
+        <p>Once these tables are loaded, you can create the <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> object like this:</p>
 
         <p>
         {% highlight R %}
@@ -270,7 +270,7 @@ tags: [monocle, manual, vignette]
         {% endhighlight %}
         </p>
 
-        <p>This will create a CellDataSet object with expression values measured in
+        <p>This will create a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> object with expression values measured in
         FPKM, a measure of relative expression reported by Cufflinks. By default,
         Monocle assumes that your expression data is in units of transcript counts and
         uses a negative binomial model to test for differential expression in downstream
@@ -283,7 +283,7 @@ tags: [monocle, manual, vignette]
         <h3 class= "panel-title" data-toc-skip>Don't normalize data yourself</h3>
         </div>
         <div class= "panel-body">
-        if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code>CellDataSet</code>.
+        if you do have UMI data, you should <i>not</i> normalize it yourself prior to creating your <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code>.
         You should also <i>not</i> try to convert the UMI counts to relative abundances (by converting it to FPKM/TPM data).
         You should <i>not</i> use <code><a href = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code> as discussed below in the section on  <a href = "{{ site.baseurl }}/docs/#converting-tpm-fpkm-values-into-mrna-counts-alternative"> Converting TPM to mRNA Counts</a>. Monocle will do all needed normalization steps internally.
         Normalizing it yourself risks breaking some of Monocle's key steps.
@@ -385,7 +385,7 @@ tags: [monocle, manual, vignette]
         </div>
         <div class= "panel-body">
         The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX).
-        If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via <code>as.matrix()</code>, because that may exceed your available memeory.
+        If so, you should just pass it directly to <a href = "https://rdrr.io/bioc/monocle/man/newCellDataSet.html">newCellDataSet</a> without first converting it to a dense matrix (via <code>as.matrix()</code>, because that may exceed your available memeory.
         </div>
         </div>
         </p>
@@ -412,7 +412,7 @@ tags: [monocle, manual, vignette]
         RPC values are often easier to analyze than FPKM or TPM values, because have better statistical tools to model them.
         In fact, it's possible to convert FPKM or TPM values to RPC values even if there were no spike-in standards included in the experiment.
         Monocle 2 includes an algorithm called <i>Census</i> which performs this conversion <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>.
-        You can convert to RPC values before creating your CellDataSet object using the <code><a href  = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code> function, as follows: </p>
+        You can convert to RPC values before creating your <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> object using the <code><a href  = "https://rdrr.io/bioc/monocle/man/relative2abs.html">relative2abs()</a></code> function, as follows: </p>
 
 
         {% highlight R %}
@@ -440,7 +440,7 @@ tags: [monocle, manual, vignette]
         <p>
         <div class= "panel panel-warning">
         <div class= "panel-heading">
-        <h3 class= "panel-title" data-toc-skip>TPM/FPKM data and mRNA count data use different arguments to newCellDataSet()</h3>
+        <h3 class= "panel-title" data-toc-skip>TPM/FPKM data and mRNA count data use different arguments to <a href = "https://rdrr.io/bioc/monocle/man/newCellDataSet.html">newCellDataSet()</a></h3>
         </div>
         <div class= "panel-body">
         Since we are using Census mRNA count values, we have changed the value of <code>lowerDetectionLimit</code> to reflect the new scale of expression.
@@ -498,9 +498,9 @@ tags: [monocle, manual, vignette]
 
         <p>The vector <code>expressed_genes</code> now holds the identifiers for genes expressed in at least 50 cells of the data set.
         We will use this list later when we put the cells in order of biological progress.
-        It is also sometimes convenient to exclude genes expressed in few if any cells from the <code>CellDataSet</code> object so as not to waste CPU time analyzing them for differential expression.
+        It is also sometimes convenient to exclude genes expressed in few if any cells from the <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> object so as not to waste CPU time analyzing them for differential expression.
 
-        <p>Let's start trying to remove unwanted, poor quality libraries from the CellDataSet.
+        <p>Let's start trying to remove unwanted, poor quality libraries from the <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a>.
 
         Your single cell RNA-Seq protocol may have given you the opportunity to image individual cells after capture but prior to lysis.
         This image data allows you to score your cells, confirming that none of your libraries were made from empty wells or wells with excess cell debris.
@@ -511,8 +511,8 @@ tags: [monocle, manual, vignette]
 
         <p>While there is no widely accepted minimum level for what constitutes seequencing "deeply enough", use your judgement: a cell sequenced with only a few thousand reads is unlikely to yield meaningful measurements.
 
-        <p><code>CellDataSet</code> objects provide a convenient place to store per-cell scoring data: the <code>phenoData</code> slot.
-        Simply include scoring attributes as columns in the data frome you used to create your <code>CellDataSet</code> container.
+        <p><code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> objects provide a convenient place to store per-cell scoring data: the <code>phenoData</code> slot.
+        Simply include scoring attributes as columns in the data frome you used to create your <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> container.
 
         You can then easily filter out cells that don't pass quality control.
         You might also filter cells based on metrics from high throughput sequencing quality assessment packages such as FastQC.
@@ -598,7 +598,7 @@ tags: [monocle, manual, vignette]
         specific to this dataset. You may need to adjust filter thresholds based on your
         experimental protocol.
 
-        Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your <code>CellDataSet</code> follow a distribution that is roughly lognormal:
+        Once you've excluded cells that do not pass your quality control filters, you should verify that the expression values stored in your <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> follow a distribution that is roughly lognormal:
 
         {% highlight R %}
         # Log-transform each value in the expression matrix.
@@ -670,7 +670,7 @@ tags: [monocle, manual, vignette]
 
 
 
-        <p>The function <code>classifyCells</code> applies each gating function to each cell, classifies the cells according to the gating functions, and returns the <code>CellDataSet</code> with a new column, <code>CellType</code> in its <code>pData</code> table.
+        <p>The function <code>classifyCells</code> applies each gating function to each cell, classifies the cells according to the gating functions, and returns the <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code> with a new column, <code>CellType</code> in its <code>pData</code> table.
         We can now count how many cells of each type there are in the experiment.
 
 
@@ -835,7 +835,7 @@ tags: [monocle, manual, vignette]
         {% endhighlight%}
 
 
-        <p> The function <code><a href = "https://rdrr.io/bioc/monocle/man/markerDiffTable.html">markerDiffTable</a></code> takes a CellDataSet and a CellTypeHierarchy and classifies all the cells into types according to your provided functions.
+        <p> The function <code><a href = "https://rdrr.io/bioc/monocle/man/markerDiffTable.html">markerDiffTable</a></code> takes a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> and a CellTypeHierarchy and classifies all the cells into types according to your provided functions.
         It then removes all the "Unknown" and "Ambiguous" functions before identifying genes that are differentially expressed between the types.
         Again, you can provide a residual model of effects to exclude from this test.
         The function then returns a data frame of test results, and you can use this to pick the genes you want to use for clustering.
@@ -911,7 +911,7 @@ tags: [monocle, manual, vignette]
 
         <p> Note that we've reduced the number of "contaminating" fibroblasts in the myoblast cluster, and vice versa.
         But what about the "Unknown" cells? If you provide <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code> with a the CellTypeHierarcy, Monocle will use it classify <i>whole clusters</i>, rather than just individual cells.
-        Essentially, clusterCells works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
+        Essentially, <a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a> works exactly as before, except after the clusters are built, it counts the frequency of each cell type in each cluster.
         When a cluster is composed of more than a certain percentage (in this case, 10%) of a certain type, all the cells in the cluster are set to that type.
         If a cluster is composed of more than one cell type, the whole thing is marked "Ambiguous".
         If there's no cell type thats above the threshold, the cluster is marked "Unknown".
@@ -951,7 +951,7 @@ tags: [monocle, manual, vignette]
 
 
 
-        <p> Finally, we subset the CellDataSet object to create <em>HSMM_myo</em>, which includes only myoblasts.
+        <p> Finally, we subset the <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> object to create <em>HSMM_myo</em>, which includes only myoblasts.
         We'll use this in the rest of the analysis. </p>
 
 
@@ -1499,7 +1499,7 @@ tags: [monocle, manual, vignette]
         <br>
 
         <h2>Differential Expression Analysis </h2>
-        Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the <em>phenoData</em> table of each <em>CellDataSet</em>.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
+        Differential gene expression analysis is a common task in RNA-Seq experiments.  Monocle can help you find genes that are differentially expressed between groups of cells and assesses the statistical signficance of those changes. These comparisons require that you have a way to collect your cells into two or more groups.  These groups are defined by columns in the <em>phenoData</em> table of each <em><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></em>.  Monocle will assess the signficance of each gene's expression level across the different groups of cells.
 
 
         <h3>Basic Differential Analysis </h3>
@@ -1620,7 +1620,7 @@ tags: [monocle, manual, vignette]
         could test for genes that change as a function of <em>Hours</em> to find
         time-varying genes, or <em>Media</em> to identify genes that are responsive to
         the serum switch. In general, model formulae can contain terms in the pData
-        table of the CellDataSet. </p>
+        table of the <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a>. </p>
 
         The <code><a href = "https://rdrr.io/bioc/monocle/man/differentialGeneTest.html">differentialGeneTest</a></code> function is actually quite simple "under the hood".  The call above is equivalent to:
         {% highlight R %}
@@ -1630,7 +1630,7 @@ tags: [monocle, manual, vignette]
         diff_test_res
         {% endhighlight %}
 
-        <p> Occassionally, as we'll see later, it's useful to be able to call <code>fitModel</code> directly. </p>
+        <p> Occassionally, as we'll see later, it's useful to be able to call <code><a href = "https://rdrr.io/bioc/monocle/man/fitModel.html">fitModel</a></code> directly. </p>
 
         The differential analysis procedure in Monocle is extremely flexible: the model formulae you use in your tests can include any term that exists as a column in the <code>pData</code> table, including those columns that are added by Monocle in other analysis steps. For example, if you use <code><a href = "https://rdrr.io/bioc/monocle/man/clusterCells.html">clusterCells</a></code>, you can test for genes that differ between clusters by using <em>Cluster</em> as your model formula.
 
@@ -1689,7 +1689,7 @@ tags: [monocle, manual, vignette]
         <p> A common question that arises when studying time-series gene expression studies is: "which genes follow similar kinetic trends"?
         Monocle can help you answer this question by grouping genes that have similar trends, so you can analyze these groups to see what they have in common.
         Monocle provides a convenient way to visualize all pseudotime-dependent genes. The function
-        <code><a href = "https://rdrr.io/bioc/monocle/man/plot_pseudotime_heatmap.html">plot_pseudotime_heatmap</a></code> takes a CellDataSet object (usually containing a only subset of significant genes)
+        <code><a href = "https://rdrr.io/bioc/monocle/man/plot_pseudotime_heatmap.html">plot_pseudotime_heatmap</a></code> takes a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> object (usually containing a only subset of significant genes)
         and generates smooth expression curves much like  <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_in_pseudotime.html">plot_genes_in_pseudotime</a></code>. Then, it clusters these genes
         and plots them using the <em>pheatmap</em> package.  This allows you to visualize modules of genes that
         co-vary across pseudotime. </p>
@@ -1750,7 +1750,7 @@ tags: [monocle, manual, vignette]
         They captured cells early in development, later when the lung contains both major types of epithelial cells (AT1 and AT2), and cells right about to make the decision to become either AT1 or AT2.
         Monocle can reconstruct this process as a <em>branched</em> trajectory, allow you to analyze the decision point in great detail.
         The figure below shows the trajectory Monocle reconstructs using some of their data. There is a single branch, labeled "1". What genes change as cells pass from the early developmental stage the top left of the tree through the branch?
-        What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or BEAM.
+        What genes are differentially expressed between the branches? To answer this question, Monocle provides you with a special statistical test: branched expression analysis modeling, or <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a>.
 
         {% highlight R %}
         lung <- load_lung()
@@ -1762,7 +1762,7 @@ tags: [monocle, manual, vignette]
         <img src= "{{site.baseurl}}/images/vignette/init_treutlein-1.png" width= 400>
         </div>
 
-        <p> BEAM takes as input a CellDataSet that's been ordered with <a href = "https://rdrr.io/bioc/monocle/man/orderCells.html"><code>orderCells</code></a> and the name of a branch point in the trajectory.
+        <p> <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a> takes as input a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> that's been ordered with <a href = "https://rdrr.io/bioc/monocle/man/orderCells.html"><code>orderCells</code></a> and the name of a branch point in the trajectory.
         It returns a table of significance scores for each gene.
         Genes that score significant are said to be <em>branch-dependent</em> in their expression. </p>
 
@@ -1797,7 +1797,7 @@ tags: [monocle, manual, vignette]
         </div>
 
         <p> We can plot a couple of these genes, such as <em>Pdpn</em> and <em>Sftpb</em> (both known markers of fate in this system), using the <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_branched_pseudotime.html">plot_genes_branched_pseudotime</a></code> function, which works a lot like the <code><a href = "https://rdrr.io/bioc/monocle/man/plot_genes_in_pseudotime.html">plot_genes_in_pseudotime</a></code> function, except it shows two kinetic trends, one for each lineage, instead of one.
-        We also show <em>Ccnd2</em>, a cell cycle gene, which is downregulated in both branches and is not signficant by the BEAM test. </p>
+        We also show <em>Ccnd2</em>, a cell cycle gene, which is downregulated in both branches and is not signficant by the <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a> test. </p>
 
 
         {% highlight R %}
@@ -1936,7 +1936,7 @@ tags: [monocle, manual, vignette]
         Finally, DDRTree is much more robust in that it reports qualititatively similar trajectories more consistently when you vary the number of cells in the experiment.
         Although which genes are included in the ordering still greatly impact the trajectory, varying them also produces more qualititatively consistent trajectories than the previous linear technique.
 
-        <p>Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. Branch expression analysis modeling (BEAM) is a new test for analyzing specific branch points <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. BEAM reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect BEAM will be very useful to those analyzing single-cell RNA-Seq data in many settings.
+        <p>Because Monocle 2 is so much better at finding branches, it also includes some additional tools to help you interpret them. <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">Branch expression analysis modeling (BEAM)</a> is a new test for analyzing specific branch points <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287">[8]</a>. <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a> reports branch-dependent genes, and Monocle 2 includes some new visualization functions to help you inspect these genes. Overall, we find that branching is pervasive in diverse biological processes, and thus we expect <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a> will be very useful to those analyzing single-cell RNA-Seq data in many settings.
 
         <p>Monocle 2 also includes functionality that is inspired by other packages that weren't available when Monocle 1 was written. For example, much of Monocle 2's clustering strategy is similar to
         Seurat <a href= "https://www.ncbi.nlm.nih.gov/pubmed/25867923">[9]</a> from Rahul Satija's lab.
@@ -2132,9 +2132,9 @@ tags: [monocle, manual, vignette]
 
         <p> Our accessory package <em>DDRTree</em> implements the DDRTree algorithm using
         a number of key performance optimizations. Monocle 2 calls DDRTree to learn the
-        core manifold describing a <em>CellDataSet</em>, and then computes pseudotime
+        core manifold describing a <em><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></em>, and then computes pseudotime
         coordinates and branch assignments using this manifold. Monocle also uses the
-        manifold in downstream analysis steps such as BEAM. A manuscript describing the
+        manifold in downstream analysis steps such as <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a>. A manuscript describing the
         general stragegy of using reversed graph embedding for single-cell trajectory
         analysis is available on bioRxiv <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668">[10]</a>. </p>
 
@@ -2232,7 +2232,7 @@ tags: [monocle, manual, vignette]
 
         Monocle 2 assigns each cell a pseudotime value and a "State" encoding the
         segment of the trajectory it resides upon based on a trajectory learning
-        algorithm (See below). In Monocle 2, we develop BEAM to test for
+        algorithm (See below). In Monocle 2, we develop <a href = "https://rdrr.io/bioc/monocle/man/BEAM.html">BEAM</a> to test for
         branch-dependent gene expression by formulating the problem as a contrast
         between two negative binomial GLMs.
 
