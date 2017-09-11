@@ -39,7 +39,7 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
-\item{theta}{includeDescrip}
+\item{theta}{How many degrees you want to rotate the trajectory}
 }
 \value{
 a ggplot2 plot object

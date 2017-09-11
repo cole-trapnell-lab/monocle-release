@@ -14,8 +14,8 @@ monocle_theme_opts <- function()
     theme(legend.key=element_blank())
 }
 
-#' Plots the minimum spanning tree on cells.
-#' @description 
+#' @title Plots the minimum spanning tree on cells.
+#' @description Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -270,6 +270,7 @@ plot_spanning_tree <- function(cds,
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param log_scale a boolean that determines whether or not to scale data logarithmically
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
