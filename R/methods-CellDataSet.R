@@ -161,7 +161,9 @@ reducedDimW <- function( cds ) {
   cds@reducedDimW
 }   
 
-#' Sets the the whitening matrix during independent component analysis.
+#' @title Sets the the whitening matrix during independent component analysis.
+#'
+#' @description Sets the the whitening matrix during independent component analysis.
 #'
 #' @param cds A CellDataSet object.
 #' @param value a numeric matrix

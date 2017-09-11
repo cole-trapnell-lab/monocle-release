@@ -26,11 +26,11 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number 
+#' @param show_state_number a boolean that determines whether or not the state number for each cell should be shown
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size 
+#' @param state_number_size if 'show_state_number' is set to true, this variable will control the size of the number labels 
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
@@ -253,7 +253,7 @@ plot_spanning_tree <- function(cds,
 }
 
 
-#' Plots expression for one or more genes as a violin plot
+#' @title Plots expression for one or more genes as a violin plot
 #' 
 #' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
 #' and produces one or more ggplot2 objects that plots the level of expression for
@@ -1108,7 +1108,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     show_rownames = FALSE, 
                                     use_gene_short_name = TRUE,
                                     
-                                    norm_method = c("log", "vstExprs"), 
+                                    norm_method = c("vstExprs", "log"), 
                                     scale_max=3, 
                                     scale_min=-3, 
                                     
@@ -1259,7 +1259,6 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @param trend_formula The model formula to be used for fitting the expression trend over pseudotime
 #' @param reducedModelFormulaStr A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model
 #' @param label_by_short_name Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param multi_branch a boolean that signifies whether you'd like to compare more than two branches at once
 #' @param relative_expr Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)
 #' @param ... Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.
 #' @return a ggplot2 plot object
@@ -1664,7 +1663,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         use_gene_short_name = TRUE,
                                         scale_max=3, 
                                         scale_min=-3, 
-                                        norm_method = c("log", "vstExprs"), 
+                                        norm_method = c("vstExprs", "log"), 
                                         
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
@@ -2019,7 +2018,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 plot_pc_variance_explained <- function(cds, 
                             max_components=100, 
                             # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                            norm_method = c("log", "vstExprs", "none"), 
+                            norm_method = c("vstExprs", "log", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             return_all = F, 
@@ -2358,7 +2357,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            show_rownames = FALSE, 
                                            use_gene_short_name = TRUE,
                                            
-                                           norm_method = c("log", "vstExprs"), 
+                                           norm_method = c("vstExprs", "log"), 
                                            scale_max=3, 
                                            scale_min=-3, 
                                            
