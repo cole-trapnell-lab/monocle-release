@@ -395,9 +395,18 @@ tags: [monocle, manual, vignette]
 
         cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
         gbm <- load_cellranger_matrix(cellranger_pipestance_path)
+
+        fd <- fData(gbm)
+
+        # The number 2 is picked arbitrarily in the line below.
+        # Where "2" is placed you should place the column number that corresponds to your
+        # featureData's gene short names.
+
+        colnames(fd)[2] <- "gene_short_name"
+
         gbm_cds <- newCellDataSet(exprs(gbm),
                           phenoData = new("AnnotatedDataFrame", data = pData(gbm)),
-                          phenoData = new("AnnotatedDataFrame", data = fData(gbm)),
+                          featureData = new("AnnotatedDataFrame", data = fd),
                           lowerDetectionLimit = 0.5,
                           expressionFamily = negbinomial.size())
         {% endhighlight %}
