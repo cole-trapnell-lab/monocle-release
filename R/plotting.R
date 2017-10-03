@@ -1108,7 +1108,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     show_rownames = FALSE, 
                                     use_gene_short_name = TRUE,
                                     
-                                    norm_method = c("vstExprs", "log"), 
+                                    norm_method = c("log", "vstExprs"), 
                                     scale_max=3, 
                                     scale_min=-3, 
                                     
@@ -1117,7 +1117,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     return_heatmap=FALSE,
                                     cores=1){
   
-  pseudocount <- NA
+  pseudocount <- 1
   newdata <- data.frame(Pseudotime = seq(min(pData(cds_subset)$Pseudotime), max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
   m <- genSmoothCurves(cds_subset, cores=cores, trend_formula = trend_formula,  
@@ -1664,7 +1664,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         use_gene_short_name = TRUE,
                                         scale_max=3, 
                                         scale_min=-3, 
-                                        norm_method = c("vstExprs", "log"), 
+                                        norm_method = c("log", "vstExprs"), 
                                         
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
@@ -1844,6 +1844,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
 #' @param cds The CellDataSet to be used for the plot.
 #' @export
 plot_ordering_genes <- function(cds){
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error input object is not of type 'CellDataSet'")
+  }
   disp_table <- dispersionTable(cds)
   use_for_ordering <- NA
   mean_expression <- NA
@@ -2019,7 +2022,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 plot_pc_variance_explained <- function(cds, 
                             max_components=100, 
                             # reduction_method=c("DDRTree", "ICA", 'tSNE'),
-                            norm_method = c("vstExprs", "log", "none"), 
+                            norm_method = c("log", "vstExprs", "none"), 
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL, 
                             return_all = F, 
@@ -2083,7 +2086,9 @@ plot_pc_variance_explained <- function(cds,
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     theme(panel.background = element_rect(fill='white')) + xlab('components') + 
     ylab('Variance explained \n by each component')
-  # return(prop_varex = prop_varex, p = p)
+  
+  cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex # update CDS slot for variance_explained 
+
   if(return_all) {
     return(list(variance_explained = prop_varex, p = p))
   }
@@ -2364,6 +2369,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            
                                            return_heatmap=FALSE,
                                            cores=1){
+  pseudocount <- 1
   if(!(all(branches %in% pData(cds)$State)) & length(branches) == 1){
     stop('This function only allows to make multiple branch plots where branches is included in the pData')
   }
@@ -2772,4 +2778,3 @@ plot_multiple_branches_pseudotime <- function(cds,
   q <- q + monocle_theme_opts()
   q + expand_limits(y = min_expr)
 }
-

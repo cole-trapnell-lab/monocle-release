@@ -298,6 +298,15 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
 #' @importFrom Biobase exprs fData pData
 #' @export
 calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
+  if(class(cth)[1] != "CellTypeHierarchy") {
+    stop("Error cth is not of type 'CellTypeHierarchy'")
+  }
+  
   CellType <- NA
   markerSpecificityHelper <- function(cds, cth){
     averageExpression <- Matrix::rowMeans(exprs(cds))
@@ -374,6 +383,14 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @importFrom Biobase pData pData<-
 #' @export 
 markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
+  if(class(cth)[1] != "CellTypeHierarchy") {
+    stop("Error cth is not of type 'CellTypeHierarchy'")
+  }
+  
   CellType <- NULL
   if (verbose)
     message("Classifying cells according to markers")

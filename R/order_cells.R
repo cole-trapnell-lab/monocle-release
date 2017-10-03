@@ -1046,6 +1046,11 @@ orderCells <- function(cds,
                        root_state=NULL,
                        num_paths = NULL,
                        reverse=NULL){
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
@@ -1164,7 +1169,7 @@ orderCells <- function(cds,
 # Helper function to normalize the expression data prior to dimensionality
 # reduction
 normalize_expr_data <- function(cds,
-                                norm_method = c("vstExprs", "log", "none"),
+                                norm_method = c("log", "vstExprs", "none"),
                                 pseudo_expr = NULL,
                                 relative_expr = TRUE){
   FM <- exprs(cds)
@@ -1212,6 +1217,8 @@ normalize_expr_data <- function(cds,
       if (relative_expr)
         FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
 
+      if(is.null(pseudo_expr))
+        pseudo_expr <- 1 
       FM <- FM + pseudo_expr
       FM <- log2(FM)
     }else if (norm_method == "none"){
@@ -1316,7 +1323,7 @@ normalize_expr_data <- function(cds,
 reduceDimension <- function(cds,
                             max_components=2,
                             reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
-                            norm_method = c("vstExprs", "log", "none"),
+                            norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=NULL,
                             relative_expr=TRUE,

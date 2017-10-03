@@ -138,6 +138,11 @@ differentialGeneTest <- function(cds,
                                  verbose=FALSE
                                  ){
   status <- NA
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   # pdat_cols_check_1 <- "empty"
   # 
   # fmfs_test <- fullModelFormulaStr
@@ -222,5 +227,5 @@ differentialGeneTest <- function(cds,
   row.names(diff_test_res) <- diff_test_res[, 1] #remove the first column and set the row names to the first column
   diff_test_res[, 1] <- NULL 
 
-  diff_test_res
+  diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
