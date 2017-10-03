@@ -1,6 +1,10 @@
 library(monocle)
 library(HSMMSingleCell)
-context("reduceDimension is functioning properly")
+context("plot_cell_clusters is functioning properly")
+
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
 
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
@@ -22,17 +26,13 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
                        lowerDetectionLimit=0.5,
                        expressionFamily=negbinomial.size())
 
+
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
 
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
-print(head(fData(HSMM)))
 expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
-
 pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
-
-
-HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
 
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 
@@ -43,11 +43,22 @@ melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
 MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
 ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
 
-# HSMM <- classifyCells(HSMM, cth, 0.1)
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+{x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
 
 disp_table <- dispersionTable(HSMM)
 unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
 HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
 
-test_that("reduceDimension works properly", expect_error(HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
-                                                                                 reduction_method = 'tSNE', verbose = T), NA))
+plot_pc_variance_explained(HSMM, return_all = F) # norm_method = 'log',
+
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+                        reduction_method = 'tSNE', verbose = T) 
+HSMM <- clusterCells(HSMM,
+                     num_clusters=2)
+
+test_that("plot_cell_clusters functions in vignette", expect_error(plot_cell_clusters(HSMM, 1, 2, color = "CellType"), NA))

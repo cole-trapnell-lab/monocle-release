@@ -1,6 +1,6 @@
 library(monocle)
 library(HSMMSingleCell)
-context("clusterCells is functioning properly")
+context("calculateMarkerSpecificity is functioning properly")
 
 data(HSMM_expr_matrix)
 data(HSMM_gene_annotation)
@@ -64,13 +64,15 @@ marker_diff <- markerDiffTable(HSMM[expressed_genes,],
                                residualModelFormulaStr = "~Media + num_genes_expressed",
                                cores = 1)
 candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
-marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
-semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
-HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
-HSMM <- reduceDimension(HSMM, max_components = 2, num_dim = 3, norm_method = 'log',
-                        reduction_method = 'tSNE',
-                        residualModelFormulaStr = "~Media + num_genes_expressed",
-                        verbose = T)
 
-test_that("clusterCells functions normally in vignette", 
-          expect_error(clusterCells(HSMM, num_clusters = 2), NA))
+test_that("calculateMarkerSpecificity functions properly in vignette", 
+          expect_error(calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth), NA)
+          )
+
+test_that("calculateMarkerSpecificity throws error if cds is not of type CellDataSet", 
+          expect_error(calculateMarkerSpecificity(cth, cth), "Error cds is not of type 'CellDataSet'")
+)
+
+test_that("calculateMarkerSpecificity throws error if cth is not of type CellTypeHierarchy", 
+          expect_error(calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], HSMM[candidate_clustering_genes,]), "Error cth is not of type 'CellTypeHierarchy'")
+)

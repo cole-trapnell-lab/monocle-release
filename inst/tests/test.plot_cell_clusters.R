@@ -1,40 +1,46 @@
 library(monocle)
 library(HSMMSingleCell)
-context("clusterCells is functioning properly")
-
-data(HSMM_expr_matrix)
-data(HSMM_gene_annotation)
-data(HSMM_sample_sheet)
+context("plot_cell_clusters is functioning properly")
 
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
 
-# First create a CellDataSet from the relative expression levels
-HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
-                       phenoData = pd, 
+HSMM <- newCellDataSet(as(umi_matrix, "sparseMatrix"),
+                       phenoData = pd,
                        featureData = fd,
-                       lowerDetectionLimit=0.1,
-                       expressionFamily=tobit(Lower=0.1))
+                       lowerDetectionLimit = 0.5,
+                       expressionFamily = negbinomial.size())
 
-# Next, use it to estimate RNA counts
-rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
+gbm <- load_cellranger_matrix(cellranger_pipestance_path)
+gbm_cds <- newCellDataSet(exprs(gbm),
+                          phenoData = new("AnnotatedDataFrame", data = pData(gbm)),
+                          phenoData = new("AnnotatedDataFrame", data = fData(gbm)),
+                          lowerDetectionLimit = 0.5,
+                          expressionFamily = negbinomial.size())
 
-# Now, make a new CellDataSet using the RNA counts
-HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
-                       phenoData = pd, 
-                       featureData = fd,
-                       lowerDetectionLimit=0.5,
-                       expressionFamily=negbinomial.size())
-
-HSMM <- estimateSizeFactors(HSMM)
-HSMM <- estimateDispersions(HSMM)
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+valid_cells <- row.names(subset(pData(HSMM),
+                                Cells.in.Well == 1 &
+                                  Control == FALSE &
+                                  Clump == FALSE &
+                                  Debris == FALSE &
+                                  Mapped.Fragments > 1000000))
+HSMM <- HSMM[,valid_cells]
 
 pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
 
 HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
 
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) +
+                     2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) -
+                     2*sd(log10(pData(HSMM)$Total_mRNAs)))
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound &
+               pData(HSMM)$Total_mRNAs < upper_bound]
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 
 # Log-transform each value in the expression matrix.
@@ -71,6 +77,7 @@ HSMM <- reduceDimension(HSMM, max_components = 2, num_dim = 3, norm_method = 'lo
                         reduction_method = 'tSNE',
                         residualModelFormulaStr = "~Media + num_genes_expressed",
                         verbose = T)
+HSMM <- clusterCells(HSMM, num_clusters = 2)
 
-test_that("clusterCells functions normally in vignette", 
-          expect_error(clusterCells(HSMM, num_clusters = 2), NA))
+test_that("plot_cell_clusters functions in vignette", 
+          expect_error(plot_cell_clusters(HSMM, 1, 2, color = "CellType")), NA)
