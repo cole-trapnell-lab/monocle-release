@@ -14,8 +14,8 @@ monocle_theme_opts <- function()
     theme(legend.key=element_blank())
 }
 
-#' Plots the minimum spanning tree on cells.
-#' @description 
+#' @title Plots the minimum spanning tree on cells.
+#' @description Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -26,11 +26,11 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number 
+#' @param show_state_number a boolean that determines whether or not the state number for each cell should be shown
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size 
+#' @param state_number_size if 'show_state_number' is set to true, this variable will control the size of the number labels 
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
@@ -253,7 +253,7 @@ plot_spanning_tree <- function(cds,
 }
 
 
-#' Plots expression for one or more genes as a violin plot
+#' @title Plots expression for one or more genes as a violin plot
 #' 
 #' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
 #' and produces one or more ggplot2 objects that plots the level of expression for
@@ -270,6 +270,7 @@ plot_spanning_tree <- function(cds,
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param log_scale a boolean that determines whether or not to scale data logarithmically
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1259,7 +1260,6 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @param trend_formula The model formula to be used for fitting the expression trend over pseudotime
 #' @param reducedModelFormulaStr A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model
 #' @param label_by_short_name Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param multi_branch a boolean that signifies whether you'd like to compare more than two branches at once
 #' @param relative_expr Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)
 #' @param ... Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.
 #' @return a ggplot2 plot object

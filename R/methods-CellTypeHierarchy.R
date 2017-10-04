@@ -145,7 +145,9 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   are marked "Ambigious". This allows you to impute cell type based on 
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
-#'    
+#' 
+#' @param cth the CellTypeHierarchy object  
+#' 
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
@@ -162,6 +164,8 @@ newCellTypeHierarchy <- function()
   return(cth)
 }
 
+#' @title Add Cell Type to Pre-Existing CellTypeHierarchy
+#' 
 #' @description adds a cell type to a pre-existing CellTypeHeirarchy and produces a function that accepts
 #' expression data from a CellDataSet. When the function is called on a CellDataSet a boolean vector is returned
 #' that indicates whether each cell is or is not the cell type that was added by addCellType.

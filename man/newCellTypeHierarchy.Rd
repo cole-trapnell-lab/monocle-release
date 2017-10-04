@@ -17,6 +17,8 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \arguments{
 \item{cds}{The CelllDataSet you want to classify}
 
+\item{cth}{the CellTypeHierarchy object}
+
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 
 \item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}

@@ -31,6 +31,8 @@ plot_genes_violin(cds_subset, grouping = "State", min_expr = NULL,
 \item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
 
 \item{relative_expr}{Whether to transform expression into relative values}
+
+\item{log_scale}{a boolean that determines whether or not to scale data logarithmically}
 }
 \value{
 a ggplot2 plot object

@@ -46,8 +46,6 @@ plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
 \item{relative_expr}{Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)}
 
 \item{...}{Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.}
-
-\item{multi_branch}{a boolean that signifies whether you'd like to compare more than two branches at once}
 }
 \value{
 a ggplot2 plot object
