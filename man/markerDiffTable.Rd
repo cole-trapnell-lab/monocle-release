@@ -33,6 +33,6 @@ A table of differential expression test results
 }
 \description{
 takes a CellDataSet and a CellTypeHeirarchy and classifies all cells into types passed
-functions passed into the CellTypeHeirarchy. The function will remove all "Unknown" and "Ambigious" types
+functions passed into the CellTypeHierarchy. The function will remove all "Unknown" and "Ambiguous" types
 before identifying genes that are differentially expressed between types.
 }

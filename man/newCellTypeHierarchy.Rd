@@ -94,7 +94,7 @@ CellTypeHierarchy objects are Monocle's mechanism for
   group, and if a cell type is present at the frquency specified in 
   \code{frequency_thresh}, all the cells in the group are classified as that 
   type. If group contains more one cell type at this frequency, all the cells
-  are marked "Ambigious". This allows you to impute cell type based on 
+  are marked "Ambiguous". This allows you to impute cell type based on 
   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
   some other grouping criteria.
 }
