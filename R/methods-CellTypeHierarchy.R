@@ -90,10 +90,10 @@ classifyCellsHelperCell <- function(cds, cth){
 
 #' @title Classify cells according to a set of markers
 #' 
-#' @description Creates a CellTypeHeirarchy object which can store
+#' @description Creates a CellTypeHierarchy object which can store
 #' cell types with the addCellType() function. When classifyCells
-#' is used with a CellDataSet and a CellTypeHeirarchy cells in the 
-#' CellDataSet can be classified as cell types found in the CellTypeHeirarchy
+#' is used with a CellDataSet and a CellTypeHierarchy cells in the 
+#' CellDataSet can be classified as cell types found in the CellTypeHierarchy
 #' 
 #' @details CellTypeHierarchy objects are Monocle's mechanism for
 #'   classifying cells into types based on known markers. To classify the cells
@@ -190,7 +190,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @title Classify cells according to a set of markers
 #' 
 #' @description classifyCells accepts a cellDataSet and and a cellTypeHierarchy.
-#' Each cell in the cellDataSet is checked against the functions in the cellTypeHeirarchy
+#' Each cell in the cellDataSet is checked against the functions in the cellTypeHierarchy
 #' to determine each cell's type
 #' 
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
@@ -355,7 +355,7 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 
 #' Test genes for cell type-dependent expression
 #' 
-#' @description takes a CellDataSet and a CellTypeHeirarchy and classifies all cells into types passed
+#' @description takes a CellDataSet and a CellTypeHierarchy and classifies all cells into types passed
 #' functions passed into the CellTypeHierarchy. The function will remove all "Unknown" and "Ambiguous" types
 #' before identifying genes that are differentially expressed between types.
 #' 

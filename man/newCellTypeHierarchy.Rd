@@ -37,13 +37,13 @@ returns a dataframe with N x k rows. Each row contains a gene and a specifity
 score for one of the types.
 }
 \description{
-Creates a CellTypeHeirarchy object which can store
+Creates a CellTypeHierarchy object which can store
 cell types with the addCellType() function. When classifyCells
-is used with a CellDataSet and a CellTypeHeirarchy cells in the 
-CellDataSet can be classified as cell types found in the CellTypeHeirarchy
+is used with a CellDataSet and a CellTypeHierarchy cells in the 
+CellDataSet can be classified as cell types found in the CellTypeHierarchy
 
 classifyCells accepts a cellDataSet and and a cellTypeHierarchy.
-Each cell in the cellDataSet is checked against the functions in the cellTypeHeirarchy
+Each cell in the cellDataSet is checked against the functions in the cellTypeHierarchy
 to determine each cell's type
 }
 \details{

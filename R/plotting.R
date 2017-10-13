@@ -26,11 +26,11 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number 
+#' @param show_state_number show state number
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size 
+#' @param state_number_size the size of the state number
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object

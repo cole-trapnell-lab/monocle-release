@@ -19,6 +19,8 @@ estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
 \item{removeOutliers}{a boolean it determines whether or not outliers from the data should be removed}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
+
+\item{verbose}{whether or not to print output}
 }
 \description{
 Helper function to estimate dispersions

@@ -32,7 +32,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{show_cell_names}{draw the name of each cell in the plot}
 
-\item{show_state_number}{}
+\item{show_state_number}{show state number}
 
 \item{cell_size}{The size of the point for each cell}
 
@@ -40,7 +40,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{cell_name_size}{the size of cell name labels}
 
-\item{state_number_size}{}
+\item{state_number_size}{the size of the state number}
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 

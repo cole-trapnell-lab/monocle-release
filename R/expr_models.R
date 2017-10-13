@@ -506,6 +506,7 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 #' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
 #' @param removeOutliers a boolean it determines whether or not outliers from the data should be removed
 #' @param cores the number of cores to be used while testing each gene for differential expression.
+#' @param verbose whether or not to print output
 estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores, verbose = F)
 {
   
