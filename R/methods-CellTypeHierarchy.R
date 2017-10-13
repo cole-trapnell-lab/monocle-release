@@ -142,7 +142,7 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   group, and if a cell type is present at the frquency specified in 
 #'   \code{frequency_thresh}, all the cells in the group are classified as that 
 #'   type. If group contains more one cell type at this frequency, all the cells
-#'   are marked "Ambigious". This allows you to impute cell type based on 
+#'   are marked "Ambiguous". This allows you to impute cell type based on 
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
 #'    
@@ -162,7 +162,8 @@ newCellTypeHierarchy <- function()
   return(cth)
 }
 
-#' @description adds a cell type to a pre-existing CellTypeHeirarchy and produces a function that accepts
+#' Add a new cell type
+#' @description adds a cell type to a pre-existing CellTypeHierarchy and produces a function that accepts
 #' expression data from a CellDataSet. When the function is called on a CellDataSet a boolean vector is returned
 #' that indicates whether each cell is or is not the cell type that was added by addCellType.
 #' @param cth The CellTypeHierarchy object 
@@ -355,7 +356,7 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' Test genes for cell type-dependent expression
 #' 
 #' @description takes a CellDataSet and a CellTypeHeirarchy and classifies all cells into types passed
-#' functions passed into the CellTypeHeirarchy. The function will remove all "Unknown" and "Ambigious" types
+#' functions passed into the CellTypeHierarchy. The function will remove all "Unknown" and "Ambiguous" types
 #' before identifying genes that are differentially expressed between types.
 #' 
 #' @param cds A CellDataSet object containing cells to classify
