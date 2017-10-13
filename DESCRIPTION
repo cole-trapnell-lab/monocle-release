@@ -45,7 +45,8 @@ Imports:
     stringr,
     proxy,
     slam,
-    stats
+    stats,
+    biocViews
 Suggests:
     knitr,
     Hmisc,
@@ -53,7 +54,7 @@ Suggests:
 Remotes:
     bioc::Biobase,
     bioc::BiocGenerics,
-    bioc::HSMMSingleCell,
+    bioc::biocViews,
     bioc::limma
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
