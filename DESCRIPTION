@@ -45,6 +45,7 @@ Imports:
     stringr,
     proxy,
     slam,
+    viridis,
     stats
 Suggests:
     knitr,
