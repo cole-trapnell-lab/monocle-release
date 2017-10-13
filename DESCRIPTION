@@ -50,6 +50,11 @@ Suggests:
     knitr,
     Hmisc,
     testthat
+Remotes:
+    bioc::Biobase,
+    bioc::BiocGenerics,
+    bioc::HSMMSingleCell,
+    bioc::limma
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true
