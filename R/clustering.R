@@ -27,7 +27,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
   n<-method(expr_matrix)
   clusters<-cluster::pam(n,k, ...)
   class(clusters)<-"list"
-  clusters$exprs<-expr_matrix
+  clusters$exprs <- expr_matrix
   clusters
 }
 

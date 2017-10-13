@@ -1,6 +1,6 @@
-#' @import igraph
 #' @import methods
 #' @importFrom Biobase exprs pData
+#' @importFrom igraph V
 cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
@@ -44,7 +44,7 @@ classifyCellsHelperCds <- function(cds_subset, cth, frequency_thresh){
   CellType <- cth_classifier_cds(cds_subset, cth, "root", frequency_thresh)
 }
 
-
+#' @importFrom igraph V
 cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
   next_nodes <- c()
   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
@@ -71,6 +71,7 @@ cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
 }
 
 #' @importFrom Biobase exprs pData
+#' @importFrom igraph V
 classifyCellsHelperCell <- function(cds, cth){
   #next_node_list <- rep(list(), ncol(cds)) 
   
@@ -149,6 +150,9 @@ classifyCellsHelperCell <- function(cds, cth){
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
+#'   
+#' @importFrom igraph vertex graph.empty
+#'   
 #' @export
 newCellTypeHierarchy <- function()
 {
@@ -173,6 +177,9 @@ newCellTypeHierarchy <- function()
 #'   type
 #' @param parent_cell_type_name If this cell type is a subtype of another,
 #'   provide its name here
+#'   
+#' @importFrom igraph V edge
+#'   
 #' @export
 addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_name="root") 
 {
@@ -195,6 +202,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' 
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
 #' @param cds The CelllDataSet you want to classify
+#' @param cth CellTypeHierarchy
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
@@ -290,6 +298,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
+#' @param cth CellTypeHierarchy
 #' @param remove_ambig a boolean that determines if ambiguous cells should be removed
 #' @param remove_unknown a boolean that determines whether unknown cells should be removed
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,

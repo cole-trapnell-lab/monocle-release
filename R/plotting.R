@@ -36,6 +36,7 @@ monocle_theme_opts <- function()
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom igraph get.edgelist
 #' @export
 #' @examples
 #' \dontrun{
@@ -270,6 +271,7 @@ plot_spanning_tree <- function(cds,
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param log_scale whether to use a log scale
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1259,7 +1261,6 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @param trend_formula The model formula to be used for fitting the expression trend over pseudotime
 #' @param reducedModelFormulaStr A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model
 #' @param label_by_short_name Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param multi_branch a boolean that signifies whether you'd like to compare more than two branches at once
 #' @param relative_expr Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)
 #' @param ... Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.
 #' @return a ggplot2 plot object
@@ -2093,6 +2094,7 @@ plot_pc_variance_explained <- function(cds,
     return(p)  
 }
 
+#' @importFrom igraph shortest_paths degree shortest.paths
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -2120,6 +2122,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
 #' @import ggplot2
+#' @importFrom igraph V get.edgelist layout_as_tree
 #' @importFrom reshape2 melt
 #' @export
 #' @examples
@@ -2549,6 +2552,10 @@ plot_multiple_branches_heatmap <- function(cds,
 #' @param TPM Whether to convert the expression value into TPM values. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
 #' @return a ggplot2 plot object
+#' 
+#' @importFrom Biobase esApply
+#' @importFrom stats lowess
+#' 
 #' @export
 #'
 plot_multiple_branches_pseudotime <- function(cds, 
@@ -2618,7 +2625,7 @@ plot_multiple_branches_pseudotime <- function(cds,
     
     newdata <- data.frame(Pseudotime = pData(cds_subset)$Pseudotime, row.names = colnames(cds_subset))
     
-    tmp <- t(esApply(cds_subset, 1, function(x) lowess(x[order(pData(cds_subset)$Pseudotime)])$y))
+    tmp <- t(esApply(cds_subset, 1, function(x) stats::lowess(x[order(pData(cds_subset)$Pseudotime)])$y))
     # tmp <- t(esApply(cds_subset, 1, function(x) {
     #   x <- x[order(pData(cds_subset)$Pseudotime)]
     #   c(smooth::sma(x, order = 100, h = 1, silent="all")$fitted)}) #, x[length(x)]
