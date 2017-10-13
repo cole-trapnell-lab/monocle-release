@@ -28,8 +28,6 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
-
-\item{cth}{CellTypeHierarchy}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 
