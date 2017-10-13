@@ -6,7 +6,7 @@
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_name_size = 2)
+  cell_name_size = 2, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

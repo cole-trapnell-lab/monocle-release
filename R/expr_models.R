@@ -353,7 +353,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @importFrom stats glm Gamma
-parametricDispersionFit <- function( disp_table, verbose, initial_coefs=c(1e-6, 1) )
+parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=c(1e-6, 1) )
 {
   coefs <- initial_coefs
   iter <- 0
@@ -505,8 +505,8 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 #' @param relative_expr Whether to transform expression into relative values
 #' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
 #' @param removeOutliers a boolean it determines whether or not outliers from the data should be removed
-#' @param cores the number of cores to be used while testing each gene for differential expression.
-estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores, verbose = F)
+#' @param verbose Whether to show detailed running information.
+estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, verbose = FALSE)
 {
   
   # if (cores > 1){

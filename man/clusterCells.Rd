@@ -34,7 +34,7 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
-\item{enrichment_thresh}{includeDescrip}
+\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 

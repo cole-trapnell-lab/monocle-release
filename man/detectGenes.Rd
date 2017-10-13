@@ -2,12 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{detectGenes}
 \alias{detectGenes}
-\title{Detects genes above minimum threshold.
-
-Sets the global expression detection threshold to be used with this CellDataSet.
-Counts how many cells each feature in a CellDataSet object that are detectably expressed 
-above a minimum threshold. Also counts the number of genes above this threshold are 
-detectable in each cell.}
+\title{Detects genes above minimum threshold.}
 \usage{
 detectGenes(cds, min_expr = NULL)
 }
@@ -18,6 +13,12 @@ detectGenes(cds, min_expr = NULL)
 }
 \value{
 an updated CellDataSet object
+}
+\description{
+Sets the global expression detection threshold to be used with this CellDataSet.
+Counts how many cells each feature in a CellDataSet object that are detectably expressed 
+above a minimum threshold. Also counts the number of genes above this threshold are 
+detectable in each cell.
 }
 \examples{
 \dontrun{

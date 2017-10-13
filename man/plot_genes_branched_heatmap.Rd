@@ -16,7 +16,7 @@ plot_genes_branched_heatmap(cds_subset, branch_point = 1,
   hmcols = NULL, branch_colors = c("#979797", "#F05662", "#7990C8"),
   add_annotation_row = NULL, add_annotation_col = NULL,
   show_rownames = FALSE, use_gene_short_name = TRUE, scale_max = 3,
-  scale_min = -3, norm_method = c("log", "vstExprs"),
+  scale_min = -3, norm_method = c("vstExprs", "log"),
   trend_formula = "~sm.ns(Pseudotime, df=3) * Branch",
   return_heatmap = FALSE, cores = 1, ...)
 }

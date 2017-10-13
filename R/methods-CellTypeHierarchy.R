@@ -145,7 +145,9 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   are marked "Ambigious". This allows you to impute cell type based on 
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
-#'    
+#' 
+#' @param cth the CellTypeHierarchy object  
+#' 
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
@@ -162,6 +164,8 @@ newCellTypeHierarchy <- function()
   return(cth)
 }
 
+#' @title Add Cell Type to Pre-Existing CellTypeHierarchy
+#' 
 #' @description adds a cell type to a pre-existing CellTypeHeirarchy and produces a function that accepts
 #' expression data from a CellDataSet. When the function is called on a CellDataSet a boolean vector is returned
 #' that indicates whether each cell is or is not the cell type that was added by addCellType.
@@ -195,7 +199,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
 #' @param cds The CelllDataSet you want to classify
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
-#' @param enrichment_thresh includeDescrip
+#' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
 #' @importFrom dplyr add_rownames select_ do group_by_ inner_join
 #' @importFrom Biobase pData pData<-

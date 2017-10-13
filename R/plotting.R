@@ -14,8 +14,8 @@ monocle_theme_opts <- function()
     theme(legend.key=element_blank())
 }
 
-#' Plots the minimum spanning tree on cells.
-#' @description 
+#' @title Plots the minimum spanning tree on cells.
+#' @description Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -26,13 +26,13 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number 
+#' @param show_state_number a boolean that determines whether or not the state number for each cell should be shown
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size 
+#' @param state_number_size if 'show_state_number' is set to true, this variable will control the size of the number labels 
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
-#' @param theta includeDescrip
+#' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -253,7 +253,7 @@ plot_spanning_tree <- function(cds,
 }
 
 
-#' Plots expression for one or more genes as a violin plot
+#' @title Plots expression for one or more genes as a violin plot
 #' 
 #' @description Accepts a subset of a CellDataSet and an attribute to group cells by,
 #' and produces one or more ggplot2 objects that plots the level of expression for
@@ -270,6 +270,7 @@ plot_spanning_tree <- function(cds,
 #' @param plot_trend whether to plot a trendline tracking the average expression across the horizontal axis.
 #' @param label_by_short_name label figure panels by gene_short_name (TRUE) or feature id (FALSE)
 #' @param relative_expr Whether to transform expression into relative values
+#' @param log_scale a boolean that determines whether or not to scale data logarithmically
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1108,7 +1109,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     show_rownames = FALSE, 
                                     use_gene_short_name = TRUE,
                                     
-                                    norm_method = c("log", "vstExprs"), 
+                                    norm_method = c("vstExprs", "log"), 
                                     scale_max=3, 
                                     scale_min=-3, 
                                     
@@ -1259,7 +1260,6 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @param trend_formula The model formula to be used for fitting the expression trend over pseudotime
 #' @param reducedModelFormulaStr A formula specifying a null model. If used, the plot shows a p value from the likelihood ratio test that uses trend_formula as the full model
 #' @param label_by_short_name Whether to label figure panels by gene_short_name (TRUE) or feature id (FALSE)
-#' @param multi_branch a boolean that signifies whether you'd like to compare more than two branches at once
 #' @param relative_expr Whether or not the plot should use relative expression values (only relevant for CellDataSets using transcript counts)
 #' @param ... Additional arguments passed on to branchTest. Only used when reducedModelFormulaStr is not NULL.
 #' @return a ggplot2 plot object
@@ -1664,7 +1664,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         use_gene_short_name = TRUE,
                                         scale_max=3, 
                                         scale_min=-3, 
-                                        norm_method = c("log", "vstExprs"), 
+                                        norm_method = c("vstExprs", "log"), 
                                         
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
@@ -1875,6 +1875,7 @@ plot_ordering_genes <- function(cds){
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom scale_color_viridis viridis
 #' @export
 #' @examples
 #' \dontrun{
@@ -1887,14 +1888,11 @@ plot_cell_clusters <- function(cds,
                                x=1, 
                                y=2, 
                                color_by="Cluster", 
-                               # show_tree=TRUE, 
-                               # show_backbone=TRUE, 
-                               # backbone_color="black", 
                                markers=NULL, 
                                show_cell_names=FALSE, 
                                cell_size=1.5,
-                               # cell_link_size=0.75,
-                               cell_name_size=2){
+                               cell_name_size=2, 
+                               ...){
   if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
   }
@@ -1927,8 +1925,8 @@ plot_cell_clusters <- function(cds,
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    #print (head(edge_df))
-    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + facet_wrap(~feature_label) 
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
@@ -1936,7 +1934,8 @@ plot_cell_clusters <- function(cds,
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+    g <- g + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE) + 
+      scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
   }else {
     g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
   }
@@ -1949,7 +1948,8 @@ plot_cell_clusters <- function(cds,
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
-    theme(panel.background = element_rect(fill='white'))
+    theme(panel.background = element_rect(fill='white')) +
+    theme(text = element_text(size = 15))
   g
 }
 
@@ -2116,10 +2116,11 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
-#' @param theta includeDescrip
+#' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
 #' @export
 #' @examples
 #' \dontrun{
@@ -2142,7 +2143,7 @@ plot_complex_cell_trajectory <- function(cds,
                                          cell_link_size=0.75,
                                          cell_name_size=2,
                                          show_branch_points=TRUE, 
-                                         theta = 0){
+                                         ...){
   gene_short_name <- NA
   sample_name <- NA
   data_dim_1 <- NA
@@ -2243,23 +2244,6 @@ plot_complex_cell_trajectory <- function(cds,
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
   
-  return_rotation_mat <- function(theta) {
-    theta <- theta / 180 * pi
-    matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
-  }
-  
-  tmp <- return_rotation_mat(theta) %*% t(as.matrix(data_df[, c(2, 3)]))
-  data_df$data_dim_1 <- tmp[1, ]
-  data_df$data_dim_2 <- tmp[2, ]
-  
-  tmp <- return_rotation_mat(theta = theta) %*% t(as.matrix(edge_df[, c('source_prin_graph_dim_1', 'source_prin_graph_dim_2')]))
-  edge_df$source_prin_graph_dim_1 <- tmp[1, ]
-  edge_df$source_prin_graph_dim_2 <- tmp[2, ]
-  
-  tmp <- return_rotation_mat(theta) %*% t(as.matrix(edge_df[, c('target_prin_graph_dim_1', 'target_prin_graph_dim_2')]))
-  edge_df$target_prin_graph_dim_1 <- tmp[1, ]
-  edge_df$target_prin_graph_dim_2 <- tmp[2, ]
-  
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
@@ -2275,7 +2259,7 @@ plot_complex_cell_trajectory <- function(cds,
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
     #print (head(edge_df))
-    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, I(cell_size))) + facet_wrap(~feature_label)
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
@@ -2286,12 +2270,21 @@ plot_complex_cell_trajectory <- function(cds,
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g + geom_jitter(aes_string(color = color_by), na.rm = TRUE, height=5) 
+    if(class(data_df[, color_by]) == 'numeric') {
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
+                             scale_color_viridis(name = paste0("log10(", color_by, ")"), ...)
+    } else {
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5) 
+    }
   }else {
-    g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5)
+    if(class(data_df[, color_by]) == 'numeric') {
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
+        scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
+    } else {
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5)
+    }
   }
-  
-  
+
   if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
@@ -2308,13 +2301,24 @@ plot_complex_cell_trajectory <- function(cds,
   }
   g <- g + 
     #scale_color_brewer(palette="Set1") +
-    monocle_theme_opts() + 
-    xlab(paste("Component", x)) + 
-    ylab(paste("Component", y)) +
+    theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
+    theme(panel.border = element_blank()) +
+    # theme(axis.line.x = element_line(size=0.25, color="black")) +
+    # theme(axis.line.y = element_line(size=0.25, color="black")) +
+    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
+    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
+    theme(panel.background = element_rect(fill='white')) +
+    theme(legend.key=element_blank()) + 
+    xlab('') + 
+    ylab('') +
     theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
     #guides(color = guide_legend(label.position = "top")) +
     theme(legend.key = element_blank()) +
-    theme(panel.background = element_rect(fill='white'))
+    theme(panel.background = element_rect(fill='white')) + 
+    theme(line = element_blank(), 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank()) 
   g
 }
 
@@ -2357,7 +2361,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            show_rownames = FALSE, 
                                            use_gene_short_name = TRUE,
                                            
-                                           norm_method = c("log", "vstExprs"), 
+                                           norm_method = c("vstExprs", "log"), 
                                            scale_max=3, 
                                            scale_min=-3, 
                                            
