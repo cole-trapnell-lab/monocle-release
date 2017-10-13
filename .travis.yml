@@ -4,7 +4,3 @@ dist: trusty
 bioc_required: true
 cache: packages
 warnings_are_errors: true
-addons:
-  apt:
-    packages:
-      - texlive-latex-extras
