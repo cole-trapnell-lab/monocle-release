@@ -326,7 +326,7 @@ dispersionTable <- function(cds){
 }
 
 #####
-#'@title Detects genes above minimum threshold.
+#' Detects genes above minimum threshold.
 #'
 #' Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 
