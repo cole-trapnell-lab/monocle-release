@@ -45,11 +45,17 @@ Imports:
     stringr,
     proxy,
     slam,
-    stats
+    stats,
+    biocViews
 Suggests:
     knitr,
     Hmisc,
     testthat
+Remotes:
+    bioc::Biobase,
+    bioc::BiocGenerics,
+    bioc::biocViews,
+    bioc::limma
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true

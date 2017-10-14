@@ -27,7 +27,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
   n<-method(expr_matrix)
   clusters<-cluster::pam(n,k, ...)
   class(clusters)<-"list"
-  clusters$exprs<-expr_matrix
+  clusters$exprs <- expr_matrix
   clusters
 }
 
@@ -68,22 +68,25 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @export
 
 clusterCells <- function(cds, 
-                          skip_rho_sigma = F, 
-                          num_clusters = NULL, 
-                          inspect_rho_sigma = F, 
-                          rho_threshold = NULL, 
-                          delta_threshold = NULL, 
-                          peaks = NULL,
-                          gaussian = T, 
-                          cell_type_hierarchy=NULL,
-                          frequency_thresh=NULL,
-                          enrichment_thresh=NULL,
-                          clustering_genes=NULL,
-                          method = c('densityPeak', 'DDRTree'),
-                          verbose = F, 
-                          ...) {
-
+                         skip_rho_sigma = F, 
+                         num_clusters = NULL, 
+                         inspect_rho_sigma = F, 
+                         rho_threshold = NULL, 
+                         delta_threshold = NULL, 
+                         peaks = NULL,
+                         gaussian = T, 
+                         cell_type_hierarchy=NULL,
+                         frequency_thresh=NULL,
+                         enrichment_thresh=NULL,
+                         clustering_genes=NULL,
+                         method = c('densityPeak', 'DDRTree'),
+                         verbose = F, 
+                         ...) {
+  method <- match.arg(method)
+  
   if(method == 'DDRTree') { # this option will be removed in future
+    ################### DDRTREE START ###################
+    
     # disp_table <- dispersionTable(cds)
     # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
     # cds <- setOrderingFilter(cds, ordering_genes)
@@ -113,9 +116,10 @@ clusterCells <- function(cds,
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
     
     return(cds)
-  }
-
-  else if(method == 'densityPeak'){
+  
+    ################### DDRTREE END ###################
+  } else if(method == 'densityPeak'){
+    ################### DENSITYPEAK END ###################
     set.seed(2017)
     tsne_data <- reducedDimA(cds)
     if(ncol(tsne_data) != ncol(cds))
@@ -141,32 +145,30 @@ clusterCells <- function(cds,
       # res <- list(rho=rho, delta=delta, distance=distance, dc=dc, threshold=c(rho=NA, delta=NA), peaks=NA, clusters=NA, halo=NA)
       dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo')]
       class(dataClust) <- 'densityCluster'
-    }
-    else{
-      
+    } else {
       #finally use density peak to determine the number of clusters
-      if (verbose) 
+      if (verbose) {
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
-      
+      }
       dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian) #gaussian = F
     }
     #automatically find the rho / sigma based on the number of cells you want: 
     if(!is.null(rho_threshold) & !is.null(delta_threshold)){
-      if(verbose)
+      if(verbose) {
         message('Use the user provided rho and delta for assigning the density peaks and clusters')
-    }
-    else 
-    {
+      }
+    } else {
       if(is.null(num_clusters)) {
-        if(verbose)
+        if(verbose) {
           message('Use 0.95 of the delta and 0.95 of the rho as the cutoff for assigning density peaks and clusters')
+        }
         
         rho_threshold <- quantile(dataClust$rho, probs = 0.95)
         delta_threshold <- quantile(dataClust$delta, probs = 0.95)
-      }
-      else {
-        if(verbose)
+      } else {
+        if(verbose) {
           message(paste('Use 0.5 of the rho as the cutoff and first', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
+        }
         delta_rho_df <- data.frame(delta = dataClust$delta, rho = dataClust$rho)
         rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
         delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
@@ -182,9 +184,9 @@ clusterCells <- function(cds,
     }
     
     #automatically pick up the rho and delta values: 
-    if(inspect_rho_sigma == F)
+    if(inspect_rho_sigma == F) {
       dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks=peaks)
-    else {
+    } else {
       if (verbose) 
         message("Please click on the decision plot to select rho and delta for density peak clustering...")
       
@@ -201,15 +203,16 @@ clusterCells <- function(cds,
     pData(cds)$delta <- dataClust$delta
     pData(cds)$rho <- dataClust$rho
     
-    if (is.null(cell_type_hierarchy) == FALSE)
+    if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
+    }
     
     cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
     
     return(cds)
-  }
-  
-  else{
+    
+  ################### DENSITYPEAK END ###################
+  } else {
     stop('Cluster method ', method, ' is not implemented')
   }
 }

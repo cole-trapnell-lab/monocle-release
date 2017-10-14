@@ -5,9 +5,8 @@
 \title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"),
-  norm_method = c("vstExprs", "log", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = NULL,
+  "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"), norm_method = c("log",
+  "vstExprs", "none"), residualModelFormulaStr = NULL, pseudo_expr = NULL,
   relative_expr = TRUE, auto_param_selection = TRUE, verbose = FALSE,
   scaling = TRUE, ...)
 }
@@ -24,13 +23,13 @@ reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
 
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
-\item{relative_expr}{includeDescrip}
+\item{relative_expr}{When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.}
 
-\item{auto_param_selection}{includeDescrip}
+\item{auto_param_selection}{when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
-\item{scaling}{includeDescrip}
+\item{scaling}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 }
