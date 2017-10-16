@@ -1875,7 +1875,7 @@ plot_ordering_genes <- function(cds){
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
-#' @importFrom scale_color_viridis viridis
+#' @importFrom viridis scale_color_viridis
 #' @export
 #' @examples
 #' \dontrun{

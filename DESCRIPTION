@@ -48,6 +48,9 @@ Imports:
     viridis,
     stats
 Suggests:
+    destiny,
+    Seurat,
+    scater, 
     knitr,
     Hmisc,
     testthat
