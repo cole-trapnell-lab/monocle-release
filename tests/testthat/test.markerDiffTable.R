@@ -1,6 +1,6 @@
 library(monocle)
 library(HSMMSingleCell)
-context("clusterCells is functioning properly")
+context("markerDiffTable is functioning properly")
 
 data(HSMM_expr_matrix)
 data(HSMM_gene_annotation)
@@ -28,6 +28,7 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
 
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
+
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
 expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
 
@@ -59,18 +60,37 @@ cth <- addCellType(cth, "Fibroblast", classify_func = function(x)
 { x[MYF5_id,] < 1 & x[ANPEP_id,] > 1 })
 
 HSMM <- classifyCells(HSMM, cth, 0.1)
-marker_diff <- markerDiffTable(HSMM[expressed_genes,],
-                               cth,
-                               residualModelFormulaStr = "~Media + num_genes_expressed",
-                               cores = 1)
-candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
-marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
-semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
-HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
-HSMM <- reduceDimension(HSMM, max_components = 2, num_dim = 3, norm_method = 'log',
-                        reduction_method = 'tSNE',
-                        residualModelFormulaStr = "~Media + num_genes_expressed",
-                        verbose = T)
 
-test_that("clusterCells functions normally in vignette", 
-          expect_error(clusterCells(HSMM, num_clusters = 2), NA))
+test_that("markerDiffTable works properly in vignette", 
+          expect_error(markerDiffTable(HSMM[expressed_genes,],
+                                       cth,
+                                       residualModelFormulaStr = "~Media + num_genes_expressed",
+                                       cores = 1), NA))
+
+test_that("markerDiffTable works when 'balanced set to true'", 
+          expect_error(markerDiffTable(HSMM[expressed_genes,],
+                                       cth,
+                                       balanced = TRUE,
+                                       residualModelFormulaStr = "~Media + num_genes_expressed",
+                                       cores = 1), NA))
+
+test_that("markerDiffTable works when 'verbose set to true'", 
+          expect_error(markerDiffTable(HSMM[expressed_genes,],
+                                       cth,
+                                       verbose = TRUE,
+                                       residualModelFormulaStr = "~Media + num_genes_expressed",
+                                       cores = 1), NA))
+
+test_that("markerDiffTable throws error if cds is not of type 'CellDataSet'", 
+          expect_error(markerDiffTable(cth,
+                                       cth,
+                                       balanced = TRUE,
+                                       residualModelFormulaStr = "~Media + num_genes_expressed",
+                                       cores = 1), "Error cds is not of type 'CellDataSet'"))
+
+test_that("markerDiffTable throws error if cds is not of type 'CellDataSet'", 
+          expect_error(markerDiffTable(HSMM[expressed_genes,],
+                                       HSMM[expressed_genes],
+                                       balanced = TRUE,
+                                       residualModelFormulaStr = "~Media + num_genes_expressed",
+                                       cores = 1), "Error cth is not of type 'CellTypeHierarchy'"))

@@ -27,6 +27,10 @@ test_that("throws error if infinite parameter is present", {
   expect_error(relative2abs(HSMM, method = "num_genes", volume = Inf), "Your input parameters should not contain either null or infinite numbers")
 })
 
+test_that("throws error if parameter equals NULL", {
+  expect_error(relative2abs(HSMM, method = "num_genes", detection_threshold = NULL), "Your input parameters should not contain either null or infinite numbers")
+})
+
 test_that("throws error if concentration detection limit is too low", {
   expect_error(relative2abs(HSMM, method = "num_genes", detection_threshold = 0), "concentration detection limit should be between 0.01430512 and 7500")
 })

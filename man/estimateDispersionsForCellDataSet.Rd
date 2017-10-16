@@ -5,7 +5,11 @@
 \title{Helper function to estimate dispersions}
 \usage{
 estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
+<<<<<<< HEAD
+  min_cells_detected, removeOutliers, cores, verbose = F)
+=======
   min_cells_detected, removeOutliers, verbose = FALSE)
+>>>>>>> ce5de347ab461f2ed0e6f34051f63b2cef77e50c
 }
 \arguments{
 \item{cds}{a CellDataSet that contains all cells user wants evaluated}
@@ -18,7 +22,13 @@ estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
 
 \item{removeOutliers}{a boolean it determines whether or not outliers from the data should be removed}
 
+<<<<<<< HEAD
+\item{cores}{the number of cores to be used while testing each gene for differential expression.}
+
+\item{verbose}{Whether to show VGAM errors and warnings.}
+=======
 \item{verbose}{Whether to show detailed running information.}
+>>>>>>> ce5de347ab461f2ed0e6f34051f63b2cef77e50c
 }
 \description{
 Helper function to estimate dispersions

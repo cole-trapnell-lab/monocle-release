@@ -138,6 +138,11 @@ differentialGeneTest <- function(cds,
                                  verbose=FALSE
                                  ){
   status <- NA
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   # pdat_cols_check_1 <- "empty"
   # 
   # fmfs_test <- fullModelFormulaStr

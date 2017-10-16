@@ -25,7 +25,6 @@ test_that("plot_cell_trajectory() throws an error if reduceDimensionality hasn't
 test_that("plot_cell_trajectory() throws an error if the CellDataSet's reduction method is unrecognizable", {
   HSMM <- estimateSizeFactors(HSMM)
   HSMM <- estimateDispersions(HSMM)
-  HSMM <- clusterCells(HSMM, num_clusters=2)
   HSMM@dim_reduce_type <- "asdasd"
   expect_error(plot_cell_trajectory(HSMM), "Error: unrecognized dimensionality reduction method.")
 })

@@ -1046,6 +1046,11 @@ orderCells <- function(cds,
                        root_state=NULL,
                        num_paths = NULL,
                        reverse=NULL){
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
@@ -1209,6 +1214,7 @@ normalize_expr_data <- function(cds,
       }
     }else if (norm_method == "log") {
       # If we are using log, normalize by size factor before log-transforming
+      
       if (relative_expr)
         FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
 

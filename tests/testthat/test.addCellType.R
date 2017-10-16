@@ -1,6 +1,10 @@
 library(monocle)
 library(HSMMSingleCell)
-context("reduceDimension is functioning properly")
+context("addCellType functions properly")
+
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
 
 pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
 fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
@@ -24,30 +28,21 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
 
 HSMM <- estimateSizeFactors(HSMM)
 HSMM <- estimateDispersions(HSMM)
-
 HSMM <- detectGenes(HSMM, min_expr = 0.1)
-print(head(fData(HSMM)))
-expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
-
-pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
-
-
 HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
-
-HSMM <- detectGenes(HSMM, min_expr = 0.1)
-
-L <- log(exprs(HSMM[expressed_genes,]))
-
-melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+cth <- newCellTypeHierarchy()
 
 MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
-ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
 
-# HSMM <- classifyCells(HSMM, cth, 0.1)
+#write test code for this: 
 
-disp_table <- dispersionTable(HSMM)
-unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
-HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+test_that("test addCellType works properly", {
+  expect_error(cth <- addCellType(cth, "Myoblast", classify_func = function(x) {x[MYF5_id,] >= 1}), NA)
+})
 
-test_that("reduceDimension works properly", expect_error(HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
-                                                                                 reduction_method = 'tSNE', verbose = T), NA))
+test_that("test addCellType throws error when same cell name is used", {
+  cth <- addCellType(cth, "Myoblast1", classify_func = function(x) {x[MYF5_id,] >= 1})
+  expect_error(cth <- addCellType(cth, "Myoblast1", classify_func = function(x) {x[MYF5_id,] >= 1}), "cell type Myoblast1 already exists.")
+})
+
+

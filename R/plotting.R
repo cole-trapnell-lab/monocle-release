@@ -1109,7 +1109,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     show_rownames = FALSE, 
                                     use_gene_short_name = TRUE,
                                     
-                                    norm_method = c("vstExprs", "log"), 
+                                    norm_method = c("log", "vstExprs"), 
                                     scale_max=3, 
                                     scale_min=-3, 
                                     
@@ -1664,7 +1664,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         use_gene_short_name = TRUE,
                                         scale_max=3, 
                                         scale_min=-3, 
-                                        norm_method = c("vstExprs", "log"), 
+                                        norm_method = c("log", "vstExprs"), 
                                         
                                         trend_formula = '~sm.ns(Pseudotime, df=3) * Branch',
                                         
@@ -1844,6 +1844,9 @@ plot_genes_branched_heatmap <- function(cds_subset,
 #' @param cds The CellDataSet to be used for the plot.
 #' @export
 plot_ordering_genes <- function(cds){
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error input object is not of type 'CellDataSet'")
+  }
   disp_table <- dispersionTable(cds)
   use_for_ordering <- NA
   mean_expression <- NA
@@ -2778,4 +2781,3 @@ plot_multiple_branches_pseudotime <- function(cds,
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
-
