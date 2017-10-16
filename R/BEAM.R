@@ -16,9 +16,9 @@
 #' @param branch_states The states for two branching branches
 #' @param branch_labels The names for each branching branch
 #' @import methods
-#' @import igraph
 #' @importFrom Biobase pData<- exprs
 #' @importFrom stats setNames
+#' @importFrom igraph V degree shortest_paths bfs
 #' @param stretch A logical flag to determine whether or not the pseudotime trajectory for each branch should be stretched to the same range or not
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export

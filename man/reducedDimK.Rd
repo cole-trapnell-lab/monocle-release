@@ -14,7 +14,7 @@ reducedDimK(cds)
 A matrix, where each row is a set of whitened expression values for a feature and columns are cells.
 }
 \description{
-
+Retrieves the the whitening matrix during independent component analysis.
 }
 \examples{
 \dontrun{
