@@ -19,3 +19,21 @@ a new monocle cell dataset object converted from other objects (Scatter or Seura
 This function takes a monocle CellDataSet and converts it to another type of object used in another popular single cell analysis toolkit. It currently
 supports Scran and Seurat packages.
 }
+\examples{
+\dontrun{
+lung <- load_lung()
+seurat_lung <- exportCDS(lung)
+seurat_lung_all <- exportCDS(lung, export_all = T)
+scater_lung <- exportCDS(lung, export_to = 'Scater')
+scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
+
+importCDS(seurat_lung)
+importCDS(seurat_lung, import_all = T)
+importCDS(seurat_lung_all)
+importCDS(seurat_lung_all, import_all = T)
+importCDS(scater_lung)
+importCDS(scater_lung, import_all = T)
+importCDS(scater_lung_all)
+importCDS(scater_lung_all, import_all = T)
+}
+}

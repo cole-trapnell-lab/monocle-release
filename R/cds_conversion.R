@@ -1,4 +1,4 @@
-# this file contains functions to convert between Monocle cds to scran or Seurat CDS back and forth. Note that those functionss   
+# this file contains functions to convert between Monocle cds to scran or Seurat CDS back and forth. 
 
 #' Export a monocle CellDataSet object to other popular single cell analysis toolkit.
 #' 
@@ -14,6 +14,14 @@
 #' @importFrom scater newSCESet
 #' @import Seurat
 #' @export
+#' @examples
+#' \dontrun{
+#' lung <- load_lung()
+#' seurat_lung <- exportCDS(lung)
+#' seurat_lung_all <- exportCDS(lung, export_all = T)
+#' scater_lung <- exportCDS(lung, export_to = 'Scater')
+#' scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
+#' }
 exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all = FALSE) {
   if(export_to == 'Seurat') {
     data <- exprs(monocle_cds)
@@ -42,7 +50,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
       monocle_cds@auxClusteringData$scran <- NULL
       mist_list <- monocle_cds
     } else {
-      misc = list()
+      mist_list = list()
     }
     export_cds <- new("seurat", raw.data = data, 
                       data = log(data + 1), 
@@ -50,7 +58,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
                       var.genes = row.names(subset(fData(monocle_cds), use_for_ordering == TRUE)), 
                       is.expr = monocle_cds@lowerDetectionLimit,
                       meta.data = pData(monocle_cds),
-                      project.name = 'exportCds', 
+                      project.name = 'exportCDS', 
                       misc = mist_list
                       )
     
@@ -84,7 +92,23 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
 #' minimal dataset). 
 #' @return a new monocle cell dataset object converted from other objects (Scatter or Seurat).  
 #' @export
+#' @examples
+#' \dontrun{
+#' lung <- load_lung()
+#' seurat_lung <- exportCDS(lung)
+#' seurat_lung_all <- exportCDS(lung, export_all = T)
+#' scater_lung <- exportCDS(lung, export_to = 'Scater')
+#' scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
 #' 
+#' importCDS(seurat_lung)
+#' importCDS(seurat_lung, import_all = T)
+#' importCDS(seurat_lung_all)
+#' importCDS(seurat_lung_all, import_all = T)
+#' importCDS(scater_lung)
+#' importCDS(scater_lung, import_all = T)
+#' importCDS(scater_lung_all)
+#' importCDS(scater_lung_all, import_all = T)
+#' }
 importCDS <- function(otherCDS, import_all = FALSE) {
   if(class(otherCDS)[1] == 'seurat') {
     data <- otherCDS@raw.data
@@ -132,6 +156,8 @@ importCDS <- function(otherCDS, import_all = FALSE) {
         otherCDS@misc$Monocle@auxClusteringData$scran <- NULL
         
         monocle_cds <- otherCDS@misc$Monocle
+        mist_list <- otherCDS
+        
       } else {
         # mist_list <- list(ident = ident, 
         #                   project.name = project.name,
@@ -152,10 +178,13 @@ importCDS <- function(otherCDS, import_all = FALSE) {
       mist_list <- list()
     }
     
-    monocle_cds <- setOrderingFilter(monocle_cds, var.genes)
+    if("var.genes" %in% slotNames(otherCDS)) {
+      var.genes <- setOrderingFilter(monocle_cds, otherCDS@var.genes)
+      
+    }
     monocle_cds@auxClusteringData$seurat <- mist_list
     
-  } else if (class(otherCDS)[1] == 'scater') {
+  } else if (class(otherCDS)[1] == 'SCESet') {
     if(otherCDS@logged) {
       data <- 2^otherCDS@assayData$exprs - otherCDS@logExprsOffset
     }
@@ -163,9 +192,13 @@ importCDS <- function(otherCDS, import_all = FALSE) {
       data <- otherCDS@assayData$exprs
     }
     
-    pd <- otherCDS@featureData
-    fd <- otherCDS@phenoData
-    experimentData = monocle_cds@experimentData
+    fd <- otherCDS@featureData
+    pd <- otherCDS@phenoData
+    experimentData = otherCDS@experimentData
+    if("is.expr" %in% slotNames(otherCDS))
+      lowerDetectionLimit <- otherCDS@is.expr
+    else 
+      lowerDetectionLimit <- 1
     
     if(is.integer(data[1, 1])) {
       expressionFamily <- negbinomial.size()

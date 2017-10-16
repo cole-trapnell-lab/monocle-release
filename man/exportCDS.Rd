@@ -23,3 +23,12 @@ a new object in the format of another package, as described in the export_to arg
 This function takes a monocle CellDataSet and converts it to another type of object used in another popular single cell analysis toolkit. It currently
 supports Scran and Seurat packages.
 }
+\examples{
+\dontrun{
+lung <- load_lung()
+seurat_lung <- exportCDS(lung)
+seurat_lung_all <- exportCDS(lung, export_all = T)
+scater_lung <- exportCDS(lung, export_to = 'Scater')
+scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
+}
+}

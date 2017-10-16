@@ -1305,9 +1305,9 @@ normalize_expr_data <- function(cds,
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param relative_expr includeDescrip
-#' @param auto_param_selection includeDescrip
-#' @param scaling includeDescrip
+#' @param relative_expr When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.
+#' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
+#' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
