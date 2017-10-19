@@ -46,6 +46,7 @@ Imports:
     proxy,
     slam,
     stats,
+    tibble,
     biocViews
 Suggests:
     knitr,
