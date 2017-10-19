@@ -2548,7 +2548,7 @@ plot_multiple_branches_heatmap <- function(cds,
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
 #' @return a ggplot2 plot object
 #' 
-#' @importFrom Biobase esApply
+#' @importFrom Biobase esApply exprs<-
 #' @importFrom stats lowess
 #' 
 #' @export
