@@ -468,8 +468,22 @@ HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
           </div>
           </p>
 
+          <h3 data-toc-text= "Estimate size factors and dispersions">Estimate size factors and dispersions <span class= "label label-danger">Required</span></h3>
+
           <p> Finally, we'll also call two functions that pre-calculate some information about the data.
           Size factors help us normalize for differences in mRNA recovered across cells, and "dispersion" values will help us perform differential expression analysis later. </p>
+
+          <p>
+          <div class= "panel panel-danger">
+          <div class= "panel-heading">
+          <h3 class= "panel-title" data-toc-skip>Requirements fot estimateSizeFactors and estimateDispersions</h3>
+          </div>
+          <div class= "panel-body">
+            <code>estimateSizeFactors()</code> and <code>estimateDispersions()</code> will only work, and are only needed, if you are working with
+            a CellDataSet with a <code>negbinomial()</code> or <code>negbinomial.size()</code> expression family.
+          </div>
+          </div>
+          </p>
 
 {% highlight R %}
 HSMM <- estimateSizeFactors(HSMM)
