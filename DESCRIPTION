@@ -48,11 +48,11 @@ Imports:
     viridis,
     stats
 Suggests:
-    destiny,
-    Seurat,
-    scater, 
-    knitr,
+    destiny, 
     Hmisc,
+    knitr,
+    Seurat,
+    scater,
     testthat
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)

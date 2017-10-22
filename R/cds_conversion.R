@@ -74,7 +74,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
               cellPairwiseDistances = dist(vector()),
               featurePairwiseDistances = dist(vector()), 
               lowerDetectionLimit = monocle_cds@lowerDetectionLimit,
-              logExprsOffset = 1, logged = TRUE, useForExprs = "exprs")    
+              logExprsOffset = 1)    
   } else {
     stop('the object type you want to export to is not supported yet')
   }
@@ -185,9 +185,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     monocle_cds@auxClusteringData$seurat <- mist_list
     
   } else if (class(otherCDS)[1] == 'SCESet') {
-    if(otherCDS@logged) {
-      data <- 2^otherCDS@assayData$exprs - otherCDS@logExprsOffset
-    }
+    data <- 2^otherCDS@assayData$exprs - otherCDS@logExprsOffset
     else { 
       data <- otherCDS@assayData$exprs
     }

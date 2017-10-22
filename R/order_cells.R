@@ -968,6 +968,10 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
     #root_cell_candidates <- root_cell_candidates[row.names(root_cell_candidates) %in% tip_leaves,]
     #sg <- make_ego_graph(dp_mst, nodes=row.names(root_cell_candidates))[[1]]
 
+    # if(length(intersect(tip_leaves, row.names(root_cell_candidates))) == 0){
+    #   stop(paste("Error: no valid root cells for State =", root_state))
+    # }
+      
     diameter <- get.diameter(dp_mst)
 
     if (length(diameter) == 0){

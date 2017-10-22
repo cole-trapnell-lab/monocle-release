@@ -727,7 +727,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
     cds_exprs$expression[cds_exprs$expression < min_expr] <- min_expr
     cds_exprs$expectation[cds_exprs$expectation < min_expr] <- min_expr
     if (is.null(panel_order) == FALSE) {
-        cds_subset$feature_label <- factor(cds_subset$feature_label,
+      cds_exprs$feature_label <- factor(cds_exprs$feature_label,
             levels = panel_order)
     }
     q <- ggplot(aes(Pseudotime, expression), data = cds_exprs)
