@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods-CellTypeHierarchy.R
 \name{addCellType}
 \alias{addCellType}
-\title{Add Cell Type to Pre-Existing CellTypeHierarchy}
+\title{Add a new cell type}
 \usage{
 addCellType(cth, cell_type_name, classify_func,
   parent_cell_type_name = "root")
@@ -20,7 +20,7 @@ type}
 provide its name here}
 }
 \description{
-adds a cell type to a pre-existing CellTypeHeirarchy and produces a function that accepts
+adds a cell type to a pre-existing CellTypeHierarchy and produces a function that accepts
 expression data from a CellDataSet. When the function is called on a CellDataSet a boolean vector is returned
 that indicates whether each cell is or is not the cell type that was added by addCellType.
 }

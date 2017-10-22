@@ -14,8 +14,8 @@ monocle_theme_opts <- function()
     theme(legend.key=element_blank())
 }
 
-#' @title Plots the minimum spanning tree on cells.
-#' @description Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
+#' Plots the minimum spanning tree on cells.
+#' 
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -26,16 +26,17 @@ monocle_theme_opts <- function()
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number a boolean that determines whether or not the state number for each cell should be shown
+#' @param show_state_number show state number
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size if 'show_state_number' is set to true, this variable will control the size of the number labels 
+#' @param state_number_size the size of the state number
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom igraph get.edgelist
 #' @export
 #' @examples
 #' \dontrun{
@@ -2095,6 +2096,7 @@ plot_pc_variance_explained <- function(cds,
     return(p)  
 }
 
+#' @importFrom igraph shortest_paths degree shortest.paths
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -2122,6 +2124,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
+#' @importFrom igraph V get.edgelist layout_as_tree
 #' @importFrom reshape2 melt
 #' @importFrom viridis scale_color_viridis
 #' @export
@@ -2555,6 +2558,10 @@ plot_multiple_branches_heatmap <- function(cds,
 #' @param TPM Whether to convert the expression value into TPM values. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
 #' @return a ggplot2 plot object
+#' 
+#' @importFrom Biobase esApply
+#' @importFrom stats lowess
+#' 
 #' @export
 #'
 plot_multiple_branches_pseudotime <- function(cds, 

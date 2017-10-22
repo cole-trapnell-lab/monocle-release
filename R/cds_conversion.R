@@ -11,8 +11,6 @@
 #' minimal dataset). If export_all is setted to be true, the original monocle cds will be keeped in the other cds object too. 
 #' This argument is also only applicable when export_to is Seurat.  
 #' @return a new object in the format of another package, as described in the export_to argument. 
-#' @importFrom scater newSCESet
-#' @import Seurat
 #' @export
 #' @examples
 #' \dontrun{
@@ -24,6 +22,7 @@
 #' }
 exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all = FALSE) {
   if(export_to == 'Seurat') {
+    requireNamespace("Seurat")
     data <- exprs(monocle_cds)
     ident <- colnames(monocle_cds)
     
@@ -63,6 +62,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
                       )
     
   } else if (export_to == 'Scater') {
+    requireNamespace("scater")
     data <- log2(exprs(monocle_cds) + 1)
     pd <- new("AnnotatedDataFrame", data = pData(monocle_cds))
     fd <- new("AnnotatedDataFrame", data = fData(monocle_cds))
@@ -111,6 +111,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
 #' }
 importCDS <- function(otherCDS, import_all = FALSE) {
   if(class(otherCDS)[1] == 'seurat') {
+    requireNamespace("Seurat")
     data <- otherCDS@raw.data
 
     pd <- new("AnnotatedDataFrame", data = otherCDS@meta.data)
@@ -185,6 +186,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     monocle_cds@auxClusteringData$seurat <- mist_list
     
   } else if (class(otherCDS)[1] == 'SCESet') {
+    requireNamespace("scater")
     if(otherCDS@logged) {
       data <- 2^otherCDS@assayData$exprs - otherCDS@logExprsOffset
     }

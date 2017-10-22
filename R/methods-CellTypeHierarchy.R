@@ -1,6 +1,7 @@
-#' @import igraph
+
 #' @import methods
 #' @importFrom Biobase exprs pData
+#' @importFrom igraph V
 cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
@@ -44,7 +45,7 @@ classifyCellsHelperCds <- function(cds_subset, cth, frequency_thresh){
   CellType <- cth_classifier_cds(cds_subset, cth, "root", frequency_thresh)
 }
 
-
+#' @importFrom igraph V
 cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
   next_nodes <- c()
   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
@@ -71,6 +72,8 @@ cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
 }
 
 #' @importFrom Biobase exprs pData
+#' @importFrom igraph V
+#' @importFrom dplyr %>%
 classifyCellsHelperCell <- function(cds, cth){
   #next_node_list <- rep(list(), ncol(cds)) 
   
@@ -80,7 +83,7 @@ classifyCellsHelperCell <- function(cds, cth){
     type_res <- cell_class_func(exprs(cds))
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
   }
-  cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname"), "rowname") 
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
   class_df <- as.data.frame(cds_pdata %>% do(CellType = cth_classifier_cell(.$rowname, cth, "root", gate_res)))
   CellType <- factor(unlist(class_df$CellType))
   names(CellType) <- class_df$rowname
@@ -90,10 +93,10 @@ classifyCellsHelperCell <- function(cds, cth){
 
 #' @title Classify cells according to a set of markers
 #' 
-#' @description Creates a CellTypeHeirarchy object which can store
+#' @description Creates a CellTypeHierarchy object which can store
 #' cell types with the addCellType() function. When classifyCells
-#' is used with a CellDataSet and a CellTypeHeirarchy cells in the 
-#' CellDataSet can be classified as cell types found in the CellTypeHeirarchy
+#' is used with a CellDataSet and a CellTypeHierarchy cells in the 
+#' CellDataSet can be classified as cell types found in the CellTypeHierarchy
 #' 
 #' @details CellTypeHierarchy objects are Monocle's mechanism for
 #'   classifying cells into types based on known markers. To classify the cells
@@ -142,7 +145,7 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   group, and if a cell type is present at the frquency specified in 
 #'   \code{frequency_thresh}, all the cells in the group are classified as that 
 #'   type. If group contains more one cell type at this frequency, all the cells
-#'   are marked "Ambigious". This allows you to impute cell type based on 
+#'   are marked "Ambiguous". This allows you to impute cell type based on 
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
 #' 
@@ -151,6 +154,9 @@ classifyCellsHelperCell <- function(cds, cth){
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
+#'   
+#' @importFrom igraph vertex graph.empty
+#'   
 #' @export
 newCellTypeHierarchy <- function()
 {
@@ -164,9 +170,8 @@ newCellTypeHierarchy <- function()
   return(cth)
 }
 
-#' @title Add Cell Type to Pre-Existing CellTypeHierarchy
-#' 
-#' @description adds a cell type to a pre-existing CellTypeHeirarchy and produces a function that accepts
+#' Add a new cell type
+#' @description adds a cell type to a pre-existing CellTypeHierarchy and produces a function that accepts
 #' expression data from a CellDataSet. When the function is called on a CellDataSet a boolean vector is returned
 #' that indicates whether each cell is or is not the cell type that was added by addCellType.
 #' @param cth The CellTypeHierarchy object 
@@ -176,6 +181,9 @@ newCellTypeHierarchy <- function()
 #'   type
 #' @param parent_cell_type_name If this cell type is a subtype of another,
 #'   provide its name here
+#'   
+#' @importFrom igraph V edge
+#'   
 #' @export
 addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_name="root") 
 {
@@ -193,7 +201,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @title Classify cells according to a set of markers
 #' 
 #' @description classifyCells accepts a cellDataSet and and a cellTypeHierarchy.
-#' Each cell in the cellDataSet is checked against the functions in the cellTypeHeirarchy
+#' Each cell in the cellDataSet is checked against the functions in the cellTypeHierarchy
 #' to determine each cell's type
 #' 
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
@@ -201,7 +209,8 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
-#' @importFrom dplyr add_rownames select_ do group_by_ inner_join
+#' @importFrom dplyr select_ do group_by_ inner_join %>%
+#' @importFrom tibble rownames_to_column
 #' @importFrom Biobase pData pData<-
 #' @export 
 #' @examples
@@ -257,7 +266,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
     }else
       frequency_thresholds <- frequency_thresh
 
-    cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
+    cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", ...), ...) 
     class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
     class_df$CellType <-  as.character(unlist(class_df$CellType))
     #class_df$rowname <- as.character(class_df$rowname)
@@ -275,7 +284,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
   #pData(cds)$cell_type <- cds_types
   
   
-  pData(cds) <- as.data.frame(suppressMessages(inner_join(add_rownames(pData(cds)), class_df)))
+  pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
   
   pData(cds)$CellType <- factor(pData(cds)$CellType)
   
@@ -293,12 +302,14 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
 #' of cell-type specificity. For a complete description see Cabili \emph{et. al},
 #' Genes & Development (2011). 
 #' 
+#' @param cth CellTypeHierarchy
 #' @param remove_ambig a boolean that determines if ambiguous cells should be removed
 #' @param remove_unknown a boolean that determines whether unknown cells should be removed
 #' @return For a CellDataset with N genes, and a CellTypeHierarchy with k types,
 #' returns a dataframe with N x k rows. Each row contains a gene and a specifity
 #' score for one of the types.
 #' @importFrom reshape2 dcast
+#' @importFrom dplyr %>%
 #' @importFrom Biobase exprs fData pData
 #' @export
 calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
@@ -323,7 +334,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
   options(dplyr.show_progress = T)
 
   cds <- cds[,row.names(subset(pData(cds), CellType %in% c("Unknown", "Ambiguous") == FALSE))]
-  cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", "CellType"), "CellType") 
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", "CellType"), "CellType") 
   class_df <- as.data.frame(cds_pdata %>% do(markerSpecificityHelper(cds[,.$rowname], cth)))
   class_df <- dcast(class_df, CellType ~ gene_id, value.var = "expr_val")
   row.names(class_df) <- class_df$CellType
@@ -356,7 +367,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' @param marker_specificities The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}
 #' @param num_markers The number of markers that will be shown for each cell type
 #' @return A data frame of specificity results
-#' @importFrom dplyr top_n
+#' @importFrom dplyr top_n %>%
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
   specificity <- NA
@@ -367,8 +378,8 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 
 #' Test genes for cell type-dependent expression
 #' 
-#' @description takes a CellDataSet and a CellTypeHeirarchy and classifies all cells into types passed
-#' functions passed into the CellTypeHeirarchy. The function will remove all "Unknown" and "Ambigious" types
+#' @description takes a CellDataSet and a CellTypeHierarchy and classifies all cells into types passed
+#' functions passed into the CellTypeHierarchy. The function will remove all "Unknown" and "Ambiguous" types
 #' before identifying genes that are differentially expressed between types.
 #' 
 #' @param cds A CellDataSet object containing cells to classify
@@ -417,7 +428,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
     selected_cells <- c()
 
     for (cell_type in names(cell_type_counts)){
-      cell_type_sample <- sample_n(add_rownames(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
+      cell_type_sample <- sample_n(rownames_to_column(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
       selected_cells <- c(selected_cells, cell_type_sample)
     }
     

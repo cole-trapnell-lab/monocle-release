@@ -17,6 +17,5 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #' @rdname CellTypeHierarchy
 #' @aliases CellTypeHierarchy-class
 #' @exportClass CellTypeHierarchy
-#' @import igraph
 setClass( "CellTypeHierarchy", 
           slots = c(classificationTree="igraph"))

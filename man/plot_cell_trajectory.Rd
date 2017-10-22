@@ -32,7 +32,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{show_cell_names}{draw the name of each cell in the plot}
 
-\item{show_state_number}{a boolean that determines whether or not the state number for each cell should be shown}
+\item{show_state_number}{show state number}
 
 \item{cell_size}{The size of the point for each cell}
 
@@ -40,7 +40,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{cell_name_size}{the size of cell name labels}
 
-\item{state_number_size}{if 'show_state_number' is set to true, this variable will control the size of the number labels}
+\item{state_number_size}{the size of the state number}
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
@@ -50,7 +50,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 a ggplot2 plot object
 }
 \description{
-Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
+Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{
