@@ -49,7 +49,8 @@ Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 plot_cell_trajectory(HSMM)
 plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 plot_cell_trajectory(HSMM, markers="MYH3")

@@ -44,7 +44,8 @@ each group of cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("ACTA1", "ID1", "CCNB2"))),]
 plot_genes_violin(my_genes, grouping="Hours", ncol=2, min_expr=0.1)
 }

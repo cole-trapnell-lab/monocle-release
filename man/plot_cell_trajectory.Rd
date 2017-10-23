@@ -6,10 +6,10 @@
 \usage{
 plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
-  markers = NULL, markers_linear = FALSE, show_cell_names = FALSE,
-  show_state_number = FALSE, cell_size = 1.5, cell_link_size = 0.75,
-  cell_name_size = 2, state_number_size = 2.9, show_branch_points = TRUE,
-  theta = 0)
+  markers = NULL, use_color_gradient = FALSE, markers_linear = FALSE,
+  show_cell_names = FALSE, show_state_number = FALSE, cell_size = 1.5,
+  cell_link_size = 0.75, cell_name_size = 2, state_number_size = 2.9,
+  show_branch_points = TRUE, theta = 0, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -28,11 +28,13 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{markers}{a gene name or gene id to use for setting the size of each cell in the plot}
 
+\item{use_color_gradient}{Whether or not to use color gradient instead of cell size to show marker expression level}
+
 \item{markers_linear}{a boolean used to indicate whether you want to scale the markers logarithimically or linearly}
 
 \item{show_cell_names}{draw the name of each cell in the plot}
 
-\item{show_state_number}{a boolean that determines whether or not the state number for each cell should be shown}
+\item{show_state_number}{show state number}
 
 \item{cell_size}{The size of the point for each cell}
 
@@ -40,7 +42,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 
 \item{cell_name_size}{the size of cell name labels}
 
-\item{state_number_size}{if 'show_state_number' is set to true, this variable will control the size of the number labels}
+\item{state_number_size}{the size of the state number}
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
@@ -50,13 +52,13 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 a ggplot2 plot object
 }
 \description{
-Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
+Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
-plot_cell_trajectory(HSMM)
-plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-plot_cell_trajectory(HSMM, markers="MYH3")
+lung <- load_lung()
+plot_cell_trajectory(lung)
+plot_cell_trajectory(lung, color_by="Pseudotime", show_backbone=FALSE)
+plot_cell_trajectory(lung, markers="MYH3")
 }
 }

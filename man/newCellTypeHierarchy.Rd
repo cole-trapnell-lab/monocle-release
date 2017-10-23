@@ -28,6 +28,8 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
+
+\item{cth}{CellTypeHierarchy}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 
@@ -39,13 +41,13 @@ returns a dataframe with N x k rows. Each row contains a gene and a specifity
 score for one of the types.
 }
 \description{
-Creates a CellTypeHeirarchy object which can store
+Creates a CellTypeHierarchy object which can store
 cell types with the addCellType() function. When classifyCells
-is used with a CellDataSet and a CellTypeHeirarchy cells in the 
-CellDataSet can be classified as cell types found in the CellTypeHeirarchy
+is used with a CellDataSet and a CellTypeHierarchy cells in the 
+CellDataSet can be classified as cell types found in the CellTypeHierarchy
 
 classifyCells accepts a cellDataSet and and a cellTypeHierarchy.
-Each cell in the cellDataSet is checked against the functions in the cellTypeHeirarchy
+Each cell in the cellDataSet is checked against the functions in the cellTypeHierarchy
 to determine each cell's type
 }
 \details{
@@ -96,7 +98,7 @@ CellTypeHierarchy objects are Monocle's mechanism for
   group, and if a cell type is present at the frquency specified in 
   \code{frequency_thresh}, all the cells in the group are classified as that 
   type. If group contains more one cell type at this frequency, all the cells
-  are marked "Ambigious". This allows you to impute cell type based on 
+  are marked "Ambiguous". This allows you to impute cell type based on 
   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
   some other grouping criteria.
 }

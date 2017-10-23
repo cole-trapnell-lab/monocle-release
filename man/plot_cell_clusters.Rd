@@ -33,7 +33,9 @@ Plots clusters of cells .
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
+HSMM <- reduceD
 plot_cell_clusters(HSMM)
 plot_cell_clusters(HSMM, color_by="Pseudotime")
 plot_cell_clusters(HSMM, markers="MYH3")

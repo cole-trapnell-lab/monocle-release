@@ -28,13 +28,16 @@ newCellDataSet <- function( cellData,
 {
   #cellData <- as.matrix( cellData )
   
+  if(!('gene_short_name' %in% colnames(featureData))) {
+    warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+  }
+  
   if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
     stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
   }
   
   if(!('gene_short_name' %in% colnames(featureData))) {
-   warning("None of your featureData columns are named 'gene_short_name', some functions will not be able
-           to take this function as input as a result") 
+   warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions") 
   }
   
   sizeFactors <- rep( NA_real_, ncol(cellData) )
@@ -323,7 +326,7 @@ dispersionTable <- function(cds){
 }
 
 #####
-#'@title Detects genes above minimum threshold.
+#' Detects genes above minimum threshold.
 #'
 #' @description Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 
@@ -564,6 +567,9 @@ load_HSMM <- function(){
   pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
   fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
   HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
+  HSMM <- estimateSizeFactors(HSMM)
+  HSMM <- estimateSizeFactors(HSMM)
+  
   HSMM
 }
 

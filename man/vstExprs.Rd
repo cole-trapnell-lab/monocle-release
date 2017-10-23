@@ -17,7 +17,7 @@ vstExprs(cds, dispModelName = "blind", expr_matrix = NULL,
 \item{round_vals}{Whether to round expression values to the nearest integer before applying the transformation.}
 }
 \description{
-This function was taken from the DESeq package (Anders and Huber) and modified 
+This function was taken from the DESeq package (Anders and Huber) and modified
 to suit Monocle's needs. It accpets a either a CellDataSet or the expression values of one
 and returns a variance-stabilized matrix based off of them.
 }

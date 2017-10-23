@@ -44,7 +44,8 @@ and it does not need to be flipped using the "reverse" flag in orderCells
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 my_genes <- row.names(subset(fData(HSMM), gene_short_name \%in\% c("CDK1", "MEF2C", "MYH3"))) 
 cds_subset <- HSMM[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Time")

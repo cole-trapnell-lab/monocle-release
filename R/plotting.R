@@ -14,8 +14,8 @@ monocle_theme_opts <- function()
     theme(legend.key=element_blank())
 }
 
-#' @title Plots the minimum spanning tree on cells.
-#' @description Displays the trajectory of the cells in a reduced dimension space. Cells collected at time zero are located near one of the tips of the tree. plot_cell_trajectory cannot determine which tip is the start of the tree. You can indicated the beginning by re-calling 'orderCells' on your CellDataSet and using the 'root_state' parameter to identify the stating branch. The cells in the trajectory can be colored by several different factors using the 'color_by' parameter.
+#' Plots the minimum spanning tree on cells.
+#' 
 #' @param cds CellDataSet for the experiment
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
@@ -24,25 +24,29 @@ monocle_theme_opts <- function()
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param use_color_gradient Whether or not to use color gradient instead of cell size to show marker expression level 
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param show_cell_names draw the name of each cell in the plot
-#' @param show_state_number a boolean that determines whether or not the state number for each cell should be shown
+#' @param show_state_number show state number
 #' @param cell_size The size of the point for each cell
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
-#' @param state_number_size if 'show_state_number' is set to true, this variable will control the size of the number labels 
+#' @param state_number_size the size of the state number
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
+#' @param ...
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
+#' @importFrom igraph get.edgelist
+#' @importFrom viridis scale_color_viridis
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
-#' plot_cell_trajectory(HSMM)
-#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-#' plot_cell_trajectory(HSMM, markers="MYH3")
+#' lung <- load_lung()
+#' plot_cell_trajectory(lung)
+#' plot_cell_trajectory(lung, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_cell_trajectory(lung, markers="MYH3")
 #' }
 plot_cell_trajectory <- function(cds, 
                                x=1, 
@@ -52,6 +56,7 @@ plot_cell_trajectory <- function(cds,
                                show_backbone=TRUE, 
                                backbone_color="black", 
                                markers=NULL, 
+                               use_color_gradient = FALSE,
                                markers_linear = FALSE,
                                show_cell_names=FALSE,
                                show_state_number = FALSE,
@@ -60,7 +65,8 @@ plot_cell_trajectory <- function(cds,
                                cell_name_size=2,
                                state_number_size = 2.9,
                                show_branch_points=TRUE,
-                               theta = 0){
+                               theta = 0, 
+                               ...){
   gene_short_name <- NA
   sample_name <- NA
   sample_state <- pData(cds)$State
@@ -142,10 +148,21 @@ plot_cell_trajectory <- function(cds,
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    if(markers_linear){
-      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size= (value * 0.1))) + facet_wrap(~feature_label)
+    if(use_color_gradient) {
+      if(markers_linear){
+        g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color= value), size=I(cell_size), na.rm = TRUE) + 
+          scale_color_viridis(name = paste0("value"), ...) + facet_wrap(~feature_label)
+        } else {
+          g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE) + 
+              scale_color_viridis(name = paste0("log10(value + 0.1)"), ...) + facet_wrap(~feature_label)
+        }
+
     } else {
-      g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+      if(markers_linear){
+        g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size= (value * 0.1))) + facet_wrap(~feature_label)
+      } else {
+        g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
+      }
     }
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
@@ -157,9 +174,17 @@ plot_cell_trajectory <- function(cds,
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+    if(use_color_gradient) {
+      # g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+    } else {
+      g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+    }
   }else {
-    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+    if(use_color_gradient) {
+      # g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+    } else {
+      g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+    }
   }
   
   
@@ -218,7 +243,8 @@ plot_cell_trajectory <- function(cds,
 #' @seealso plot_cell_trajectory
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' plot_cell_trajectory(HSMM)
 #' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 #' plot_cell_trajectory(HSMM, markers="MYH3")
@@ -278,7 +304,8 @@ plot_spanning_tree <- function(cds,
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("ACTA1", "ID1", "CCNB2"))),]
 #' plot_genes_violin(my_genes, grouping="Hours", ncol=2, min_expr=0.1)
 #' }
@@ -406,7 +433,8 @@ plot_genes_violin <- function (cds_subset, grouping = "State", min_expr = NULL, 
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1", "CCNB2"))),]
 #' plot_genes_jitter(my_genes, grouping="Media", ncol=2)
 #' }
@@ -533,7 +561,8 @@ plot_genes_jitter <- function(cds_subset,
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name %in% c("MYOG", "ID1"))),]
 #' plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
 #' }
@@ -642,7 +671,8 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' my_genes <- row.names(subset(fData(HSMM), gene_short_name %in% c("CDK1", "MEF2C", "MYH3"))) 
 #' cds_subset <- HSMM[my_genes,]
 #' plot_genes_in_pseudotime(cds_subset, color_by="Time")
@@ -1117,7 +1147,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                                     
                                     return_heatmap=FALSE,
                                     cores=1){
-  
+  num_clusters <- min(num_clusters, nrow(cds_subset))
   pseudocount <- 1
   newdata <- data.frame(Pseudotime = seq(min(pData(cds_subset)$Pseudotime), max(pData(cds_subset)$Pseudotime),length.out = 100)) 
   
@@ -1171,6 +1201,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
                  silent=TRUE,
                  filename=NA,
                  breaks=bks,
+                 border_color = NA,
                  color=hmcols)
 
   annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
@@ -1182,7 +1213,13 @@ plot_pseudotime_heatmap <- function(cds_subset,
     # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
   }
   
-  
+  if(!is.null(add_annotation_col)) {
+    old_colnames_length <- ncol(annotation_row)
+    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
+    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
+    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+  }
+
   if (use_gene_short_name == TRUE) {
     if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
       feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])
@@ -1219,10 +1256,12 @@ plot_pseudotime_heatmap <- function(cds_subset,
                      cutree_rows=num_clusters,
                      # cutree_cols = 2,
                      annotation_row=annotation_row,
+                     annotation_col=annotation_col,
                      treeheight_row = 20, 
                      breaks=bks,
                      fontsize = 6,
                      color=hmcols, 
+                     border_color = NA,
                      silent=TRUE,
                      filename=NA
   )
@@ -1823,6 +1862,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                      breaks=bks,
                      fontsize = 6,
                      color=hmcols, 
+                     border_color = NA,
                      silent=TRUE)
   
   grid::grid.rect(gp=grid::gpar("fill", col=NA))
@@ -1882,7 +1922,9 @@ plot_ordering_genes <- function(cds){
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' HSMM <- reduceD
 #' plot_cell_clusters(HSMM)
 #' plot_cell_clusters(HSMM, color_by="Pseudotime")
 #' plot_cell_clusters(HSMM, markers="MYH3")
@@ -1964,7 +2006,8 @@ plot_cell_clusters <- function(cds,
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' plot_rho_delta(HSMM)
 #' }
 
@@ -2015,7 +2058,8 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' plot_pc_variance_explained(HSMM)
 #' }
 plot_pc_variance_explained <- function(cds, 
@@ -2095,6 +2139,7 @@ plot_pc_variance_explained <- function(cds,
     return(p)  
 }
 
+#' @importFrom igraph shortest_paths degree shortest.paths
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -2122,12 +2167,14 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
+#' @importFrom igraph V get.edgelist layout_as_tree
 #' @importFrom reshape2 melt
 #' @importFrom viridis scale_color_viridis
 #' @export
 #' @examples
 #' \dontrun{
-#' data(HSMM)
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
 #' plot_cell_trajectory(HSMM)
 #' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 #' plot_cell_trajectory(HSMM, markers="MYH3")
@@ -2528,6 +2575,7 @@ plot_multiple_branches_heatmap <- function(cds,
                      fontsize = 12,
                      color=hmcols, 
                      silent=TRUE,
+                     border_color = NA,
                      filename=NA
   )
   
@@ -2555,6 +2603,10 @@ plot_multiple_branches_heatmap <- function(cds,
 #' @param TPM Whether to convert the expression value into TPM values. 
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
 #' @return a ggplot2 plot object
+#' 
+#' @importFrom Biobase esApply
+#' @importFrom stats lowess
+#' 
 #' @export
 #'
 plot_multiple_branches_pseudotime <- function(cds, 

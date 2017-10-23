@@ -44,6 +44,7 @@ run_pca <- function(data, ...) {
 # #' @param cds the CellDataSet upon which to perform this operation
 # #' @param verbose Whether to emit verbose output
 # #' @return an updated CellDataSet object which an
+#' @importFrom igraph graph.adjacency V graph.dfs get.all.shortest.paths
 scale_pseudotime <- function(cds, verbose = F) {
   Parent <- NA
   pd <- pData(cds)
@@ -135,7 +136,9 @@ get_next_node_id <- function()
 #' @param mst The minimum spanning tree, as an igraph object.
 #' @param use_weights Whether to use edge weights when finding the diameter path of the tree.
 #' @param root_node The name of the root node to use for starting the path finding.
-#' @import igraph
+#' @importFrom igraph V vertex degree get.diameter edge graph.neighborhood 
+#' @importFrom igraph graph.empty get.edgelist get.all.shortest.paths
+#' @importFrom igraph subcomponent induced.subgraph ecount
 pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
 {
   new_subtree <- graph.empty()
@@ -277,7 +280,7 @@ pq_helper<-function(mst, use_weights=TRUE, root_node=NULL)
   return (list(root=root_node_id, subtree=new_subtree))
 }
 
-
+#' @importFrom igraph V degree V<- delete.vertices
 make_canonical <-function(pq_tree)
 {
   type <- NA
@@ -309,6 +312,7 @@ make_canonical <-function(pq_tree)
   return (canonical_pq)
 }
 
+#' @importFrom igraph V
 count_leaf_descendents <- function(pq_tree, curr_node, children_counts)
 {
 
@@ -370,6 +374,7 @@ order_p_node <- function(q_level_list, dist_matrix)
   return(opt_perm)
 }
 
+#' @importFrom igraph V vertex edge graph.empty get.shortest.paths E
 order_q_node <- function(q_level_list, dist_matrix)
 {
   new_subtree <- graph.empty()
@@ -450,7 +455,7 @@ order_q_node <- function(q_level_list, dist_matrix)
   return(list(ql=q_levels, wt=min(path_weights)))
 }
 
-
+#' @importFrom igraph V
 measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 {
 
@@ -482,6 +487,7 @@ measure_diameter_path <- function(pq_tree, curr_node, path_lengths)
 }
 
 # Assign leaf nodes reachable in pq_tree from curr_node to assigned_state
+#' @importFrom igraph V
 assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
 {
 
@@ -501,6 +507,7 @@ assign_cell_lineage <- function(pq_tree, curr_node, assigned_state, node_states)
   }
 }
 
+#' @importFrom igraph V
 extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 {
 
@@ -544,9 +551,11 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 #' @param dist_matrix A symmetric matrix containing pairwise distances between cells
 #' @param num_branches The number of outcomes allowed in the trajectory.
 #' @param reverse_main_path Whether to reverse the direction of the trajectory
-#' @importFrom plyr arrange
+#' 
+#' @importFrom igraph V vertex edge graph.empty get.edgelist
 extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
 {
+  requireNamespace("plyr")
   nei <- NULL
   type <- NA
   pseudo_time <- NA
@@ -885,6 +894,7 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
   return(list(X = t(X), K = t(K), W = t(a), A = t(A), S = t(S), svs=svs))
 }
 
+#' @importFrom igraph V minimum.spanning.tree graph.adjacency degree get.diameter graph.dfs
 extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 {
 
@@ -947,6 +957,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 }
 
 #' @importFrom stats dist
+#' @importFrom igraph graph.adjacency minimum.spanning.tree V
 select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
   if (is.null(root_state) == FALSE) {
     if (is.null(pData(cds)$State)){
@@ -1043,7 +1054,10 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 #' You must already have called orderCells() once to use this argument.
 #' @param num_paths the number of end-point cell states to allow in the biological process.
 #' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' 
 #' @importFrom stats dist
+#' @importFrom igraph graph.adjacency V as.undirected
+#' 
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds,
@@ -1323,8 +1337,8 @@ normalize_expr_data <- function(cds,
 #' @import DDRTree
 #' @import Rtsne
 #' @importFrom stats dist prcomp
+#' @importFrom igraph graph.adjacency
 #' @export
-
 reduceDimension <- function(cds,
                             max_components=2,
                             reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
@@ -1412,6 +1426,7 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
+      FM <- (FM)
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
@@ -1564,7 +1579,7 @@ findNearestPointOnMST <- function(cds){
   cds
 }
 
-#' @import igraph
+#' @importFrom igraph graph.adjacency V
 #' @importFrom stats dist
 project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
@@ -1703,7 +1718,7 @@ project_point_to_line_segment <- function(p, df){
 # #' @param starting_cell the initial vertex for traversing on the graph
 # #' @param end_cells the terminal vertex for traversing on the graph
 # #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
-# #' @import igraph
+#' @importFrom igraph shortest.paths shortest_paths degree
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -1718,7 +1733,6 @@ traverseTree <- function(g, starting_cell, end_cells){
 # #' @param starting_cell the initial vertex for traversing on the graph
 # #' @param end_cells the terminal vertex for traversing on the graph
 # #' @return a new cds containing only the cells traversed from the intial cell to the end cell
-# #' @import igraph
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1744,7 +1758,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
 # #' @param cds a cell dataset after trajectory reconstruction
 # #' @param cells a vector contains all the cells you want to subset
 # #' @return a new cds containing only the cells from the cells argument
-# #' @import igraph
+#' @importFrom igraph graph.adjacency
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)
   if(ncol(reducedDimK(cds)) != ncol(cds))
