@@ -122,9 +122,7 @@ clusterCells <- function(cds,
     tsne_data <- reducedDimA(cds)
     if(ncol(tsne_data) != ncol(cds))
       stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
-    
-    dataDist <- dist(t(tsne_data)) #calculate distances between cells
-    
+
     if(skip_rho_sigma 
        & !is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
        & !is.null(pData(cds)$Cluster)
@@ -135,7 +133,7 @@ clusterCells <- function(cds,
       dataClust <- cds@auxClusteringData[["tSNE"]]$densityPeak
       dataClust$rho <- pData(cds)$rho
       dataClust$delta <- pData(cds)$delta
-      dataClust$distance <- dataDist
+      dataClust$distance <- tsne_data
       dataClust$peaks <- pData(cds)$peaks
       dataClust$clusters <- pData(cds)$clusters
       dataClust$halo <- pData(cds)$halo
@@ -149,7 +147,7 @@ clusterCells <- function(cds,
       if (verbose) {
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
       }
-      dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian) #gaussian = F
+      dataClust <- densityClust::densityClust(t(tsne_data), gaussian = gaussian) #gaussian = F
     }
     #automatically find the rho / sigma based on the number of cells you want: 
     if(!is.null(rho_threshold) & !is.null(delta_threshold)){

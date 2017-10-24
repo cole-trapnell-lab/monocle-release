@@ -1,6 +1,18 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
 
+Version 2.5.0
+--------------------------------------------------------------------------------
+  o Various plot utilities for visualizing complex developmental trajectory 
+    (plot_complex_cell_trajectory), multi-way kinetic curve and multi-way heatmap
+    (plot_multiple_branches_pseudotime, plot_multiple_branches_heatmap). 
+  o ClusterCells now in principle supports clustering for 100 k+ cells which depends on 
+    a procedure of kNN based density peak clustering algorithm. densityClust package 
+    version 0.3 are required for users to use this functionality.  
+  o New functions supporting importing scater or Seurat cds into monocle or vice versa
+    (importCDS, exportCDS).
+
+
 Version 2.4.0
 --------------------------------------------------------------------------------
   o The default expressionFamily is now negbinomial.size, instead of Tobit. If 

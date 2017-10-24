@@ -34,7 +34,7 @@ Imports:
     grid,
     irlba (>= 2.0.0),
     matrixStats,
-    densityClust,
+    densityClust (>= 0.3),
     Rtsne,
     MASS,
     reshape2,
