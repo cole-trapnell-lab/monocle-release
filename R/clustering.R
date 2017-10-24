@@ -169,7 +169,7 @@ clusterCells <- function(cds,
           message(paste('Use 0.5 of the rho as the cutoff and first', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
         }
 
-        delta_rho_df <- data.frame(delta = dataClust$delta, rho = dataClust$rho)
+        delta_rho_df <- data.frame("delta" = dataClust$delta, "rho" = dataClust$rho)
         rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
         delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
         threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]

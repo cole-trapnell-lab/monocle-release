@@ -34,7 +34,7 @@ monocle_theme_opts <- function()
 #' @param state_number_size the size of the state number
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
-#' @param ...
+#' @param ... Additional arguments passed into scale_color_viridis function 
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -1917,6 +1917,7 @@ plot_ordering_genes <- function(cds){
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
 #' @param cell_name_size the size of cell name labels
+#' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -2177,9 +2178,9 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' plot_cell_trajectory(HSMM)
-#' plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-#' plot_cell_trajectory(HSMM, markers="MYH3")
+#' plot_complex_cell_trajectory(HSMM)
+#' plot_complex_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_complex_cell_trajectory(HSMM, markers="MYH3")
 #' }
 plot_complex_cell_trajectory <- function(cds, 
                                          x=1, 

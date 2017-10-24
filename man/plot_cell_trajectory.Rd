@@ -47,6 +47,8 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
 \item{theta}{How many degrees you want to rotate the trajectory}
+
+\item{...}{Additional arguments passed into scale_color_viridis function}
 }
 \value{
 a ggplot2 plot object

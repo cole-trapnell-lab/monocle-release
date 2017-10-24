@@ -51,8 +51,8 @@ Plots the minimum spanning tree on cells.
 \dontrun{
 library(HSMMSingleCell)
 HSMM <- load_HSMM()
-plot_cell_trajectory(HSMM)
-plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-plot_cell_trajectory(HSMM, markers="MYH3")
+plot_complex_cell_trajectory(HSMM)
+plot_complex_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+plot_complex_cell_trajectory(HSMM, markers="MYH3")
 }
 }

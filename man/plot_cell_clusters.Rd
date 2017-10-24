@@ -24,6 +24,8 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 \item{cell_size}{The size of the point for each cell}
 
 \item{cell_name_size}{the size of cell name labels}
+
+\item{...}{additional arguments passed into the scale_color_viridis function}
 }
 \value{
 a ggplot2 plot object
