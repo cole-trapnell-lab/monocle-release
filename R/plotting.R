@@ -1214,12 +1214,14 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
   
   if(!is.null(add_annotation_col)) {
-    old_colnames_length <- ncol(annotation_row)
-    annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
-    colnames(annotation_row)[(old_colnames_length+1):ncol(annotation_row)] <- colnames(add_annotation_row)
-    # annotation_row$bif_time <- add_annotation_row[as.character(fData(absolute_cds[row.names(annotation_row), ])$gene_short_name), 1]
+    if(nrow(add_annotation_col) != 100) {
+      stop('add_annotation_col should have only 100 rows (check genSmoothCurves before you supply the annotation data)!')
+    }
+    annotation_col <- add_annotation_col
+  } else {
+    annotation_col <- NA
   }
-
+ 
   if (use_gene_short_name == TRUE) {
     if (is.null(fData(cds_subset)$gene_short_name) == FALSE) {
       feature_label <- as.character(fData(cds_subset)[row.names(heatmap_matrix), 'gene_short_name'])

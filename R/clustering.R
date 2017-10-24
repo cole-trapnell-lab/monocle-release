@@ -137,9 +137,11 @@ clusterCells <- function(cds,
       dataClust$peaks <- pData(cds)$peaks
       dataClust$clusters <- pData(cds)$clusters
       dataClust$halo <- pData(cds)$halo
+      dataClust$halo <- pData(cds)$halo
+      dataClust$nearest_higher_density_neighbor <- pData(cds)$nearest_higher_density_neighbor
       
       # res <- list(rho=rho, delta=delta, distance=distance, dc=dc, threshold=c(rho=NA, delta=NA), peaks=NA, clusters=NA, halo=NA)
-      dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo')]
+      dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo', 'nearest_higher_density_neighbor')]
       class(dataClust) <- 'densityCluster'
       
     } else {
@@ -201,6 +203,7 @@ clusterCells <- function(cds,
     pData(cds)$halo <- dataClust$halo
     pData(cds)$delta <- dataClust$delta
     pData(cds)$rho <- dataClust$rho
+    pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
