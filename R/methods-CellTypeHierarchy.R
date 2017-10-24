@@ -149,7 +149,6 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
 #' 
-#' @param cth the CellTypeHierarchy object  
 #' 
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 

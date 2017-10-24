@@ -17,7 +17,7 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \arguments{
 \item{cds}{The CelllDataSet you want to classify}
 
-\item{cth}{the CellTypeHierarchy object}
+\item{cth}{CellTypeHierarchy}
 
 \item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 
@@ -28,8 +28,6 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
-
-\item{cth}{CellTypeHierarchy}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 
