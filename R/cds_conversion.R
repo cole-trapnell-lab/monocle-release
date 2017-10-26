@@ -55,11 +55,17 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
       var.gene <- row.names(subset(fData(monocle_cds), use_for_ordering == TRUE)); 
     }
     
-    export_cds <- CreateSeuratObject(raw.data = data, 
+    export_cds <- Seurat::CreateSeuratObject(raw.data = data, 
+    				  normalization.method = "LogNormalize",
+    				  do.scale = TRUE, 
+    				  do.center = TRUE,
                       is.expr = monocle_cds@lowerDetectionLimit,
+                      project = "exportCDS",
+                      display.progress = FALSE, 
                       meta.data = pData(monocle_cds))
     
     export_cds@misc <- mist_list
+    export_cds@meta.data <- pData(monocle_cds)
     
   } else if (export_to == 'Scater') {
     requireNamespace("scater")
@@ -131,7 +137,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     fd <- new("AnnotatedDataFrame", data = fData)
     lowerDetectionLimit <- otherCDS@is.expr
     
-    if(is.integer(data[1, 1])) {
+    if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
       expressionFamily <- gaussianff()
@@ -214,7 +220,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     else 
       lowerDetectionLimit <- 1
     
-    if(is.integer(data[1, 1])) {
+    if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
       expressionFamily <- gaussianff()
@@ -230,14 +236,12 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     } else {
       mist_list <- list()
     }
-    monocle_cds <- new("CellDataSet",
-                        assayData = assayDataNew( "environment", exprs=data ),
-                        phenoData=pd, 
-                        featureData=fd, 
-                        lowerDetectionLimit=lowerDetectionLimit,
-                        expressionFamily=expressionFamily,
-                        dispFitInfo = new.env( hash=TRUE ))
-    
+
+	monocle_cds <- newCellDataSet(data,
+	                   phenoData = pd, 
+	                   featureData = fd,
+	                   lowerDetectionLimit=lowerDetectionLimit,
+	                   expressionFamily=expressionFamily)
     # monocle_cds@auxClusteringData$sc3 <- otherCDS@sc3
     # monocle_cds@auxOrderingData$scran <- mist_list
     
