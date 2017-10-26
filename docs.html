@@ -299,28 +299,30 @@ HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),
           </div>
           </p>
 
-          <h3>Importing & exporting data between monocle and other packages</h3>
+          <h3>Importing & exporting data with other packages</h3>
 
           <p> This function will be available after the next BioConductor release, 10/31. Monocle is able to convert Seurat objects from the package "Seurat" and SCESets from the package
-          "scran" into CellDataSet objects that Monocle can use. To convert from either a Seurat object or a SCESet
-          to a CellDataSet execute the function <code>importCDS()</code> as shown:</p>
+          "scater" into CellDataSet objects that Monocle can use.
+          It's also worth noting that the function will also work with SCESets from "Scran". 
+          To convert from either a Seurat object or a SCESet
+          to a CellDataSet, execute the function <code>importCDS()</code> as shown:</p>
 
 {% highlight R %}
 
-# Where 'data_to_be_imported' can be either a Seurat object
+# Where 'data_to_be_imported' can either be a Seurat object
 # or an SCESet.
 
 importCDS(data_to_be_imported)
 
 # We can set the parameter 'import_all' to TRUE if we'd like to
-# import all the slots in our Seurat object or SCESet.
+# import all the slots from our Seurat object or SCESet.
 # (Default is FALSE or only keep minimal dataset)
 
 importCDS(data_to_be_imported, import_all = TRUE)
 
 {% endhighlight %}
 
-          <p> Monocle can also export data from CellDataSets to the "Seurat" and "Scran" packages through the
+          <p> Monocle can also export data from CellDataSets to the "Seurat" and "scater" packages through the
           function <code>exportCDS()</code>:
 
 {% highlight R %}
