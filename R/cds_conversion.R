@@ -51,15 +51,15 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
     } else {
       mist_list = list()
     }
-    export_cds <- new("seurat", raw.data = data, 
-                      data = log(data + 1), 
-                      scale.data = t(scale(t(data))),
-                      var.genes = row.names(subset(fData(monocle_cds), use_for_ordering == TRUE)), 
-                      is.expr = monocle_cds@lowerDetectionLimit,
-                      meta.data = pData(monocle_cds),
-                      project.name = 'exportCDS', 
-                      misc = mist_list
-                      )
+    export_cds <- CreateSeuratObject(raw.data = data, 
+                                     normalization.method = "LogNormalize",
+                                     do.scale = TRUE,
+                                     do.center = TRUE,
+                                     is.expr = monocle_cds@lowerDetectionLimit, 
+                                     project = "exportCDS",
+                                     display.progress = FALSE)
+    export_cds@misc <- mist_list
+    export_cds@meta.data <- pData(monocle_cds)
     
   } else if (export_to == 'Scater') {
     requireNamespace("scater")
@@ -112,19 +112,17 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
 importCDS <- function(otherCDS, import_all = FALSE) {
   if(class(otherCDS)[1] == 'seurat') {
     requireNamespace("Seurat")
-    data <- otherCDS@raw.data
-
+    data <- as.matrix(otherCDS@raw.data)
+    data <- data[, rownames(otherCDS@meta.data)]
     pd <- new("AnnotatedDataFrame", data = otherCDS@meta.data)
     lowerDetectionLimit <- otherCDS@is.expr
-    
-    if(is.integer(data[1, 1])) {
+    if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
       expressionFamily <- gaussianff()
     } else {
       expressionFamily <- tobit()
     }
-    
     monocle_cds <- new("CellDataSet",
                        assayData = assayDataNew( "environment", exprs=data ),
                        phenoData=pd, 
