@@ -2,7 +2,7 @@ Package: monocle
 Type: Package
 Title: Clustering, differential expression, and trajectory analysis for single-
     cell RNA-Seq
-Version: 2.5.6
+Version: 2.5.7
 Date: 2017-04-13
 Author: Cole Trapnell
 Maintainer: Cole Trapnell <coletrap@uw.edu>
@@ -50,7 +50,7 @@ Imports:
     stats,
     biocViews
 Suggests:
-    destiny, 
+    destiny,
     Hmisc,
     knitr,
     Seurat,
