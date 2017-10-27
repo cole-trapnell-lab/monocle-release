@@ -1,4 +1,4 @@
-# this file contains functions to convert between Monocle cds to scran or Seurat CDS back and forth. 
+# this file contains functions to convert between Monocle cds and scran or Seurat object back and forth. 
 
 #' Export a monocle CellDataSet object to other popular single cell analysis toolkit.
 #' 
@@ -49,17 +49,23 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
       monocle_cds@auxClusteringData$scran <- NULL
       mist_list <- monocle_cds
     } else {
-      mist_list = list()
+      mist_list <- list()
     }
-    export_cds <- new("seurat", raw.data = data, 
-                      data = log(data + 1), 
-                      scale.data = t(scale(t(data))),
-                      var.genes = row.names(subset(fData(monocle_cds), use_for_ordering == TRUE)), 
+    if("use_for_ordering" %in% colnames(fData(monocle_cds))) {
+      var.gene <- row.names(subset(fData(monocle_cds), use_for_ordering == TRUE)); 
+    }
+    
+    export_cds <- Seurat::CreateSeuratObject(raw.data = data, 
+    				  normalization.method = "LogNormalize",
+    				  do.scale = TRUE, 
+    				  do.center = TRUE,
                       is.expr = monocle_cds@lowerDetectionLimit,
-                      meta.data = pData(monocle_cds),
-                      project.name = 'exportCDS', 
-                      misc = mist_list
-                      )
+                      project = "exportCDS",
+                      display.progress = FALSE, 
+                      meta.data = pData(monocle_cds))
+    
+    export_cds@misc <- mist_list
+    export_cds@meta.data <- pData(monocle_cds)
     
   } else if (export_to == 'Scater') {
     requireNamespace("scater")
@@ -114,10 +120,24 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     requireNamespace("Seurat")
     data <- otherCDS@raw.data
 
-    pd <- new("AnnotatedDataFrame", data = otherCDS@meta.data)
+    pd <- tryCatch( {
+      pd <- new("AnnotatedDataFrame", data = otherCDS@meta.data)
+      pd
+    }, 
+    #warning = function(w) { },
+    error = function(e) { 
+      pData <- data.frame(cell_id = colnames(data), row.names = colnames(data))
+      pd <- new("AnnotatedDataFrame", data = pData)
+      
+      message("This Seurat object doesn't provide any meta data");
+      pd
+    })
+    
+    fData <- data.frame(gene_short_name = row.names(data), row.names = row.names(data))
+    fd <- new("AnnotatedDataFrame", data = fData)
     lowerDetectionLimit <- otherCDS@is.expr
     
-    if(is.integer(data[1, 1])) {
+    if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
       expressionFamily <- gaussianff()
@@ -125,12 +145,13 @@ importCDS <- function(otherCDS, import_all = FALSE) {
       expressionFamily <- tobit()
     }
     
-    monocle_cds <- new("CellDataSet",
-                       assayData = assayDataNew( "environment", exprs=data ),
-                       phenoData=pd, 
-                       lowerDetectionLimit=lowerDetectionLimit,
-                       expressionFamily=expressionFamily,
-                       dispFitInfo = new.env( hash=TRUE ))
+    valid_data <- data[, row.names(pd)]
+    
+    monocle_cds <- newCellDataSet(data,
+                           phenoData = pd, 
+                           featureData = fd,
+                           lowerDetectionLimit=lowerDetectionLimit,
+                           expressionFamily=expressionFamily)
     
     if(import_all) {
       if("Monocle" %in% names(otherCDS@misc)) {
@@ -199,7 +220,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     else 
       lowerDetectionLimit <- 1
     
-    if(is.integer(data[1, 1])) {
+    if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
       expressionFamily <- gaussianff()
@@ -215,14 +236,12 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     } else {
       mist_list <- list()
     }
-    monocle_cds <- new("CellDataSet",
-                        assayData = assayDataNew( "environment", exprs=data ),
-                        phenoData=pd, 
-                        featureData=fd, 
-                        lowerDetectionLimit=lowerDetectionLimit,
-                        expressionFamily=expressionFamily,
-                        dispFitInfo = new.env( hash=TRUE ))
-    
+
+	monocle_cds <- newCellDataSet(data,
+	                   phenoData = pd, 
+	                   featureData = fd,
+	                   lowerDetectionLimit=lowerDetectionLimit,
+	                   expressionFamily=expressionFamily)
     # monocle_cds@auxClusteringData$sc3 <- otherCDS@sc3
     # monocle_cds@auxOrderingData$scran <- mist_list
     
