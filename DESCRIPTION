@@ -48,7 +48,6 @@ Imports:
     slam,
     viridis,
     stats,
-    tibble,
     biocViews
 Suggests:
     destiny,

@@ -41,6 +41,7 @@ monocle_theme_opts <- function()
 #' @importFrom igraph get.edgelist
 #' @importFrom tibble rownames_to_column
 #' @importFrom viridis scale_color_viridis
+#' @importFrom dplyr left_join mutate n slice
 #' @export
 #' @examples
 #' \dontrun{
