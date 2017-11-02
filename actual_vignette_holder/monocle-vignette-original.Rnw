@@ -962,7 +962,7 @@ plot_cell_clusters(HSMM_myo, color_by = 'as.factor(Hours)')
 
 We also provide the decision plot for users to check the $\rho, \delta$ for each cell and decide the threshold for defining the cell clusters. 
 <<plot_rho_delta, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
-plot_rho_delta(HSMM_myo, rho_threshold = 2, delta_threshold = 4 )
+plot_rho_delta(HSMM_myo, rho_threshold = 0.4, delta_threshold = 4 )
 @ %def
 
 We could then re-run clustering based on the user defined threshold. To 
@@ -970,7 +970,7 @@ facilitate the computation, we can set \Rfunction(skip\_rho\_sigma = T)
 which enables us to skip the calculation of the $\rho, \sigma$.  
 <<recluster_cells_again, fig.width = 3, fig.height = 3, fig.align="center", eval=TRUE, warning=FALSE>>=
 HSMM_myo <- clusterCells(HSMM_myo,  
-                         rho_threshold = 2, 
+                         rho_threshold = 0.4, 
                          delta_threshold = 4, 
                          skip_rho_sigma = T, 
                          verbose = F)

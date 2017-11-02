@@ -54,4 +54,7 @@ Single cell gene expression studies enable profiling of transcriptional regulati
 
 For information on Monocle's features and how to utilize them, go to http://cole-trapnell-lab.github.io/monocle-release/ and go to the "Documentation" tab displayed at the top of the page.
 
+<<gene_pairwise_kinetic_plot, eval = TRUE, fig.width = 4, fig.height = 4, fig.align="center">>=
+plot(1:10)
+@ %def
 \end{document}

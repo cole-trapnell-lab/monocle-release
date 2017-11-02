@@ -979,6 +979,10 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
     #root_cell_candidates <- root_cell_candidates[row.names(root_cell_candidates) %in% tip_leaves,]
     #sg <- make_ego_graph(dp_mst, nodes=row.names(root_cell_candidates))[[1]]
 
+    # if(length(intersect(tip_leaves, row.names(root_cell_candidates))) == 0){
+    #   stop(paste("Error: no valid root cells for State =", root_state))
+    # }
+      
     diameter <- get.diameter(dp_mst)
 
     if (length(diameter) == 0){
@@ -1060,6 +1064,11 @@ orderCells <- function(cds,
                        root_state=NULL,
                        num_paths = NULL,
                        reverse=NULL){
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
@@ -1179,7 +1188,7 @@ orderCells <- function(cds,
 # reduction
 normalize_expr_data <- function(cds,
                                 norm_method = c("log", "vstExprs", "none"),
-                                pseudo_expr = NULL,
+                                pseudo_expr = 1,
                                 relative_expr = TRUE){
   FM <- exprs(cds)
   use_for_ordering <- NULL
@@ -1223,6 +1232,7 @@ normalize_expr_data <- function(cds,
       }
     }else if (norm_method == "log") {
       # If we are using log, normalize by size factor before log-transforming
+      
       if (relative_expr)
         FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
 
@@ -1313,8 +1323,8 @@ normalize_expr_data <- function(cds,
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
 #' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param relative_expr When this argument is set to TRUE (default), we intend to convert the expression into a relative expression. 
-#' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call. 
+#' @param relative_expr When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.
+#' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
 #' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
@@ -1334,7 +1344,7 @@ reduceDimension <- function(cds,
                             reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
-                            pseudo_expr=NULL,
+                            pseudo_expr=1,
                             relative_expr=TRUE,
                             auto_param_selection = TRUE,
                             verbose=FALSE,
@@ -1416,6 +1426,7 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
+      FM <- (FM)
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x

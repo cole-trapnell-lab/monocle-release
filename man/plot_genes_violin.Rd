@@ -32,7 +32,7 @@ plot_genes_violin(cds_subset, grouping = "State", min_expr = NULL,
 
 \item{relative_expr}{Whether to transform expression into relative values}
 
-\item{log_scale}{whether to use a log scale}
+\item{log_scale}{a boolean that determines whether or not to scale data logarithmically}
 }
 \value{
 a ggplot2 plot object
@@ -44,7 +44,8 @@ each group of cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("ACTA1", "ID1", "CCNB2"))),]
 plot_genes_violin(my_genes, grouping="Hours", ncol=2, min_expr=0.1)
 }

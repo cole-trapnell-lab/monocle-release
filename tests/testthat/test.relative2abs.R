@@ -1,36 +1,48 @@
 library(monocle)
-context("relative2abs")
+library(HSMMSingleCell)
+context("relative2abs works properly")
 
-test_that("relative2abs() recovers the absolute transcript counts from the relative abundance", {
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
 
-	HSMM <- load_HSMM()
-	rpc_matrix <- relative2abs(HSMM, cores = detectCores())
-	expect_equal(round(as.numeric(rpc_matrix[1, 1:5])), 
-             c(7, 0, 2, 0, 1))
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),
+                       phenoData = pd,
+                       featureData = fd,
+                       lowerDetectionLimit = 0.1,
+                       expressionFamily = tobit(Lower = 0.1))
 
-	#test relative2abs by using model formula and other non-default parameters
-    rpc_matrix_2 <- relative2abs(HSMM,
-	  modelFormulaStr = "~Hours", 
-	  t_estimate = estimate_t(exprs(HSMM)),
-	  m = -3.652201, 
-	  c = 2.263576, 
-	  m_rng = c(-10, -0.1), 
-	  c_rng = c(2.263576, 2.263576), 
-	  ERCC_controls = NULL, 
-	  ERCC_annotation = NULL, 
-	  volume = 10, 
-	  dilution = 40000, 
-	  mixture_type = 1,
-	  detection_threshold = 800, 
-	  alpha_v = 1, 
-	  total_RNAs = 50000, 
-	  weight = 0.01, 
-	  verbose = T, 
-	  return_all = T, 
-	  cores = detectCores(), 
-	  optim_num = 2)
-
-	 expect_equal(names(rpc_matrix_2), 
-		             c('norm_cds', 'm', 'c', 'k_b_solution'))
-
+#write test code for this: 
+test_that("relative2abs works with valid input and return_all = FALSE", {
+  expect_error(relative2abs(HSMM, method = "num_genes", verbose = TRUE), NA)
 })
+
+test_that("relative2abs works with valid input and return_all = TRUE", {
+  expect_error(relative2abs(HSMM, method = "num_genes", verbose = TRUE, return_all = TRUE), NA)
+})
+
+test_that("throws error if infinite parameter is present", {
+  expect_error(relative2abs(HSMM, method = "num_genes", volume = Inf), "Your input parameters should not contain either null or infinite numbers")
+})
+
+test_that("throws error if concentration detection limit is too low", {
+  expect_error(relative2abs(HSMM, method = "num_genes", detection_threshold = 0), "concentration detection limit should be between 0.01430512 and 7500")
+})
+
+test_that("throws error if concentration detection limit is too high", {
+  expect_error(relative2abs(HSMM, method = "num_genes", detection_threshold = 7501), "concentration detection limit should be between 0.01430512 and 7500")
+})
+
+test_that("throws error if ERCC_controls is null and ERCC_annotation is not", {
+  expect_error(relative2abs(HSMM, method = "num_genes", ERCC_controls = NULL, ERCC_annotation = 1), "If you want to transform the data to copy number with your spikein data, please provide both of ERCC_controls and ERCC_annotation data frame...")
+})
+
+test_that("throws error if ERCC_annotation is null and ERCC_controls is not", {
+  expect_error(relative2abs(HSMM, method = "num_genes", ERCC_controls = 1, ERCC_annotation = NULL), "If you want to transform the data to copy number with your spikein data, please provide both of ERCC_controls and ERCC_annotation data frame...")
+})
+
+## TO DO:
+## ADD TEST WHERE ERCC_ANNOTATION AND ERCC_CONTROLS ARE NOT NULL
+

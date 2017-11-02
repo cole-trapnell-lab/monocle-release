@@ -34,7 +34,8 @@ data using the same procedure used in reduceDimension function.
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 plot_pc_variance_explained(HSMM)
 }
 }

@@ -46,7 +46,8 @@ a ggplot2 plot object
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1"))),]
 plot_genes_positive_cells(MYOG_ID1, grouping="Media", ncol=2)
 }

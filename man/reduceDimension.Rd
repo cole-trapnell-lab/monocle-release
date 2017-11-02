@@ -6,7 +6,7 @@
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
   "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"), norm_method = c("log",
-  "vstExprs", "none"), residualModelFormulaStr = NULL, pseudo_expr = NULL,
+  "vstExprs", "none"), residualModelFormulaStr = NULL, pseudo_expr = 1,
   relative_expr = TRUE, auto_param_selection = TRUE, verbose = FALSE,
   scaling = TRUE, ...)
 }

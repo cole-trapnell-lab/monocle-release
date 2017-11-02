@@ -1,98 +1,343 @@
-library(HSMMSingleCell)
 library(monocle)
-context("orderCells")
+library(HSMMSingleCell)
+context("orderCells validate input")
 
-test_that("orderCells() correctly orders cells by State and Pseudotime", {
-  set.seed(123)
-  small_set <- load_HSMM_markers()
-  
-  small_set <- setOrderingFilter(small_set, row.names(fData(small_set)))
-  
-  small_set <- suppressMessages(reduceDimension(small_set, use_irlba=FALSE))
-  
-  small_set <- suppressMessages(orderCells(small_set))
-  
-  expect_false(is.null(pData(small_set)$Pseudotime))
-  expect_false(is.null(pData(small_set)$State))
-  
-  expect_equivalent(levels(pData(small_set)$State), "1")
-  
-  expect_less_than(abs(max(pData(small_set)$Pseudotime) -  124.8243), 1e-4)
-})
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
 
-test_that("orderCells() properly validates its input",{
-  
-  # small_set <- load_HSMM_markers()
-  
-  # small_set <- setOrderingFilter(small_set, row.names(fData(small_set)))
-  
-  # results <- evaluate_promise(orderCells(small_set))
-  
-  # expect_equal(results$error, "Error: reducedDimS is NULL. Did you call reducedDimension()?")
-  
-  # small_set <- setOrderingFilter(small_set, row.names(fData(small_set)))
-  # small_set <- suppressMessages(reduceDimension(small_set, use_irlba=FALSE))
-  
-  # results <- evaluate_promise(orderCells(small_set, num_paths=1000))
-  
-  # expect_equal(results$error, "Error: num_paths must be fewer than the number of cells")
-  
-  # results <- evaluate_promise(orderCells(small_set, num_paths=0))
-  
-  # expect_equal(results$error, "Error: num_paths must be > 0")
-  
-  # results <- evaluate_promise(orderCells(small_set, root_cell ="ARGHYBLARGH"))
-  
-  # expect_equal(results$error, "Error: root_cell must be the name of a cell in the CellDataSet")
-  
-  A <- c(2.0000, -81.5590)
-  B <- c(58.0000, 161.9340)
-  p <- c(42.0000, 41.8890)
-  q <- project_point_to_line_segment(p, cbind(A, B))
-  #project_point_to_line_segment()
-  
-  test <- project2MST(HSMM_myo, project_point_to_line_segment)
-  test <- orderCells(test, num_paths=1, root_state = NULL)
-  plot_spanning_tree(test, color_by="Time", cell_size=2)
-  plot_genes_in_pseudotime(test[46319, ], cell_size = 3)
-  plot_spanning_tree(test, color_by="State", cell_size=2)
-  unique(pData(test)$Pseudotime)
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
 
-  Z <- test@reducedDimS
-  P <- test@reducedDimK
-  
-  #   Z <- cds@reducedDimS
-  #   P <- cds@reducedDimK
-  Z <- as.data.frame(t(Z)); P <- as.data.frame(t(P))
-  Z <- cbind(Z, cell = row.names(Z), type = 'Z')
-  P <- cbind(P, cell = row.names(Z), type = 'P')
-  
-  
-  ZP_df <- rbind(Z, P)
-  ggplot(aes(x = V1, y = V2, group = cell, color = I(type)), 
-         data = ZP_df) + geom_point(size = 3) + geom_line(aes(color = "blue")) + 
-    xlab("C1") + ylab("C2") +  monocle_theme_opts()
-  
-  #new function
-  test2 <- orderCells(HSMM_myo, num_paths=1, root_state = NULL)
-  plot_spanning_tree(test2, color_by="Time", cell_size=2)
-  plot_genes_in_pseudotime(test2[46319, ], cell_size = 3)
-  plot_spanning_tree(test2, color_by="State", cell_size=2)
-  unique(pData(test2)$Pseudotime)
-  
-  Z2 <- test2@reducedDimS
-  P2 <- test2@reducedDimK
-  
-  #   Z <- cds@reducedDimS
-  #   P <- cds@reducedDimK
-  Z2 <- as.data.frame(t(Z2)); P2 <- as.data.frame(t(P2))
-  Z2 <- cbind(Z2, cell = row.names(Z2), type = 'Z')
-  P2 <- cbind(P2, cell = row.names(Z2), type = 'P')
-  
-  
-  ZP2_df <- rbind(Z2, P2)
-  ggplot(aes(x = V1, y = V2, group = cell, color = I(type)), 
-         data = ZP2_df) + geom_point(size = 3) + geom_line(aes(color = "blue")) + 
-    xlab("C1") + ylab("C2") +  monocle_theme_opts()
-  
-})
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+
+
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
+  geom_vline(xintercept=lower_bound) + 
+  geom_vline(xintercept=upper_bound)
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & 
+               pData(HSMM)$Total_mRNAs < upper_bound]								  
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+
+L <- log(exprs(HSMM[expressed_genes,]))
+
+# Standardize each gene, so that they are all on the same scale,
+# Then melt the data with plyr so we can plot it easily"
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+{x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
+
+disp_table <- dispersionTable(HSMM)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
+HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+                        reduction_method = 'tSNE', verbose = T) 
+HSMM <- clusterCells(HSMM,
+                     num_clusters=2)
+
+marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
+                               cth, 
+                               residualModelFormulaStr="~Media + num_genes_expressed",
+                               cores=detectCores())
+
+set.seed(0)
+
+candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
+head(selectTopMarkers(marker_spec, 3))
+
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
+HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
+
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log', reduction_method = 'tSNE', 
+                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
+HSMM <- clusterCells(HSMM, num_clusters=2) 
+
+HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]	
+HSMM_myo <- estimateDispersions(HSMM_myo)
+
+
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
+
+test_that("orderCells works properly in vignette setting", 
+          expect_error(HSMM_myo <- orderCells(HSMM_myo), NA))
+
+test_that("orderCells throws error if cds is not type 'CellDataSet'", 
+          expect_error(HSMM_myo <- orderCells(8), "Error cds is not of type 'CellDataSet'"))
+
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
+
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+
+
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
+  geom_vline(xintercept=lower_bound) + 
+  geom_vline(xintercept=upper_bound)
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & 
+               pData(HSMM)$Total_mRNAs < upper_bound]								  
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+
+L <- log(exprs(HSMM[expressed_genes,]))
+
+# Standardize each gene, so that they are all on the same scale,
+# Then melt the data with plyr so we can plot it easily"
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+{x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
+
+disp_table <- dispersionTable(HSMM)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
+HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 6, 
+                        reduction_method = 'tSNE', verbose = T) 
+HSMM <- clusterCells(HSMM,
+                     num_clusters=2)
+
+marker_diff <- markerDiffTable(HSMM[expressed_genes,], 
+                               cth, 
+                               residualModelFormulaStr="~Media + num_genes_expressed",
+                               cores=detectCores())
+
+set.seed(0)
+
+candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
+head(selectTopMarkers(marker_spec, 3))
+
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
+HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
+
+HSMM <- reduceDimension(HSMM, max_components=2, num_dim = 3, norm_method = 'log', reduction_method = 'tSNE', 
+                        residualModelFormulaStr="~Media + num_genes_expressed", verbose = T) 
+HSMM <- clusterCells(HSMM, num_clusters=2) 
+
+HSMM_myo <- HSMM[,pData(HSMM)$CellType == "Myoblast"]	
+HSMM_myo <- estimateDispersions(HSMM_myo)
+
+
+HSMM_myo <- reduceDimension(HSMM_myo, max_components=2, method = 'DDRTree')
+
+test_that("orderCells throws error if cds is not type 'CellDataSet'", 
+          expect_error(HSMM_myo <- orderCells(HSMM)))
+
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
+
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+
+
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
+  geom_vline(xintercept=lower_bound) + 
+  geom_vline(xintercept=upper_bound)
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & 
+               pData(HSMM)$Total_mRNAs < upper_bound]								  
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+
+L <- log(exprs(HSMM[expressed_genes,]))
+
+# Standardize each gene, so that they are all on the same scale,
+# Then melt the data with plyr so we can plot it easily"
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+{x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
+
+disp_table <- dispersionTable(HSMM)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
+HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+#HSMM <- reduceDimension(reduction_method = "ICA")
+#test_that("orderCells works when cds has reduction_method 'ICA'", 
+          #expect_error(orderCells(HSMM), NA))
+
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
+
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+test_that("orderCells throws error if cds is not type 'CellDataSet'", 
+          expect_error(HSMM_myo <- orderCells(HSMM)))
+
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
+
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+
+
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+upper_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) + 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+lower_bound <- 10^(mean(log10(pData(HSMM)$Total_mRNAs)) - 2*sd(log10(pData(HSMM)$Total_mRNAs)))
+qplot(Total_mRNAs, data=pData(HSMM), color=Hours, geom="density") + 
+  geom_vline(xintercept=lower_bound) + 
+  geom_vline(xintercept=upper_bound)
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs > lower_bound & 
+               pData(HSMM)$Total_mRNAs < upper_bound]								  
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+
+L <- log(exprs(HSMM[expressed_genes,]))
+
+# Standardize each gene, so that they are all on the same scale,
+# Then melt the data with plyr so we can plot it easily"
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func=function(x) {x[MYF5_id,] >= 1})
+cth <- addCellType(cth, "Fibroblast", classify_func=function(x)
+{x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
+
+disp_table <- dispersionTable(HSMM)
+unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1)
+HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
+#HSMM <- reduceDimension(reduction_method = "DDRTree")
+#test_that("orderCells works when cds has reduction_method 'DDRTree'", 
+          #expect_error(orderCells(HSMM), NA))

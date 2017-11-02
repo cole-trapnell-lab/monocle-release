@@ -353,7 +353,7 @@ genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df 
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @importFrom stats glm Gamma
-parametricDispersionFit <- function( disp_table, verbose, initial_coefs=c(1e-6, 1) )
+parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=c(1e-6, 1) )
 {
   coefs <- initial_coefs
   iter <- 0
@@ -500,14 +500,14 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 #' @importFrom Biobase pData
 #' @importFrom stats cooks.distance
 #' @importFrom stringr str_split str_trim
+#' @importFrom dplyr %>%
 #' @param cds a CellDataSet that contains all cells user wants evaluated
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
 #' @param relative_expr Whether to transform expression into relative values
 #' @param min_cells_detected Only include genes detected above lowerDetectionLimit in at least this many cells in the dispersion calculation
 #' @param removeOutliers a boolean it determines whether or not outliers from the data should be removed
-#' @param cores the number of cores to be used while testing each gene for differential expression.
-#' @param verbose whether or not to print output
-estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, cores, verbose = FALSE)
+#' @param verbose Whether to show detailed running information.
+estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_expr, min_cells_detected, removeOutliers, verbose = FALSE)
 {
 
   # if (cores > 1){
@@ -534,10 +534,10 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   # FIXME: this needs refactoring, badly.
   if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (length(model_terms) > 1 || (length(model_terms) == 1 && model_terms[1] != "1")){
-      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms)
+      cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", .dots=model_terms), .dots=model_terms)
       disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
     }else{
-      cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname"))
+      cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"))
       disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
       #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
     }

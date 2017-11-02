@@ -45,7 +45,7 @@ diff_test_helper <- function(x,
   }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
     f_expression <- x
   }else if (expressionFamily@vfamily %in% c("binomialff")){
-    f_expression <- x/Size_Factor
+    f_expression <- x
     #f_expression[f_expression > 1] <- 1
   }else{
     f_expression <- log10(x)
@@ -138,6 +138,11 @@ differentialGeneTest <- function(cds,
                                  verbose=FALSE
                                  ){
   status <- NA
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
   all_vars <- c(all.vars(formula(fullModelFormulaStr)), all.vars(formula(reducedModelFormulaStr)))
    
   pd <- pData(cds)

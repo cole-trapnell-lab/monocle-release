@@ -1,62 +1,76 @@
-library(HSMMSingleCell)
 library(monocle)
-context("clusterCells")
+library(HSMMSingleCell)
+context("clusterCells is functioning properly")
 
-test_that("clusterCells() properly validates its input",{
-  lung <- load_lung()
-  lung <- clusterCells(lung, num_clusters = 2)
-  lung_pData <- pData(lung)
-  
-  expect_equal(colnames(lung_pData), c("file", "total_mass", "internal_scale", "external_scale", "median_transcript_frags", "BioSample", "age", "genotype", "Sample.Name", "SRA.Sample", "MBases", "MBytes", 
-                                       "SRA.Study", "BioProject", "source_name", "strain", "tissue", "Assay.Type", "Center.Name", "Platform", "Consent", "Time", "Size_Factor", "Total_mRNAs", "endogenous_RNA", 
-                                       "Pseudotime", "State", "Parent", "num_genes_expressed", "Cluster"))
-  for(i in 1:length(lung_pData$Pseudotime)) {
-    expect_gte(lung_pData$Pseudotime[i], 0)
-    expect_lte(lung_pData$Pseudotime[i], 100)
-  }
-  expect_equal(levels(lung_pData$Cluster), c("1", "2"))
-  expect_equal(levels(lung_pData$State), c("1", "2", "3"))
-  for(i in 1:length(lung_pData$Size_Factor)) {
-    expect_gte(lung_pData$Size_Factor[i], 0.2796534)
-    expect_lte(lung_pData$Size_Factor[i], 5)
-  }
-  for(i in 1:length(lung_pData$num_genes_expressed)) {
-    expect_gte(lung_pData$num_genes_expressed[i], 10)
-    expect_lte(lung_pData$num_genes_expressed[i], 196)
-  }
-  for(i in 1:length(lung_pData$Total_mRNAs)) {
-  expect_gte(lung_pData$Total_mRNAs[i], 50.42859)
-  expect_lte(lung_pData$Total_mRNAs[i], 16184.71)
-  }
-  
-  pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
-  fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
-  HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
-  HSMM <- estimateSizeFactors(HSMM)
-  HSMM <- estimateDispersions(HSMM)
-  HSMM <- detectGenes(HSMM, min_expr = 0.1)
-  cth <- newCellTypeHierarchy()
-  cth <- addCellType(cth, "Myoblast", classify_func = function(x) {x[MYF5_id,] >= 1})
-  cth <- addCellType(cth, "Fibroblast", classify_func = function(x)
-    {x[MYF5_id,] < 1 & x[ANPEP_id,] > 1})
-  HSMM <- classifyCells(HSMM, cth, 0.1)
-  disp_table <- dispersionTable(HSMM)
-  unsup_clustering_genes <- subset(disp_table, mean_expression >= 0.1 & dispersion_empirical >= 1 * dispersion_fit)
-  HSMM <- setOrderingFilter(HSMM, unsup_clustering_genes$gene_id)
-  
-  #"DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'
-  
-  HSMM_DDRTree <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'DDRTree', verbose = T)
-  HSMM_ICA <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'ICA', verbose = T)
-  HSMM_tSNE <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'tSNE', verbose = T)
-  HSMM_SimplePPT <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'SimplePPT', verbose = T)
-  HSMM_L1-graph <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'L1-graph', verbose = T)
-  HSMM_SGL-tree <- reduceDimension(HSMM, max_components = 2, num_dim = 5, reduction_method = 'SGL-tree', verbose = T)
-  
-  HSMM_DDRTree <- clusterCells(HSMM_DDRTree, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_ICA <- clusterCells(HSMM_ICA, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_tSNE <- clusterCells(HSMM_tSNE, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_SimplePPT <- clusterCells(HSMM_SimplePPT, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  HSMM_L1-graph <- clusterCells(HSMM_L1-graph, num_clusters = 2, clustering_genes = unsup_clustering_genes$gene_id)
-  
-})
+data(HSMM_expr_matrix)
+data(HSMM_gene_annotation)
+data(HSMM_sample_sheet)
+
+pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
+fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
+
+# First create a CellDataSet from the relative expression levels
+HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix),   
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.1,
+                       expressionFamily=tobit(Lower=0.1))
+
+# Next, use it to estimate RNA counts
+rpc_matrix <- relative2abs(HSMM, method = "num_genes")
+
+# Now, make a new CellDataSet using the RNA counts
+HSMM <- newCellDataSet(as(as.matrix(rpc_matrix), "sparseMatrix"),
+                       phenoData = pd, 
+                       featureData = fd,
+                       lowerDetectionLimit=0.5,
+                       expressionFamily=negbinomial.size())
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+expressed_genes <- row.names(subset(fData(HSMM), num_cells_expressed >= 10))
+
+pData(HSMM)$Total_mRNAs <- Matrix::colSums(exprs(HSMM))
+
+HSMM <- HSMM[,pData(HSMM)$Total_mRNAs < 1e6]
+
+HSMM <- detectGenes(HSMM, min_expr = 0.1)
+
+# Log-transform each value in the expression matrix.
+L <- log(exprs(HSMM[expressed_genes,]))
+
+# Standardize each gene, so that they are all on the same scale,
+# Then melt the data with plyr so we can plot it easily
+melted_dens_df <- melt(Matrix::t(scale(Matrix::t(L))))
+
+# Plot the distribution of the standardized gene expression values.
+qplot(value, geom = "density", data = melted_dens_df) +
+  stat_function(fun = dnorm, size = 0.5, color = 'red') +
+  xlab("Standardized log(FPKM)") +
+  ylab("Density")
+
+MYF5_id <- row.names(subset(fData(HSMM), gene_short_name == "MYF5"))
+ANPEP_id <- row.names(subset(fData(HSMM), gene_short_name == "ANPEP"))
+
+cth <- newCellTypeHierarchy()
+cth <- addCellType(cth, "Myoblast", classify_func = function(x) { x[MYF5_id,] >= 1 })
+cth <- addCellType(cth, "Fibroblast", classify_func = function(x)
+{ x[MYF5_id,] < 1 & x[ANPEP_id,] > 1 })
+
+HSMM <- classifyCells(HSMM, cth, 0.1)
+marker_diff <- markerDiffTable(HSMM[expressed_genes,],
+                               cth,
+                               residualModelFormulaStr = "~Media + num_genes_expressed",
+                               cores = 1)
+candidate_clustering_genes <- row.names(subset(marker_diff, qval < 0.01))
+marker_spec <- calculateMarkerSpecificity(HSMM[candidate_clustering_genes,], cth)
+semisup_clustering_genes <- unique(selectTopMarkers(marker_spec, 500)$gene_id)
+HSMM <- setOrderingFilter(HSMM, semisup_clustering_genes)
+HSMM <- reduceDimension(HSMM, max_components = 2, num_dim = 3, norm_method = 'log',
+                        reduction_method = 'tSNE',
+                        residualModelFormulaStr = "~Media + num_genes_expressed",
+                        verbose = T)
+
+test_that("clusterCells functions normally in vignette", 
+          expect_error(clusterCells(HSMM, num_clusters = 2), NA))

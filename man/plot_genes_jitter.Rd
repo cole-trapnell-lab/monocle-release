@@ -42,7 +42,8 @@ each group of cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
 my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1", "CCNB2"))),]
 plot_genes_jitter(my_genes, grouping="Media", ncol=2)
 }

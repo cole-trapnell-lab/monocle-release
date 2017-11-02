@@ -122,9 +122,7 @@ clusterCells <- function(cds,
     tsne_data <- reducedDimA(cds)
     if(ncol(tsne_data) != ncol(cds))
       stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
-    
-    dataDist <- dist(t(tsne_data)) #calculate distances between cells
-    
+
     if(skip_rho_sigma 
        & !is.null(cds@auxClusteringData[["tSNE"]]$densityPeak) 
        & !is.null(pData(cds)$Cluster)
@@ -135,13 +133,15 @@ clusterCells <- function(cds,
       dataClust <- cds@auxClusteringData[["tSNE"]]$densityPeak
       dataClust$rho <- pData(cds)$rho
       dataClust$delta <- pData(cds)$delta
-      dataClust$distance <- dataDist
+      dataClust$distance <- tsne_data
       dataClust$peaks <- pData(cds)$peaks
       dataClust$clusters <- pData(cds)$clusters
       dataClust$halo <- pData(cds)$halo
+      dataClust$halo <- pData(cds)$halo
+      dataClust$nearest_higher_density_neighbor <- pData(cds)$nearest_higher_density_neighbor
       
       # res <- list(rho=rho, delta=delta, distance=distance, dc=dc, threshold=c(rho=NA, delta=NA), peaks=NA, clusters=NA, halo=NA)
-      dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo')]
+      dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo', 'nearest_higher_density_neighbor')]
       class(dataClust) <- 'densityCluster'
       
     } else {
@@ -149,7 +149,7 @@ clusterCells <- function(cds,
       if (verbose) {
         message("Run densityPeak algorithm to automatically cluster cells based on distance of cells on tSNE components...")
       }
-      dataClust <- densityClust::densityClust(dataDist, gaussian = gaussian) #gaussian = F
+      dataClust <- densityClust::densityClust(t(tsne_data), gaussian = gaussian) #gaussian = F
     }
     #automatically find the rho / sigma based on the number of cells you want: 
     if(!is.null(rho_threshold) & !is.null(delta_threshold)){
@@ -169,7 +169,7 @@ clusterCells <- function(cds,
           message(paste('Use 0.5 of the rho as the cutoff and first', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
         }
 
-        delta_rho_df <- data.frame(delta = dataClust$delta, rho = dataClust$rho)
+        delta_rho_df <- data.frame("delta" = dataClust$delta, "rho" = dataClust$rho)
         rho_valid_threshold <- quantile(dataClust$rho, probs = 0.5)
         delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
         threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]
@@ -203,6 +203,7 @@ clusterCells <- function(cds,
     pData(cds)$halo <- dataClust$halo
     pData(cds)$delta <- dataClust$delta
     pData(cds)$rho <- dataClust$rho
+    pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")

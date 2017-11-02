@@ -73,6 +73,7 @@ cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
 
 #' @importFrom Biobase exprs pData
 #' @importFrom igraph V
+#' @importFrom dplyr %>%
 classifyCellsHelperCell <- function(cds, cth){
   #next_node_list <- rep(list(), ncol(cds)) 
   
@@ -82,7 +83,7 @@ classifyCellsHelperCell <- function(cds, cth){
     type_res <- cell_class_func(exprs(cds))
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
   }
-  cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname"), "rowname") 
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
   class_df <- as.data.frame(cds_pdata %>% do(CellType = cth_classifier_cell(.$rowname, cth, "root", gate_res)))
   CellType <- factor(unlist(class_df$CellType))
   names(CellType) <- class_df$rowname
@@ -147,7 +148,8 @@ classifyCellsHelperCell <- function(cds, cth){
 #'   are marked "Ambiguous". This allows you to impute cell type based on 
 #'   unsupervised clustering results (e.g. with \code{\link{clusterCells}()}) or
 #'   some other grouping criteria.
-#'    
+#' 
+#' 
 #' @return \code{newCellTypeHierarchy} and \code{addCellType} both return an 
 #'   updated CellTypeHierarchy object. \code{classifyCells} returns an updated 
 #'   \code{CellDataSet} with a new column, "CellType", in the pData table.
@@ -206,7 +208,8 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
-#' @importFrom dplyr add_rownames select_ do group_by_ inner_join
+#' @importFrom dplyr select_ do group_by_ inner_join %>%
+#' @importFrom tibble rownames_to_column
 #' @importFrom Biobase pData pData<-
 #' @export 
 #' @examples
@@ -262,7 +265,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
     }else
       frequency_thresholds <- frequency_thresh
 
-    cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", ...), ...) 
+    cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", ...), ...) 
     class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
     class_df$CellType <-  as.character(unlist(class_df$CellType))
     #class_df$rowname <- as.character(class_df$rowname)
@@ -280,7 +283,7 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
   #pData(cds)$cell_type <- cds_types
   
   
-  pData(cds) <- as.data.frame(suppressMessages(inner_join(add_rownames(pData(cds)), class_df)))
+  pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
   
   pData(cds)$CellType <- factor(pData(cds)$CellType)
   
@@ -305,9 +308,19 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
 #' returns a dataframe with N x k rows. Each row contains a gene and a specifity
 #' score for one of the types.
 #' @importFrom reshape2 dcast
+#' @importFrom dplyr %>%
 #' @importFrom Biobase exprs fData pData
 #' @export
 calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
+  
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
+  if(class(cth)[1] != "CellTypeHierarchy") {
+    stop("Error cth is not of type 'CellTypeHierarchy'")
+  }
+  
   CellType <- NA
   markerSpecificityHelper <- function(cds, cth){
     averageExpression <- Matrix::rowMeans(exprs(cds))
@@ -320,7 +333,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
   options(dplyr.show_progress = T)
 
   cds <- cds[,row.names(subset(pData(cds), CellType %in% c("Unknown", "Ambiguous") == FALSE))]
-  cds_pdata <- dplyr::group_by_(dplyr::select_(add_rownames(pData(cds)), "rowname", "CellType"), "CellType") 
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", "CellType"), "CellType") 
   class_df <- as.data.frame(cds_pdata %>% do(markerSpecificityHelper(cds[,.$rowname], cth)))
   class_df <- dcast(class_df, CellType ~ gene_id, value.var = "expr_val")
   row.names(class_df) <- class_df$CellType
@@ -353,7 +366,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' @param marker_specificities The dataframe of specificity results produced by \code{\link{calculateMarkerSpecificity}()}
 #' @param num_markers The number of markers that will be shown for each cell type
 #' @return A data frame of specificity results
-#' @importFrom dplyr top_n
+#' @importFrom dplyr top_n %>%
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
   specificity <- NA
@@ -384,6 +397,14 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @importFrom Biobase pData pData<-
 #' @export 
 markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
+  if(class(cds)[1] != "CellDataSet") {
+    stop("Error cds is not of type 'CellDataSet'")
+  }
+  
+  if(class(cth)[1] != "CellTypeHierarchy") {
+    stop("Error cth is not of type 'CellTypeHierarchy'")
+  }
+  
   CellType <- NULL
   if (verbose)
     message("Classifying cells according to markers")
@@ -406,7 +427,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
     selected_cells <- c()
 
     for (cell_type in names(cell_type_counts)){
-      cell_type_sample <- sample_n(add_rownames(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
+      cell_type_sample <- sample_n(rownames_to_column(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
       selected_cells <- c(selected_cells, cell_type_sample)
     }
     

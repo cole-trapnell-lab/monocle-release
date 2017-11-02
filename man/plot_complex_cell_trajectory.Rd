@@ -8,7 +8,7 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
   color_by = "State", show_tree = TRUE, show_backbone = TRUE,
   backbone_color = "black", markers = NULL, show_cell_names = FALSE,
   cell_size = 1.5, cell_link_size = 0.75, cell_name_size = 2,
-  show_branch_points = TRUE, theta = 0)
+  show_branch_points = TRUE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -39,7 +39,7 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
-\item{theta}{How many degrees you want to rotate the trajectory}
+\item{...}{Additional arguments passed to the scale_color_viridis function}
 }
 \value{
 a ggplot2 plot object
@@ -49,9 +49,10 @@ Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{
-data(HSMM)
-plot_cell_trajectory(HSMM)
-plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-plot_cell_trajectory(HSMM, markers="MYH3")
+library(HSMMSingleCell)
+HSMM <- load_HSMM()
+plot_complex_cell_trajectory(HSMM)
+plot_complex_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+plot_complex_cell_trajectory(HSMM, markers="MYH3")
 }
 }

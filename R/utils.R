@@ -328,7 +328,7 @@ dispersionTable <- function(cds){
 #####
 #' Detects genes above minimum threshold.
 #'
-#' Sets the global expression detection threshold to be used with this CellDataSet.
+#' @description Sets the global expression detection threshold to be used with this CellDataSet.
 #' Counts how many cells each feature in a CellDataSet object that are detectably expressed 
 #' above a minimum threshold. Also counts the number of genes above this threshold are 
 #' detectable in each cell.
@@ -567,6 +567,9 @@ load_HSMM <- function(){
   pd <- new("AnnotatedDataFrame", data = HSMM_sample_sheet)
   fd <- new("AnnotatedDataFrame", data = HSMM_gene_annotation)
   HSMM <- newCellDataSet(as.matrix(HSMM_expr_matrix), phenoData = pd, featureData = fd)
+  HSMM <- estimateSizeFactors(HSMM)
+  HSMM <- estimateSizeFactors(HSMM)
+  
   HSMM
 }
 
@@ -582,7 +585,6 @@ load_HSMM_markers <- function(){
 }
 
 #' Build a CellDataSet from the data stored in inst/extdata directory.
-#' @import dplyr
 #' @importFrom Biobase pData pData<- exprs fData
 #' @export
 load_lung <- function(){
