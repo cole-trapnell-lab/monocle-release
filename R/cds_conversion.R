@@ -133,6 +133,18 @@ importCDS <- function(otherCDS, import_all = FALSE) {
       pd
     })
     
+    # Check to make sure raw.data & pd have entire overlap
+      if(length(setdiff(rownames(pd), colnames(data))) > 0) {
+        rows_to_remove <- which(rownames(pd) == setdiff(rownames(pd), colnames(data)))
+        pd <- pd[-(rows_to_remove)]
+      } 
+      
+      if(length(setdiff(colnames(data), rownames(pd))) > 0) {
+        cols_to_remove <- which(colnames(data) == setdiff(colnames(data), rownames(pd)))
+        data <- data[, -(cols_to_remove)]  
+      }
+    
+    
     fData <- data.frame(gene_short_name = row.names(data), row.names = row.names(data))
     fd <- new("AnnotatedDataFrame", data = fData)
     lowerDetectionLimit <- otherCDS@is.expr
