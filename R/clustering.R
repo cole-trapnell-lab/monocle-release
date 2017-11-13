@@ -54,16 +54,15 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param peaks A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.  
 #' will automatically calculated based on the top num_cluster product of rho and sigma. 
 #' @param gaussian A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density
-#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
-#' @param verbose Verbose parameter for DDRTree
 #' @param cell_type_hierarchy A data structure used for organizing functions that can be used for organizing cells 
+#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
-#' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. Default to be 50
+#' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50
 #' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. 
 #' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
-#' @param method method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
-#' The other method is based on DDRTree. 
+#' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
+#' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @importFrom densityClust densityClust findClusters
@@ -72,8 +71,8 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @importFrom RANN nn2
 #' @useDynLib monocle
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
+#' @references Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre: Fast unfolding of communities in large networks. J. Stat. Mech. (2008) P10008
 #' @references Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015. 
-#' @references 
 #' @export
 
 clusterCells <- function(cds, 
@@ -98,7 +97,7 @@ clusterCells <- function(cds,
   
   if(ncol(cds) > 500000) {
     if(method %in% c('densityPeak', "DDRTree")) {
-      warning('Number of cells in your data is larger than 50 k, clusterCells with densityPeak or DDRTree may crash!')
+      warning('Number of cells in your data is larger than 50 k, clusterCells with densityPeak or DDRTree may crash. Please try to use the newly added Louvain clustering algorithm!')
     }
   }
     
@@ -248,7 +247,7 @@ clusterCells <- function(cds,
     }
     
     if(verbose) {
-      message("Run Rphenograph starts:","\n", 
+      message("Run phenograph starts:","\n", 
               "  -Input data of ", nrow(data)," rows and ", ncol(data), " columns","\n",
               "  -k is set to ", k)
     }

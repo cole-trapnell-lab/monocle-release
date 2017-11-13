@@ -38,16 +38,15 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
-\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. Default to be 50}
+\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50}
 
 \item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1.}
 
 \item{weight}{A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.}
 
-\item{method}{method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
-The other method is based on DDRTree.}
+\item{method}{method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm.}
 
-\item{verbose}{Verbose parameter for DDRTree}
+\item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
 }
@@ -67,6 +66,8 @@ to determine the number of clusters to cluster.
 }
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
+
+Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre: Fast unfolding of communities in large networks. J. Stat. Mech. (2008) P10008
 
 Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015.
 }
