@@ -48,7 +48,9 @@ Imports:
     slam,
     viridis,
     stats,
-    biocViews
+    biocViews,
+    RANN(>= 2.5),
+    Rcpp
 Suggests:
     destiny, 
     Hmisc,
@@ -69,3 +71,4 @@ biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
 RoxygenNote: 6.0.1
+LinkingTo: Rcpp

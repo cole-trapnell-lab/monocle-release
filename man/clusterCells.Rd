@@ -8,8 +8,8 @@ clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
   frequency_thresh = NULL, enrichment_thresh = NULL,
-  clustering_genes = NULL, method = c("densityPeak", "DDRTree"),
-  verbose = F, ...)
+  clustering_genes = NULL, k = 50, louvain_iter = 1,
+  method = c("densityPeak", "louvain", "DDRTree"), verbose = F, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -61,4 +61,6 @@ to determine the number of clusters to cluster.
 }
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
+
+Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015.
 }
