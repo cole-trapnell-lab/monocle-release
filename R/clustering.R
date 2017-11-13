@@ -59,6 +59,9 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param cell_type_hierarchy A data structure used for organizing functions that can be used for organizing cells 
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
+#' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. Default to be 50
+#' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. 
+#' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
 #' @param method method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
 #' The other method is based on DDRTree. 
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -70,6 +73,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @useDynLib monocle
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 #' @references Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015. 
+#' @references 
 #' @export
 
 clusterCells <- function(cds, 
@@ -86,6 +90,7 @@ clusterCells <- function(cds,
                          clustering_genes=NULL,
                          k = 50, 
                          louvain_iter = 1, 
+                         weight = FALSE,
                          method = c('densityPeak', 'louvain', 'DDRTree'),
                          verbose = F, 
                          ...) {
@@ -210,7 +215,7 @@ clusterCells <- function(cds,
     #find the number of clusters: 
     #cluster_num <- length(unique(dataClust$clusters))
     
-    pData(cds)$Cluster <- as.character(dataClust$clusters)
+    pData(cds)$Cluster <- factor(dataClust$clusters)
     pData(cds)$peaks <- F
     pData(cds)$peaks[dataClust$peaks] <- T
     pData(cds)$halo <- dataClust$halo
@@ -256,7 +261,7 @@ clusterCells <- function(cds,
       cat("DONE ~",t1[3],"s\n", " Compute jaccard coefficient between nearest-neighbor sets...")
     }
     
-    t2 <- system.time(links <- jaccard_coeff(neighborMatrix))
+    t2 <- system.time(links <- jaccard_coeff(neighborMatrix, weight))
     
     if(verbose) {
       cat("DONE ~",t2[3],"s\n", " Build undirected graph from the weighted links...")
@@ -302,7 +307,7 @@ clusterCells <- function(cds,
       cat("  -Number of clusters:", length(unique(membership(community))))
     }
     
-    pData(cds)$Cluster <- membership(community) 
+    pData(cds)$Cluster <- factor(membership(community)) 
 
     cds@auxClusteringData[["louvian"]] <- list(g = g, community = community)
 

@@ -8,7 +8,7 @@ clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
   frequency_thresh = NULL, enrichment_thresh = NULL,
-  clustering_genes = NULL, k = 50, louvain_iter = 1,
+  clustering_genes = NULL, k = 50, louvain_iter = 1, weight = FALSE,
   method = c("densityPeak", "louvain", "DDRTree"), verbose = F, ...)
 }
 \arguments{
@@ -37,6 +37,12 @@ will automatically calculated based on the top num_cluster product of rho and si
 \item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
+
+\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. Default to be 50}
+
+\item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1.}
+
+\item{weight}{A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.}
 
 \item{method}{method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
 The other method is based on DDRTree.}
