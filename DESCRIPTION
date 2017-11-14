@@ -60,7 +60,10 @@ Remotes:
     bioc::Biobase,
     bioc::BiocGenerics,
     bioc::biocViews,
-    bioc::limma
+    bioc::limma,
+    bioc::scater,
+    bioc::Seurat,
+    bioc::destiny
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true
