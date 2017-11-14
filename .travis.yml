@@ -4,3 +4,6 @@ dist: trusty
 bioc_required: true
 cache: packages
 warnings_are_errors: true
+install:
+ - R -e 'install.packages("devtools")'
+ - R -e 'devtools::install(dependencies = TRUE, upgrade_dependencies = TRUE)'
