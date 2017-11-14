@@ -62,7 +62,6 @@ Remotes:
     bioc::biocViews,
     bioc::limma,
     bioc::scater,
-    bioc::Seurat,
     bioc::destiny
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
