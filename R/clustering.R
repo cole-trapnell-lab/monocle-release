@@ -313,7 +313,6 @@ clusterCells <- function(cds,
     t_end <- Sys.time()
     
     if(verbose) {
-      cat("DONE ~",t4[3],"s\n")
       message("Run phenograph DONE, totally takes ", t_end - t_start, " s.")
       cat("  Return a community class\n  -Modularity value:", modularity(optim_res),"\n")
       cat("  -Number of clusters:", length(unique(membership(optim_res))))
