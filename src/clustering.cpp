@@ -38,7 +38,7 @@ NumericMatrix jaccard_coeff(NumericMatrix idx, bool weight) {
           // weights(r, 1) = k + 1;
           // weights(r, 2) = u / (2.0 * ncol - u) / 2;  // symmetrize the graph
           
-          weights(r, 2) = u / v;  // normalize the values
+          weights(r, 2) = (double) u / (double) v;  // normalize the values
         }
       }
       

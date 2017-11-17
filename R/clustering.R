@@ -37,12 +37,17 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' workflows. In an experiment containing a mixture of cell types, each cluster might
 #' correspond to a different cell type. This method takes a CellDataSet as input
 #' along with a requested number of clusters, clusters them with an unsupervised 
-#' algorithm, and then returns the CellDataSet with the cluster assignments stored in
-#' the pData table. When number of clusters is set to NULL (num_clusters = NULL), 
-#' the decision plot as introduced in the above citation will be plotted and the 
-#' users are required to click on the decision plot to select the rho and delta 
-#' to determine the number of clusters to cluster.  
-#' 
+#' algorithm (by default, density peak clustering), and then returns the CellDataSet with the 
+#' cluster assignments stored in the pData table. When number of clusters is set 
+#' to NULL (num_clusters = NULL), the decision plot as introduced in the reference 
+#' will be plotted and the users are required to check the decision plot to select 
+#' the rho and delta to determine the number of clusters to cluster. When the dataset 
+#' is big, for example > 50 k, we recommend the user to use the Louvain clustering 
+#' algorithm which is inspired from phenograph paper. Note Louvain doesn't support the 
+#' num_cluster argument but the k (number of k-nearest neighbors) is relevant to the final 
+#' clustering number. The implementation of Louvain clustering is based on the Rphenograph
+#' package but updated based on our requirement (for example, changed the jaccard_coeff 
+#' function as well as adding louvain_iter argument, etc.)  
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param skip_rho_sigma A logic flag to determine whether or not you want to skip the calculation of rho / sigma 
@@ -183,17 +188,19 @@ clusterCells <- function(cds,
         delta_threshold <- quantile(dataClust$delta, probs = 0.95)
       } else {
         if(verbose) {
-          message(paste('Use 0.5 of the rho as the cutoff and first', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
+          message(paste('Select top ', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
         }
 
         delta_rho_df <- data.frame("delta" = dataClust$delta, "rho" = dataClust$rho)
-        rho_valid_threshold <- 0 # quantile(dataClust$rho, probs = 0.01)
-        delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
-        threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]
-        candidate_peaks <- subset(delta_rho_df, delta >= delta_rho_df$delta[threshold_ind])
+        rho_threshold <- 0 
+        delta_threshold <- sort(delta_rho_df$delta, decreasing = T)[num_clusters] - .Machine$double.eps
+        # rho_valid_threshold <- 0 #quantile(dataClust$rho, probs = 0.05)
+        # delta_rho_df <- subset(delta_rho_df, rho > rho_valid_threshold) 
+        # threshold_ind <- order(delta_rho_df$delta, decreasing = T)[num_clusters + 1]
+        # candidate_peaks <- subset(delta_rho_df, delta >= delta_rho_df$delta[threshold_ind])
         #delta_threshold <- min(candidate_peaks$delta) - .Machine$double.eps
-        delta_threshold <- delta_rho_df$delta[threshold_ind] #- 10*.Machine$double.eps 
-        rho_threshold <- min(candidate_peaks$rho) - 10*.Machine$double.eps
+        # delta_threshold <- delta_rho_df$delta[threshold_ind] - 10*.Machine$double.eps 
+        # rho_threshold <- min(candidate_peaks$rho) - 10*.Machine$double.eps
         #head(subset(delta_rho_df, delta > delta_threshold & rho > rho_threshold))
         #delta_threshold <- delta_rho_df$delta[threshold_ind] - .Machine$double.eps 
         #rho_threshold <- delta_rho_df$rho[threshold_ind] - .Machine$double.eps
@@ -279,36 +286,42 @@ clusterCells <- function(cds,
       cat("DONE ~",t3[3],"s\n", " Run louvain clustering on the graph ...")
     }
     
-    t_max <- NULL
+    t_start <- Sys.time() 
     Qp <- -1 # highest modularity score 
+    optim_res <- NULL 
+    
     for(iter in 1:louvain_iter) {
-      t4 <- system.time(community <- cluster_louvain(g))
+      Q <- cluster_louvain(g)
       
       if(verbose) {
         cat("Running louvain iteration ", iter, "...")
       }
       
-      if(is.null(t_max)) {
-        t_max <- t4
+      if(is.null(optim_res)) {
+        Qp <- max(Q$modularity)
+        optim_res <- Q
+        
       } else {
-        Qt <- t4$modularity
+        Qt <- max(Q$modularity)
         if(Qt > Qp){ #use the highest values for clustering 
-          t_max <- t4
+          optim_res <- Q
           Qp <- Qt
         }
       }
     }
     
+    t_end <- Sys.time()
+    
     if(verbose) {
       cat("DONE ~",t4[3],"s\n")
-      message("Run Rphenograph DONE, totally takes ", sum(c(t1[3],t2[3],t3[3],t4[3])), "s.")
-      cat("  Return a community class\n  -Modularity value:", modularity(community),"\n")
-      cat("  -Number of clusters:", length(unique(membership(community))))
+      message("Run phenograph DONE, totally takes ", t_end - t_start, " s.")
+      cat("  Return a community class\n  -Modularity value:", modularity(optim_res),"\n")
+      cat("  -Number of clusters:", length(unique(membership(optim_res))))
     }
     
-    pData(cds)$Cluster <- factor(membership(community)) 
+    pData(cds)$Cluster <- factor(membership(optim_res)) 
 
-    cds@auxClusteringData[["louvian"]] <- list(g = g, community = community)
+    cds@auxClusteringData[["louvian"]] <- list(g = g, community = optim_res)
 
     return(cds)
   }

@@ -58,11 +58,17 @@ Unsupervised clustering of cells is a common step in many single-cell expression
 workflows. In an experiment containing a mixture of cell types, each cluster might
 correspond to a different cell type. This method takes a CellDataSet as input
 along with a requested number of clusters, clusters them with an unsupervised 
-algorithm, and then returns the CellDataSet with the cluster assignments stored in
-the pData table. When number of clusters is set to NULL (num_clusters = NULL), 
-the decision plot as introduced in the above citation will be plotted and the 
-users are required to click on the decision plot to select the rho and delta 
-to determine the number of clusters to cluster.
+algorithm (by default, density peak clustering), and then returns the CellDataSet with the 
+cluster assignments stored in the pData table. When number of clusters is set 
+to NULL (num_clusters = NULL), the decision plot as introduced in the reference 
+will be plotted and the users are required to check the decision plot to select 
+the rho and delta to determine the number of clusters to cluster. When the dataset 
+is big, for example > 50 k, we recommend the user to use the Louvain clustering 
+algorithm which is inspired from phenograph paper. Note Louvain doesn't support the 
+num_cluster argument but the k (number of k-nearest neighbors) is relevant to the final 
+clustering number. The implementation of Louvain clustering is based on the Rphenograph
+package but updated based on our requirement (for example, changed the jaccard_coeff 
+function as well as adding louvain_iter argument, etc.)
 }
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072

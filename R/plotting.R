@@ -2841,3 +2841,107 @@ plot_multiple_branches_pseudotime <- function(cds,
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
+
+plot_lineage_expression <- function(cds, 
+                                    gene_name, 
+                                    ddata,  
+                                    lineage_tree, 
+                                    root_cell, 
+                                    lineage_depth = NULL,
+                                    expression_threshold = 2000, 
+                                    show_lineage_pair = FALSE, 
+                                    label_x = 0.45, 
+                                    label_y = 1,
+                                    return_all = FALSE) {
+  if(!all(grep('_', colnames(cds)))) {
+    stop('Column of the cds should start with the cell name and then the underscore _')
+  }
+  
+  grep_all_lineage_tree_cells <- lapply(V(lineage_tree)$name, function(x) { grep(paste0("^", x, "_"), colnames(cds)) })
+  
+  if(! all(unlist(lapply(grep_all_lineage_tree_cells, length)) > 0)) {
+    missing_cells <- V(lineage_tree)$name[which(!(unlist(lapply(grep_all_lineage_tree_cells, length)) > 0))]
+    warning(paste0(unique(missing_cells) , ' is not included in the graph of lineage_tree stored in the cds object'))
+  }
+  # visualize MSp lineage 
+  reachable_cells_list <- graph.neighborhood(lineage_tree, length(V(lineage_tree)), nodes = root_cell, 'out')
+  reachable_cells <- V(reachable_cells_list[[1]])$name
+  
+  offspring <- V(graph.neighborhood(lineage_tree, 1, nodes = root_cell, 'out')[[1]])$name[-1]
+  # map the expression: 
+  # alr.1, pes.1 
+  subset_ddata <- subset(ddata) #, father %in% reachable_cells &  target %in% reachable_cells & x_start > 570)
+  mathced_cells <- unlist(lapply(unique(c(as.character(subset_ddata$father), as.character(subset_ddata$target))), function(x) colnames(cds)[grep(paste0("^", x, "_"), colnames(cds))]))
+  marker_expression <- as.matrix(exprs(cds)[gene_name, mathced_cells])
+  mlt_marker_expression <- melt(marker_expression)
+  mlt_marker_expression <- cbind(mlt_marker_expression, str_split_fixed(mlt_marker_expression[, 2], "_", 2))
+  colnames(mlt_marker_expression)[4:5] <- c('cell', 'y')
+  mlt_marker_expression$y <- pData(cds)[as.character(mlt_marker_expression$Var2), 'time']
+  
+  mlt_marker_expression$x <- lineage_coord$lineage_coord[as.character(mlt_marker_expression$cell), 'x']
+  
+  if(show_lineage_pair == FALSE) {
+    p <- ggplot(data = subset_ddata) + scale_y_reverse() + 
+      # geom_label(aes(label=str_wrap(cell_id,12), x=(x_start + x_end)/2, y=(y_start + y_end)/2),size=3) + 
+      geom_segment(aes(x = x_start, y = y_start, xend = x_end, yend = y_end)) + xlab('') + ylab('Time (min)') + 
+      geom_segment(aes(x = x, y = y, xend = x, yend = y + 1, color = value), data = subset(mlt_marker_expression, cell %in% reachable_cells_a)) + 
+      scale_color_viridis(name = paste0("Expression")) +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(), 
+            axis.line = element_blank())
+    if(! is.null(lineage_depth)) {
+      p  + ylim(lineage_depth, min(subset_ddata$x_start))
+    }
+  } else if(show_lineage_pair == TRUE) {
+    # visualize MSp and MSPa lineage 
+    reachable_cells_a <- graph.neighborhood(lineage_tree, length(V(lineage_tree)), nodes = offspring[1], 'out')
+    reachable_cells_a <- V(reachable_cells_a[[1]])$name
+    
+    reachable_cells_p <- graph.neighborhood(lineage_tree, length(V(lineage_tree)), nodes = offspring[2], 'out')
+    reachable_cells_p <- V(reachable_cells_p[[1]])$name
+    
+    subset_ddata <- subset(ddata, father %in% reachable_cells_a &  target %in% reachable_cells_a)
+    A_lineage <- ggplot(data = subset_ddata) + #coord_flip() + 
+      # geom_label(aes(label=str_wrap(cell_id,12), x=(x_start + x_end)/2, y=(y_start + y_end)/2),size=3) + 
+      geom_segment(aes(x = x_start, y = y_start, xend = x_end, yend = y_end), size = 2) + xlab('') + ylab('Time (min)') + 
+      geom_segment(aes(x = x, y = y, xend = x, yend = y + 1, color = value > expression_threshold), size = 2,  
+                   data = subset(mlt_marker_expression, cell %in% reachable_cells_a)) + 
+      scale_color_viridis(name = paste0("Expressed"), discrete = T) +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(), 
+            axis.line = element_blank()) + ylim( min(subset_ddata$y_start), lineage_depth)
+    
+    if(! is.null(lineage_depth)) {
+      A_lineage <- A_lineage + ylim(lineage_depth, min(subset_ddata$x_start))
+    }
+    
+    subset_ddata <- subset(ddata, father %in% reachable_cells_p &  target %in% reachable_cells_p)
+    
+    P_lineage <- ggplot(data = subset_ddata) + scale_y_reverse() + 
+      # geom_label(aes(label=str_wrap(cell_id,12), x=(x_start + x_end)/2, y=(y_start + y_end)/2),size=3) + 
+      geom_segment(aes(x = x_start, y = y_start, xend = x_end, yend = y_end), size = 2) + xlab('') + ylab('Time (min)') + 
+      geom_segment(aes(x = x, y = y, xend = x, yend = y + 1, color = value > expression_threshold), size = 2,  
+                   data = subset(mlt_marker_expression, cell %in% reachable_cells_p)) + 
+      scale_color_viridis(name = paste0("Expressed"), discrete = T) +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(), 
+            axis.line = element_blank()) + ylim(lineage_depth, min(subset_ddata$y_start))
+    
+    if(! is.null(lineage_depth)) {
+      P_lineage <- P_lineage + ylim(lineage_depth, min(subset_ddata$x_start))
+    }
+    
+    p <- plot_grid(P_lineage, A_lineage, labels = rev(offspring), align = 'v', nrow = 2, label_x = label_x, label_y = label_y)
+  }
+  
+  if(return_all) {
+    return(list(subset_ddata = subset_ddata, mlt_marker_expression = mlt_marker_expression, p = p))
+  } else {
+    p
+  }
+}
+
+  
