@@ -61,7 +61,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
     				  do.center = TRUE,
                       is.expr = monocle_cds@lowerDetectionLimit,
                       project = "exportCDS",
-                      display.progress = FALSE, 
+                      # display.progress = FALSE, 
                       meta.data = pData(monocle_cds))
     
     export_cds@misc <- mist_list
@@ -120,6 +120,10 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     requireNamespace("Seurat")
     data <- otherCDS@raw.data
 
+    if(class(data) == "data.frame") {
+      data <- as(as.matrix(data), "sparseMatrix")
+    }
+    
     pd <- tryCatch( {
       pd <- new("AnnotatedDataFrame", data = otherCDS@meta.data)
       pd
@@ -133,17 +137,10 @@ importCDS <- function(otherCDS, import_all = FALSE) {
       pd
     })
     
-    # Check to make sure raw.data & pd have entire overlap
-      if(length(setdiff(rownames(pd), colnames(data))) > 0) {
-        rows_to_remove <- which(rownames(pd) == setdiff(rownames(pd), colnames(data)))
-        pd <- pd[-(rows_to_remove)]
-      } 
-      
-      if(length(setdiff(colnames(data), rownames(pd))) > 0) {
-        cols_to_remove <- which(colnames(data) == setdiff(colnames(data), rownames(pd)))
-        data <- data[, -(cols_to_remove)]  
-      }
-    
+    # remove filtered cells from Seurat
+    if(length(setdiff(colnames(data), rownames(pd))) > 0) {
+      data <- data[, rownames(pd)]  
+    }
     
     fData <- data.frame(gene_short_name = row.names(data), row.names = row.names(data))
     fd <- new("AnnotatedDataFrame", data = fData)
