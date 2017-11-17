@@ -6,14 +6,14 @@
 using namespace Rcpp;
 
 // jaccard_coeff
-NumericMatrix jaccard_coeff(NumericMatrix idx, bool weight);
-RcppExport SEXP _monocle_jaccard_coeff(SEXP idxSEXP, SEXP weightSEXP) {
+NumericMatrix jaccard_coeff(SEXP R_idx, SEXP R_weight);
+RcppExport SEXP _monocle_jaccard_coeff(SEXP R_idxSEXP, SEXP R_weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type idx(idxSEXP);
-    Rcpp::traits::input_parameter< bool >::type weight(weightSEXP);
-    rcpp_result_gen = Rcpp::wrap(jaccard_coeff(idx, weight));
+    Rcpp::traits::input_parameter< SEXP >::type R_idx(R_idxSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_weight(R_weightSEXP);
+    rcpp_result_gen = Rcpp::wrap(jaccard_coeff(R_idx, R_weight));
     return rcpp_result_gen;
 END_RCPP
 }

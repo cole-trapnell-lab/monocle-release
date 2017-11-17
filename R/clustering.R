@@ -74,10 +74,12 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @importFrom igraph graph.data.frame cluster_louvain modularity membership
 #' @import ggplot2
 #' @importFrom RANN nn2
-#' @useDynLib monocle
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
 #' @references Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre: Fast unfolding of communities in large networks. J. Stat. Mech. (2008) P10008
 #' @references Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015. 
+#' 
+#' @useDynLib monocle
+#' 
 #' @export
 
 clusterCells <- function(cds, 

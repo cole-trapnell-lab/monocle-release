@@ -6,14 +6,11 @@ using namespace Rcpp;
 // Weights of both i->j and j->i are recorded if they have intersection. In this case
 // w(i->j) should be equal to w(j->i). In some case i->j has weights while j<-i has no
 // intersections, only w(i->j) is recorded. This is determinded in code `if(u>0)`. 
-// In this way, the undirected graph is symmetrized by halfing the weight 
-// in code `weights(r, 2) = u/(2.0*ncol - u)/2`.
+// The original method described in the phenograph paper is used to calculate the weight. 
 //
 // Author: Chen Hao, Date: 25/09/2015; updated by Xiaojie Qiu Nov. 12, 2017
 
-
-// [[Rcpp::export]]
-NumericMatrix jaccard_coeff(NumericMatrix idx, bool weight) {
+NumericMatrix jaccard_coeff_cpp(NumericMatrix idx, bool weight) {
   int nrow = idx.nrow(), ncol = idx.ncol(), r = 0;
   NumericMatrix weights(nrow*ncol, 3);
   
@@ -50,6 +47,14 @@ NumericMatrix jaccard_coeff(NumericMatrix idx, bool weight) {
   weights(_, 2) = weights(_, 2) / max(weights(_, 2));
   
   return weights;
+}
+
+// [[Rcpp::export]]
+NumericMatrix jaccard_coeff(SEXP R_idx, SEXP R_weight) {
+  NumericMatrix idx(R_idx);
+  bool weight = as<bool>(R_weight);
+  
+  return jaccard_coeff_cpp(idx, weight);
 }
 
 /***
