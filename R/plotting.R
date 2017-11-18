@@ -1204,8 +1204,12 @@ plot_pseudotime_heatmap <- function(cds_subset,
                  border_color = NA,
                  color=hmcols)
 
-  annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
- 
+  if(cluster_rows) {
+    annotation_row <- data.frame(Cluster=factor(cutree(ph$tree_row, num_clusters)))
+  } else {
+    annotation_row <- NULL
+  }
+  
   if(!is.null(add_annotation_row)) {
     old_colnames_length <- ncol(annotation_row)
     annotation_row <- cbind(annotation_row, add_annotation_row[row.names(annotation_row), ])  
@@ -1237,12 +1241,13 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
   else {
     feature_label <- row.names(heatmap_matrix)
-    row_ann_labels <- row.names(annotation_row)
+    if(!is.null(annotation_row))
+      row_ann_labels <- row.names(annotation_row)
   }
   
   row.names(heatmap_matrix) <- feature_label
-  row.names(annotation_row) <- row_ann_labels
-  
+  if(!is.null(annotation_row))
+    row.names(annotation_row) <- row_ann_labels
   
   colnames(heatmap_matrix) <- c(1:ncol(heatmap_matrix))
   
