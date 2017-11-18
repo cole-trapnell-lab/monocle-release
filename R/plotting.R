@@ -598,7 +598,7 @@ plot_genes_positive_cells <- function(cds_subset,
     }
     marker_exprs_melted <- reshape2::melt(round(as.matrix(marker_exprs)))
   }else{
-    marker_exprs_melted <- reshape2::melt(exprs(marker_exprs))
+    marker_exprs_melted <- reshape2::melt(as.matrix(exprs(cds_subset)))
   }
    
   colnames(marker_exprs_melted) <- c("f_id", "Cell", "expression")
