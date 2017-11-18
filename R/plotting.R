@@ -2863,3 +2863,5 @@ plot_multiple_branches_pseudotime <- function(cds,
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
+
+  
