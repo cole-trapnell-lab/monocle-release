@@ -1,5 +1,18 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
+Version 2.6.1
+--------------------------------------------------------------------------------
+  o knn-based density peak clustering is not general for all datasets. Rolled back to 
+    the previous densityPeak clustering algorithm and set it to be the default algorithm.
+    A new Louvain clustering algorithm for dealing with large datasets (> 50 k cells)
+    is added. 
+  o A few bug fixes for importCDS, exportCDS functions.
+
+
+Version 2.6.0
+--------------------------------------------------------------------------------
+  o Official release of the features in 2.5.0 through BioC
+
 
 Version 2.5.0
 --------------------------------------------------------------------------------

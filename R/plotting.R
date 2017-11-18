@@ -1968,7 +1968,29 @@ plot_cell_clusters <- function(cds,
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      cds_subset <- cds[row.names(markers_fData),]
+      if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+        integer_expression <- TRUE
+      }
+      else {
+        integer_expression <- FALSE
+
+      }
+      if (integer_expression) {
+        cds_exprs <- exprs(cds_subset)
+
+        if (is.null(sizeFactors(cds_subset))) {
+         stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+        }
+        cds_exprs <- Matrix::t(Matrix::t(cds_exprs)/sizeFactors(cds_subset))
+
+        cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
+      }
+      else {
+        cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
+      }
+      markers_exprs <- cds_exprs
+      #markers_exprs <- reshape2::melt(as.matrix(cds_exprs))
       colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
@@ -2841,3 +2863,5 @@ plot_multiple_branches_pseudotime <- function(cds,
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
 }
+
+  
