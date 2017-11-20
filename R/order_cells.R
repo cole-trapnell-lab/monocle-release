@@ -1476,7 +1476,7 @@ reduceDimension <- function(cds,
 
       #set the important information from densityClust to certain part of the cds object:
       cds@auxClusteringData[["tSNE"]]$pca_components_used <- num_dim
-      cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(tsne_data)
+      cds@auxClusteringData[["tSNE"]]$reduced_dimension <- t(topDim_pca)
       #cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex
 
       cds@dim_reduce_type <- "tSNE"
