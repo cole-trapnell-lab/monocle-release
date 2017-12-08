@@ -1518,6 +1518,20 @@ reduceDimension <- function(cds,
       if (verbose)
         message("Learning principal graph with DDRTree")
 
+      if("num_dim" %in% names(extra_arguments) | ncol(FM) > 100000) { # when num_dim is passed or the number cells is more than 10 cells, do an intial PCA 
+        if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+          num_dim <- extra_arguments$num_dim #variance_explained
+        }
+        else{
+          num_dim <- 50
+        }
+
+        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                  center = TRUE, scale. = TRUE)
+        irlba_pca_res <- irlba_res$x
+        FM <- irlba_pca_res#[, 1:num_dim]
+      }
+
       # TODO: DDRTree should really work with sparse matrices.
       if(auto_param_selection & ncol(cds) >= 100){
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter

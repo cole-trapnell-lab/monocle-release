@@ -2261,7 +2261,36 @@ plot_complex_cell_trajectory <- function(cds,
   # closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   # root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),]
   tree_coords <- layout_as_tree(dp_mst, root=root_cell)
+  # tree_coords <- layout_with_fr(dp_mst) # , root=root_cell
   
+  ### scale the path length 
+  tree_coords_ori <- tree_coords 
+  row.names(tree_coords) <- V(dp_mst)$name
+  
+  branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+  terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
+  from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
+  order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
+
+  modified_vec <- c()
+  for(order_i in order_path_len) {
+    curr_vertex <- from_root_to_branch_points[[order_i]]$name
+    curr_vertex <- setdiff(curr_vertex, modified_vec)
+
+    if(order_i == order_path_len[1]) {
+      ini_val <- max(tree_coords[curr_vertex, 2])
+    } else {
+      nearest_modified_val <- intersect(modified_vec, neighborhood(dp_mst, order = 1, curr_vertex[1], mode = 'out')[[1]]$name)
+      ini_val <- tree_coords[nearest_modified_val, 2]
+      step_size <- 10 / (length(curr_vertex) - 1)
+      tree_coords[curr_vertex[1], 2] <- ini_val - 1
+      tree_coords[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
+    }
+
+    modified_vec <- c(modified_vec, curr_vertex)
+  }
+  
+  row.names(tree_coords) <- NULL
   #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
   ica_space_df <- data.frame(tree_coords)
   row.names(ica_space_df) <- colnames(reduced_dim_coords)
@@ -2329,17 +2358,17 @@ plot_complex_cell_trajectory <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
                              scale_color_viridis(name = paste0("log10(", color_by, ")"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5) 
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1) 
     }
   }else {
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
         scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5)
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1)
     }
   }
 
