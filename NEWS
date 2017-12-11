@@ -1,5 +1,9 @@
 Monocle 2.0.0 Series NEWS
 ================================================================================
+Version 2.6.2
+--------------------------------------------------------------------------------
+  o Added a new method for size factor calculations, "mean-geometric-mean-log-total"
+  
 Version 2.6.0
 --------------------------------------------------------------------------------
   o knn-based density peak clustering is not general for all datasets. Rolled back to 
