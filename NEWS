@@ -3,6 +3,7 @@ Monocle 2.0.0 Series NEWS
 Version 2.6.2
 --------------------------------------------------------------------------------
   o Added a new method for size factor calculations, "mean-geometric-mean-log-total"
+  o Added an argument to override the pseudocount value in plot_cell_clusters
   
 Version 2.6.0
 --------------------------------------------------------------------------------
