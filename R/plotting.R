@@ -2207,7 +2207,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom igraph V get.edgelist layout_as_tree
+#' @importFrom igraph V get.edgelist layout_as_tree neighborhood
 #' @importFrom reshape2 melt
 #' @importFrom viridis scale_color_viridis
 #' @export

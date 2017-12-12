@@ -1480,6 +1480,9 @@ reduceDimension <- function(cds,
       #cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex
 
       cds@dim_reduce_type <- "tSNE"
+
+      pData(cds)$tsne_1 = reducedDimA(cds)[1,]
+      pData(cds)$tsne_2 = reducedDimA(cds)[2,]
     }
 
     else if (reduction_method == "ICA") {
@@ -1551,6 +1554,9 @@ reduceDimension <- function(cds,
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
+
+      pData(cds)$DDRTree_1 = reducedDimS(cds)[1,]
+      pData(cds)$DDRTree_2 = reducedDimS(cds)[2,]
     }else {
       stop("Error: unrecognized dimensionality reduction method")
     }
