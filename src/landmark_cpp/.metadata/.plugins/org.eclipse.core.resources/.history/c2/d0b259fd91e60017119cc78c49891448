@@ -1,0 +1,12 @@
+/*
+ * test.cpp
+ *
+ *  Created on: Dec 21, 2017
+ *      Author: liwang
+ */
+#include<iostream>
+using namespace std;
+
+int main(){
+	cout<<"hello world";
+}
