@@ -39,7 +39,9 @@ monocle_theme_opts <- function()
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @importFrom igraph get.edgelist
+#' @importFrom tibble rownames_to_column
 #' @importFrom viridis scale_color_viridis
+#' @importFrom dplyr left_join mutate n slice
 #' @export
 #' @examples
 #' \dontrun{
@@ -49,24 +51,25 @@ monocle_theme_opts <- function()
 #' plot_cell_trajectory(lung, markers="MYH3")
 #' }
 plot_cell_trajectory <- function(cds, 
-                               x=1, 
-                               y=2, 
-                               color_by="State", 
-                               show_tree=TRUE, 
-                               show_backbone=TRUE, 
-                               backbone_color="black", 
-                               markers=NULL, 
-                               use_color_gradient = FALSE,
-                               markers_linear = FALSE,
-                               show_cell_names=FALSE,
-                               show_state_number = FALSE,
-                               cell_size=1.5,
-                               cell_link_size=0.75,
-                               cell_name_size=2,
-                               state_number_size = 2.9,
-                               show_branch_points=TRUE,
-                               theta = 0, 
-                               ...){
+                                 x=1, 
+                                 y=2, 
+                                 color_by="State", 
+                                 show_tree=TRUE, 
+                                 show_backbone=TRUE, 
+                                 backbone_color="black", 
+                                 markers=NULL, 
+                                 use_color_gradient = FALSE,
+                                 markers_linear = FALSE,
+                                 show_cell_names=FALSE,
+                                 show_state_number = FALSE,
+                                 cell_size=1.5,
+                                 cell_link_size=0.75,
+                                 cell_name_size=2,
+                                 state_number_size = 2.9,
+                                 show_branch_points=TRUE,
+                                 theta = 0,
+                                 ...) {
+  requireNamespace("igraph")
   gene_short_name <- NA
   sample_name <- NA
   sample_state <- pData(cds)$State
@@ -82,62 +85,53 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
+  } else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
     reduced_dim_coords <- reducedDimK(cds)
-  }else {
+  } else {
     stop("Error: unrecognized dimensionality reduction method.")
   }
   
-  ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
-  colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
+  ica_space_df <- Matrix::t(reduced_dim_coords) %>%
+    as.data.frame() %>%
+    select_(prin_graph_dim_1 = x, prin_graph_dim_2 = y) %>%
+    mutate(sample_name = rownames(.), sample_state = rownames(.))
   
-  ica_space_df$sample_name <- row.names(ica_space_df)
-  ica_space_df$sample_state <- row.names(ica_space_df)
-  #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
-  #print(ica_space_with_state_df)
   dp_mst <- minSpanningTree(cds)
   
   if (is.null(dp_mst)){
     stop("You must first call orderCells() before using this function")
   }
   
-  edge_list <- as.data.frame(get.edgelist(dp_mst))
-  colnames(edge_list) <- c("source", "target")
+  edge_df <- dp_mst %>%
+    igraph::as_data_frame() %>%
+    select_(source = "from", target = "to") %>%
+    left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
+    left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
   
-  edge_df <- merge(ica_space_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
-  #edge_df <- ica_space_df
-  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
-  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
-  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
-  
-  S_matrix <- reducedDimS(cds)
-  data_df <- data.frame(t(S_matrix[c(x,y),]))
-  data_df <- cbind(data_df, sample_state)
-  colnames(data_df) <- c("data_dim_1", "data_dim_2")
-  data_df$sample_name <- row.names(data_df)
-  data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  data_df <- t(monocle::reducedDimS(cds)) %>%
+    as.data.frame() %>%
+    select_(data_dim_1 = x, data_dim_2 = y) %>%
+    rownames_to_column("sample_name") %>%
+    mutate(sample_state) %>%
+    left_join(lib_info_with_pseudo %>% rownames_to_column("sample_name"), by = "sample_name")
   
   return_rotation_mat <- function(theta) {
     theta <- theta / 180 * pi
     matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
   }
+  rot_mat <- return_rotation_mat(theta)
   
-  tmp <- return_rotation_mat(theta) %*% t(as.matrix(data_df[, c(2, 3)]))
-  data_df$data_dim_1 <- tmp[1, ]
-  data_df$data_dim_2 <- tmp[2, ]
-  
-  tmp <- return_rotation_mat(theta = theta) %*% t(as.matrix(edge_df[, c('source_prin_graph_dim_1', 'source_prin_graph_dim_2')]))
-  edge_df$source_prin_graph_dim_1 <- tmp[1, ]
-  edge_df$source_prin_graph_dim_2 <- tmp[2, ]
-  
-  tmp <- return_rotation_mat(theta) %*% t(as.matrix(edge_df[, c('target_prin_graph_dim_1', 'target_prin_graph_dim_2')]))
-  edge_df$target_prin_graph_dim_1 <- tmp[1, ]
-  edge_df$target_prin_graph_dim_2 <- tmp[2, ]
+  cn1 <- c("data_dim_1", "data_dim_2")
+  cn2 <- c("source_prin_graph_dim_1", "source_prin_graph_dim_2")
+  cn3 <- c("target_prin_graph_dim_1", "target_prin_graph_dim_2")
+  data_df[, cn1] <- as.matrix(data_df[, cn1]) %*% t(rot_mat)
+  edge_df[, cn2] <- as.matrix(edge_df[, cn2]) %*% t(rot_mat)
+  edge_df[, cn3] <- as.matrix(edge_df[, cn3]) %*% t(rot_mat)
   
   markers_exprs <- NULL
-  if (is.null(markers) == FALSE){
+  if (is.null(markers) == FALSE) {
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
-    if (nrow(markers_fData) >= 1){
+    if (nrow(markers_fData) >= 1) {
       markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
       colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
@@ -156,7 +150,6 @@ plot_cell_trajectory <- function(cds,
           g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE) + 
               scale_color_viridis(name = paste0("log10(value + 0.1)"), ...) + facet_wrap(~feature_label)
         }
-
     } else {
       if(markers_linear){
         g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size= (value * 0.1))) + facet_wrap(~feature_label)
@@ -164,7 +157,7 @@ plot_cell_trajectory <- function(cds,
         g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2, size=log10(value + 0.1))) + facet_wrap(~feature_label)
       }
     }
-  }else{
+  } else {
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   if (show_tree){
@@ -190,17 +183,18 @@ plot_cell_trajectory <- function(cds,
   
   if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
-    branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
-    branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
-    branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
+    branch_point_df <- ica_space_df %>%
+      slice(match(mst_branch_nodes, sample_name)) %>%
+      mutate(branch_point_idx = seq_len(n()))
     
-    g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
-                        size=5, na.rm=TRUE, data=branch_point_df) +
-      geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
-                size=4, color="white", na.rm=TRUE, data=branch_point_df)
+    g <- g +
+      geom_point(aes_string(x="prin_graph_dim_1", y="prin_graph_dim_2"),
+                 size=5, na.rm=TRUE, branch_point_df) +
+      geom_text(aes_string(x="prin_graph_dim_1", y="prin_graph_dim_2", label="branch_point_idx"),
+                size=4, color="white", na.rm=TRUE, branch_point_df)
   }
   if (show_cell_names){
-    g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
+    g <- g + geom_text(aes(label=sample_name), size=cell_name_size)
   }
   if (show_state_number){
     g <- g + geom_text(aes(label = sample_state), size = state_number_size)
@@ -804,7 +798,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
-#' @importFrom stringr str_join
+#' @importFrom stringr str_c
 #' @importFrom ggplot2 Position
 #' @import grid
 #' @export
@@ -837,7 +831,7 @@ plot_clusters<-function(cds,
   cluster_sizes <- as.data.frame(table(m$cluster))    
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
-  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
+  facet_labels <- str_c(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
 
   m.melt <- melt(m, id.vars = c("ids", "cluster"))
   
@@ -2634,7 +2628,7 @@ plot_multiple_branches_heatmap <- function(cds,
 #' @param cores Number of cores to use when smoothing the expression curves shown in the heatmap.
 #' @return a ggplot2 plot object
 #' 
-#' @importFrom Biobase esApply
+#' @importFrom Biobase esApply exprs<-
 #' @importFrom stats lowess
 #' 
 #' @export
