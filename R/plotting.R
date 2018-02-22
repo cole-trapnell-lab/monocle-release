@@ -804,7 +804,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
-#' @importFrom stringr str_join
+#' @importFrom stringr str_c
 #' @importFrom ggplot2 Position
 #' @import grid
 #' @export
@@ -837,7 +837,7 @@ plot_clusters<-function(cds,
   cluster_sizes <- as.data.frame(table(m$cluster))    
   
   cluster_sizes$Freq <- paste("(", cluster_sizes$Freq, ")")   
-  facet_labels <- str_join(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
+  facet_labels <- str_c(cluster_sizes$Var1, cluster_sizes$Freq, sep=" ") #update the function
 
   m.melt <- melt(m, id.vars = c("ids", "cluster"))
   
