@@ -9,7 +9,7 @@
 newCellTypeHierarchy()
 
 classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL,
-  ...)
+  rank_prob_ratio = 2, min_observations = 8, cores = 1, ...)
 
 calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)

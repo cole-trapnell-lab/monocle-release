@@ -93,12 +93,15 @@ clusterCells <- function(cds,
                          cell_type_hierarchy=NULL,
                          frequency_thresh=NULL,
                          enrichment_thresh=NULL,
+                         rank_prob_ratio = 2, 
+                         min_observations=8,
                          clustering_genes=NULL,
                          k = 50, 
                          louvain_iter = 1, 
                          weight = FALSE,
                          method = c('densityPeak', 'louvain', 'DDRTree'),
                          verbose = F, 
+                         cores=1,
                          ...) {
   method <- match.arg(method)
   
@@ -136,7 +139,7 @@ clusterCells <- function(cds,
       cds <- setOrderingFilter(cds, old_ordering_genes)
     
     if (is.null(cell_type_hierarchy) == FALSE)
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
+      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
     
     return(cds)
    ################### DDRTREE END ###################
@@ -232,7 +235,7 @@ clusterCells <- function(cds,
     pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
     if (is.null(cell_type_hierarchy) == FALSE) {
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, "Cluster")
+      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
     }
     
     cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
@@ -324,6 +327,10 @@ clusterCells <- function(cds,
 
     cds@auxClusteringData[["louvian"]] <- list(g = g, community = optim_res)
 
+    if (is.null(cell_type_hierarchy) == FALSE) {
+      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
+    }
+    
     return(cds)
   }
   else {

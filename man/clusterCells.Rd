@@ -7,9 +7,10 @@
 clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
-  frequency_thresh = NULL, enrichment_thresh = NULL,
-  clustering_genes = NULL, k = 50, louvain_iter = 1, weight = FALSE,
-  method = c("densityPeak", "louvain", "DDRTree"), verbose = F, ...)
+  frequency_thresh = NULL, enrichment_thresh = NULL, rank_prob_ratio = 2,
+  min_observations = 8, clustering_genes = NULL, k = 50,
+  louvain_iter = 1, weight = FALSE, method = c("densityPeak", "louvain",
+  "DDRTree"), verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
