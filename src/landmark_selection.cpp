@@ -40,7 +40,7 @@ NumericVector timesTwo(NumericVector x) {
 
 /*** R
 timesTwo(42)
-*/
+  */
 
 
 struct IndexValue{
@@ -138,8 +138,8 @@ float compute_distance(const vector<float> &data, const vector<int> &indices,
 }
 
 void select_landmarks_cpp(const vector<float> &data, const vector<int> &indices,
-                      const vector<int> &indptr, int n, int dim, int count,
-                      vector<float> &dist, vector<int> &assign, vector<int> &flag){
+                          const vector<int> &indptr, int n, int dim, int count,
+                          vector<float> &dist, vector<int> &assign, vector<int> &flag){
   
   // select the first landmark
   int landmark = random() % n;
@@ -156,7 +156,7 @@ void select_landmarks_cpp(const vector<float> &data, const vector<int> &indices,
       assign[i] = landmark;
       continue;
     }
-
+    
     float dist_i_landmark = compute_distance(data, indices, indptr[i], indptr[i+1], indptr[landmark], indptr[landmark+1]);
     if (dist_i_landmark < dist[i]){
       dist[i] = dist_i_landmark;
@@ -165,7 +165,7 @@ void select_landmarks_cpp(const vector<float> &data, const vector<int> &indices,
   }
   flag[landmark] = 1;
   // cout<<landmark<<endl;
-
+  
   // select the rest of landmarks
   for(int t=1;t<count;t++){
     
@@ -353,11 +353,11 @@ int main(int argc, char**argv){
 
 // [[Rcpp::export]]
 Rcpp::List select_landmarks(SEXP R_data,
-                              SEXP R_indices,
-                              SEXP R_indptr,
-                              SEXP R_n, // number of sample 
-                              SEXP R_dim, // number of dimensioin 
-                              SEXP R_count){ // number of landmarks
+                            SEXP R_indices,
+                            SEXP R_indptr,
+                            SEXP R_n, // number of sample 
+                            SEXP R_dim, // number of dimensioin 
+                            SEXP R_count){ // number of landmarks
   
   std::vector<float> data = as<std::vector<float> >(R_data);
   std::vector<int> indices = as<std::vector<int> >(R_indices);
@@ -386,19 +386,18 @@ Rcpp::List select_landmarks(SEXP R_data,
 // test the code to identify the landmarks 
 /*** R
 library(monocle)
-lung <- load_lung()
-lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
-sp_data <- lung@assayData$exprs
-
-library(devtools)
-load_all()
-select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1], 10)
-*/
+  lung <- load_lung()
+  lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
+  sp_data <- lung@assayData$exprs
+  library(devtools)
+  load_all()
+  select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1], 10)
+  */
 
 /*** R
 # library(monocle)
 #   lung <- load_lung()
-  lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
+lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
   sp_data <- lung@assayData$exprs
   
   library(devtools)
@@ -409,10 +408,78 @@ select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1]
 
 // test on Jun's dataset 
 /*** R 
-load('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/180201_mouse_embryo.RData')
+library(R.matlab)
 
+load('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/cds_mouse_eb_epi.RData') # 180201_mouse_embryo.RData 
+load('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/180201_mouse_embryo.RData') # 180201_mouse_embryo.RData 
 sp_data <- cds@assayData$exprs
+start_time <- Sys.time()
+Jun_landmark <- select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1], 1500)
+end_time <- Sys.time()
+end_time - start_time
 
-system.time(Jun_landmark <- select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1], 10000))
+Jun_X_1500 <- sp_data[, unique(Jun_landmark$assign) + 1] # converting into R index 
+pData <- pData(cds)[unique(Jun_landmark$assign) + 1, ]
+valid_Jun_X_1500 <- Jun_X_1500[, is.finite(pData[, 'Cluster'])]
+valid_pData <- pData[is.finite(pData[, 'Cluster']), ]
 
+writeMat('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/Jun_X_1500_mat.mat', Jun_X_1500 = valid_Jun_X_1500)
+
+qplot(pData[, 'tsne_1'], pData[, 'tsne_2'], color = pData[, 'Cluster']) # reduce to top 30 pca, and then your method? 
+qplot(pData[, 'tsne_1'], pData[, 'tsne_2'], color = pData[, 'day']) # reduce to top 30 pca, and then your method? 
+
+write.table(pData(cds)[unique(Jun_landmark$assign) + 1, ], '/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/Jun_X_1500_pd.csv', quote = F, sep = '\t')
+
+irlba_res <- prcomp_irlba(t(log(valid_Jun_X_1500 + 1)), n = 20,
+                          center = TRUE, scale. = TRUE)
+
+irlba_res <- irlba((log(valid_Jun_X_1500 + 1)), nv = 20)
+irlba_res <- pca_projection_R(log(valid_Jun_X_1500 + 1), L = 100)
+writeMat('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/irlba_res.mat', Jun_X_1500 = t(irlba_res))
+
+# run tSNE again: 
+identical(row.names(pData(cds)), colnames(cds@assayData$exprs))
+identical(row.names(fData(cds)), row.names(cds@assayData$exprs))
+  
+identical(row.names(pData(valid_cds)), colnames(valid_cds@assayData$exprs))
+identical(row.names(fData(valid_cds)), row.names(valid_cds@assayData$exprs))
+
+valid_cds <- cds[, !is.na(pData(valid_cds)[, 'tsne_2'])]
+pd <- new("AnnotatedDataFrame", data = pData(valid_cds)[colnames(valid_cds@assayData$exprs), ])
+fd <- new("AnnotatedDataFrame", data = fData(valid_cds))
+
+valid_cds_corrected <- newCellDataSet(valid_cds@assayData$exprs, phenoData = pd, featureData = fd)
+
+valid_cds <- estimateSizeFactors(valid_cds)
+valid_cds <- estimateDispersions(valid_cds)
+
+landmark_subset <- cds[, unique(colnames(valid_Jun_X_1500))]
+landmark_subset <- estimateSizeFactors(landmark_subset)
+landmark_subset <- estimateDispersions(landmark_subset)
+
+Jun_skl <- readMat('/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/AAAI2017-code/matlab.mat')
+qplot(Jun_skl$Y[, 1], Jun_skl$Y[, 2], color = pData(cds[, colnames(valid_Jun_X_1500)])$Cluster)
+
+qplot(Jun_skl$Y[, 1], Jun_skl$Y[, 2], color = pData(cds[, unique(Jun_landmark$assign) + 1])$day) + xlab('SKL dim 1') + ylab('SKL dim 2') +  theme(legend.title = element_blank())
 */
+
+/*** R
+library(cellrangerRkit)
+cellranger_pipestance_path <- "./"
+gbm <- load_cellranger_matrix(cellranger_pipestance_path)
+
+fd <- fData(gbm)
+
+# The number 2 is picked arbitrarily in the line below.
+# Where "2" is placed you should place the column number that corresponds to your
+# featureData's gene short names.
+
+colnames(fd)[2] <- "gene_short_name"
+
+gbm_cds <- newCellDataSet(exprs(gbm),
+                          phenoData = new("AnnotatedDataFrame", data = pData(gbm)),
+featureData = new("AnnotatedDataFrame", data = fd),
+lowerDetectionLimit = 0.5,
+expressionFamily = negbinomial.size())
+
+ */

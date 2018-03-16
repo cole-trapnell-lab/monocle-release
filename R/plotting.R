@@ -82,7 +82,7 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")

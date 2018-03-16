@@ -58,7 +58,8 @@ Suggests:
     knitr,
     Seurat,
     scater,
-    testthat
+    testthat, 
+    rPython
 Remotes:
     bioc::Biobase,
     bioc::BiocGenerics,

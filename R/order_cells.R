@@ -2,7 +2,122 @@ run_pca <- function(data, ...) {
   res <- prcomp(data, center = F, scale = F)
   res$x
 }
+# function to run umap with cds as input 
+umapM <- function(cds, n_neighbors = 10, n_component = 2, min_dist = 0.1, metric = "euclidean") {
+  x <- t(cds@assayData$exprs)
+  if(length(grep('Matrix', class(x))) == 0){
+    x <- as(as.matrix(x), 'TsparseMatrix')
+  } else {
+    x <- as(x, 'TsparseMatrix')
+  }
+  
+  i <- x@i
+  j <- x@j
+  val <- log(x@x + 1)
+  dim <- x@Dim
+  
+  rPython::python.exec( c( "def umap(i, j, val, dim, n, n_c,mdist, metric):",
+                           "\timport umap" ,
+                           "\timport numpy",
+                           "\tfrom scipy.sparse import csc_matrix",
+                           "\tdata = csc_matrix((val, (i, j)), shape = dim)",
+                           "\tembedding = umap.UMAP(n_neighbors = n, n_components = n_c, min_dist = mdist, metric = metric).fit_transform(data)",
+                           "\tres = embedding.tolist()",
+                           "\treturn res"))
+  
+  res <- rPython::python.call( "umap", i, j, val, dim, n_neighbors, n_component, min_dist, metric, simplify = F)
+  do.call("rbind",res)
+}
 
+umap <- function(x,n_neighbors=10,n_component=2,min_dist=0.1,metric="euclidean"){
+  x <- as.matrix(x)
+  colnames(x) <- NULL
+  python.exec( c( "def umap(data,n,n_c,mdist,metric):",
+                  "\timport umap" ,
+                  "\timport numpy",
+                  "\tembedding = umap.UMAP(n_neighbors=n,n_components=n_c,min_dist=mdist,metric=metric).fit_transform(data)",
+                  "\tres = embedding.tolist()",
+                  "\treturn res"))
+  
+  res <- python.call( "umap", x,n_neighbors,n_component,min_dist,metric)
+  do.call("rbind",res)
+}
+
+louvain_clustering <- function(data, k = 20, weight = F, louvain_iter = 1, verbose = F) {
+  # k <- 20
+  # verbose = T
+  # library(RANN)
+  # library(igraph)
+
+  if (is.data.frame(data))
+    data <- as.matrix(data)
+  if (!is.matrix(data))
+    stop("Wrong input data, should be a data frame of matrix!")
+  if (k < 1) {
+    stop("k must be a positive integer!")
+  } else if (k > nrow(data) - 2) {
+    stop("k must be smaller than the total number of points!")
+  }
+  if (verbose) {
+    message("Run phenograph starts:", "\n", "  -Input data of ",
+            nrow(data), " rows and ", ncol(data), " columns",
+            "\n", "  -k is set to ", k)
+  }
+  if (verbose) {
+    cat("  Finding nearest neighbors...")
+  }
+  t1 <- system.time(neighborMatrix <- RANN::nn2(data, data, k +
+                                            1, searchtype = "standard")[[1]][, -1])
+  if (verbose) {
+    cat("DONE ~", t1[3], "s\n", " Compute jaccard coefficient between nearest-neighbor sets...")
+  }
+  t2 <- system.time(links <- monocle:::jaccard_coeff(neighborMatrix,
+                                                     weight))
+  if (verbose) {
+    cat("DONE ~", t2[3], "s\n", " Build undirected graph from the weighted links...")
+  }
+  links <- links[links[, 1] > 0, ]
+  relations <- as.data.frame(links)
+  colnames(relations) <- c("from", "to", "weight")
+  relations$from <- as.character(relations$from)
+  relations$to <- as.character(relations$to)
+  t3 <- system.time(g <- igraph::graph.data.frame(relations, directed = FALSE))
+  if (verbose) {
+    cat("DONE ~", t3[3], "s\n", " Run louvain clustering on the graph ...")
+  }
+  t_start <- Sys.time()
+  Qp <- -1
+  optim_res <- NULL
+  for (iter in 1:louvain_iter) {
+    Q <- igraph::cluster_louvain(g)
+    if (verbose) {
+      cat("Running louvain iteration ", iter, "...")
+    }
+    if (is.null(optim_res)) {
+      Qp <- max(Q$modularity)
+      optim_res <- Q
+    }
+    else {
+      Qt <- max(Q$modularity)
+      if (Qt > Qp) {
+        optim_res <- Q
+        Qp <- Qt
+      }
+    }
+  }
+  t_end <- Sys.time()
+  if (verbose) {
+    message("Run phenograph DONE, totally takes ", t_end -
+              t_start, " s.")
+    cat("  Return a community class\n  -Modularity value:",
+        modularity(optim_res), "\n")
+    cat("  -Number of clusters:", length(unique(igraph::membership(optim_res))))
+  }
+
+  coord <- igraph::layout_components(g) 
+
+  return(list(g = g, coord = coord, optim_res = optim_res))
+}
 # run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
 #   data <- t(data) 
 #   data <- data[!duplicated(data), ]
@@ -736,7 +851,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     if (length(children) == 1){
       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
     }else{
-      for (child in children)	{
+      for (child in children) {
         curr_state <<- curr_state + 1
         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
       }
@@ -1079,8 +1194,8 @@ orderCells <- function(cds,
 
   root_cell <- select_root_cell(cds, root_state, reverse)
 
-  cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
+    cds@auxOrderingData <- new.env( hash=TRUE )
     if (is.null(num_paths)){
       num_paths = 1
     }
@@ -1115,6 +1230,7 @@ orderCells <- function(cds,
     cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
 
   } else if (cds@dim_reduce_type == "DDRTree"){
+    cds@auxOrderingData <- new.env( hash=TRUE )
     if (is.null(num_paths) == FALSE){
       message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
     }
@@ -1172,6 +1288,101 @@ orderCells <- function(cds,
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } else if (cds@dim_reduce_type == "SSE"){
+    ########################################################################################################################################################################
+    # identify edges which pass through two clusters 
+    # remove edges pass through two clusters that has low overlapping 
+    ########################################################################################################################################################################
+    pc_g <- minSpanningTree(cds)
+    g <- cds@auxOrderingData[["SSE"]]$louvain_res$g
+    optim_res <- cds@auxOrderingData[["SSE"]]$louvain_res$optim_res
+    cell_membership <- igraph::membership(optim_res)
+    n_cluster <- length(unique(cell_membership))
+
+    cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+    overlapping_threshold <- 1e-5
+      
+    # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
+    # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
+
+    for(i in sort(unique(as.vector(cell_membership)))) {
+      message('current cluster is ', i)
+      curr_cluster_cell <- as.character(which(cell_membership == i))
+      
+      neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
+      # identify connected cells outside a Louvain group
+      conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
+        cell_outside <- setdiff(names(neigh_list[[x]]), curr_cluster_cell)
+        if(length(cell_outside)) {
+          data.frame(current_cell = curr_cluster_cell[x], 
+                     cell_outside = cell_outside,
+                     current_cluster =  cell_membership[curr_cluster_cell[x]],
+                     target_cluster = cell_membership[cell_outside])
+        }
+        } ))
+      
+      # remove the insignificant inter-cluster edges from the kNN graph: 
+      for(j in 1:nrow(conn_cluster_res)) {
+        overlapping_clusters <- as.character(which(as.vector(cell_membership) == conn_cluster_res[j, 'target_cluster']))
+        all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
+        only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
+        only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
+        
+        overlap_weight <- (all_ij - only_i - only_j) / all_ij
+        cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
+        if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
+            
+            message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+                    'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+                    'with weight ', overlap_weight)
+            pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+        }
+      }
+    }
+
+    ########################################################################################################################################################################
+    # identify the all leaf cell 
+    # identify the nearest leaf cells 
+    # connect leaf cells based on overlapping between kNN 
+    ########################################################################################################################################################################
+    # add some statistics below: 
+    sse_dim <- t(reducedDimK(cds))
+    cluster_inner_edges <- rep(0, n_cluster)
+    cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
+    cnt_i <- 1
+    for(i in unique(cell_membership)) {
+      cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, which(cell_membership == i))) # most are zero
+      cnt_j <- 1
+      for(j in setdiff(unique(cell_membership), i)) {
+        cell_i <- which(cell_membership %in% c(i))
+        cell_j <- which(cell_membership %in% c(j))
+        
+        all_ij <- igraph::ecount(igraph::subgraph(g, c(cell_i, cell_j))) # edges in all cells from two landmark groups
+        only_i <- igraph::ecount(igraph::subgraph(g, cell_i)) # edges from the first landmark groups
+        only_j <- igraph::ecount(igraph::subgraph(g, cell_j)) # edges from the second landmark groups
+        cluster_mat[i, j] <- (all_ij - only_i - only_j) / all_ij # edges overlapping between landmark groups
+        if(cluster_mat[i, j] > 0 & cluster_mat_exist[i, j] == 0) {
+          tmp <- as.matrix(dist(sse_dim[c(cell_i, cell_j), ]))
+          dist_mat <- tmp[1:length(cell_i), (length(cell_i) + 1):(length(cell_j) + length(cell_i))] # connection between cells from one group and that to another group 
+          ind_vec <- which(dist_mat == min(dist_mat), arr.ind = T)
+          pc_g %>% igraph::add_edges(c(c(cell_i, cell_j)[ind_vec[1]], c(cell_i, cell_j)[ind_vec[2]]))
+        }
+        cnt_j <- cnt_j + 1
+      }
+      cnt_i <- cnt_i + 1
+    }
+
+    ########################################################################################################################################################################
+    # downstream pseudotime and branch analysis 
+    ########################################################################################################################################################################
+    # cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
+    coord <- cds@auxOrderingData[["SSE"]]$louvain_res$coord
+    pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:nrow(coord))))
+
+    # identify branch
+
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+
   }
 
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
@@ -1341,7 +1552,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1565,7 +1776,90 @@ reduceDimension <- function(cds,
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
-    }else {
+    }
+    else if (reduction_method == "SSE") {
+      # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      # FM <- FM[!is.na(row.names(FM)), ]
+      
+      if (verbose)
+        message("initial PCA dimension reduction to remove noise")
+           
+      # sp_data <- cds@assayData$exprs
+      # xm <- Matrix::rowMeans(sp_data)
+      # xsd <- sqrt(Matrix::rowMeans((sp_data - xm)^2))
+      # sp_data <- sp_data[xsd > 0, ]
+      irlba_res <- prcomp_irlba(Matrix::t(FM), n = 30, center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      
+      if (verbose)
+        message("Running Uniform Manifold Approximation and Projection")
+      umap_res <- umap(irlba_pca_res, n_component = max_components)
+
+      if (verbose)
+        message("Running Smooth Skeleton Embedding ...")
+        #add other parameters...
+        # embeding_dim = ncol(dara),
+        #         method = c('L2', 'L1'),
+        #         para.gamma = 1e-5,
+        #         d = ncol(X),
+        #         knn = 50,
+        #         C = 1e3,
+        #         maxiter = 10,
+        #         beta = 1e2
+      sse_args <- c(list(data=umap_res, embeding_dim=max_components, verbose = verbose),
+                    extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "d", "knn", "C", "maxiter", "beta")])
+      SSE_res <- do.call(SSE, sse_args)
+
+      # SSE_res <- SSE(umap_res, knn = 5, verbose = verbose, maxiter = 10)
+      # "Y" "K" "W" "U" "V"
+
+      if(verbose)
+        message("Running louvain clustering algorithm ...")
+      louvain_res <- louvain_clustering(SSE_res$Y, verbose = verbose)
+
+      if(verbose)
+        message("Running generalized SimplePPT algorithm ...")
+
+      G <- matrix(0, nrow(umap_res), nrow(umap_res))
+      links <- get.data.frame(louvain_res$g)
+      apply(links, 1, function(x) {
+        G[as.numeric(x[1]), as.numeric(x[2])] <<- 1
+        G[as.numeric(x[2]), as.numeric(x[1])] <<- 1
+      })
+      
+      pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = G, verbose = verbose),
+                    extra_arguments[names(extra_arguments) %in% c("maxiter", "gstruct", "lambda", "gamma", " sigma", "nn")])
+      pg_spanning_tree <- do.call(principal_graph, pg_args)
+   
+      # pg_spanning_tree <- principal_graph(t(SSE_res$Y), t(SSE_res$Y), maxiter = 10, eps = 1e-05,
+      #                                     gstruct = c("span-tree"), lambda = 1, gamma = 0.5,
+      #                                     sigma = 0.01, nn = 5, verbose = T)
+
+      S <- t(umap_res)
+      Y <- t(SSE_res$Y)
+      W <- pg_spanning_tree$W
+
+      colnames(S) <- colnames(FM)
+      colnames(Y) <- colnames(FM)
+      colnames(W) <- colnames(FM)
+      reducedDimW(cds) <- as.matrix(W)
+      reducedDimS(cds) <- as.matrix(Y)
+      reducedDimK(cds) <- as.matrix(S)
+
+      relations <- reshape2::melt(abs(as.matrix(pg_spanning_tree$W))) # convert the connection to 0, 1 with abs  paul_pc_spanning_tree
+      colnames(relations) <- c("from", "to", "weight")
+      relations$from <- as.character(relations$from)
+      relations$to <- as.character(relations$to)
+
+      gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
+
+      minSpanningTree(cds) <- gp
+      cds@dim_reduce_type <- "SSE"
+
+      cds@auxOrderingData[["SSE"]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
+        louvain_res = louvain_res, PG_res = pg_spanning_tree)
+
+    } else {
       stop("Error: unrecognized dimensionality reduction method")
     }
   }
