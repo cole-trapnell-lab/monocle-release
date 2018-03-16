@@ -82,7 +82,7 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE") ){
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -2869,6 +2869,63 @@ plot_multiple_branches_pseudotime <- function(cds,
     
     q <- q + monocle_theme_opts()
     q + expand_limits(y = min_expr)
+}
+
+
+#' Plots force directed layout of cells .
+#'
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_name_size the size of cell name labels
+#' @param ... additional arguments passed into the scale_color_viridis function
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @export
+#' @examples
+#' \dontrun{
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' HSMM <- reduceD
+#' plot_cell_clusters(HSMM)
+#' plot_cell_clusters(HSMM, color_by="Pseudotime")
+#' plot_cell_clusters(HSMM, markers="MYH3")
+#' }
+plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
+  if(is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res)) {
+    stop('make sure you first run SSE or UMAPSSE dimension reduction before layout with force directed layout')
+  }
+  
+  if(is.null(layout)) {
+    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
+  } 
+  if(is.function(layout)) {
+    coord <- layout(cds@auxOrderingData[[cds@dim_reduce_type]]$g)
+    if(nrow(coord) != nrow(cds) | ncol(coord) != 2) {
+      stop("your layout function don't return the correct dimension: row is the number of cells while the column is two")
+    }
+  }
+  coord <- as.data.frame(coord)
+  colnames(coord) <- c('x', 'y')
+  row.names(coord) <- 1:nrow(coord)
+  coord <- cbind(coord, pData(cds))
+  
+  pc_g <- minSpanningTree(cds)
+  edge <- get.data.frame(pc_g)
+  edge <- as.data.frame(edge)
+  colnames(edge) <- c('start', 'end', 'weight')
+  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+  edge_links <- as.data.frame(edge_links)
+  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+  
+  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
+    geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle:::monocle_theme_opts()
 }
 
   

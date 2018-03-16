@@ -22,6 +22,8 @@ Depends:
     ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
     DDRTree (>= 0.1.4),
+    sse,
+    L1Graph
 Imports:
     parallel,
     igraph (>= 1.0.1),

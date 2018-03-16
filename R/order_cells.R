@@ -32,14 +32,14 @@ umapM <- function(cds, n_neighbors = 10, n_component = 2, min_dist = 0.1, metric
 umap <- function(x,n_neighbors=10,n_component=2,min_dist=0.1,metric="euclidean"){
   x <- as.matrix(x)
   colnames(x) <- NULL
-  python.exec( c( "def umap(data,n,n_c,mdist,metric):",
+  rPython::python.exec( c( "def umap(data,n,n_c,mdist,metric):",
                   "\timport umap" ,
                   "\timport numpy",
                   "\tembedding = umap.UMAP(n_neighbors=n,n_components=n_c,min_dist=mdist,metric=metric).fit_transform(data)",
                   "\tres = embedding.tolist()",
                   "\treturn res"))
   
-  res <- python.call( "umap", x,n_neighbors,n_component,min_dist,metric)
+  res <- rPython::python.call( "umap", x,n_neighbors,n_component,min_dist,metric)
   do.call("rbind",res)
 }
 
@@ -1288,14 +1288,14 @@ orderCells <- function(cds,
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-  } else if (cds@dim_reduce_type == "SSE"){
+  } else if (cds@dim_reduce_type %in% c("UMAPSSE", "SSE")){
     ########################################################################################################################################################################
     # identify edges which pass through two clusters 
     # remove edges pass through two clusters that has low overlapping 
     ########################################################################################################################################################################
     pc_g <- minSpanningTree(cds)
-    g <- cds@auxOrderingData[["SSE"]]$louvain_res$g
-    optim_res <- cds@auxOrderingData[["SSE"]]$louvain_res$optim_res
+    g <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g
+    optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$optim_res
     cell_membership <- igraph::membership(optim_res)
     n_cluster <- length(unique(cell_membership))
 
@@ -1376,9 +1376,9 @@ orderCells <- function(cds,
     # downstream pseudotime and branch analysis 
     ########################################################################################################################################################################
     # cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
-    coord <- cds@auxOrderingData[["SSE"]]$louvain_res$coord
+    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
     pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:nrow(coord))))
-
+    minSpanningTree(cds) <- pc_g
     # identify branch
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
@@ -1552,7 +1552,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1777,74 +1777,80 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }
-    else if (reduction_method == "SSE") {
+    else if (reduction_method %in% c("SSE", "UMAP", "UMAPSSE") ) {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
       
       if (verbose)
         message("initial PCA dimension reduction to remove noise")
            
-      # sp_data <- cds@assayData$exprs
-      # xm <- Matrix::rowMeans(sp_data)
-      # xsd <- sqrt(Matrix::rowMeans((sp_data - xm)^2))
-      # sp_data <- sp_data[xsd > 0, ]
       irlba_res <- prcomp_irlba(Matrix::t(FM), n = 30, center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
       
-      if (verbose)
-        message("Running Uniform Manifold Approximation and Projection")
-      umap_res <- umap(irlba_pca_res, n_component = max_components)
-
-      if (verbose)
-        message("Running Smooth Skeleton Embedding ...")
-        #add other parameters...
-        # embeding_dim = ncol(dara),
-        #         method = c('L2', 'L1'),
-        #         para.gamma = 1e-5,
-        #         d = ncol(X),
-        #         knn = 50,
-        #         C = 1e3,
-        #         maxiter = 10,
-        #         beta = 1e2
-      sse_args <- c(list(data=umap_res, embeding_dim=max_components, verbose = verbose),
-                    extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "d", "knn", "C", "maxiter", "beta")])
-      SSE_res <- do.call(SSE, sse_args)
-
-      # SSE_res <- SSE(umap_res, knn = 5, verbose = verbose, maxiter = 10)
-      # "Y" "K" "W" "U" "V"
-
-      if(verbose)
-        message("Running louvain clustering algorithm ...")
-      louvain_res <- louvain_clustering(SSE_res$Y, verbose = verbose)
-
-      if(verbose)
-        message("Running generalized SimplePPT algorithm ...")
-
-      G <- matrix(0, nrow(umap_res), nrow(umap_res))
-      links <- get.data.frame(louvain_res$g)
-      apply(links, 1, function(x) {
-        G[as.numeric(x[1]), as.numeric(x[2])] <<- 1
-        G[as.numeric(x[2]), as.numeric(x[1])] <<- 1
-      })
+      if(reduction_method %in% c("UMAP", "UMAPSSE")) {
+        if (verbose)
+          message("Running Uniform Manifold Approximation and Projection")
+        umap_res <- umap(irlba_pca_res, n_component = max_components)
+        S <- t(umap_res)
+        if(reduction_method == 'UMAP') {
+          Y <- S
+          W <- t(irlba_pca_res)
+        }
+        A <- S
+        colnames(A) <- colnames(FM)
+        reducedDimA(cds) <- A
+      }
       
-      pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = G, verbose = verbose),
-                    extra_arguments[names(extra_arguments) %in% c("maxiter", "gstruct", "lambda", "gamma", " sigma", "nn")])
-      pg_spanning_tree <- do.call(principal_graph, pg_args)
-   
-      # pg_spanning_tree <- principal_graph(t(SSE_res$Y), t(SSE_res$Y), maxiter = 10, eps = 1e-05,
-      #                                     gstruct = c("span-tree"), lambda = 1, gamma = 0.5,
-      #                                     sigma = 0.01, nn = 5, verbose = T)
+      if(reduction_method %in% c("SSE", "UMAPSSE")) {
+        if (verbose)
+          message("Running Smooth Skeleton Embedding ...")
 
-      S <- t(umap_res)
-      Y <- t(SSE_res$Y)
-      W <- pg_spanning_tree$W
-
+        if(reduction_method == "SSE") {
+          umap_res <- NULL
+          data = irlba_pca_res
+          S <- t(irlba_pca_res)
+        } else {
+          data = umap_res
+        }
+        sse_args <- c(list(data=data, embeding_dim=max_components, d = max_components, verbose = verbose),
+                      extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
+        SSE_res <- do.call(SSE, sse_args)
+  
+        # SSE_res <- SSE(umap_res, knn = 5, verbose = verbose, maxiter = 10)
+        # "Y" "K" "W" "U" "V"
+  
+        if(verbose)
+          message("Running louvain clustering algorithm ...")
+        louvain_res <- louvain_clustering(SSE_res$Y, verbose = verbose)
+  
+        if(verbose)
+          message("Running generalized SimplePPT algorithm ...")
+  
+        # G <- matrix(0, nrow(umap_res), nrow(umap_res))
+        # links <- igraph::get.data.frame(louvain_res$g)
+        # apply(links, 1, function(x) {
+        #   G[as.numeric(x[1]), as.numeric(x[2])] <<- 1
+        #   G[as.numeric(x[2]), as.numeric(x[1])] <<- 1
+        # })
+        
+        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree")),
+                      extra_arguments[names(extra_arguments) %in% c("maxiter", "gstruct", "lambda", "gamma", " sigma", "nn")])
+        pg_spanning_tree <- do.call(principal_graph, pg_args)
+     
+        # pg_spanning_tree <- principal_graph(t(SSE_res$Y), t(SSE_res$Y), maxiter = 10, eps = 1e-05,
+        #                                     gstruct = c("span-tree"), lambda = 1, gamma = 0.5,
+        #                                     sigma = 0.01, nn = 5, verbose = T)
+  
+        Y <- t(SSE_res$Y)
+        W <- pg_spanning_tree$W
+      }
+      
       colnames(S) <- colnames(FM)
       colnames(Y) <- colnames(FM)
       colnames(W) <- colnames(FM)
       reducedDimW(cds) <- as.matrix(W)
       reducedDimS(cds) <- as.matrix(Y)
-      reducedDimK(cds) <- as.matrix(S)
+      reducedDimK(cds) <- as.matrix(Y)
 
       relations <- reshape2::melt(abs(as.matrix(pg_spanning_tree$W))) # convert the connection to 0, 1 with abs  paul_pc_spanning_tree
       colnames(relations) <- c("from", "to", "weight")
@@ -1854,9 +1860,9 @@ reduceDimension <- function(cds,
       gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
 
       minSpanningTree(cds) <- gp
-      cds@dim_reduce_type <- "SSE"
+      cds@dim_reduce_type <- reduction_method
 
-      cds@auxOrderingData[["SSE"]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
+      cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree)
 
     } else {
