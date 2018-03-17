@@ -247,8 +247,9 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
   child_cell_types = V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]$name
   
   cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
-  class_df <- as.data.frame(cds_pdata %>% do(CellType = cth_classifier_cell(.$rowname, cth, curr_node, gate_res, max_depth=1)))
-  ctf_cell_type <- factor(unlist(class_df$CellType))
+  class_df <- as.data.frame(cds_pdata %>% do(CurrLevelCellType = cth_classifier_cell(.$rowname, cth, curr_node, gate_res, max_depth=1),
+                                             FinestGrainedCellType = cth_classifier_cell(.$rowname, cth, curr_node, gate_res)))
+  ctf_cell_type <- factor(unlist(class_df$CurrLevelCellType))
   names(ctf_cell_type) <- class_df$rowname
   
   
@@ -327,6 +328,16 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
     
     assignments = prediction_probs %>% dplyr::filter(odds_ratio > rank_prob_ratio)
     assignments = dplyr::left_join(data.frame(rowname=row.names(pData(cds))), assignments)
+    assignments = dplyr::left_join(assignments, class_df)
+    assignments$CurrLevelCellType = unlist(assignments$CurrLevelCellType)
+    assignments$FinestGrainedCellType = unlist(assignments$FinestGrainedCellType)
+    assignments$variable = as.character(unlist(assignments$variable))
+    
+    assignments$variable = str_replace_all(assignments$variable, "\\.1", "")
+    
+    #assignments = assignments %>% dplyr::mutate(FinalCellType = dplyr::if_else(dplyr::if_else(variable %in% row.names(type_distances) == TRUE && CellType %in% row.names(type_distances) == TRUE,
+    #                                                     is.finite(type_distances[CellType, variable]), CellType, variable), variable))
+    
     predictions = dcast(assignments, rowname ~ variable)
     row.names(predictions) = predictions$rowname
     
@@ -338,7 +349,7 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
       predictions[is.na(predictions)] = FALSE
       predictions[predictions != 0] = TRUE
       cell_type_names = colnames(predictions)
-      cell_type_names = str_replace_all(cell_type_names, "\\.1", "")
+      
       predictions = split(predictions, rep(1:ncol(predictions), each = nrow(predictions)))
       excluded_cell_types = append(excluded_cell_types, setdiff(levels(y), cell_type_names))
       if (length(excluded_cell_types > 0)){
@@ -399,10 +410,30 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
     }
   }
   
+  # type_distances = igraph::distances(cth@classificationTree, mode = "out")
+  # cells_to_assign = which(is.na(assignments$variable) == FALSE & assignments$FinestGrainedCellType %in% row.names(type_distances))
+  # cells_to_assign = cells_to_assign[which(is.finite(type_distances[cbind(assignments$variable[cells_to_assign],  
+  #                                                                        assignments$FinestGrainedCellType[cells_to_assign])]))]
+  # if (length(cells_to_assign > 0)){
+  #   assignments$variable[cells_to_assign] = assignments$FinestGrainedCellType[cells_to_assign]
+  # }
+  # 
   cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
   class_df <- as.data.frame(cds_pdata %>% do(CellType = cth_classifier_cell(.$rowname, cth, "root", imputed_gate_res)))
-  CellType <- factor(unlist(class_df$CellType))
+  CellType <- as.character(unlist(class_df$CellType))
   names(CellType) <- class_df$rowname
+  
+  marker_class_df <- as.data.frame(cds_pdata %>% do(MarkerCellType = cth_classifier_cell(.$rowname, cth, "root", gate_res)))
+  MarkerCellType <- as.character(unlist(marker_class_df$MarkerCellType))
+  names(MarkerCellType) <- marker_class_df$rowname
+  
+  type_distances = igraph::distances(cth@classificationTree, mode = "out")
+  cells_to_assign = which(CellType %in% c("Unknown", "Ambiguous") == FALSE & MarkerCellType %in% row.names(type_distances))
+  cells_to_assign = cells_to_assign[which(is.finite(type_distances[cbind(CellType[cells_to_assign],  
+                                                                         MarkerCellType[cells_to_assign])]))]
+  if (length(cells_to_assign > 0)){
+   CellType[cells_to_assign] = MarkerCellType[cells_to_assign]
+  }
   
   #CellType <- cth_classifier_cell(cds_subset, cth, "root", gate_res)
   return(CellType)
@@ -462,38 +493,22 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
 #' mix <- classifyCells(mix, Cluster, 0.05)
 #' }
 #' 
-classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NULL, rank_prob_ratio = 2, min_observations=8, cores=1, ...) {
+classifyCells <- function(cds, cth, method=c("glmnet", "markers-only"), rank_prob_ratio = 2, min_observations=8, cores=1) {
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
-  if (length(list(...)) > 0){
-    if (is.null(enrichment_thresh) && is.null(frequency_thresh))
-      stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
-    
-    cds <- classifyCellsGlmNet(cds, cth, rank_prob_ratio, min_observations, cores)
-    if (is.null(frequency_thresh)){
-      frequency_thresholds <- prop.table(table(pData(cds)$CellType))
-      frequency_thresholds <- frequency_thresholds * enrichment_thresh
-      frequency_thresholds <- unlist(lapply(frequency_thresholds, min, 1.0))
-    }else
-      frequency_thresholds <- frequency_thresh
-
-    cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", ...), ...) 
-    class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
-    class_df$CellType <-  as.character(unlist(class_df$CellType))
-    #class_df$rowname <- as.character(class_df$rowname)
-  }else{
+  if (method == "glmnet"){
     type_res <- classifyCellsGlmNet(cds, cth, rank_prob_ratio, min_observations, cores)
-    class_df <- data.frame(rowname = names(type_res), CellType = type_res)
-    class_df$CellType <- as.character(class_df$CellType)
-    class_df$rowname <- as.character(class_df$rowname)
+  }else if (method == "markers-only"){
+    type_res <- classifyCellsHelperCell(cds, cth)
   }
+ 
+  class_df <- data.frame(rowname = names(type_res), CellType = type_res)
+  class_df$CellType <- as.character(class_df$CellType)
+  class_df$rowname <- as.character(class_df$rowname)
   
   options(dplyr.show_progress = progress_opts)
   
   pData(cds) <- pData(cds)[!(names(pData(cds)) %in% "CellType")]
-  
-  #pData(cds)$cell_type <- cds_types
-  
   
   pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
   
@@ -503,6 +518,87 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
   pData(cds) <- pData(cds)[,-1]
   cds
 }   
+
+#' @import methods
+#' @importFrom Biobase exprs pData
+#' @importFrom igraph V
+cth_classifier_cluster_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
+  #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
+  next_nodes <- c()
+  print (paste ("Cluster", unique(pData(cds_subset)$Cluster)))
+  for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
+    
+    #child_cell_class_func <- V(cth@classificationTree) [ child ]$classify_func[[1]]
+    #type_res <- sparseApply(exprs(cds_subset), 2, child_cell_class_func, convert_to_dense=FALSE)
+    #type_res <- child_cell_class_func(exprs(cds_subset))
+    type_res <- pData(cds_subset)$CellType %in% V(cth@classificationTree)[subcomponent(cth@classificationTree, child, "out")]$name
+    
+    #type_res <- unlist(type_res)
+    
+    names(type_res) <- row.names(pData(cds_subset))
+    cell_type_name <- V(cth@classificationTree) [ child ]$name
+    if (length(frequency_thresh) > 1)
+      required_thresh <- frequency_thresh[cell_type_name]
+    else
+      required_thresh <- frequency_thresh
+    fraction_present = sum(type_res) / length(type_res)
+    print (paste("       ", cell_type_name, fraction_present))
+    if (fraction_present > frequency_thresh){
+      next_nodes <- c(next_nodes, cell_type_name)
+    }
+    #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
+  }
+  
+  if (length(next_nodes) == 1){
+    CellType <- cth_classifier_cluster_cds(cds_subset, cth, next_nodes[1], frequency_thresh)
+  }else if(length(next_nodes) == 0){
+    if (curr_node == "root")
+      CellType = "Unknown"
+    else
+      CellType = curr_node
+  }else if(length(next_nodes) > 1){
+    CellType = "Ambiguous"
+  }else{
+    CellType = "Unknown"
+  }
+  return (CellType)
+}
+
+classifyClustersHelperCds <- function(cds_subset, cth, frequency_thresh){
+  CellType <- cth_classifier_cluster_cds(cds_subset, cth, "root", frequency_thresh)
+}
+
+
+#' @title Impute cell type classifications using clustering results
+#' @export
+classifyCellClusters <- function(cds, cth, frequency_thresh=0.80, grouping_var = "Cluster") {
+  progress_opts <- options()$dplyr.show_progress
+  options(dplyr.show_progress = F)
+  
+  if (is.null(frequency_thresh))
+    stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
+  
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", grouping_var), grouping_var) 
+  class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyClustersHelperCds(cds[,.$rowname], cth, frequency_thresh)))
+  class_df$CellType <-  as.character(unlist(class_df$CellType))
+  #class_df$rowname <- as.character(class_df$rowname)
+  
+  options(dplyr.show_progress = progress_opts)
+  
+  pData(cds) <- pData(cds)[!(names(pData(cds)) %in% "CellType")]
+  
+  #pData(cds)$cell_type <- cds_types
+  
+  pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
+  
+  pData(cds)$CellType <- factor(pData(cds)$CellType)
+  
+  row.names(pData(cds)) <- pData(cds)$rowname
+  pData(cds) <- pData(cds)[,-1]
+  cds
+}   
+
+
 
 #' @describeIn newCellTypeHierarchy Calculate each gene's specificity for each cell type 
 #' 
