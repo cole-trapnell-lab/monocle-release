@@ -91,6 +91,14 @@ classifyCellsHelperCell <- function(cds, cth){
   gate_res <- list()
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
+  
+    parent <- environment(cell_class_func)
+    if (is.null(parent))
+      parent <- emptyenv()
+    e1 <- new.env(parent=parent)
+    multiassign(names(pData(cds)), pData(cds), envir=e1)
+    environment(cell_class_func) <- e1
+    
     type_res <- cell_class_func(exprs(cds))
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
   }
@@ -397,6 +405,14 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
   gate_res <- list()
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
+    
+    parent <- environment(cell_class_func)
+    if (is.null(parent))
+      parent <- emptyenv()
+    e1 <- new.env(parent=parent)
+    multiassign(names(pData(cds)), pData(cds), envir=e1)
+    environment(cell_class_func) <- e1
+    
     type_res <- cell_class_func(exprs(cds))
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
   }
