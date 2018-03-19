@@ -1564,7 +1564,7 @@ reduceDimension <- function(cds,
   extra_arguments <- list(...)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
 
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
   xm <- Matrix::rowMeans(FM)
@@ -1729,7 +1729,7 @@ reduceDimension <- function(cds,
       if (verbose)
         message("Learning principal graph with DDRTree")
 
-      if("num_dim" %in% names(extra_arguments) | ncol(FM) > 100000) { # when num_dim is passed or the number cells is more than 10 cells, do an intial PCA 
+      if("num_dim" %in% names(extra_arguments) | ncol(FM) > 5000) { # when num_dim is passed or the number cells is more than 5 k cells, do an intial PCA 
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
           num_dim <- extra_arguments$num_dim #variance_explained
         }
@@ -1739,8 +1739,9 @@ reduceDimension <- function(cds,
 
         irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                   center = TRUE, scale. = TRUE)
-        irlba_pca_res <- irlba_res$x
-        FM <- irlba_pca_res#[, 1:num_dim]
+        irlba_pca_res <- t(irlba_res$x)
+        colnames(irlba_pca_res) <- colnames(FM)
+        FM <- irlba_pca_res #[, 1:num_dim]
       }
 
       # TODO: DDRTree should really work with sparse matrices.
@@ -1784,7 +1785,14 @@ reduceDimension <- function(cds,
       if (verbose)
         message("initial PCA dimension reduction to remove noise")
            
-      irlba_res <- prcomp_irlba(Matrix::t(FM), n = 30, center = TRUE, scale. = TRUE)
+      if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- extra_arguments$num_dim #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
+      
+      irlba_res <- prcomp_irlba(Matrix::t(FM), n = num_dim, center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
       
       if(reduction_method %in% c("UMAP", "UMAPSSE")) {
@@ -1821,8 +1829,11 @@ reduceDimension <- function(cds,
   
         if(verbose)
           message("Running louvain clustering algorithm ...")
-        louvain_res <- louvain_clustering(SSE_res$Y, verbose = verbose)
-  
+        
+        louvain_clustering_args <- c(list(data = SSE_res$Y, verbose = verbose),
+                     extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+
         if(verbose)
           message("Running generalized SimplePPT algorithm ...")
   
@@ -1833,8 +1844,8 @@ reduceDimension <- function(cds,
         #   G[as.numeric(x[2]), as.numeric(x[1])] <<- 1
         # })
         
-        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree")),
-                      extra_arguments[names(extra_arguments) %in% c("maxiter", "gstruct", "lambda", "gamma", " sigma", "nn")])
+        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree"), maxiter = 20),
+                      extra_arguments[names(extra_arguments) %in% c("gstruct", "lambda", "gamma", " sigma", "nn")]) # "maxiter", 
         pg_spanning_tree <- do.call(principal_graph, pg_args)
      
         # pg_spanning_tree <- principal_graph(t(SSE_res$Y), t(SSE_res$Y), maxiter = 10, eps = 1e-05,
@@ -1852,16 +1863,21 @@ reduceDimension <- function(cds,
       reducedDimS(cds) <- as.matrix(Y)
       reducedDimK(cds) <- as.matrix(Y)
 
-      relations <- reshape2::melt(abs(as.matrix(pg_spanning_tree$W))) # convert the connection to 0, 1 with abs  paul_pc_spanning_tree
-      colnames(relations) <- c("from", "to", "weight")
-      relations$from <- as.character(relations$from)
-      relations$to <- as.character(relations$to)
-
-      gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
-
+      # relations <- reshape2::melt(abs(as.matrix(pg_spanning_tree$W))) # convert the connection to 0, 1 with abs  paul_pc_spanning_tree
+      # colnames(relations) <- c("from", "to", "weight")
+      # relations$from <- as.character(relations$from)
+      # relations$to <- as.character(relations$to)
+      # 
+      # gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
+      
+      W <- pg_spanning_tree$W
+      W[W == T] <- 1; W[W == F] <- 0
+      gp <- graph_from_adjacency_matrix(W)
+      
       minSpanningTree(cds) <- gp
       cds@dim_reduce_type <- reduction_method
 
+      pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree)
 

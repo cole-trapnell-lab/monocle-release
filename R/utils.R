@@ -610,8 +610,6 @@ load_lung <- function(){
                          expressionFamily=negbinomial.size())
 
   lung <- estimateSizeFactors(lung)
-  pData(lung)$Size_Factor <- lung_phenotype_data$Size_Factor
-
   lung <- estimateDispersions(lung)
 
   pData(lung)$Total_mRNAs <- colSums(exprs(lung))
