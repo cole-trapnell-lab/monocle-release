@@ -2928,4 +2928,53 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
     geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle:::monocle_theme_opts()
 }
 
+
+#' Plots a graph of louvain cluster, layouted with layout_component function.
+#'
+#' @param cds CellDataSet for the experiment
+#' @param ... additional arguments passed into the scale_color_viridis function
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @export
+#' @examples
+#' \dontrun{
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' HSMM <- reduceD
+#' plot_cell_clusters(HSMM)
+#' plot_cell_clusters(HSMM, color_by="Pseudotime")
+#' plot_cell_clusters(HSMM, markers="MYH3")
+#' }
+#' 
+plot_cluster_graph <- function(cds) {
+  if(!("UMAP" %in% names(cds@auxOrderingData))) {
+    stop('Please run UMAP first before using this function ...')
+  }
   
+  g <- cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$g 
+  # optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$optim_res
+  # length(unique(igraph::membership(optim_res)))
+  
+  coord <- igraph::layout_components(g) 
+  coord <- as.data.frame(coord)
+  colnames(coord) <- c('x', 'y')
+  row.names(coord) <- 1:nrow(coord)
+  coord$Cluster <- 1:nrow(coord)
+  coord$louvain_cluster <- as.character(igraph::membership(cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$optim_res))
+  
+  edge <- get.data.frame(g)
+  edge <- as.data.frame(edge)
+  colnames(edge) <- c('start', 'end', 'weight')
+  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+  edge_links <- as.data.frame(edge_links)
+  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+  edge_links$weight <- edge[, 3]
+  
+  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
+    geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = 2) + monocle:::monocle_theme_opts() + 
+    geom_text(aes_string(x="x", y="y", label="Cluster"), 
+              size=5, color="black", na.rm=TRUE, data=coord)
+  
+}

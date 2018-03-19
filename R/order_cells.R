@@ -1306,7 +1306,7 @@ orderCells <- function(cds,
     # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
 
     for(i in sort(unique(as.vector(cell_membership)))) {
-      message('current cluster is ', i)
+      # message('current cluster is ', i)
       curr_cluster_cell <- as.character(which(cell_membership == i))
       
       neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
@@ -1384,7 +1384,38 @@ orderCells <- function(cds,
     # identify branch
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat_exist <- cluster_mat_exist
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat <- cluster_mat
+    cluster_mat[is.na(cluster_mat)] <- 0
+    cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
+    Qp <- -1
+    optim_res <- NULL
+    
+    louvain_iter <- 1
+    for (iter in 1:louvain_iter) {
+      Q <- igraph::cluster_louvain(cluster_g)
+      
+      if (is.null(optim_res)) {
+        Qp <- max(Q$modularity)
+        optim_res <- Q
+      }
+      else {
+        Qt <- max(Q$modularity)
+        if (Qt > Qp) {
+          optim_res <- Q
+          Qp <- Qt
+        }
+      }
+    }
+    
+    message('clusters in the cluster graph is ', length(unique(igraph::membership(optim_res))))
+    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph <- list(g = cluster_g, optim_res = optim_res)
+    
+    coord <- igraph::layout_components(g) 
+    coord <- as.data.frame(coord)
+    colnames(coord) <- c('x', 'y')
+    row.names(coord) <- 1:nrow(coord)
+    coord$Cluster <- 1:nrow(coord)
   }
 
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
@@ -1781,6 +1812,7 @@ reduceDimension <- function(cds,
       cds <- findNearestPointOnMST(cds)
     }
     else if (reduction_method %in% c("SSE", "UMAP", "UMAPSSE") ) {
+      cds@dim_reduce_type <- reduction_method
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
       
@@ -1888,8 +1920,6 @@ reduceDimension <- function(cds,
       # 
       # gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
       
-      cds@dim_reduce_type <- reduction_method
-
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree)
