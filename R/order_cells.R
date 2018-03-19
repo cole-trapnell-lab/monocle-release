@@ -107,7 +107,7 @@ louvain_clustering <- function(data, k = 20, weight = F, louvain_iter = 1, verbo
   }
   t_end <- Sys.time()
   if (verbose) {
-    message("Run phenograph DONE, totally takes ", t_end -
+    message("\nRun phenograph DONE, totally takes ", t_end -
               t_start, " s.")
     cat("  Return a community class\n  -Modularity value:",
         modularity(optim_res), "\n")
@@ -1288,7 +1288,7 @@ orderCells <- function(cds,
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-  } else if (cds@dim_reduce_type %in% c("UMAPSSE", "SSE")){
+  } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
     ########################################################################################################################################################################
     # identify edges which pass through two clusters 
     # remove edges pass through two clusters that has low overlapping 
@@ -1322,20 +1322,22 @@ orderCells <- function(cds,
         } ))
       
       # remove the insignificant inter-cluster edges from the kNN graph: 
-      for(j in 1:nrow(conn_cluster_res)) {
-        overlapping_clusters <- as.character(which(as.vector(cell_membership) == conn_cluster_res[j, 'target_cluster']))
-        all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
-        only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
-        only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
-        
-        overlap_weight <- (all_ij - only_i - only_j) / all_ij
-        cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
-        if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
-            
-            message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
-                    'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
-                    'with weight ', overlap_weight)
-            pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+      if(is.null(conn_cluster_res) == FALSE) {
+        for(j in 1:nrow(conn_cluster_res)) {
+          overlapping_clusters <- as.character(which(as.vector(cell_membership) == conn_cluster_res[j, 'target_cluster']))
+          all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
+          only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
+          only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
+          
+          overlap_weight <- (all_ij - only_i - only_j) / all_ij
+          cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
+          if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
+              
+              message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+                      'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+                      'with weight ', overlap_weight)
+              pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+          }
         }
       }
     }
@@ -1803,10 +1805,22 @@ reduceDimension <- function(cds,
         if(reduction_method == 'UMAP') {
           Y <- S
           W <- t(irlba_pca_res)
+          
+          if(verbose)
+            message("Running louvain clustering algorithm ...")
+          
+          louvain_clustering_args <- c(list(data = umap_res, verbose = verbose),
+                                       extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+          louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+          pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
+          
+          minSpanningTree(cds) <- louvain_res$g
         }
         A <- S
         colnames(A) <- colnames(FM)
         reducedDimA(cds) <- A
+        SSE_res <- NULL
+        pg_spanning_tree <- NULL
       }
       
       if(reduction_method %in% c("SSE", "UMAPSSE")) {
@@ -1854,6 +1868,10 @@ reduceDimension <- function(cds,
   
         Y <- t(SSE_res$Y)
         W <- pg_spanning_tree$W
+        W[W == T] <- 1; W[W == F] <- 0
+        gp <- graph_from_adjacency_matrix(W)
+        
+        minSpanningTree(cds) <- gp
       }
       
       colnames(S) <- colnames(FM)
@@ -1870,11 +1888,6 @@ reduceDimension <- function(cds,
       # 
       # gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
       
-      W <- pg_spanning_tree$W
-      W[W == T] <- 1; W[W == F] <- 0
-      gp <- graph_from_adjacency_matrix(W)
-      
-      minSpanningTree(cds) <- gp
       cds@dim_reduce_type <- reduction_method
 
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
