@@ -2903,36 +2903,28 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
   }
   
   if(is.null(layout)) {
-    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
+    coord <- cds@auxClusteringData[["louvian"]]$louvain_res$coord
+
+    if(is.null(coord)) {
+      stop("force direct layout doesn't support more than 3K cells for now")
+    }
   } 
   if(is.function(layout)) {
-    coord <- layout(cds@auxOrderingData[[cds@dim_reduce_type]]$g)
+    coord <- layout(cds@auxClusteringData[["louvian"]]$louvain_res$g)
     if(nrow(coord) != nrow(cds) | ncol(coord) != 2) {
       stop("your layout function don't return the correct dimension: row is the number of cells while the column is two")
     }
   }
-  coord <- as.data.frame(coord)
-  colnames(coord) <- c('x', 'y')
-  row.names(coord) <- 1:nrow(coord)
-  coord <- cbind(coord, pData(cds))
-  
-  pc_g <- minSpanningTree(cds)
-  edge <- get.data.frame(pc_g)
-  edge <- as.data.frame(edge)
-  colnames(edge) <- c('start', 'end', 'weight')
-  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
-  edge_links <- as.data.frame(edge_links)
-  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
-  
-  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
-    geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle:::monocle_theme_opts()
+
+  edge_links <- cds@auxClusteringData[["louvian"]]$louvain_res$edge_links
+
+  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
+    geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle_theme_opts()
 }
 
-
-#' Plots a graph of louvain cluster, layouted with layout_component function.
+#' Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells
 #'
 #' @param cds CellDataSet for the experiment
-#' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -2942,38 +2934,24 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' HSMM <- reduceD
-#' plot_cell_clusters(HSMM)
-#' plot_cell_clusters(HSMM, color_by="Pseudotime")
-#' plot_cell_clusters(HSMM, markers="MYH3")
+#' HSMM <- reduceDimension(HSMM, method = 'UMAP')
+#' plot_cluster_graph(HSMM)
 #' }
 #' 
 plot_cluster_graph <- function(cds) {
-  if(!("UMAP" %in% names(cds@auxOrderingData))) {
-    stop('Please run UMAP first before using this function ...')
+  if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE"))) {
+    stop('Please run UMAP, UMAPSSE or SSE first before using this function ...')
   }
   
-  g <- cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$g 
-  # optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$optim_res
-  # length(unique(igraph::membership(optim_res)))
+  coord <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$cluster_coord 
+  edge_links <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$edge_links 
   
-  coord <- igraph::layout_components(g) 
-  coord <- as.data.frame(coord)
-  colnames(coord) <- c('x', 'y')
-  row.names(coord) <- 1:nrow(coord)
-  coord$Cluster <- 1:nrow(coord)
-  coord$louvain_cluster <- as.character(igraph::membership(cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph$optim_res))
-  
-  edge <- get.data.frame(g)
-  edge <- as.data.frame(edge)
-  colnames(edge) <- c('start', 'end', 'weight')
-  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
-  edge_links <- as.data.frame(edge_links)
-  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
-  edge_links$weight <- edge[, 3]
-  
+  if(is.null(coord)) {
+    stop('all clusters are separate !!')
+  }
+
   ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
-    geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = 2) + monocle:::monocle_theme_opts() + 
+    geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = 2) + monocle_theme_opts() + 
     geom_text(aes_string(x="x", y="y", label="Cluster"), 
               size=5, color="black", na.rm=TRUE, data=coord)
   

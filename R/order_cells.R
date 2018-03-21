@@ -43,81 +43,6 @@ umap <- function(x,n_neighbors=10,n_component=2,min_dist=0.1,metric="euclidean")
   do.call("rbind",res)
 }
 
-louvain_clustering <- function(data, k = 20, weight = F, louvain_iter = 1, verbose = F) {
-  # k <- 20
-  # verbose = T
-  # library(RANN)
-  # library(igraph)
-
-  if (is.data.frame(data))
-    data <- as.matrix(data)
-  if (!is.matrix(data))
-    stop("Wrong input data, should be a data frame of matrix!")
-  if (k < 1) {
-    stop("k must be a positive integer!")
-  } else if (k > nrow(data) - 2) {
-    stop("k must be smaller than the total number of points!")
-  }
-  if (verbose) {
-    message("Run phenograph starts:", "\n", "  -Input data of ",
-            nrow(data), " rows and ", ncol(data), " columns",
-            "\n", "  -k is set to ", k)
-  }
-  if (verbose) {
-    cat("  Finding nearest neighbors...")
-  }
-  t1 <- system.time(neighborMatrix <- RANN::nn2(data, data, k +
-                                            1, searchtype = "standard")[[1]][, -1])
-  if (verbose) {
-    cat("DONE ~", t1[3], "s\n", " Compute jaccard coefficient between nearest-neighbor sets...")
-  }
-  t2 <- system.time(links <- monocle:::jaccard_coeff(neighborMatrix,
-                                                     weight))
-  if (verbose) {
-    cat("DONE ~", t2[3], "s\n", " Build undirected graph from the weighted links...")
-  }
-  links <- links[links[, 1] > 0, ]
-  relations <- as.data.frame(links)
-  colnames(relations) <- c("from", "to", "weight")
-  relations$from <- as.character(relations$from)
-  relations$to <- as.character(relations$to)
-  t3 <- system.time(g <- igraph::graph.data.frame(relations, directed = FALSE))
-  if (verbose) {
-    cat("DONE ~", t3[3], "s\n", " Run louvain clustering on the graph ...")
-  }
-  t_start <- Sys.time()
-  Qp <- -1
-  optim_res <- NULL
-  for (iter in 1:louvain_iter) {
-    Q <- igraph::cluster_louvain(g)
-    if (verbose) {
-      cat("Running louvain iteration ", iter, "...")
-    }
-    if (is.null(optim_res)) {
-      Qp <- max(Q$modularity)
-      optim_res <- Q
-    }
-    else {
-      Qt <- max(Q$modularity)
-      if (Qt > Qp) {
-        optim_res <- Q
-        Qp <- Qt
-      }
-    }
-  }
-  t_end <- Sys.time()
-  if (verbose) {
-    message("\nRun phenograph DONE, totally takes ", t_end -
-              t_start, " s.")
-    cat("  Return a community class\n  -Modularity value:",
-        modularity(optim_res), "\n")
-    cat("  -Number of clusters:", length(unique(igraph::membership(optim_res))))
-  }
-
-  coord <- igraph::layout_components(g) 
-
-  return(list(g = g, coord = coord, optim_res = optim_res))
-}
 # run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
 #   data <- t(data) 
 #   data <- data[!duplicated(data), ]
@@ -1192,6 +1117,10 @@ orderCells <- function(cds,
     stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
   }
 
+  if(igraph::vcount(minSpanningTree(cds)) > 50000) {
+    stop("orderCells doesn't support more than 50k centroids (cells)")
+  }
+
   root_cell <- select_root_cell(cds, root_state, reverse)
 
   if (cds@dim_reduce_type == "ICA"){
@@ -1289,133 +1218,14 @@ orderCells <- function(cds,
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
-    ########################################################################################################################################################################
-    # identify edges which pass through two clusters 
-    # remove edges pass through two clusters that has low overlapping 
-    ########################################################################################################################################################################
-    pc_g <- minSpanningTree(cds)
-    g <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g
-    optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$optim_res
-    cell_membership <- igraph::membership(optim_res)
-    n_cluster <- length(unique(cell_membership))
-
-    cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
-    overlapping_threshold <- 1e-5
-      
-    # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
-    # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
-
-    for(i in sort(unique(as.vector(cell_membership)))) {
-      # message('current cluster is ', i)
-      curr_cluster_cell <- as.character(which(cell_membership == i))
-      
-      neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
-      # identify connected cells outside a Louvain group
-      conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
-        cell_outside <- setdiff(names(neigh_list[[x]]), curr_cluster_cell)
-        if(length(cell_outside)) {
-          data.frame(current_cell = curr_cluster_cell[x], 
-                     cell_outside = cell_outside,
-                     current_cluster =  cell_membership[curr_cluster_cell[x]],
-                     target_cluster = cell_membership[cell_outside])
-        }
-        } ))
-      
-      # remove the insignificant inter-cluster edges from the kNN graph: 
-      if(is.null(conn_cluster_res) == FALSE) {
-        for(j in 1:nrow(conn_cluster_res)) {
-          overlapping_clusters <- as.character(which(as.vector(cell_membership) == conn_cluster_res[j, 'target_cluster']))
-          all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
-          only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
-          only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
-          
-          overlap_weight <- (all_ij - only_i - only_j) / all_ij
-          cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
-          if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
-              
-              message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
-                      'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
-                      'with weight ', overlap_weight)
-              pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
-          }
-        }
-      }
-    }
-
-    ########################################################################################################################################################################
-    # identify the all leaf cell 
-    # identify the nearest leaf cells 
-    # connect leaf cells based on overlapping between kNN 
-    ########################################################################################################################################################################
-    # add some statistics below: 
-    sse_dim <- t(reducedDimK(cds))
-    cluster_inner_edges <- rep(0, n_cluster)
-    cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
-    cnt_i <- 1
-    for(i in unique(cell_membership)) {
-      cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, which(cell_membership == i))) # most are zero
-      cnt_j <- 1
-      for(j in setdiff(unique(cell_membership), i)) {
-        cell_i <- which(cell_membership %in% c(i))
-        cell_j <- which(cell_membership %in% c(j))
-        
-        all_ij <- igraph::ecount(igraph::subgraph(g, c(cell_i, cell_j))) # edges in all cells from two landmark groups
-        only_i <- igraph::ecount(igraph::subgraph(g, cell_i)) # edges from the first landmark groups
-        only_j <- igraph::ecount(igraph::subgraph(g, cell_j)) # edges from the second landmark groups
-        cluster_mat[i, j] <- (all_ij - only_i - only_j) / all_ij # edges overlapping between landmark groups
-        if(cluster_mat[i, j] > 0 & cluster_mat_exist[i, j] == 0) {
-          tmp <- as.matrix(dist(sse_dim[c(cell_i, cell_j), ]))
-          dist_mat <- tmp[1:length(cell_i), (length(cell_i) + 1):(length(cell_j) + length(cell_i))] # connection between cells from one group and that to another group 
-          ind_vec <- which(dist_mat == min(dist_mat), arr.ind = T)
-          pc_g %>% igraph::add_edges(c(c(cell_i, cell_j)[ind_vec[1]], c(cell_i, cell_j)[ind_vec[2]]))
-        }
-        cnt_j <- cnt_j + 1
-      }
-      cnt_i <- cnt_i + 1
-    }
 
     ########################################################################################################################################################################
     # downstream pseudotime and branch analysis 
     ########################################################################################################################################################################
-    # cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
-    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
-    pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:nrow(coord))))
-    minSpanningTree(cds) <- pc_g
+    pc_g <- minSpanningTree(cds)
+    pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:igraph::vcount(pc_g))))
     # identify branch
-
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat_exist <- cluster_mat_exist
-    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat <- cluster_mat
-    cluster_mat[is.na(cluster_mat)] <- 0
-    cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
-    Qp <- -1
-    optim_res <- NULL
-    
-    louvain_iter <- 1
-    for (iter in 1:louvain_iter) {
-      Q <- igraph::cluster_louvain(cluster_g)
-      
-      if (is.null(optim_res)) {
-        Qp <- max(Q$modularity)
-        optim_res <- Q
-      }
-      else {
-        Qt <- max(Q$modularity)
-        if (Qt > Qp) {
-          optim_res <- Q
-          Qp <- Qt
-        }
-      }
-    }
-    
-    message('clusters in the cluster graph is ', length(unique(igraph::membership(optim_res))))
-    cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph <- list(g = cluster_g, optim_res = optim_res)
-    
-    coord <- igraph::layout_components(g) 
-    coord <- as.data.frame(coord)
-    colnames(coord) <- c('x', 'y')
-    row.names(coord) <- 1:nrow(coord)
-    coord$Cluster <- 1:nrow(coord)
   }
 
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
@@ -1585,7 +1395,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1644,10 +1454,26 @@ reduceDimension <- function(cds,
   }
   else{
     reduction_method <- match.arg(reduction_method)
-    if (reduction_method == "tSNE") {
-    #first perform PCA
-    if (verbose)
+    if(reduction_method == 'PCA') {
+      if (verbose)
         message("Remove noise by PCA ...")
+
+      if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- extra_arguments$num_dim #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
+      
+      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+    }
+    else if (reduction_method == "tSNE") {
+      #first perform PCA
+      if (verbose)
+          message("Remove noise by PCA ...")
 
       # # Calculate the variance across genes without converting to a dense
       # # matrix:
@@ -1670,7 +1496,6 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      FM <- (FM)
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
@@ -1725,7 +1550,6 @@ reduceDimension <- function(cds,
 
       cds@dim_reduce_type <- "tSNE"
     }
-
     else if (reduction_method == "ICA") {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
@@ -1800,7 +1624,7 @@ reduceDimension <- function(cds,
       reducedDimW(cds) <- ddrtree_res$W
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
-      cds@auxOrderingData[["DDRTree"]]$objective_vals <- ddrtree_res$objective_vals
+      cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
 
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
@@ -1811,7 +1635,7 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }
-    else if (reduction_method %in% c("SSE", "UMAP", "UMAPSSE") ) {
+    else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
@@ -1826,28 +1650,31 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      irlba_res <- prcomp_irlba(Matrix::t(FM), n = num_dim, center = TRUE, scale. = TRUE)
+      irlba_res <- prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
+                                      center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
       
       if(reduction_method %in% c("UMAP", "UMAPSSE")) {
         if (verbose)
           message("Running Uniform Manifold Approximation and Projection")
+
         umap_res <- umap(irlba_pca_res, n_component = max_components)
         S <- t(umap_res)
+    
         if(reduction_method == 'UMAP') {
           Y <- S
           W <- t(irlba_pca_res)
           
           if(verbose)
             message("Running louvain clustering algorithm ...")
-          
-          louvain_clustering_args <- c(list(data = umap_res, verbose = verbose),
+          row.names(umap_res) <- colnames(FM)
+          louvain_clustering_args <- c(list(data = umap_res, pd = pData(cds)[colnames(FM), ], verbose = verbose),
                                        extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
           louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-          pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
           
           minSpanningTree(cds) <- louvain_res$g
         }
+
         A <- S
         colnames(A) <- colnames(FM)
         reducedDimA(cds) <- A
@@ -1866,43 +1693,36 @@ reduceDimension <- function(cds,
         } else {
           data = umap_res
         }
+
+        # we are gonna ignore the method arugment here 
         sse_args <- c(list(data=data, embeding_dim=max_components, d = max_components, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
         SSE_res <- do.call(SSE, sse_args)
   
-        # SSE_res <- SSE(umap_res, knn = 5, verbose = verbose, maxiter = 10)
         # "Y" "K" "W" "U" "V"
-  
         if(verbose)
           message("Running louvain clustering algorithm ...")
         
-        louvain_clustering_args <- c(list(data = SSE_res$Y, verbose = verbose),
+        row.names(SSE_res$Y) <- colnames(FM)
+        louvain_clustering_args <- c(list(data = SSE_res$Y, pd = pData(cds)[colnames(FM), ], verbose = verbose),
                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-
+        
         if(verbose)
           message("Running generalized SimplePPT algorithm ...")
   
-        # G <- matrix(0, nrow(umap_res), nrow(umap_res))
-        # links <- igraph::get.data.frame(louvain_res$g)
-        # apply(links, 1, function(x) {
-        #   G[as.numeric(x[1]), as.numeric(x[2])] <<- 1
-        #   G[as.numeric(x[2]), as.numeric(x[1])] <<- 1
-        # })
-        
-        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree"), maxiter = 20),
-                      extra_arguments[names(extra_arguments) %in% c("gstruct", "lambda", "gamma", " sigma", "nn")]) # "maxiter", 
+        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree")),
+                      extra_arguments[names(extra_arguments) %in% c("gstruct", "lambda", "gamma", " sigma", "nn", "maxiter")]) # "maxiter", 
         pg_spanning_tree <- do.call(principal_graph, pg_args)
      
-        # pg_spanning_tree <- principal_graph(t(SSE_res$Y), t(SSE_res$Y), maxiter = 10, eps = 1e-05,
-        #                                     gstruct = c("span-tree"), lambda = 1, gamma = 0.5,
-        #                                     sigma = 0.01, nn = 5, verbose = T)
-  
         Y <- t(SSE_res$Y)
         W <- pg_spanning_tree$W
         W[W == T] <- 1; W[W == F] <- 0
         gp <- graph_from_adjacency_matrix(W)
         
+        colnames(Y) <- colnames(FM)
+        reducedDimA(cds) <- Y
+
         minSpanningTree(cds) <- gp
       }
       
@@ -1913,13 +1733,8 @@ reduceDimension <- function(cds,
       reducedDimS(cds) <- as.matrix(Y)
       reducedDimK(cds) <- as.matrix(Y)
 
-      # relations <- reshape2::melt(abs(as.matrix(pg_spanning_tree$W))) # convert the connection to 0, 1 with abs  paul_pc_spanning_tree
-      # colnames(relations) <- c("from", "to", "weight")
-      # relations$from <- as.character(relations$from)
-      # relations$to <- as.character(relations$to)
-      # 
-      # gp <- graph.data.frame(relations[relations$weight > 0, ], directed = FALSE)
-      
+      # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
+   
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree)
