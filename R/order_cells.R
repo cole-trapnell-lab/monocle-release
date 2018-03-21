@@ -1165,46 +1165,55 @@ orderCells <- function(cds,
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
-    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
+    if(ncol(cds) > 1000) {
+      R <- HSMM@auxOrderingData$DDRTree$R
+      edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
-    K_old <- reducedDimK(cds)
-    old_dp <- cellPairwiseDistances(cds)
-    old_mst <- minSpanningTree(cds)
-    old_A <- reducedDimA(cds)
-    old_W <- reducedDimW(cds)
+      pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
+      pData(cds)$cell_state <- cc_ordering[edge$end, 'cell_state']
 
-    cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
-    minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+    } else {
+      pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
 
-    root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
-    cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
-    if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
-      cells_mapped_to_graph_root <- root_cell_idx
+      K_old <- reducedDimK(cds)
+      old_dp <- cellPairwiseDistances(cds)
+      old_mst <- minSpanningTree(cds)
+      old_A <- reducedDimA(cds)
+      old_W <- reducedDimW(cds)
+
+      cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+      minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+
+      root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
+      cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
+      if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
+        cells_mapped_to_graph_root <- root_cell_idx
+      }
+
+      cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
+
+      tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+      root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
+      if(is.na(root_cell)) {
+        root_cell <- select_root_cell(cds, root_state, reverse)
+      }
+
+      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+
+      cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
+
+      pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
+      if (is.null(root_state) == TRUE) {
+        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+        pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
+      }
+
+      reducedDimK(cds) <-  K_old
+      cellPairwiseDistances(cds) <- old_dp
+      minSpanningTree(cds) <- old_mst
+      reducedDimA(cds) <- old_A
+      reducedDimW(cds) <- old_W
     }
-
-    cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
-
-    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
-    root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
-    if(is.na(root_cell)) {
-      root_cell <- select_root_cell(cds, root_state, reverse)
-    }
-
-    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
-
-    cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
-
-    pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
-    if (is.null(root_state) == TRUE) {
-      closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-      pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
-    }
-
-    reducedDimK(cds) <-  K_old
-    cellPairwiseDistances(cds) <- old_dp
-    minSpanningTree(cds) <- old_mst
-    reducedDimA(cds) <- old_A
-    reducedDimW(cds) <- old_W
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type == "SimplePPT"){
@@ -1632,8 +1641,12 @@ reduceDimension <- function(cds,
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
       dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- dp_mst
+
       cds@dim_reduce_type <- "DDRTree"
-      cds <- findNearestPointOnMST(cds)
+
+      if(ncol(cds) < 1000) { 
+        cds <- findNearestPointOnMST(cds)
+      }
     }
     else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
