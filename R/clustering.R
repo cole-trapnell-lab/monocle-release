@@ -431,6 +431,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # g <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g
   # optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$optim_res
   cell_membership <- igraph::membership(optim_res)
+  cell_names <- names(cell_membership)
   n_cluster <- length(unique(cell_membership))
 
   cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
@@ -441,12 +442,12 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
 
   for(i in sort(unique(as.vector(cell_membership)))) {
     message('current cluster is ', i)
-    curr_cluster_cell <- as.character(which(cell_membership == i))
+    curr_cluster_cell <- cell_names[which(cell_membership == i)]
     
     neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
     # identify connected cells outside a Louvain group
     conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
-      cell_outside <- setdiff(as.character(neigh_list[[x]]), curr_cluster_cell)
+      cell_outside <- setdiff(neigh_list[[x]]$name, curr_cluster_cell)
       if(length(cell_outside)) {
         data.frame(current_cell = curr_cluster_cell[x], 
                    cell_outside = cell_outside,
@@ -458,7 +459,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     # remove the insignificant inter-cluster edges from the kNN graph: 
     if(is.null(conn_cluster_res) == FALSE) {
       for(j in 1:nrow(conn_cluster_res)) {
-        overlapping_clusters <- as.character(which(as.vector(cell_membership) == conn_cluster_res[j, 'target_cluster']))
+        overlapping_clusters <- cell_names[which(cell_membership == conn_cluster_res[j, 'target_cluster'])]
         all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
         only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
         only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
@@ -487,11 +488,11 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
   cnt_i <- 1
   for(i in unique(cell_membership)) {
-    cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, which(cell_membership == i))) # most are zero
+    cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, cell_names[which(cell_membership == i)])) # most are zero
     cnt_j <- 1
     for(j in setdiff(unique(cell_membership), i)) {
-      cell_i <- which(cell_membership %in% c(i))
-      cell_j <- which(cell_membership %in% c(j))
+      cell_i <- cell_names[which(cell_membership %in% c(i))]
+      cell_j <- cell_names[which(cell_membership %in% c(j))]
       
       all_ij <- igraph::ecount(igraph::subgraph(g, c(cell_i, cell_j))) # edges in all cells from two landmark groups
       only_i <- igraph::ecount(igraph::subgraph(g, cell_i)) # edges from the first landmark groups

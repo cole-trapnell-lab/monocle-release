@@ -110,7 +110,8 @@ plot_cell_trajectory <- function(cds,
   edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
   
-  S_matrix <- reducedDimS(cds)
+  S_matrix <- 
+    reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[c(x,y),]))
   data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
