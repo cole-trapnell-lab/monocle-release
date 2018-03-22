@@ -1,0 +1,190 @@
+#' Uniform Manifold Approximation and Projection
+#' 
+#' @description Finds a low dimensional embedding of the data that approximates an underlying manifold.
+#' 
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param python_home The python home directory where umap is installed
+#' @param log A logic argument to determine whether we need to calculate 
+#' log of the input data. Default to be true 
+#' @param n_neighbors float (optional, default 15)
+#' The size of local neighborhood (in terms of number of neighboring
+#' sample points) used for manifold approximation. Larger values
+#' result in more global views of the manifold, while smaller
+#' values result in more local data being preserved. In general
+#' values should be in the range 2 to 100.
+#' @param n_components int (optional, default 2)
+#' The dimension of the space to embed into. This defaults to 2 to
+#' provide easy visualization, but can reasonably be set to any
+#' integer value in the range 2 to 100.
+#' @param metric: string or function (optional, default 'euclidean')
+#' The metric to use to compute distances in high dimensional space.
+#' If a string is passed it must match a valid predefined metric. If
+#' a general metric is required a function that takes two 1d arrays and
+#' returns a float can be provided. For performance purposes it is
+#' required that this be a numba jit'd function. Valid string metrics
+#' include:
+#'     * euclidean
+#'     * manhattan
+#'     * chebyshev
+#'     * minkowski
+#'     * canberra
+#'     * braycurtis
+#'     * mahalanobis
+#'     * wminkowski
+#'     * seuclidean
+#'     * cosine
+#'     * correlation
+#'     * haversine
+#'     * hamming
+#'     * jaccard
+#'     * dice
+#'     * russelrao
+#'     * kulsinski
+#'     * rogerstanimoto
+#'     * sokalmichener
+#'     * sokalsneath
+#'     * yule
+#'   Metrics that take arguments (such as minkowski, mahalanobis etc.)
+#'   can have arguments passed via the metric_kwds dictionary. At this
+#'   time care must be taken and dictionary elements must be ordered
+#'   appropriately; this will hopefully be fixed in the future.
+#' @param negative_sample_rate int (optional, default 5)
+#' The number of negative edge/1-simplex samples to use per positive 
+#' edge/1-simplex sample in optimizing the low dimensional embedding. 
+#' @param alpha float (optional, default 1.0)
+#' The initial learning rate for the embedding optimization.
+#' @param init string (optional, default 'spectral')
+#' How to initialize the low dimensional embedding. Options are:
+#'     * 'spectral': use a spectral embedding of the fuzzy 1-skeleton
+#'     * 'random': assign initial embedding positions at random.
+#'     * A numpy array of initial embedding positions.
+#' @param min_dist float (optional, default 0.1)
+#' The effective minimum distance between embedded points. Smaller values
+#' will result in a more clustered/clumped embedding where nearby points
+#' on the manifold are drawn closer together, while larger values will
+#' result on a more even dispersal of points. The value should be set
+#' relative to the ``spread`` value, which determines the scale at which
+#' embedded points will be spread out.
+#' @param spread float (optional, default 1.0)
+#' The effective scale of embedded points. In combination with ``min_dist``
+#' this determines how clustered/clumped the embedded points are.
+#' @param set_op_mix_ratio float (optional, default 1.0)
+#' Interpolate between (fuzzy) union and intersection as the set operation
+#' used to combine local fuzzy simplicial sets to obtain a global fuzzy
+#' simplicial sets. Both fuzzy set operations use the product t-norm.
+#' The value of this parameter should be between 0.0 and 1.0; a value of
+#' 1.0 will use a pure fuzzy union, while 0.0 will use a pure fuzzy
+#' intersection.
+#' @param local_connectivity int (optional, default 1)
+#' The local connectivity required -- i.e. the number of nearest
+#' neighbors that should be assumed to be connected at a local level.
+#' The higher this value the more connected the manifold becomes
+#' locally. In practice this should be not more than the local intrinsic
+#' dimension of the manifold.
+#' @param gamma float (optional, default 1.0)
+#' Weighting applied to negative samples in low dimensional embedding
+#' optimization. Values higher than one will result in greater weight
+#' being given to negative samples.
+#' @param bandwidth float (optional, default 1.0)
+#' The effective bandwidth of the kernel if we view the algorithm as
+#' similar to Laplacian eigenmaps. Larger values induce more
+#' connectivity and a more global view of the data, smaller values
+#' concentrate more locally.
+#' @param a float (optional, default None) (not passed in)
+#' More specific parameters controlling the embedding. If None these
+#' values are set automatically as determined by ``min_dist`` and
+#' ``spread``.
+#' @param b float (optional, default None) (not passed in)
+#' More specific parameters controlling the embedding. If None these
+#' values are set automatically as determined by ``min_dist`` and
+#' ``spread``.
+#' @param random_state int, RandomState instance or None, optional (default: None) (not passed in)
+#' If int, random_state is the seed used by the random number generator;
+#' If RandomState instance, random_state is the random number generator;
+#' If None, the random number generator is the RandomState instance used
+#' by `np.random`.
+#' @param metric_kwds dict (optional, default {})  (not passed in)
+#' Arguments to pass on to the metric, such as the ``p`` value for
+#' Minkowski distance.
+#' @param angular_rp_forest bool (optional, default False)
+#' Whether to use an angular random projection forest to initialise
+#' the approximate nearest neighbor search. This can be faster, but is
+#' mostly on useful for metric that use an angular style distance such
+#' as cosine, correlation etc. In the case of those metrics angular forests
+#' will be chosen automatically.
+#' @param verbose bool (optional, default False)
+#' Controls verbosity of logging.
+#' @return Embedding of the training data in low-dimensional space if return_all is set to be FALSE, 
+#' otherwise the object returned from umap function, including the following elements: 
+#' a, fit_transform, metric, random_state, alpha, gamma, metric_kwds, set_op_mix_ratio, angular_rp_forest, 
+#' get_params, min_dist, set_params, b, graph, n_components, spread, bandwidth, init, n_epochs, verbose, 
+#' embedding_, initial_alpha, n_neighbors, fit, local_connectivity, negative_sample_rate 
+#' @import reticulate
+#' @export
+UMAP <- function(X, python_home = system('which python'), 
+  log = TRUE, 
+  n_neighbors = as.integer(15), 
+  n_component = as.integer(2), 
+  metric = "euclidean", 
+  negative_sample_rate = as.integer(5),
+  alpha = 1.0,
+  init = 'spectral',
+  min_dist = 0.1, 
+  spread = 1.0,
+  set_op_mix_ratio = 1.0,
+  local_connectivity = as.integer(1),
+  gamma = 1.0,
+  bandwidth = 1.0, 
+  angular_rp_forest = FALSE,
+  verbose = FALSE,
+  return_all = FALSE) {
+  
+  reticulate::use_python(python_home)
+  
+  tryCatch({
+    reticulate::import("umap")
+  }, warning = function(w) {
+  }, error = function(e) {
+    stop('please pass the python home directory where umap is installed with python_home argument!')
+  }, finally = {
+  })
+  
+  reticulate::source_python(paste(system.file(package="monocle"), "umap.py", sep="/"))
+  # X <- Matrix::t(X)
+  if(length(grep('Matrix', class(X))) == 0){
+    X <- as(as.matrix(X), 'TsparseMatrix')
+  } else {
+    X <- as(X, 'TsparseMatrix')
+  }
+  
+  i <- as.integer(X@i)
+  j <- as.integer(X@j)
+  
+  if(log) {
+  val <- log(X@x + 1)
+  } else {
+    val <- X@x
+  }
+  dim <- as.integer(X@Dim)
+  umap_res <- umap(i, j, val, dim, 
+                    n_neighbors, 
+                    n_component, 
+                    metric, 
+                    negative_sample_rate,
+                    alpha,
+                    init,
+                    min_dist, 
+                    spread,
+                    set_op_mix_ratio,
+                    local_connectivity,
+                    gamma,
+                    bandwidth,
+                    angular_rp_forest,
+                    verbose)
+  
+  if(return_all) {
+    return(umap_res)
+  } else {
+    umap_res$embedding_
+  }
+}
