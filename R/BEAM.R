@@ -51,6 +51,10 @@ buildBranchCellDataSet <- function(cds,
   }
   
   root_cell <- cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell
+  if(igraph::vcount(pr_graph_cell_proj_mst) < ncol(cds)) {
+    tmp <- strsplit(root_cell, "_")
+    root_cell <- names(which(cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[, 1] == as.numeric(tmp[[1]][2])))[1]
+  }
   root_state <- pData(cds)[root_cell,]$State
   #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
   

@@ -2900,7 +2900,7 @@ plot_multiple_branches_pseudotime <- function(cds,
 #' }
 plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
   if(is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res)) {
-    stop('make sure you first run SSE or UMAPSSE dimension reduction before layout with force directed layout')
+    stop('make sure you first run UMAP, SSE or UMAPSSE dimension reduction before layout with force directed layout')
   }
   
   if(is.null(layout)) {
@@ -2940,8 +2940,8 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
 #' }
 #' 
 plot_cluster_graph <- function(cds) {
-  if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE"))) {
-    stop('Please run UMAP, UMAPSSE or SSE first before using this function ...')
+  if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE")) & !("louvian" %in% names(cds@auxClusteringData))) {
+    stop('Please run UMAP, UMAPSSE or SSE and louvain clustering first before using this function ...')
   }
   
   coord <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$cluster_coord 

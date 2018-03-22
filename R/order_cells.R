@@ -1164,13 +1164,14 @@ orderCells <- function(cds,
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
-    if(ncol(cds) > 1000) {
+    if(ncol(cds) > 100) {
       R <- cds@auxOrderingData$DDRTree$R
       edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
       pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
       pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
-
+      
+      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
     } else {
       cds@auxOrderingData <- new.env( hash=TRUE )
       pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
@@ -1645,8 +1646,12 @@ reduceDimension <- function(cds,
 
       cds@dim_reduce_type <- "DDRTree"
 
-      if(ncol(cds) < 1000) { 
+      if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
+      } else {
+        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        row.names(tmp) <- colnames(cds)
+        cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
     }
     else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
