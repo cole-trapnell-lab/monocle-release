@@ -2,29 +2,25 @@
 % Please edit documentation in R/plotting.R
 \name{plot_cluster_graph}
 \alias{plot_cluster_graph}
-\title{Plots a graph of louvain cluster, layouted with layout_component function.}
+\title{Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells}
 \usage{
 plot_cluster_graph(cds)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
-
-\item{...}{additional arguments passed into the scale_color_viridis function}
 }
 \value{
 a ggplot2 plot object
 }
 \description{
-Plots a graph of louvain cluster, layouted with layout_component function.
+Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells
 }
 \examples{
 \dontrun{
 library(HSMMSingleCell)
 HSMM <- load_HSMM()
-HSMM <- reduceD
-plot_cell_clusters(HSMM)
-plot_cell_clusters(HSMM, color_by="Pseudotime")
-plot_cell_clusters(HSMM, markers="MYH3")
+HSMM <- reduceDimension(HSMM, method = 'UMAP')
+plot_cluster_graph(HSMM)
 }
 
 }

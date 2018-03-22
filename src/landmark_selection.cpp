@@ -397,12 +397,13 @@ library(monocle)
 /*** R
 # library(monocle)
 #   lung <- load_lung()
-lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
-  sp_data <- lung@assayData$exprs
+
   
   library(devtools)
   load_all()
   
+  lung@assayData$exprs <- as(lung@assayData$exprs, 'sparseMatrix')  
+  sp_data <- lung@assayData$exprs
   system.time(select_landmarks(sp_data@x, sp_data@i, sp_data@p, sp_data@Dim[2], sp_data@Dim[1], 10))
   */
 

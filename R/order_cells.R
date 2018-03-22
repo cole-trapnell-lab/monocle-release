@@ -1159,20 +1159,20 @@ orderCells <- function(cds,
     cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
 
   } else if (cds@dim_reduce_type == "DDRTree"){
-    cds@auxOrderingData <- new.env( hash=TRUE )
     if (is.null(num_paths) == FALSE){
       message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
     if(ncol(cds) > 1000) {
-      R <- HSMM@auxOrderingData$DDRTree$R
+      R <- cds@auxOrderingData$DDRTree$R
       edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
       pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
-      pData(cds)$cell_state <- cc_ordering[edge$end, 'cell_state']
+      pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
 
     } else {
+      cds@auxOrderingData <- new.env( hash=TRUE )
       pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
 
       K_old <- reducedDimK(cds)
@@ -1595,7 +1595,8 @@ reduceDimension <- function(cds,
       if (verbose)
         message("Learning principal graph with DDRTree")
 
-      if("num_dim" %in% names(extra_arguments) | ncol(FM) > 5000) { # when num_dim is passed or the number cells is more than 5 k cells, do an intial PCA 
+      # when num_dim is passed or the number of cells is more than 5 k cells and the feature number is large than 50 (implying the feature is not PCA space), do an intial PCA 
+      if("num_dim" %in% names(extra_arguments) | (ncol(FM) > 5000 & nrow(FM) > 50)) { 
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
           num_dim <- extra_arguments$num_dim #variance_explained
         }
