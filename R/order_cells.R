@@ -1405,7 +1405,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1589,7 +1589,7 @@ reduceDimension <- function(cds,
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "ICA"
     }
-    else if (reduction_method == "DDRTree") {
+    else if (reduction_method %in% c("DDRTree", "UMAPDDRTree")) {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
@@ -1610,6 +1610,12 @@ reduceDimension <- function(cds,
         irlba_pca_res <- t(irlba_res$x)
         colnames(irlba_pca_res) <- colnames(FM)
         FM <- irlba_pca_res #[, 1:num_dim]
+      }
+
+      if(reduction_method == "UMAPDDRTree") {
+        umap_res <- t(UMAP(t(FM), log = F, n_component = as.integer(max_components), ...))
+        colnames(umap_res) <- colnames(FM)
+        FM <- umap_res
       }
 
       # TODO: DDRTree should really work with sparse matrices.
@@ -1677,7 +1683,7 @@ reduceDimension <- function(cds,
         if (verbose)
           message("Running Uniform Manifold Approximation and Projection")
 
-        umap_res <- umap(irlba_pca_res, n_component = max_components)
+        umap_res <- UMAP(irlba_pca_res, log = F, n_component = as.integer(max_components), ...)
         S <- t(umap_res)
     
         if(reduction_method == 'UMAP') {

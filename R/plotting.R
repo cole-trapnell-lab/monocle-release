@@ -2202,6 +2202,8 @@ plot_complex_cell_trajectory <- function(cds,
                                          cell_link_size=0.75,
                                          cell_name_size=2,
                                          show_branch_points=TRUE, 
+                                         jitter_width = NULL, 
+                                         jitter_height = NULL,
                                          ...){
   gene_short_name <- NA
   sample_name <- NA
@@ -2359,17 +2361,17 @@ plot_complex_cell_trajectory <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
                              scale_color_viridis(name = paste0("log10(", color_by, ")"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1) 
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) 
     }
   }else {
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
         scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1)
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width)
     }
   }
 

@@ -61,7 +61,7 @@ Suggests:
     Seurat,
     scater,
     testthat, 
-    rPython
+    reticulate
 Remotes:
     bioc::Biobase,
     bioc::BiocGenerics,
