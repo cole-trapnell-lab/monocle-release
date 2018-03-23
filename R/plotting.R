@@ -2906,20 +2906,20 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
   }
   
   if(is.null(layout)) {
-    coord <- cds@auxClusteringData[["louvian"]]$louvain_res$coord
+    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
 
     if(is.null(coord)) {
       stop("force direct layout doesn't support more than 3K cells for now")
     }
   } 
   if(is.function(layout)) {
-    coord <- layout(cds@auxClusteringData[["louvian"]]$louvain_res$g)
+    coord <- layout(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g)
     if(nrow(coord) != nrow(cds) | ncol(coord) != 2) {
       stop("your layout function don't return the correct dimension: row is the number of cells while the column is two")
     }
   }
 
-  edge_links <- cds@auxClusteringData[["louvian"]]$louvain_res$edge_links
+  edge_links <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$edge_links
 
   ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
     geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle_theme_opts()

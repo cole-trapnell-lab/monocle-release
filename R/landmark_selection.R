@@ -28,7 +28,13 @@ landmark_selection <- function(cds, landmark_num) {
 #' @return a new cds containing only the cells selected by the landmark selection algorithm 
 #' @export
 downsampleCDS <- function(cds, landmark_num) {
-  # 
   res <- landmark_selection(cds, landmark_num)
   cds[, which(res$flag == 1)]
+  
+  exprs_mat <- as(as.matrix(exprs(cds)), "sparseMatrix")
+  cds_subset <- newCellDataSet(exprs_mat,
+                               phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]),
+                               featureData = new("AnnotatedDataFrame", data = fData(cds)),
+                               expressionFamily=cds@expressionFamily,
+                               lowerDetectionLimit=1)
 }

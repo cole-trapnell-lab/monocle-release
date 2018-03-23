@@ -1613,9 +1613,15 @@ reduceDimension <- function(cds,
       }
 
       if(reduction_method == "UMAPDDRTree") {
-        umap_res <- t(UMAP(t(FM), log = F, n_component = as.integer(max_components), ...))
+        umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose),
+                               extra_arguments[names(extra_arguments) %in% 
+                               c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        umap_res <- t(do.call(UMAP, umap_args))
+
         colnames(umap_res) <- colnames(FM)
         FM <- umap_res
+        reducedDimA(cds) <- FM
       }
 
       # TODO: DDRTree should really work with sparse matrices.
@@ -1683,7 +1689,12 @@ reduceDimension <- function(cds,
         if (verbose)
           message("Running Uniform Manifold Approximation and Projection")
 
-        umap_res <- UMAP(irlba_pca_res, log = F, n_component = as.integer(max_components), ...)
+        umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose),
+                                       extra_arguments[names(extra_arguments) %in% 
+                                       c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                        'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        umap_res <- do.call(UMAP, umap_args)
+
         S <- t(umap_res)
     
         if(reduction_method == 'UMAP') {

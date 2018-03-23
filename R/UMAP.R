@@ -2,7 +2,7 @@
 #' 
 #' @description Finds a low dimensional embedding of the data that approximates an underlying manifold.
 #' 
-#' @param cds the CellDataSet upon which to perform this operation
+#' @param X the CellDataSet upon which to perform this operation
 #' @param python_home The python home directory where umap is installed
 #' @param log A logic argument to determine whether we need to calculate 
 #' log of the input data. Default to be true 
