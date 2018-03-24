@@ -4,10 +4,17 @@
 \alias{plot_cluster_graph}
 \title{Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells}
 \usage{
-plot_cluster_graph(cds)
+plot_cluster_graph(cds, cluster_link_size = 1, cluster_size = 2,
+  cluster_name_size = 5)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{cluster_link_size}{the maximal width of the link of edges (width of other edges are scaled correspondingly)}
+
+\item{cluster_size}{The size of the point for each cluster}
+
+\item{cluster_name_size}{the size of cluster name labels}
 }
 \value{
 a ggplot2 plot object
@@ -19,7 +26,8 @@ Plots a graph of louvain cluster, layouted with layout_component function, which
 \dontrun{
 library(HSMMSingleCell)
 HSMM <- load_HSMM()
-HSMM <- reduceDimension(HSMM, method = 'UMAP')
+HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+HSMM <- clusterCells(HSMM, method = 'louvain')
 plot_cluster_graph(HSMM)
 }
 

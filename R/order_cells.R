@@ -1164,7 +1164,7 @@ orderCells <- function(cds,
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
-    if(ncol(cds) > 100) {
+    if(ncol(cds) > 1000) {
       R <- cds@auxOrderingData$DDRTree$R
       edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
@@ -1625,7 +1625,7 @@ reduceDimension <- function(cds,
       }
 
       # TODO: DDRTree should really work with sparse matrices.
-      if(auto_param_selection & ncol(cds) >= 100){
+      if(auto_param_selection & ncol(cds) >= 1000){
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
         else
@@ -1988,7 +1988,7 @@ SubSet_cds <- function(cds, cells){
   if(ncol(reducedDimK(cds)) != ncol(cds))
     stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
 
-  exprs_mat <- as(as.matrix(cds[, cells]), "sparseMatrix")
+  exprs_mat <- as(as.matrix(exprs(cds[, cells])), "sparseMatrix")
   cds_subset <- newCellDataSet(exprs_mat,
                                  phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]),
                                  featureData = new("AnnotatedDataFrame", data = fData(cds)),

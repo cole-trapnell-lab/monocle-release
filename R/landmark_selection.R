@@ -37,4 +37,5 @@ downsampleCDS <- function(cds, landmark_num) {
                                featureData = new("AnnotatedDataFrame", data = fData(cds)),
                                expressionFamily=cds@expressionFamily,
                                lowerDetectionLimit=1)
+  cds_subset
 }

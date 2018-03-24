@@ -4,24 +4,21 @@
 \alias{plot_cell_fdl}
 \title{Plots force directed layout of cells .}
 \usage{
-plot_cell_fdl(cds, layout = NULL, color_by = "Pseudotime")
+plot_cell_fdl(cds, layout = NULL, color_by = "Pseudotime", markers = NULL,
+  cell_size = 0.5, cell_link_size = 1)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
+\item{layout}{the layout function used to generate the coordinates of cells}
+
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
-
-\item{x}{the column of reducedDimS(cds) to plot on the horizontal axis}
-
-\item{y}{the column of reducedDimS(cds) to plot on the vertical axis}
 
 \item{markers}{a gene name or gene id to use for setting the size of each cell in the plot}
 
-\item{show_cell_names}{draw the name of each cell in the plot}
-
 \item{cell_size}{The size of the point for each cell}
 
-\item{cell_name_size}{the size of cell name labels}
+\item{cell_link_size}{the maximal width of the link of edges (width of other edges are scaled correspondingly)}
 
 \item{...}{additional arguments passed into the scale_color_viridis function}
 }
@@ -35,9 +32,9 @@ Plots force directed layout of cells .
 \dontrun{
 library(HSMMSingleCell)
 HSMM <- load_HSMM()
-HSMM <- reduceD
-plot_cell_clusters(HSMM)
-plot_cell_clusters(HSMM, color_by="Pseudotime")
-plot_cell_clusters(HSMM, markers="MYH3")
+HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+plot_cell_fdl(HSMM)
+plot_cell_fdl(HSMM, color_by="Pseudotime")
+plot_cell_fdl(HSMM, markers="MYH3")
 }
 }

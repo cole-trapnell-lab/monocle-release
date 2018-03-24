@@ -1933,7 +1933,8 @@ plot_ordering_genes <- function(cds){
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' HSMM <- reduceD
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'tSNE')
+#' HSMM <- clusterCells(HSMM)
 #' plot_cell_clusters(HSMM)
 #' plot_cell_clusters(HSMM, color_by="Pseudotime")
 #' plot_cell_clusters(HSMM, markers="MYH3")
@@ -2878,13 +2879,11 @@ plot_multiple_branches_pseudotime <- function(cds,
 #' Plots force directed layout of cells .
 #'
 #' @param cds CellDataSet for the experiment
-#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
-#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param layout the layout function used to generate the coordinates of cells
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
-#' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
-#' @param cell_name_size the size of cell name labels
+#' @param cell_link_size the maximal width of the link of edges (width of other edges are scaled correspondingly)
 #' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -2895,12 +2894,17 @@ plot_multiple_branches_pseudotime <- function(cds,
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' HSMM <- reduceD
-#' plot_cell_clusters(HSMM)
-#' plot_cell_clusters(HSMM, color_by="Pseudotime")
-#' plot_cell_clusters(HSMM, markers="MYH3")
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+#' plot_cell_fdl(HSMM)
+#' plot_cell_fdl(HSMM, color_by="Pseudotime")
+#' plot_cell_fdl(HSMM, markers="MYH3")
 #' }
-plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
+plot_cell_fdl <- function(cds, 
+                          layout = NULL, 
+                          color_by = 'Pseudotime',
+                          markers = NULL,
+                          cell_size = 0.5,
+                          cell_link_size = 1) {
   if(is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res)) {
     stop('make sure you first run UMAP, SSE or UMAPSSE dimension reduction before layout with force directed layout')
   }
@@ -2909,7 +2913,7 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
     coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
 
     if(is.null(coord)) {
-      stop("force direct layout doesn't support more than 3K cells for now")
+      stop("coordinates for force direct layout doesn't exist. The number of cells in your cds is more than 3K?")
     }
   } 
   if(is.function(layout)) {
@@ -2919,15 +2923,42 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
     }
   }
 
+  coord$sample_name <- row.names(coord)
   edge_links <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$edge_links
 
-  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
-    geom_point(aes_string("x", "y", color = color_by), data = coord, size = 0.5) + monocle_theme_opts()
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+
+  g <- ggplot(data = edge_links) + 
+    geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(cell_link_size * weight / max(weight))), color = 'grey') + 
+    xlab('FDL 1') + ylab('FDL 2') 
+
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+      coord <- merge(coord, markers_exprs, by.x="sample_name", by.y="cell_id")
+      g <- g + geom_point(aes_string("x", "y", color = color_by), data = coord, size = I(cell_size)) 
+    } else {
+      g <- g + geom_point(aes_string("x", "y", color = color_by), data = coord, size = I(cell_size)) 
+    }
+
+    g + monocle_theme_opts()
 }
 
 #' Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells
 #'
 #' @param cds CellDataSet for the experiment
+#' @param cluster_size The size of the point for each cluster
+#' @param cluster_link_size the maximal width of the link of edges (width of other edges are scaled correspondingly)
+#' @param cluster_name_size the size of cluster name labels
 #' @return a ggplot2 plot object
 #' @import ggplot2
 #' @importFrom reshape2 melt
@@ -2937,11 +2968,15 @@ plot_cell_fdl <- function(cds, layout = NULL, color_by = 'Pseudotime') {
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' HSMM <- reduceDimension(HSMM, method = 'UMAP')
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+#' HSMM <- clusterCells(HSMM, method = 'louvain')
 #' plot_cluster_graph(HSMM)
 #' }
 #' 
-plot_cluster_graph <- function(cds) {
+plot_cluster_graph <- function(cds,
+                               cluster_link_size = 1,
+                               cluster_size = 2,
+                               cluster_name_size = 5) {
   if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE")) & !("louvian" %in% names(cds@auxClusteringData))) {
     stop('Please run UMAP, UMAPSSE or SSE and louvain clustering first before using this function ...')
   }
@@ -2950,12 +2985,15 @@ plot_cluster_graph <- function(cds) {
   edge_links <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$edge_links 
   
   if(is.null(coord)) {
-    stop('all clusters are separate !!')
+    stop("coordinates doesn't exist, all clusters are separate?")
   }
 
-  ggplot(data = edge_links) + geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(weight / max(weight))), color = 'grey') + xlab('FDL 1') + ylab('FDL 2') + 
-    geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = 2) + monocle_theme_opts() + 
-    geom_text(aes_string(x="x", y="y", label="Cluster"), 
-              size=5, color="black", na.rm=TRUE, data=coord)
+  ggplot(data = edge_links) + 
+        geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(cluster_link_size * weight / max(weight))), color = 'grey') + 
+        xlab('FDL 1') + ylab('FDL 2') + 
+        geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = I(cluster_size)) + 
+        monocle_theme_opts() + 
+        geom_text(aes_string(x="x", y="y", label="Cluster"), 
+              size=I(cluster_name_size), color="black", na.rm=TRUE, data=coord)
   
 }

@@ -1,6 +1,9 @@
 #' Uniform Manifold Approximation and Projection
 #' 
 #' @description Finds a low dimensional embedding of the data that approximates an underlying manifold.
+#' This functions relies on the python implementation of UMAP (https://github.com/lmcinnes/umap). 
+#' The original publication of UMAP can be found here: 
+#' https://arxiv.org/abs/1802.03426 (McInnes, L, Healy, J, UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, ArXiv e-prints 1802.03426, 2018)
 #' 
 #' @param X the CellDataSet upon which to perform this operation
 #' @param python_home The python home directory where umap is installed
@@ -121,18 +124,18 @@
 #' embedding_, initial_alpha, n_neighbors, fit, local_connectivity, negative_sample_rate 
 #' @import reticulate
 #' @export
-UMAP <- function(X, python_home = system('which python'), 
+UMAP <- function(X, python_home = system('which python', intern = TRUE), 
   log = TRUE, 
-  n_neighbors = as.integer(15), 
-  n_component = as.integer(2), 
+  n_neighbors = 15L, 
+  n_component = 2L, 
   metric = "euclidean", 
-  negative_sample_rate = as.integer(5),
+  negative_sample_rate = 5L,
   alpha = 1.0,
   init = 'spectral',
   min_dist = 0.1, 
   spread = 1.0,
   set_op_mix_ratio = 1.0,
-  local_connectivity = as.integer(1),
+  local_connectivity = 1L,
   gamma = 1.0,
   bandwidth = 1.0, 
   angular_rp_forest = FALSE,
@@ -167,20 +170,20 @@ UMAP <- function(X, python_home = system('which python'),
   }
   dim <- as.integer(X@Dim)
   umap_res <- umap(i, j, val, dim, 
-                    n_neighbors, 
-                    n_component, 
-                    metric, 
-                    negative_sample_rate,
-                    alpha,
-                    init,
-                    min_dist, 
-                    spread,
-                    set_op_mix_ratio,
-                    local_connectivity,
-                    gamma,
-                    bandwidth,
-                    angular_rp_forest,
-                    verbose)
+                    as.integer(n_neighbors), 
+                    as.integer(n_component), 
+                    as.character(metric), 
+                    as.integer(negative_sample_rate),
+                    as.numeric(alpha),
+                    as.character(init),
+                    as.numeric(min_dist), 
+                    as.numeric(spread),
+                    as.numeric(set_op_mix_ratio),
+                    as.integer(local_connectivity),
+                    as.numeric(gamma),
+                    as.numeric(bandwidth),
+                    as.logical(angular_rp_forest),
+                    as.logical(verbose))
   
   if(return_all) {
     return(umap_res)

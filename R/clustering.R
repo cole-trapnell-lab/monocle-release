@@ -441,7 +441,9 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
 
   for(i in sort(unique(as.vector(cell_membership)))) {
-    message('current cluster is ', i)
+    if(verbose) {
+      message('current cluster is ', i)
+    }
     curr_cluster_cell <- cell_names[which(cell_membership == i)]
     
     neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
@@ -467,10 +469,11 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         overlap_weight <- (all_ij - only_i - only_j) / all_ij
         cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
         if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
-            
-            message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
-                    'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
-                    'with weight ', overlap_weight)
+            if(verbose) {
+              message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+                      'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+                      'with weight ', overlap_weight)
+            }
             pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
         }
       }
