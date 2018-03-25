@@ -1613,15 +1613,22 @@ reduceDimension <- function(cds,
       }
 
       if(reduction_method == "UMAPDDRTree") {
-        umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose),
+        umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                                extra_arguments[names(extra_arguments) %in% 
                                c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
                                 'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
-        umap_res <- t(do.call(UMAP, umap_args))
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- t(tmp$embedding_); 
+
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                        dimnames = list(colnames(cds), colnames(cds)))
 
         colnames(umap_res) <- colnames(FM)
         FM <- umap_res
         reducedDimA(cds) <- FM
+
+        cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
       }
 
       # TODO: DDRTree should really work with sparse matrices.
@@ -1689,11 +1696,16 @@ reduceDimension <- function(cds,
         if (verbose)
           message("Running Uniform Manifold Approximation and Projection")
 
-        umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose),
+        umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                                        extra_arguments[names(extra_arguments) %in% 
                                        c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
                                         'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
-        umap_res <- do.call(UMAP, umap_args)
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- tmp$embedding_; 
+
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                        dimnames = list(colnames(cds), colnames(cds)))
 
         S <- t(umap_res)
     
@@ -1724,6 +1736,7 @@ reduceDimension <- function(cds,
 
         if(reduction_method == "SSE") {
           umap_res <- NULL
+          adj_mat <- NULL
           data = irlba_pca_res
           S <- t(irlba_pca_res)
         } else {
@@ -1731,7 +1744,7 @@ reduceDimension <- function(cds,
         }
 
         # we are gonna ignore the method arugment here 
-        sse_args <- c(list(data=data, embeding_dim=max_components, d = max_components, verbose = verbose),
+        sse_args <- c(list(data=data, dist_mat = adj_mat, embeding_dim=max_components, d = max_components, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
         SSE_res <- do.call(SSE, sse_args)
   
@@ -1773,7 +1786,7 @@ reduceDimension <- function(cds,
    
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
-        louvain_res = louvain_res, PG_res = pg_spanning_tree)
+        louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")
