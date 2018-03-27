@@ -999,7 +999,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency minimum.spanning.tree V
 select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
-  if (is.null(root_state) == FALSE) {
+  if (is.null(root_state) == FALSE & vcount(minSpanningTree(cds)) == ncol(cds)) {
     if (is.null(pData(cds)$State)){
       stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
     }
@@ -1048,15 +1048,25 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
       root_cell = V(minSpanningTree(cds))[graph_point_for_root_cell]$name
     }
 
-  }else{
-    if (is.null(minSpanningTree(cds))){
-      stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
-    }
-    diameter <- get.diameter(minSpanningTree(cds))
-    if (is.null(reverse) == FALSE && reverse == TRUE){
-      root_cell = names(diameter[length(diameter)])
+  }else{ 
+    if(is.null(root_state)) {
+      if (is.null(minSpanningTree(cds))){
+        stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
+      }
+      diameter <- get.diameter(minSpanningTree(cds))
+      if (is.null(reverse) == FALSE && reverse == TRUE){
+        root_cell = names(diameter[length(diameter)])
+      } else {
+        root_cell = names(diameter[1])
+      }
     } else {
-      root_cell = names(diameter[1])
+      root_cell_candidates <- which(pData(cds)$State == root_state)
+      leaf_cells <- which(degree(minSpanningTree(cds)) == 1)
+      R <- cds@auxOrderingData$DDRTree$R
+      edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
+      
+      root_cell <- V(minSpanningTree(cds))$name[intersect(edge[root_cell_candidates, 'end'], leaf_cells)]
+
     }
   }
   return(root_cell)
@@ -1169,7 +1179,9 @@ orderCells <- function(cds,
       edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
       pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
-      pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
+      if(is.null(root_state) == TRUE) {
+        pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
+      }
       
       cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
     } else {

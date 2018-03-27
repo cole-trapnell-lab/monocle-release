@@ -2164,6 +2164,8 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param root_states the state used to set as the root of the graph
+#' @param layout a function to re-layout the principal tree into two dimension. Please 
+#' ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
@@ -2193,6 +2195,7 @@ plot_complex_cell_trajectory <- function(cds,
                                          x=1, 
                                          y=2, 
                                          root_states = NULL,
+                                         layout = NULL, 
                                          color_by="State", 
                                          show_tree=TRUE, 
                                          show_backbone=TRUE, 
@@ -2264,12 +2267,25 @@ plot_complex_cell_trajectory <- function(cds,
   
   # closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   # root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),]
-  tree_coords <- layout_as_tree(dp_mst, root=root_cell)
-  # tree_coords <- layout_with_fr(dp_mst) # , root=root_cell
+  if(is.function(layout)) {
+    tryCatch({
+      layout_coord <- layout(dp_mst, ...)
+    }, warning = function(w) {
+    }, error = function(e) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }, finally = {
+    })
+    if(! identical(dim(layout_coord), as.integer(c(igraph::vcount(dp_mst), 2))) ) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }
+  } else {
+    layout_coord <- layout_as_tree(dp_mst, root=root_cell)
+  }
+  # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
   
   ### scale the path length 
-  tree_coords_ori <- tree_coords 
-  row.names(tree_coords) <- V(dp_mst)$name
+  layout_coord_ori <- layout_coord 
+  row.names(layout_coord) <- V(dp_mst)$name
   
   branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
   terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
@@ -2282,21 +2298,21 @@ plot_complex_cell_trajectory <- function(cds,
     curr_vertex <- setdiff(curr_vertex, modified_vec)
 
     if(order_i == order_path_len[1]) {
-      ini_val <- max(tree_coords[curr_vertex, 2])
+      ini_val <- max(layout_coord[curr_vertex, 2])
     } else {
       nearest_modified_val <- intersect(modified_vec, neighborhood(dp_mst, order = 1, curr_vertex[1], mode = 'out')[[1]]$name)
-      ini_val <- tree_coords[nearest_modified_val, 2]
+      ini_val <- layout_coord[nearest_modified_val, 2]
       step_size <- 10 / (length(curr_vertex) - 1)
-      tree_coords[curr_vertex[1], 2] <- ini_val - 1
-      tree_coords[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
+      layout_coord[curr_vertex[1], 2] <- ini_val - 1
+      layout_coord[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
     }
 
     modified_vec <- c(modified_vec, curr_vertex)
   }
   
-  row.names(tree_coords) <- NULL
+  row.names(layout_coord) <- NULL
   #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
-  ica_space_df <- data.frame(tree_coords)
+  ica_space_df <- data.frame(layout_coord)
   row.names(ica_space_df) <- colnames(reduced_dim_coords)
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
@@ -2322,10 +2338,10 @@ plot_complex_cell_trajectory <- function(cds,
   #data_df <- data.frame(t(S_matrix[c(x,y),]))
   
   if(cds@dim_reduce_type == "ICA"){
-    S_matrix <- tree_coords[,] #colnames(cds)
+    S_matrix <- layout_coord[,] #colnames(cds)
     
   } else if(cds@dim_reduce_type %in% c("DDRTree", "SimplePPT", "SGL-tree")){
-    S_matrix <- tree_coords[closest_vertex,]
+    S_matrix <- layout_coord[closest_vertex,]
     closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   }
   
