@@ -539,7 +539,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
     }else{
       cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"))
       disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-      #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
+      #disp_table <- data.frame(rowname = row.names(type_res), CellType = type_res)
     }
 
     #message("fitting disersion curves")

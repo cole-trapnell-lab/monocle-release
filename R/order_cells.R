@@ -1237,9 +1237,15 @@ normalize_expr_data <- function(cds,
         FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
 
       if(is.null(pseudo_expr))
-        pseudo_expr <- 1 
-      FM <- FM + pseudo_expr
-      FM <- log2(FM)
+        pseudo_expr <- 1
+      if (pseudo_expr != 1){
+        FM <- FM + pseudo_expr
+        FM <- log2(FM)
+      }else{
+        FM@x = log2(FM@x + 1)
+      }
+      
+
     }else if (norm_method == "none"){
       # If we are using log, normalize by size factor before log-transforming
       FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
@@ -1356,9 +1362,20 @@ reduceDimension <- function(cds,
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
 
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
-  xm <- Matrix::rowMeans(FM)
-  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
-  FM <- FM[xsd > 0,]
+  #xm <- Matrix::rowMeans(FM)
+  #xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
+  #FM <- FM[xsd > 0,]
+  
+  if (isSparseMatrix(exprs(cds))){
+    f_expression_mean <- as(Matrix::rowMeans(FM), "sparseVector")
+  }else{
+    f_expression_mean <- Matrix::rowMeans(FM)
+  }
+  
+  
+  # For NB: Var(Y)=mu*(1+mu/k)
+  f_expression_var <- Matrix::rowMeans((FM - f_expression_mean)^2)
+  FM <- FM[f_expression_var > 0,]
 
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose)
