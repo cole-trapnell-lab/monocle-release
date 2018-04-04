@@ -5,5 +5,5 @@
 \title{Classify cells using glmnet}
 \usage{
 classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
-  cores = 1)
+  max_training_samples = 10000, cores = 1)
 }

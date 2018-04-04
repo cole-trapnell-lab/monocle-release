@@ -5,3 +5,11 @@ jaccard_coeff <- function(R_idx, R_weight) {
     .Call('_monocle_jaccard_coeff', PACKAGE = 'monocle', R_idx, R_weight)
 }
 
+timesTwo <- function(x) {
+    .Call('_monocle_timesTwo', PACKAGE = 'monocle', x)
+}
+
+select_landmarks <- function(R_data, R_indices, R_indptr, R_n, R_dim, R_count) {
+    .Call('_monocle_select_landmarks', PACKAGE = 'monocle', R_data, R_indices, R_indptr, R_n, R_dim, R_count)
+}
+

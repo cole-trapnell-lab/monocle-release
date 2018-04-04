@@ -96,7 +96,7 @@ clusterCells <- function(cds,
                          rank_prob_ratio = 2, 
                          min_observations=8,
                          clustering_genes=NULL,
-                         k = 50, 
+                         k = 20, 
                          louvain_iter = 1, 
                          weight = FALSE,
                          method = c('densityPeak', 'louvain', 'DDRTree'),
@@ -246,86 +246,17 @@ clusterCells <- function(cds,
   }  else if(method == 'louvain'){
     data <- t(reducedDimA(cds))
 
-    if(is.data.frame(data))
-      data <- as.matrix(data)
-    
-    if(!is.matrix(data))
-      stop("Wrong input data, should be a data frame of matrix!")
-    
-    if(k<1){
-      stop("k must be a positive integer!")
-    }else if (k > nrow(data)-2){
-      stop("k must be smaller than the total number of points!")
+    if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
+      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, verbose)
+    } else {
+      louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
     }
-    
-    if(verbose) {
-      message("Run phenograph starts:","\n", 
-              "  -Input data of ", nrow(data)," rows and ", ncol(data), " columns","\n",
-              "  -k is set to ", k)
-    }
-    
-    if(verbose) {
-      cat("  Finding nearest neighbors...")
-    }
-    t1 <- system.time(neighborMatrix <- nn2(data, data, k + 1, searchtype = "standard")[[1]][,-1])
-    if(verbose) {
-      cat("DONE ~",t1[3],"s\n", " Compute jaccard coefficient between nearest-neighbor sets...")
-    }
-    
-    t2 <- system.time(links <- jaccard_coeff(neighborMatrix, weight))
-    
-    if(verbose) {
-      cat("DONE ~",t2[3],"s\n", " Build undirected graph from the weighted links...")
-    }
-    
-    links <- links[links[,1]>0, ]
-    relations <- as.data.frame(links)
-    colnames(relations)<- c("from","to","weight")
-    t3 <- system.time(g <- graph.data.frame(relations, directed=FALSE))
-    
-    # Other community detection algorithms: 
-    #    cluster_walktrap, cluster_spinglass, 
-    #    cluster_leading_eigen, cluster_edge_betweenness, 
-    #    cluster_fast_greedy, cluster_label_prop  
-    if(verbose) {
-      cat("DONE ~",t3[3],"s\n", " Run louvain clustering on the graph ...")
-    }
-    
-    t_start <- Sys.time() 
-    Qp <- -1 # highest modularity score 
-    optim_res <- NULL 
-    
-    for(iter in 1:louvain_iter) {
-      Q <- cluster_louvain(g)
-      
-      if(verbose) {
-        cat("Running louvain iteration ", iter, "...")
-      }
-      
-      if(is.null(optim_res)) {
-        Qp <- max(Q$modularity)
-        optim_res <- Q
-        
-      } else {
-        Qt <- max(Q$modularity)
-        if(Qt > Qp){ #use the highest values for clustering 
-          optim_res <- Q
-          Qp <- Qt
-        }
-      }
-    }
-    
-    t_end <- Sys.time()
-    
-    if(verbose) {
-      message("Run phenograph DONE, totally takes ", t_end - t_start, " s.")
-      cat("  Return a community class\n  -Modularity value:", modularity(optim_res),"\n")
-      cat("  -Number of clusters:", length(unique(membership(optim_res))))
-    }
-    
-    pData(cds)$Cluster <- factor(membership(optim_res)) 
 
-    cds@auxClusteringData[["louvian"]] <- list(g = g, community = optim_res)
+    cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, data, verbose)
+
+    pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
+
+    cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res, cluster_graph_res = cluster_graph_res)
 
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
@@ -385,3 +316,263 @@ clusterCells <- function(cds,
 #'   
 #'   return(list(new_cds = cds, ordering_genes = ordering_genes))
 #' }
+
+#' function to run louvain clustering algorithm 
+#'
+#' @param data low dimensional space used to perform graph clustering 
+#' @param pd the dataframe of the phenotype from the cell dataset (pData(cds))
+#' @param k number of nearest neighbors used for Louvain clustering 
+#' @param weight whether or not to calculate the weight for each edge in the kNN graph 
+#' @param louvain_iter the number of iteraction for louvain clustering 
+#' @param verbose Whether to emit verbose output during dimensionality reduction
+#' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 
+#' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
+#' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
+#' 
+louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, verbose = F) {
+  # k <- 20
+  # verbose = T
+  # library(RANN)
+  # library(igraph)
+  cell_names <- row.names(pd)
+  if(cell_names != row.names(pd))
+    stop("phenotype and row name from the data doesn't match")
+
+  if (is.data.frame(data))
+    data <- as.matrix(data)
+  if (!is.matrix(data))
+    stop("Wrong input data, should be a data frame of matrix!")
+  if (k < 1) {
+    stop("k must be a positive integer!")
+  } else if (k > nrow(data) - 2) {
+    stop("RANN counts the point itself, k must be smaller than\nthe total number of points - 1 (all other points) - 1 (itself)!")
+  }
+  if (verbose) {
+    message("Run kNN based graph clustering starts:", "\n", "  -Input data of ",
+            nrow(data), " rows and ", ncol(data), " columns",
+            "\n", "  -k is set to ", k)
+  }
+  if (verbose) {
+    cat("  Finding nearest neighbors...")
+  }
+  t1 <- system.time(neighborMatrix <- RANN::nn2(data, data, k +
+                                            1, searchtype = "standard")[[1]][, -1])
+  if (verbose) {
+    cat("DONE ~", t1[3], "s\n", " Compute jaccard coefficient between nearest-neighbor sets ...")
+  }
+  t2 <- system.time(links <- monocle:::jaccard_coeff(neighborMatrix,
+                                                     weight))
+  if (verbose) {
+    cat("DONE ~", t2[3], "s\n", " Build undirected graph from the weighted links ...")
+  }
+  links <- links[links[, 1] > 0, ]
+  relations <- as.data.frame(links)
+  colnames(relations) <- c("from", "to", "weight")
+
+  relations$from <- cell_names[relations$from]
+  relations$to <- cell_names[relations$to]
+  t3 <- system.time(g <- igraph::graph.data.frame(relations, directed = FALSE))
+  if (verbose) {
+    cat("DONE ~", t3[3], "s\n", " Run louvain clustering on the graph ...")
+  }
+  t_start <- Sys.time()
+  Qp <- -1
+  optim_res <- NULL
+  for (iter in 1:louvain_iter) {
+    Q <- igraph::cluster_louvain(g)
+    if (verbose) {
+      cat("Running louvain iteration ", iter, "...")
+    }
+    if (is.null(optim_res)) {
+      Qp <- max(Q$modularity)
+      optim_res <- Q
+    }
+    else {
+      Qt <- max(Q$modularity)
+      if (Qt > Qp) {
+        optim_res <- Q
+        Qp <- Qt
+      }
+    }
+  }
+  t_end <- Sys.time()
+  if (verbose) {
+    message("\nRun kNN based graph clustering DONE, totally takes ", t_end -
+              t_start, " s.")
+    cat("  Return a community class\n  -Modularity value:",
+        modularity(optim_res), "\n")
+    cat("  -Number of clusters:", length(unique(igraph::membership(optim_res))), "\n")
+  }
+
+  if(igraph::vcount(g) < 3000) {
+    coord <- igraph::layout_components(g) 
+    coord <- as.data.frame(coord)
+    colnames(coord) <- c('x', 'y')
+    row.names(coord) <- row.names(pd)
+    coord <- cbind(coord, pd)
+    
+    edge_links <- cbind(coord[relations$from, 1:2], coord[relations$to, 1:2])
+    edge_links <- as.data.frame(edge_links)
+    colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+    edge_links$weight <- relations[, 3]
+  } else {
+    coord <- NULL
+    edge_links <- NULL
+  }
+  
+  V(g)$names <- as.character(V(g))
+  return(list(g = g, coord = coord, edge_links = edge_links, optim_res = optim_res))
+}
+
+
+# Function to retrieve a graph of cell clusters 
+cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
+  # V(pc_g)$name <- as.character(as.integer(V(pc_g)))
+  # V(g)$name <- as.character(as.integer(V(g)))
+  
+  ########################################################################################################################################################################
+  # identify edges which pass through two clusters 
+  # remove edges pass through two clusters that has low overlapping 
+  ########################################################################################################################################################################
+  # pc_g <- minSpanningTree(cds)
+  # g <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g
+  # optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$optim_res
+  cell_membership <- igraph::membership(optim_res)
+  cell_names <- names(cell_membership)
+  n_cluster <- length(unique(cell_membership))
+
+  cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+  overlapping_threshold <- 1e-5
+    
+  # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
+  # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
+
+  for(i in sort(unique(as.vector(cell_membership)))) {
+    if(verbose) {
+      message('current cluster is ', i)
+    }
+    curr_cluster_cell <- cell_names[which(cell_membership == i)]
+    
+    neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
+    # identify connected cells outside a Louvain group
+    conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
+      cell_outside <- setdiff(neigh_list[[x]]$name, curr_cluster_cell)
+      if(length(cell_outside)) {
+        data.frame(current_cell = curr_cluster_cell[x], 
+                   cell_outside = cell_outside,
+                   current_cluster =  cell_membership[curr_cluster_cell[x]],
+                   target_cluster = cell_membership[cell_outside])
+      }
+      } ))
+    
+    # remove the insignificant inter-cluster edges from the kNN graph: 
+    if(is.null(conn_cluster_res) == FALSE) {
+      for(j in 1:nrow(conn_cluster_res)) {
+        overlapping_clusters <- cell_names[which(cell_membership == conn_cluster_res[j, 'target_cluster'])]
+        all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
+        only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
+        only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
+        
+        overlap_weight <- (all_ij - only_i - only_j) / all_ij
+        cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
+        if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
+            if(verbose) {
+              message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+                      'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+                      'with weight ', overlap_weight)
+            }
+            pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+        }
+      }
+    }
+  }
+
+  ########################################################################################################################################################################
+  # identify the all leaf cell 
+  # identify the nearest leaf cells 
+  # connect leaf cells based on overlapping between kNN 
+  ########################################################################################################################################################################
+  # add some statistics below: 
+  # data <- t(reducedDimK(cds))
+  cluster_inner_edges <- rep(0, n_cluster)
+  cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
+  cnt_i <- 1
+  for(i in unique(cell_membership)) {
+    cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, cell_names[which(cell_membership == i)])) # most are zero
+    cnt_j <- 1
+    for(j in setdiff(unique(cell_membership), i)) {
+      cell_i <- cell_names[which(cell_membership %in% c(i))]
+      cell_j <- cell_names[which(cell_membership %in% c(j))]
+      
+      all_ij <- igraph::ecount(igraph::subgraph(g, c(cell_i, cell_j))) # edges in all cells from two landmark groups
+      only_i <- igraph::ecount(igraph::subgraph(g, cell_i)) # edges from the first landmark groups
+      only_j <- igraph::ecount(igraph::subgraph(g, cell_j)) # edges from the second landmark groups
+      cluster_mat[i, j] <- (all_ij - only_i - only_j) / all_ij # edges overlapping between landmark groups
+      if(cluster_mat[i, j] > 0 & cluster_mat_exist[i, j] == 0) {
+        tmp <- as.matrix(dist(data[c(cell_i, cell_j), ]))
+        dist_mat <- tmp[1:length(cell_i), (length(cell_i) + 1):(length(cell_j) + length(cell_i))] # connection between cells from one group and that to another group 
+        ind_vec <- which(dist_mat == min(dist_mat), arr.ind = T)
+        pc_g %>% igraph::add_edges(c(c(cell_i, cell_j)[ind_vec[1]], c(cell_i, cell_j)[ind_vec[2]]))
+      }
+      cnt_j <- cnt_j + 1
+    }
+    cnt_i <- cnt_i + 1
+  }
+
+  ########################################################################################################################################################################
+  # downstream pseudotime and branch analysis 
+  ########################################################################################################################################################################
+  # identify branch
+
+  # mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat_exist <- cluster_mat_exist
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat <- cluster_mat
+  cluster_mat[is.na(cluster_mat)] <- 0
+  cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
+  Qp <- -1
+  optim_res <- NULL
+  
+  louvain_iter <- 1
+  for (iter in 1:louvain_iter) {
+    Q <- igraph::cluster_louvain(cluster_g)
+    
+    if (is.null(optim_res)) {
+      Qp <- max(Q$modularity)
+      optim_res <- Q
+    }
+    else {
+      Qt <- max(Q$modularity)
+      if (Qt > Qp) {
+        optim_res <- Q
+        Qp <- Qt
+      }
+    }
+  }
+  
+  if(verbose) {
+    message('clusters in the cluster graph is ', length(unique(igraph::membership(optim_res))))
+  }
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph <- list(g = cluster_g, optim_res = optim_res)
+  if(length(igraph::E(cluster_g)) > 0) {
+    coord <- igraph::layout_components(cluster_g) 
+    coord <- as.data.frame(coord)
+    colnames(coord) <- c('x', 'y')
+    row.names(coord) <- 1:nrow(coord)
+    coord$Cluster <- 1:nrow(coord)
+    coord$louvain_cluster <- as.character(igraph::membership(optim_res))
+  
+    edge <- get.data.frame(cluster_g)
+    edge <- as.data.frame(edge)
+    colnames(edge) <- c('start', 'end', 'weight')
+    edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+    edge_links <- as.data.frame(edge_links)
+    colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+    edge_links$weight <- edge[, 3]
+  } else {
+    coord <- NULL
+    edge_links <- NULL
+  }
+
+  list(cluster_mat_exist = cluster_mat_exist, cluster_mat = cluster_mat, cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
+
+}

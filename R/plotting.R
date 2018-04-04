@@ -82,7 +82,7 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -110,7 +110,8 @@ plot_cell_trajectory <- function(cds,
   edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
   
-  S_matrix <- reducedDimS(cds)
+  S_matrix <- 
+    reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[c(x,y),]))
   data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
@@ -1932,7 +1933,8 @@ plot_ordering_genes <- function(cds){
 #' \dontrun{
 #' library(HSMMSingleCell)
 #' HSMM <- load_HSMM()
-#' HSMM <- reduceD
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'tSNE')
+#' HSMM <- clusterCells(HSMM)
 #' plot_cell_clusters(HSMM)
 #' plot_cell_clusters(HSMM, color_by="Pseudotime")
 #' plot_cell_clusters(HSMM, markers="MYH3")
@@ -2194,6 +2196,8 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param root_states the state used to set as the root of the graph
+#' @param layout a function to re-layout the principal tree into two dimension. Please 
+#' ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
@@ -2223,6 +2227,7 @@ plot_complex_cell_trajectory <- function(cds,
                                          x=1, 
                                          y=2, 
                                          root_states = NULL,
+                                         layout = NULL, 
                                          color_by="State", 
                                          show_tree=TRUE, 
                                          show_backbone=TRUE, 
@@ -2233,6 +2238,8 @@ plot_complex_cell_trajectory <- function(cds,
                                          cell_link_size=0.75,
                                          cell_name_size=2,
                                          show_branch_points=TRUE, 
+                                         jitter_width = NULL, 
+                                         jitter_height = NULL,
                                          ...){
   gene_short_name <- NA
   sample_name <- NA
@@ -2292,36 +2299,52 @@ plot_complex_cell_trajectory <- function(cds,
   
   # closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   # root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),]
-  tree_coords <- layout_as_tree(dp_mst, root=root_cell)
-  row.names(tree_coords) <- V(dp_mst)$name
+  if(is.function(layout)) {
+    tryCatch({
+      layout_coord <- layout(dp_mst, ...)
+    }, warning = function(w) {
+    }, error = function(e) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }, finally = {
+    })
+    if(! identical(dim(layout_coord), as.integer(c(igraph::vcount(dp_mst), 2))) ) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }
+  } else {
+    layout_coord <- layout_as_tree(dp_mst, root=root_cell)
+  }
+  # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
+ 
+  ### scale the path length 
+  layout_coord_ori <- layout_coord 
+  row.names(layout_coord) <- V(dp_mst)$name
   
   branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
   terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
   from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
   order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
-  
+
   modified_vec <- c()
   for(order_i in order_path_len) {
     curr_vertex <- from_root_to_branch_points[[order_i]]$name
     curr_vertex <- setdiff(curr_vertex, modified_vec)
-    
+
     if(order_i == order_path_len[1]) {
-      ini_val <- max(tree_coords[curr_vertex, 2])
+      ini_val <- max(layout_coord[curr_vertex, 2])
     } else {
       nearest_modified_val <- intersect(modified_vec, neighborhood(dp_mst, order = 1, curr_vertex[1], mode = 'out')[[1]]$name)
-      ini_val <- tree_coords[nearest_modified_val, 2]
+      ini_val <- layout_coord[nearest_modified_val, 2]
       step_size <- 10 / (length(curr_vertex) - 1)
-      tree_coords[curr_vertex[1], 2] <- ini_val - 1
-      tree_coords[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
+      layout_coord[curr_vertex[1], 2] <- ini_val - 1
+      layout_coord[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
     }
-    
+
     modified_vec <- c(modified_vec, curr_vertex)
   }
   
-  row.names(tree_coords) <- NULL
-  
+  row.names(layout_coord) <- NULL
   #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
-  ica_space_df <- data.frame(tree_coords)
+  ica_space_df <- data.frame(layout_coord)
   row.names(ica_space_df) <- colnames(reduced_dim_coords)
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
   
@@ -2347,10 +2370,10 @@ plot_complex_cell_trajectory <- function(cds,
   #data_df <- data.frame(t(S_matrix[c(x,y),]))
   
   if(cds@dim_reduce_type == "ICA"){
-    S_matrix <- tree_coords[,] #colnames(cds)
+    S_matrix <- layout_coord[,] #colnames(cds)
     
   } else if(cds@dim_reduce_type %in% c("DDRTree", "SimplePPT", "SGL-tree")){
-    S_matrix <- tree_coords[closest_vertex,]
+    S_matrix <- layout_coord[closest_vertex,]
     closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   }
   
@@ -2387,17 +2410,17 @@ plot_complex_cell_trajectory <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
                              scale_color_viridis(name = paste0("log10(", color_by, ")"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1) 
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) 
     }
   }else {
     if(class(data_df[, color_by]) == 'numeric') {
-      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=1) + 
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
         scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
     } else {
-      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=1)
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width)
     }
   }
 
@@ -2900,4 +2923,125 @@ plot_multiple_branches_pseudotime <- function(cds,
     q + expand_limits(y = min_expr)
 }
 
+
+#' Plots force directed layout of cells .
+#'
+#' @param cds CellDataSet for the experiment
+#' @param layout the layout function used to generate the coordinates of cells
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_link_size the maximal width of the link of edges (width of other edges are scaled correspondingly)
+#' @param ... additional arguments passed into the scale_color_viridis function
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @export
+#' @examples
+#' \dontrun{
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+#' plot_cell_fdl(HSMM)
+#' plot_cell_fdl(HSMM, color_by="Pseudotime")
+#' plot_cell_fdl(HSMM, markers="MYH3")
+#' }
+plot_cell_fdl <- function(cds, 
+                          layout = NULL, 
+                          color_by = 'Pseudotime',
+                          markers = NULL,
+                          cell_size = 0.5,
+                          cell_link_size = 1) {
+  if(is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res)) {
+    stop('make sure you first run UMAP, SSE or UMAPSSE dimension reduction before layout with force directed layout')
+  }
   
+  if(is.null(layout)) {
+    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
+
+    if(is.null(coord)) {
+      stop("coordinates for force direct layout doesn't exist. The number of cells in your cds is more than 3K?")
+    }
+  } 
+  if(is.function(layout)) {
+    coord <- layout(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g)
+    if(nrow(coord) != nrow(cds) | ncol(coord) != 2) {
+      stop("your layout function don't return the correct dimension: row is the number of cells while the column is two")
+    }
+  }
+
+  coord$sample_name <- row.names(coord)
+  edge_links <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$edge_links
+
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+
+  g <- ggplot(data = edge_links) + 
+    geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(cell_link_size * weight / max(weight))), color = 'grey') + 
+    xlab('FDL 1') + ylab('FDL 2') 
+
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+      coord <- merge(coord, markers_exprs, by.x="sample_name", by.y="cell_id")
+      g <- g + geom_point(aes_string("x", "y", color = color_by), data = coord, size = I(cell_size)) 
+    } else {
+      g <- g + geom_point(aes_string("x", "y", color = color_by), data = coord, size = I(cell_size)) 
+    }
+
+    g + monocle_theme_opts()
+}
+
+#' Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells
+#'
+#' @param cds CellDataSet for the experiment
+#' @param cluster_size The size of the point for each cluster
+#' @param cluster_link_size the maximal width of the link of edges (width of other edges are scaled correspondingly)
+#' @param cluster_name_size the size of cluster name labels
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @export
+#' @examples
+#' \dontrun{
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
+#' HSMM <- clusterCells(HSMM, method = 'louvain')
+#' plot_cluster_graph(HSMM)
+#' }
+#' 
+plot_cluster_graph <- function(cds,
+                               cluster_link_size = 1,
+                               cluster_size = 2,
+                               cluster_name_size = 5) {
+  if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE")) & !("louvian" %in% names(cds@auxClusteringData))) {
+    stop('Please run UMAP, UMAPSSE or SSE and louvain clustering first before using this function ...')
+  }
+  
+  coord <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$cluster_coord 
+  edge_links <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$edge_links 
+  
+  if(is.null(coord)) {
+    stop("coordinates doesn't exist, all clusters are separate?")
+  }
+
+  ggplot(data = edge_links) + 
+        geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(cluster_link_size * weight / max(weight))), color = 'grey') + 
+        xlab('FDL 1') + ylab('FDL 2') + 
+        geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = I(cluster_size)) + 
+        monocle_theme_opts() + 
+        geom_text(aes_string(x="x", y="y", label="Cluster"), 
+              size=I(cluster_name_size), color="black", na.rm=TRUE, data=coord)
+  
+}

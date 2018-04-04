@@ -17,9 +17,38 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// timesTwo
+NumericVector timesTwo(NumericVector x);
+RcppExport SEXP _monocle_timesTwo(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// select_landmarks
+Rcpp::List select_landmarks(SEXP R_data, SEXP R_indices, SEXP R_indptr, SEXP R_n, SEXP R_dim, SEXP R_count);
+RcppExport SEXP _monocle_select_landmarks(SEXP R_dataSEXP, SEXP R_indicesSEXP, SEXP R_indptrSEXP, SEXP R_nSEXP, SEXP R_dimSEXP, SEXP R_countSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type R_data(R_dataSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_indices(R_indicesSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_indptr(R_indptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_n(R_nSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_dim(R_dimSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_count(R_countSEXP);
+    rcpp_result_gen = Rcpp::wrap(select_landmarks(R_data, R_indices, R_indptr, R_n, R_dim, R_count));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_monocle_jaccard_coeff", (DL_FUNC) &_monocle_jaccard_coeff, 2},
+    {"_monocle_timesTwo", (DL_FUNC) &_monocle_timesTwo, 1},
+    {"_monocle_select_landmarks", (DL_FUNC) &_monocle_select_landmarks, 6},
     {NULL, NULL, 0}
 };
 

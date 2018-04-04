@@ -2,6 +2,46 @@ run_pca <- function(data, ...) {
   res <- prcomp(data, center = F, scale = F)
   res$x
 }
+# function to run umap with cds as input 
+umapM <- function(cds, n_neighbors = 10, n_component = 2, min_dist = 0.1, metric = "euclidean") {
+  x <- t(cds@assayData$exprs)
+  if(length(grep('Matrix', class(x))) == 0){
+    x <- as(as.matrix(x), 'TsparseMatrix')
+  } else {
+    x <- as(x, 'TsparseMatrix')
+  }
+  
+  i <- x@i
+  j <- x@j
+  val <- log(x@x + 1)
+  dim <- x@Dim
+  
+  rPython::python.exec( c( "def umap(i, j, val, dim, n, n_c,mdist, metric):",
+                           "\timport umap" ,
+                           "\timport numpy",
+                           "\tfrom scipy.sparse import csc_matrix",
+                           "\tdata = csc_matrix((val, (i, j)), shape = dim)",
+                           "\tembedding = umap.UMAP(n_neighbors = n, n_components = n_c, min_dist = mdist, metric = metric).fit_transform(data)",
+                           "\tres = embedding.tolist()",
+                           "\treturn res"))
+  
+  res <- rPython::python.call( "umap", i, j, val, dim, n_neighbors, n_component, min_dist, metric, simplify = F)
+  do.call("rbind",res)
+}
+
+umap <- function(x,n_neighbors=10,n_component=2,min_dist=0.1,metric="euclidean"){
+  x <- as.matrix(x)
+  colnames(x) <- NULL
+  rPython::python.exec( c( "def umap(data,n,n_c,mdist,metric):",
+                  "\timport umap" ,
+                  "\timport numpy",
+                  "\tembedding = umap.UMAP(n_neighbors=n,n_components=n_c,min_dist=mdist,metric=metric).fit_transform(data)",
+                  "\tres = embedding.tolist()",
+                  "\treturn res"))
+  
+  res <- rPython::python.call( "umap", x,n_neighbors,n_component,min_dist,metric)
+  do.call("rbind",res)
+}
 
 # run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
 #   data <- t(data) 
@@ -736,7 +776,7 @@ extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix,
     if (length(children) == 1){
       ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
     }else{
-      for (child in children)	{
+      for (child in children) {
         curr_state <<- curr_state + 1
         ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
       }
@@ -959,7 +999,7 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency minimum.spanning.tree V
 select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
-  if (is.null(root_state) == FALSE) {
+  if (is.null(root_state) == FALSE & vcount(minSpanningTree(cds)) == ncol(cds)) {
     if (is.null(pData(cds)$State)){
       stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
     }
@@ -1008,15 +1048,25 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
       root_cell = V(minSpanningTree(cds))[graph_point_for_root_cell]$name
     }
 
-  }else{
-    if (is.null(minSpanningTree(cds))){
-      stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
-    }
-    diameter <- get.diameter(minSpanningTree(cds))
-    if (is.null(reverse) == FALSE && reverse == TRUE){
-      root_cell = names(diameter[length(diameter)])
+  }else{ 
+    if(is.null(root_state)) {
+      if (is.null(minSpanningTree(cds))){
+        stop("Error: no spanning tree found for CellDataSet object. Please call reduceDimension before calling orderCells()")
+      }
+      diameter <- get.diameter(minSpanningTree(cds))
+      if (is.null(reverse) == FALSE && reverse == TRUE){
+        root_cell = names(diameter[length(diameter)])
+      } else {
+        root_cell = names(diameter[1])
+      }
     } else {
-      root_cell = names(diameter[1])
+      root_cell_candidates <- which(pData(cds)$State == root_state)
+      leaf_cells <- which(degree(minSpanningTree(cds)) == 1)
+      R <- cds@auxOrderingData$DDRTree$R
+      edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
+      
+      root_cell <- V(minSpanningTree(cds))$name[intersect(edge[root_cell_candidates, 'end'], leaf_cells)]
+
     }
   }
   return(root_cell)
@@ -1077,10 +1127,14 @@ orderCells <- function(cds,
     stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
   }
 
+  if(igraph::vcount(minSpanningTree(cds)) > 50000) {
+    stop("orderCells doesn't support more than 50k centroids (cells)")
+  }
+
   root_cell <- select_root_cell(cds, root_state, reverse)
 
-  cds@auxOrderingData <- new.env( hash=TRUE )
   if (cds@dim_reduce_type == "ICA"){
+    cds@auxOrderingData <- new.env( hash=TRUE )
     if (is.null(num_paths)){
       num_paths = 1
     }
@@ -1120,46 +1174,59 @@ orderCells <- function(cds,
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
-    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
+    if(ncol(cds) > 1000) {
+      R <- cds@auxOrderingData$DDRTree$R
+      edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
-    K_old <- reducedDimK(cds)
-    old_dp <- cellPairwiseDistances(cds)
-    old_mst <- minSpanningTree(cds)
-    old_A <- reducedDimA(cds)
-    old_W <- reducedDimW(cds)
+      pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
+      if(is.null(root_state) == TRUE) {
+        pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
+      }
+      
+      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+    } else {
+      cds@auxOrderingData <- new.env( hash=TRUE )
+      pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
 
-    cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
-    minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+      K_old <- reducedDimK(cds)
+      old_dp <- cellPairwiseDistances(cds)
+      old_mst <- minSpanningTree(cds)
+      old_A <- reducedDimA(cds)
+      old_W <- reducedDimW(cds)
 
-    root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
-    cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
-    if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
-      cells_mapped_to_graph_root <- root_cell_idx
+      cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
+      minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+
+      root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
+      cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
+      if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
+        cells_mapped_to_graph_root <- root_cell_idx
+      }
+
+      cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
+
+      tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+      root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
+      if(is.na(root_cell)) {
+        root_cell <- select_root_cell(cds, root_state, reverse)
+      }
+
+      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+
+      cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
+
+      pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
+      if (is.null(root_state) == TRUE) {
+        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+        pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
+      }
+
+      reducedDimK(cds) <-  K_old
+      cellPairwiseDistances(cds) <- old_dp
+      minSpanningTree(cds) <- old_mst
+      reducedDimA(cds) <- old_A
+      reducedDimW(cds) <- old_W
     }
-
-    cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
-
-    tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
-    root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
-    if(is.na(root_cell)) {
-      root_cell <- select_root_cell(cds, root_state, reverse)
-    }
-
-    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
-
-    cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
-
-    pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
-    if (is.null(root_state) == TRUE) {
-      closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-      pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
-    }
-
-    reducedDimK(cds) <-  K_old
-    cellPairwiseDistances(cds) <- old_dp
-    minSpanningTree(cds) <- old_mst
-    reducedDimA(cds) <- old_A
-    reducedDimW(cds) <- old_W
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type == "SimplePPT"){
@@ -1171,6 +1238,15 @@ orderCells <- function(cds,
     pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
+
+    ########################################################################################################################################################################
+    # downstream pseudotime and branch analysis 
+    ########################################################################################################################################################################
+    pc_g <- minSpanningTree(cds)
+    pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:igraph::vcount(pc_g))))
+    # identify branch
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   }
 
@@ -1347,7 +1423,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1359,7 +1435,7 @@ reduceDimension <- function(cds,
   extra_arguments <- list(...)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr)
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
 
   #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
   #xm <- Matrix::rowMeans(FM)
@@ -1417,10 +1493,26 @@ reduceDimension <- function(cds,
   }
   else{
     reduction_method <- match.arg(reduction_method)
-    if (reduction_method == "tSNE") {
-    #first perform PCA
-    if (verbose)
+    if(reduction_method == 'PCA') {
+      if (verbose)
         message("Remove noise by PCA ...")
+
+      if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- extra_arguments$num_dim #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
+      
+      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+    }
+    else if (reduction_method == "tSNE") {
+      #first perform PCA
+      if (verbose)
+          message("Remove noise by PCA ...")
 
       # # Calculate the variance across genes without converting to a dense
       # # matrix:
@@ -1443,7 +1535,6 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      FM <- (FM)
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = TRUE, scale. = TRUE)
       irlba_pca_res <- irlba_res$x
@@ -1501,7 +1592,6 @@ reduceDimension <- function(cds,
       pData(cds)$tsne_1 = reducedDimA(cds)[1,]
       pData(cds)$tsne_2 = reducedDimA(cds)[2,]
     }
-
     else if (reduction_method == "ICA") {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
@@ -1531,15 +1621,50 @@ reduceDimension <- function(cds,
       minSpanningTree(cds) <- dp_mst
       cds@dim_reduce_type <- "ICA"
     }
-    else if (reduction_method == "DDRTree") {
+    else if (reduction_method %in% c("DDRTree", "UMAPDDRTree")) {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
       if (verbose)
         message("Learning principal graph with DDRTree")
 
+      # when num_dim is passed or the number of cells is more than 5 k cells and the feature number is large than 50 (implying the feature is not PCA space), do an intial PCA 
+      if("num_dim" %in% names(extra_arguments) | (ncol(FM) > 5000 & nrow(FM) > 50)) { 
+        if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+          num_dim <- extra_arguments$num_dim #variance_explained
+        }
+        else{
+          num_dim <- 50
+        }
+
+        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                  center = TRUE, scale. = TRUE)
+        irlba_pca_res <- t(irlba_res$x)
+        colnames(irlba_pca_res) <- colnames(FM)
+        FM <- irlba_pca_res #[, 1:num_dim]
+      }
+
+      if(reduction_method == "UMAPDDRTree") {
+        umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+                               extra_arguments[names(extra_arguments) %in% 
+                               c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- t(tmp$embedding_); 
+
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                        dimnames = list(colnames(cds), colnames(cds)))
+
+        colnames(umap_res) <- colnames(FM)
+        FM <- umap_res
+        reducedDimA(cds) <- FM
+
+        cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
+      }
+
       # TODO: DDRTree should really work with sparse matrices.
-      if(auto_param_selection & ncol(cds) >= 100){
+      if(auto_param_selection & ncol(cds) >= 1000){
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
         else
@@ -1561,7 +1686,7 @@ reduceDimension <- function(cds,
       reducedDimW(cds) <- ddrtree_res$W
       reducedDimS(cds) <- ddrtree_res$Z
       reducedDimK(cds) <- ddrtree_res$Y
-      cds@auxOrderingData[["DDRTree"]]$objective_vals <- ddrtree_res$objective_vals
+      cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
 
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
@@ -1569,12 +1694,133 @@ reduceDimension <- function(cds,
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
       dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- dp_mst
-      cds@dim_reduce_type <- "DDRTree"
-      cds <- findNearestPointOnMST(cds)
 
-      pData(cds)$DDRTree_1 = reducedDimS(cds)[1,]
-      pData(cds)$DDRTree_2 = reducedDimS(cds)[2,]
-    }else {
+      cds@dim_reduce_type <- "DDRTree"
+
+      if(ncol(cds) < 100) { 
+        cds <- findNearestPointOnMST(cds)
+      } else {
+        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        row.names(tmp) <- colnames(cds)
+        cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
+      }
+    }
+    else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
+      cds@dim_reduce_type <- reduction_method
+      # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      # FM <- FM[!is.na(row.names(FM)), ]
+      
+      if (verbose)
+        message("initial PCA dimension reduction to remove noise")
+           
+      if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        num_dim <- extra_arguments$num_dim #variance_explained
+      }
+      else{
+        num_dim <- 50
+      }
+      
+      irlba_res <- prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
+                                      center = TRUE, scale. = TRUE)
+      irlba_pca_res <- irlba_res$x
+      
+      if(reduction_method %in% c("UMAP", "UMAPSSE")) {
+        if (verbose)
+          message("Running Uniform Manifold Approximation and Projection")
+
+        umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+                                       extra_arguments[names(extra_arguments) %in% 
+                                       c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                        'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- tmp$embedding_; 
+
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                        dimnames = list(colnames(cds), colnames(cds)))
+
+        S <- t(umap_res)
+    
+        if(reduction_method == 'UMAP') {
+          Y <- S
+          W <- t(irlba_pca_res)
+          
+          if(verbose)
+            message("Running louvain clustering algorithm ...")
+          row.names(umap_res) <- colnames(FM)
+          louvain_clustering_args <- c(list(data = umap_res, pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                                       extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+          louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+          
+          minSpanningTree(cds) <- louvain_res$g
+        }
+
+        A <- S
+        colnames(A) <- colnames(FM)
+        reducedDimA(cds) <- A
+        SSE_res <- NULL
+        pg_spanning_tree <- NULL
+      }
+      
+      if(reduction_method %in% c("SSE", "UMAPSSE")) {
+        if (verbose)
+          message("Running Smooth Skeleton Embedding ...")
+
+        if(reduction_method == "SSE") {
+          umap_res <- NULL
+          adj_mat <- NULL
+          data = irlba_pca_res
+          S <- t(irlba_pca_res)
+        } else {
+          data = umap_res
+        }
+
+        # we are gonna ignore the method arugment here 
+        sse_args <- c(list(data=data, dist_mat = adj_mat, embeding_dim=max_components, d = max_components, verbose = verbose),
+                      extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
+        SSE_res <- do.call(SSE, sse_args)
+  
+        # "Y" "K" "W" "U" "V"
+        if(verbose)
+          message("Running louvain clustering algorithm ...")
+        
+        row.names(SSE_res$Y) <- colnames(FM)
+        louvain_clustering_args <- c(list(data = SSE_res$Y, pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                     extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+        
+        if(verbose)
+          message("Running generalized SimplePPT algorithm ...")
+  
+        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree")),
+                      extra_arguments[names(extra_arguments) %in% c("gstruct", "lambda", "gamma", " sigma", "nn", "maxiter")]) # "maxiter", 
+        pg_spanning_tree <- do.call(principal_graph, pg_args)
+     
+        Y <- t(SSE_res$Y)
+        W <- pg_spanning_tree$W
+        W[W == T] <- 1; W[W == F] <- 0
+        gp <- graph_from_adjacency_matrix(W)
+        
+        colnames(Y) <- colnames(FM)
+        reducedDimA(cds) <- Y
+
+        minSpanningTree(cds) <- gp
+      }
+      
+      colnames(S) <- colnames(FM)
+      colnames(Y) <- colnames(FM)
+      colnames(W) <- colnames(FM)
+      reducedDimW(cds) <- as.matrix(W)
+      reducedDimS(cds) <- as.matrix(Y)
+      reducedDimK(cds) <- as.matrix(Y)
+
+      # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
+   
+      pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
+      cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
+        louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
+
+    } else {
       stop("Error: unrecognized dimensionality reduction method")
     }
   }
@@ -1787,7 +2033,7 @@ SubSet_cds <- function(cds, cells){
   if(ncol(reducedDimK(cds)) != ncol(cds))
     stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
 
-  exprs_mat <- as(as.matrix(cds[, cells]), "sparseMatrix")
+  exprs_mat <- as(as.matrix(exprs(cds[, cells])), "sparseMatrix")
   cds_subset <- newCellDataSet(exprs_mat,
                                  phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]),
                                  featureData = new("AnnotatedDataFrame", data = fData(cds)),

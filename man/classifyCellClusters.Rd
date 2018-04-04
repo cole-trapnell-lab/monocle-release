@@ -4,6 +4,6 @@
 \alias{classifyCellClusters}
 \title{Impute cell type classifications using clustering results}
 \usage{
-classifyCellClusters(cds, cth, frequency_thresh = NULL,
-  enrichment_thresh = NULL, ...)
+classifyCellClusters(cds, cth, frequency_thresh = 0.8,
+  grouping_var = "Cluster")
 }
