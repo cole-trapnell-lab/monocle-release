@@ -2312,35 +2312,37 @@ plot_complex_cell_trajectory <- function(cds,
     }
   } else {
     layout_coord <- layout_as_tree(dp_mst, root=root_cell)
+    
+    ### scale the path length 
+    layout_coord_ori <- layout_coord 
+    row.names(layout_coord) <- V(dp_mst)$name
+    
+    branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
+    from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
+    order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
+    
+    modified_vec <- c()
+    for(order_i in order_path_len) {
+      curr_vertex <- from_root_to_branch_points[[order_i]]$name
+      curr_vertex <- setdiff(curr_vertex, modified_vec)
+      
+      if(order_i == order_path_len[1]) {
+        ini_val <- max(layout_coord[curr_vertex, 2])
+      } else {
+        nearest_modified_val <- intersect(modified_vec, neighborhood(dp_mst, order = 1, curr_vertex[1], mode = 'out')[[1]]$name)
+        ini_val <- layout_coord[nearest_modified_val, 2]
+        step_size <- 10 / (length(curr_vertex) - 1)
+        layout_coord[curr_vertex[1], 2] <- ini_val - 1
+        layout_coord[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
+      }
+      
+      modified_vec <- c(modified_vec, curr_vertex)
+    }
   }
   # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
  
-  ### scale the path length 
-  layout_coord_ori <- layout_coord 
-  row.names(layout_coord) <- V(dp_mst)$name
   
-  branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
-  terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
-  from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
-  order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
-
-  modified_vec <- c()
-  for(order_i in order_path_len) {
-    curr_vertex <- from_root_to_branch_points[[order_i]]$name
-    curr_vertex <- setdiff(curr_vertex, modified_vec)
-
-    if(order_i == order_path_len[1]) {
-      ini_val <- max(layout_coord[curr_vertex, 2])
-    } else {
-      nearest_modified_val <- intersect(modified_vec, neighborhood(dp_mst, order = 1, curr_vertex[1], mode = 'out')[[1]]$name)
-      ini_val <- layout_coord[nearest_modified_val, 2]
-      step_size <- 10 / (length(curr_vertex) - 1)
-      layout_coord[curr_vertex[1], 2] <- ini_val - 1
-      layout_coord[curr_vertex[-1], 2] <- ini_val - step_size * (1:(length(curr_vertex) - 1))
-    }
-
-    modified_vec <- c(modified_vec, curr_vertex)
-  }
   
   row.names(layout_coord) <- NULL
   #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))

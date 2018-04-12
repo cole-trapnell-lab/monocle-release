@@ -1435,22 +1435,10 @@ reduceDimension <- function(cds,
   extra_arguments <- list(...)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
+  FM <- DelayedArray(normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr))
 
-  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
-  #xm <- Matrix::rowMeans(FM)
-  #xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
-  #FM <- FM[xsd > 0,]
-  
-  if (isSparseMatrix(exprs(cds))){
-    f_expression_mean <- as(Matrix::rowMeans(FM), "sparseVector")
-  }else{
-    f_expression_mean <- Matrix::rowMeans(FM)
-  }
-  
-  
   # For NB: Var(Y)=mu*(1+mu/k)
-  f_expression_var <- Matrix::rowMeans((FM - f_expression_mean)^2)
+  f_expression_var <- DelayedMatrixStats::rowVars(FM)
   FM <- FM[f_expression_var > 0,]
 
   if (is.null(residualModelFormulaStr) == FALSE) {
@@ -1467,17 +1455,18 @@ reduceDimension <- function(cds,
     X.model_mat <- NULL
   }
 
-  if(scaling){
-    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-    FM <- FM[!is.na(row.names(FM)), ]
-  } else FM <- as.matrix(FM)
-
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
 
   FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {
+    
+    if(scaling){
+      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      FM <- FM[!is.na(row.names(FM)), ]
+    } else FM <- as.matrix(FM)
+    
     reducedDim <- reduction_method(FM, ...)
     colnames(reducedDim) <- colnames(FM)
     reducedDimW(cds) <- as.matrix(reducedDim)
@@ -1505,7 +1494,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                center = TRUE, scale. = TRUE)
+                                center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
     }
@@ -1536,7 +1525,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                center = TRUE, scale. = TRUE)
+                                center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       
       # irlba_res <- irlba(FM,
@@ -1575,7 +1564,7 @@ reduceDimension <- function(cds,
       if (verbose)
           message("Reduce dimension by tSNE ...")
 
-      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
+      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F, check_duplicates=FALSE, ...)
 
       tsne_data <- tsne_res$Y[, 1:max_components]
       row.names(tsne_data) <- colnames(tsne_data)
@@ -1596,6 +1585,12 @@ reduceDimension <- function(cds,
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
+      if(scaling){
+        FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+        FM <- FM[!is.na(row.names(FM)), ]
+      } else FM <- as.matrix(FM)
+      
+      
       if (verbose)
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components,
@@ -1625,8 +1620,6 @@ reduceDimension <- function(cds,
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
-      if (verbose)
-        message("Learning principal graph with DDRTree")
 
       # when num_dim is passed or the number of cells is more than 5 k cells and the feature number is large than 50 (implying the feature is not PCA space), do an intial PCA 
       if("num_dim" %in% names(extra_arguments) | (ncol(FM) > 5000 & nrow(FM) > 50)) { 
@@ -1637,11 +1630,19 @@ reduceDimension <- function(cds,
           num_dim <- 50
         }
 
+        if (verbose)
+          message("Remove noise by PCA ...")
+        
         irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                  center = TRUE, scale. = TRUE)
+                                  center = scaling, scale. = scaling)
         irlba_pca_res <- t(irlba_res$x)
         colnames(irlba_pca_res) <- colnames(FM)
         FM <- irlba_pca_res #[, 1:num_dim]
+      }else{
+        if(scaling){
+          FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+          FM <- FM[!is.na(row.names(FM)), ]
+        } else FM <- as.matrix(FM)
       }
 
       if(reduction_method == "UMAPDDRTree") {
@@ -1663,6 +1664,16 @@ reduceDimension <- function(cds,
         cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
       }
 
+
+      if (verbose)
+        message("Learning principal graph with DDRTree")
+      
+      if(reduction_method == "UMAPDDRTree"){
+        no_reduction=TRUE
+      }else{
+        no_reduction=FALSE
+      }
+      
       # TODO: DDRTree should really work with sparse matrices.
       if(auto_param_selection & ncol(cds) >= 1000){
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
@@ -1670,12 +1681,13 @@ reduceDimension <- function(cds,
         else
           ncenter <- cal_ncenter(ncol(FM))
         #add other parameters...
-        ddr_args <- c(list(X=FM, dimensions=max_components, ncenter=ncenter, verbose = verbose),
+        
+        ddr_args <- c(list(X=FM, dimensions=max_components, ncenter=ncenter, no_reduction=no_reduction, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
         #browser()
         ddrtree_res <- do.call(DDRTree, ddr_args)
       } else{
-        ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, ...)
+        ddrtree_res <- DDRTree(FM, max_components, no_reduction=no_reduction, verbose = verbose, ...)
       }
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
@@ -1721,7 +1733,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
-                                      center = TRUE, scale. = TRUE)
+                                      center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       
       if(reduction_method %in% c("UMAP", "UMAPSSE")) {
