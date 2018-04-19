@@ -113,7 +113,7 @@ plot_cell_trajectory <- function(cds,
   S_matrix <- 
     reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[c(x,y),]))
-  data_df <- cbind(data_df, sample_state)
+  #data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2")
   data_df$sample_name <- row.names(data_df)
   data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
@@ -2462,6 +2462,221 @@ plot_complex_cell_trajectory <- function(cds,
           axis.ticks = element_blank()) 
   g
 }
+
+
+#' Plots the minimum spanning tree on cells.
+#' @description Plots the minimum spanning tree on cells.
+#' @param cds CellDataSet for the experiment
+#' @param x the column of reducedDimS(cds) to plot on the horizontal axis
+#' @param y the column of reducedDimS(cds) to plot on the vertical axis
+#' @param root_states the state used to set as the root of the graph
+#' @param layout a function to re-layout the principal tree into two dimension. Please 
+#' ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
+#' @param show_backbone whether to show the diameter path of the MST used to order the cells
+#' @param backbone_color the color used to render the backbone.
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param show_cell_names draw the name of each cell in the plot
+#' @param cell_size The size of the point for each cell
+#' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
+#' @param cell_name_size the size of cell name labels
+#' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param ... Additional arguments passed to the scale_color_viridis function
+#' @return a ggplot2 plot object
+#' @import ggplot2
+#' @importFrom igraph V get.edgelist layout_as_tree neighborhood
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @export
+#' @examples
+#' \dontrun{
+#' library(HSMMSingleCell)
+#' HSMM <- load_HSMM()
+#' plot_complex_cell_trajectory(HSMM)
+#' plot_complex_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+#' plot_complex_cell_trajectory(HSMM, markers="MYH3")
+#' }
+plot_subway_trajectory <- function(cds, 
+                                         root_states = NULL,
+                                         layout = NULL, 
+                                         color_by="State", 
+                                         show_tree=TRUE, 
+                                         show_backbone=TRUE, 
+                                         backbone_color="black", 
+                                         markers=NULL, 
+                                         show_cell_names=FALSE, 
+                                         cell_size=1.5,
+                                         cell_link_size=0.75,
+                                         cell_name_size=2,
+                                         show_branch_points=TRUE, 
+                                         jitter_width = NULL, 
+                                         jitter_height = NULL,
+                                         ...){
+  gene_short_name <- NA
+  sample_name <- NA
+  data_dim_1 <- NA
+  data_dim_2 <- NA
+  
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info_with_pseudo <- pData(cds)
+  
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  }
+  
+  if (cds@dim_reduce_type == "ICA"){
+    reduced_dim_coords <- reducedDimS(cds)
+  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SGL-tree") ){
+    reduced_dim_coords <- reducedDimK(cds)
+    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+  }else {
+    stop("Error: unrecognized dimensionality reduction method.")
+  }
+  
+  if (is.null(reduced_dim_coords)){
+    stop("You must first call reduceDimension() before using this function")
+  }
+  
+  dp_mst <- minSpanningTree(cds)
+  
+  if(is.function(layout)) {
+    tryCatch({
+      layout_coord <- layout(dp_mst, ...)
+    }, warning = function(w) {
+    }, error = function(e) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }, finally = {
+    })
+    if(! identical(dim(layout_coord), as.integer(c(igraph::vcount(dp_mst), 2))) ) {
+      stop('Please ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS ...')
+    }
+  } else {
+    dist_g=distances(dp_mst)
+    layout_coord <- layout_with_mds(dp_mst, dist=dist_g)
+  }
+  # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
+  
+  row.names(layout_coord) <- NULL
+  #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
+  ica_space_df <- data.frame(layout_coord)
+  row.names(ica_space_df) <- colnames(reduced_dim_coords)
+  colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2")
+  
+  ica_space_df$sample_name <- row.names(ica_space_df)
+  #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  #print(ica_space_with_state_df)
+  
+  
+  if (is.null(dp_mst)){
+    stop("You must first call orderCells() before using this function")
+  }
+  
+  edge_list <- as.data.frame(get.edgelist(dp_mst))
+  colnames(edge_list) <- c("source", "target")
+  
+  edge_df <- merge(ica_space_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+  #edge_df <- ica_space_df
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2"))
+  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2"))
+  
+  #S_matrix <- reducedDimS(cds)
+  #data_df <- data.frame(t(S_matrix[c(x,y),]))
+  
+  if(cds@dim_reduce_type == "ICA"){
+    S_matrix <- layout_coord[,] #colnames(cds)
+    
+  } else if(cds@dim_reduce_type %in% c("DDRTree", "SimplePPT", "SGL-tree")){
+    S_matrix <- layout_coord[closest_vertex,]
+    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+  }
+  
+  data_df <- data.frame(S_matrix)
+  row.names(data_df) <- colnames(reducedDimS(cds))
+  colnames(data_df) <- c("data_dim_1", "data_dim_2")
+  data_df$sample_name <- row.names(data_df)
+  data_df$closest_vertex = closest_vertex
+  data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
+    marker_expr_df = data_df %>% group_by(feature_label, closest_vertex) %>% summarize(data_dim_1 = mean(data_dim_1), 
+                                                                        data_dim_2 = mean(data_dim_2),
+                                                                        mean_marker_expr = mean(value))
+    
+    #print (head(edge_df))
+    g <- ggplot(data=marker_expr_df, aes(x=data_dim_1, y=data_dim_2, I(cell_size))) + facet_wrap(~feature_label)
+  }else{
+    g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
+  }
+  if (show_tree){
+    g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=cell_link_size, linetype="solid", na.rm=TRUE, data=edge_df)
+  }
+  
+  # FIXME: setting size here overrides the marker expression funtionality. 
+  # Don't do it!
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    g <- g + geom_jitter(aes_string(color = paste0("log10(", "mean_marker_expr", " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
+        scale_color_viridis(name = paste0("log10(", "mean_marker_expr", ")"), ...)
+  }else {
+    if(class(data_df[, color_by]) == 'numeric') {
+      g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width) + 
+        scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
+    } else {
+      g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height = jitter_height, width = jitter_width)
+    }
+  }
+  
+  if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
+    branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
+    branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
+    
+    g <- g + geom_point(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2"), 
+                        size=2 * cell_size, na.rm=TRUE, data=branch_point_df) +
+      geom_text(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", label="branch_point_idx"), 
+                size=1.5 * cell_size, color="white", na.rm=TRUE, data=branch_point_df)
+  }
+  if (show_cell_names){
+    g <- g +geom_text(aes(label=sample_name), size=cell_name_size)
+  }
+  g <- g + 
+    #scale_color_brewer(palette="Set1") +
+    theme(strip.background = element_rect(colour = 'white', fill = 'white')) +
+    theme(panel.border = element_blank()) +
+    # theme(axis.line.x = element_line(size=0.25, color="black")) +
+    # theme(axis.line.y = element_line(size=0.25, color="black")) +
+    theme(panel.grid.minor.x = element_blank(), panel.grid.minor.y = element_blank()) +
+    theme(panel.grid.major.x = element_blank(), panel.grid.major.y = element_blank()) + 
+    theme(panel.background = element_rect(fill='white')) +
+    theme(legend.key=element_blank()) + 
+    xlab('') + 
+    ylab('') +
+    theme(legend.position="top", legend.key.height=grid::unit(0.35, "in")) +
+    #guides(color = guide_legend(label.position = "top")) +
+    theme(legend.key = element_blank()) +
+    theme(panel.background = element_rect(fill='white')) + 
+    theme(line = element_blank(), 
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank()) 
+  g
+}
+
 
 # Modified function: Plot heatmap of 3 branches with the same coloring. Each CDS subset has to have the same set of genes.
 #'  Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches

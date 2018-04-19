@@ -7,6 +7,5 @@
 load_HSMM()
 }
 \description{
-Creates a cellDataSet using the data from the
-HSMMSingleCell package.
+Build a CellDataSet from the HSMMSingleCell package
 }

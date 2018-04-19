@@ -20,14 +20,11 @@ fitModel(cds, modelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 a list of VGAM model objects
 }
 \description{
-This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet.
-By default, expression levels are modeled as smooth functions of the Pseudotime value of each
-cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
-additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
+Fits a model for each gene in a CellDataSet object.
 }
 \details{
-This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet.
-By default, expression levels are modeled as smooth functions of the Pseudotime value of each
+This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet. 
+By default, expression levels are modeled as smooth functions of the Pseudotime value of each 
 cell. That is, expression is a function of progress through the biological process.  More complicated formulae can be provided to account for
 additional covariates (e.g. day collected, genotype of cells, media conditions, etc).
 }

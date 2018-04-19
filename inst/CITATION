@@ -17,34 +17,3 @@ citEntry(entry="article",
                "The dynamics and regulators of cell fate decisions are revealed by pseudo-temporal ordering of single cells.",
                 "Nature Biotechnology" ) )
 
-citEntry(entry="article",
-         title = "Single-cell mRNA quantification and differential analysis with Census",
-         author = personList( as.person("Xiaojie Qiu"), 
-                              as.person("Andrew Hill"),
-                              as.person("Jonathan Packer"),
-                              as.person("Dejun Lin"),
-                              as.person("Yi-An Ma"),
-                              as.person("Cole Trapnell")),
-         year = 2017,
-         journal = "Nature Methods",
-         textVersion = 
-         paste("Xiaojie Qiu, Andrew Hill, Cole Trapnell et al (2017):", 
-               "Single-cell mRNA quantification and differential analysis with Census.",
-                "Nature Methods" ) )
-
-citEntry(entry="article",
-         title = "Reverse graph embedding resolves complex single-cell developmental trajectories.",
-         author = personList( as.person("Xiaojie Qiu"), 
-                              as.person("Qi Mao"),
-                              as.person("Ying Tang"),
-                              as.person("Li Wang"),
-                              as.person("Raghav Chawla"),
-                              as.person("Hannah Pliner"),
-                              as.person("Cole Trapnell")),
-         year = 2017,
-         journal = "BioRxiv",
-         textVersion = 
-         paste("Xiaojie Qiu, Cole Trapnell et al (2017):", 
-               "Reverse graph embedding resolves complex single-cell developmental trajectories.",
-                "BioRxiv" ) )
-

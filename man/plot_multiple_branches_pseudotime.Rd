@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{plot_multiple_branches_pseudotime}
 \alias{plot_multiple_branches_pseudotime}
-\title{Create a kinetic curves to demonstrate the bifurcation of gene expression along multiple branches}
+\title{Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches}
 \usage{
 plot_multiple_branches_pseudotime(cds, branches, branches_name = NULL,
   min_expr = NULL, cell_size = 0.75, norm_method = c("vstExprs", "log"),
@@ -11,37 +11,44 @@ plot_multiple_branches_pseudotime(cds, branches, branches_name = NULL,
   TPM = FALSE, cores = 1)
 }
 \arguments{
-\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with BEAM)}
+\item{cds}{CellDataSet for the experiment (normally only the branching genes detected with branchTest)}
 
-\item{branches}{The terminal branches (states) on the developmental tree you want to investigate.}
+\item{branches}{The ID of the branch point to visualize. Can only be used when reduceDimension is called with method = "DDRTree".}
 
-\item{branches_name}{Name (for example, cell type) of branches you believe the cells on the branches are associated with.}
-
-\item{min_expr}{The minimum level of expression to show in the plot}
-
-\item{cell_size}{A number how large the cells should be in the plot}
+\item{branches_name}{The two states to compare in the heatmap. Mutually exclusive with branch_point.}
 
 \item{norm_method}{Determines how to transform expression values prior to rendering}
 
-\item{nrow}{the number of rows used when laying out the panels for each gene's expression}
-
-\item{ncol}{the number of columns used when laying out the panels for each gene's expression}
-
-\item{panel_order}{the order in which genes should be layed out (left-to-right, top-to-bottom)}
-
-\item{color_by}{the cell attribute (e.g. the column of pData(cds)) to be used to color each cell}
-
-\item{trend_formula}{the model formula to be used for fitting the expression trend over pseudotime}
-
-\item{label_by_short_name}{label figure panels by gene_short_name (TRUE) or feature id (FALSE)}
-
-\item{TPM}{Whether to convert the expression value into TPM values.}
+\item{trend_formula}{A formula string specifying the model used in fitting the spline curve for each gene/feature.}
 
 \item{cores}{Number of cores to use when smoothing the expression curves shown in the heatmap.}
+
+\item{cluster_rows}{Whether to cluster the rows of the heatmap.}
+
+\item{hclust_method}{The method used by pheatmap to perform hirearchical clustering of the rows.}
+
+\item{num_clusters}{Number of clusters for the heatmap of branch genes}
+
+\item{hmcols}{The color scheme for drawing the heatmap.}
+
+\item{add_annotation_row}{Additional annotations to show for each row in the heatmap. Must be a dataframe with one row for each row in the fData table of cds_subset, with matching IDs.}
+
+\item{add_annotation_col}{Additional annotations to show for each column in the heatmap. Must be a dataframe with one row for each cell in the pData table of cds_subset, with matching IDs.}
+
+\item{show_rownames}{Whether to show the names for each row in the table.}
+
+\item{use_gene_short_name}{Whether to use the short names for each row. If FALSE, uses row IDs from the fData table.}
+
+\item{scale_max}{The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.}
+
+\item{scale_min}{The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.}
+
+\item{return_heatmap}{Whether to return the pheatmap object to the user.}
 }
 \value{
-a ggplot2 plot object
+A list of heatmap_matrix (expression matrix for the branch committment), ph (pheatmap heatmap object),
+annotation_row (annotation data.frame for the row), annotation_col (annotation data.frame for the column).
 }
 \description{
-Create a kinetic curves to demonstrate the bifurcation of gene expression along multiple branches
+Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches
 }

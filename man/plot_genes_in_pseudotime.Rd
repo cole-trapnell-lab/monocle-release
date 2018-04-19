@@ -38,14 +38,11 @@ plot_genes_in_pseudotime(cds_subset, min_expr = NULL, cell_size = 0.75,
 a ggplot2 plot object
 }
 \description{
-Plots expression for one or more genes as a function of pseudotime.
-Plotting allows you determine if the ordering produced by orderCells() is correct
-and it does not need to be flipped using the "reverse" flag in orderCells
+Plots expression for one or more genes as a function of pseudotime
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
+data(HSMM)
 my_genes <- row.names(subset(fData(HSMM), gene_short_name \%in\% c("CDK1", "MEF2C", "MYH3"))) 
 cds_subset <- HSMM[my_genes,]
 plot_genes_in_pseudotime(cds_subset, color_by="Time")

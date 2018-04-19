@@ -36,15 +36,12 @@ plot_genes_jitter(cds_subset, grouping = "State", min_expr = NULL,
 a ggplot2 plot object
 }
 \description{
-Accepts a subset of a CellDataSet and an attribute to group cells by,
-and produces one or more ggplot2 objects that plots the level of expression for
-each group of cells.
+Plots expression for one or more genes as a jittered, grouped points
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
-my_genes <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1", "CCNB2"))),]
-plot_genes_jitter(my_genes, grouping="Media", ncol=2)
+data(HSMM)
+MYOG_ID1 <- HSMM[row.names(subset(fData(HSMM), gene_short_name \%in\% c("MYOG", "ID1"))),]
+plot_genes_jitter(MYOG_ID1, grouping="Media", ncol=2)
 }
 }

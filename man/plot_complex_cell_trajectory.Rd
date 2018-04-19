@@ -5,11 +5,10 @@
 \title{Plots the minimum spanning tree on cells.}
 \usage{
 plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
-  layout = NULL, color_by = "State", show_tree = TRUE,
-  show_backbone = TRUE, backbone_color = "black", markers = NULL,
-  show_cell_names = FALSE, cell_size = 1.5, cell_link_size = 0.75,
-  cell_name_size = 2, show_branch_points = TRUE, jitter_width = NULL,
-  jitter_height = NULL, ...)
+  color_by = "State", show_tree = TRUE, show_backbone = TRUE,
+  backbone_color = "black", markers = NULL, show_cell_names = FALSE,
+  cell_size = 1.5, cell_link_size = 0.75, cell_name_size = 2,
+  show_branch_points = TRUE, theta = 0)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -17,11 +16,6 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
 \item{x}{the column of reducedDimS(cds) to plot on the horizontal axis}
 
 \item{y}{the column of reducedDimS(cds) to plot on the vertical axis}
-
-\item{root_states}{the state used to set as the root of the graph}
-
-\item{layout}{a function to re-layout the principal tree into two dimension. Please 
-ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS}
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
 
@@ -43,7 +37,7 @@ ensure the layout function you passed in return a matrix with dimension N x 2 wh
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
-\item{...}{Additional arguments passed to the scale_color_viridis function}
+\item{theta}{includeDescrip}
 }
 \value{
 a ggplot2 plot object
@@ -53,10 +47,9 @@ Plots the minimum spanning tree on cells.
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
-plot_complex_cell_trajectory(HSMM)
-plot_complex_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
-plot_complex_cell_trajectory(HSMM, markers="MYH3")
+data(HSMM)
+plot_cell_trajectory(HSMM)
+plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
+plot_cell_trajectory(HSMM, markers="MYH3")
 }
 }

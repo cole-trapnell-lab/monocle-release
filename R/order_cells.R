@@ -1716,8 +1716,149 @@ reduceDimension <- function(cds,
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
-    }
-    else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
+    }else if(reduction_method == "L1-graph") {
+      if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
+        tryCatch({
+          reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
+          reduced_dim_res
+        }, error = function(e) {
+          error('Your initial method throws numerical errors!')
+        })
+      }
+      else{
+        if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+          num_dim <- extra_arguments$num_dim #variance_explained
+        }
+        else{
+          num_dim <- 50
+        }
+        
+        if (verbose)
+          message("Remove noise by PCA ...")
+        
+        if(verbose)
+          message('running PCA (no further scaling or center) ...')
+        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                  center = scaling, scale. = scaling)
+        irlba_pca_res <- t(irlba_res$x)
+        colnames(irlba_pca_res) <- colnames(FM)
+        FM <- irlba_pca_res
+        
+        umap_args <- c(list(X = t(as.matrix(FM)), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+                       extra_arguments[names(extra_arguments) %in% 
+                                         c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                           'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- t(tmp$embedding_); 
+        
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                                        dimnames = list(colnames(cds), colnames(cds)))
+        
+        colnames(umap_res) <- colnames(FM)
+        FM <- umap_res
+        reducedDimA(cds) <- FM
+        
+        louvain_clustering_args <- c(list(data = t(umap_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                                     extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+        
+        louvain_modules = igraph::membership(louvain_res$optim_res)
+        
+        cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
+        
+        reduced_dim_res = FM 
+        
+        if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
+          ncenter <- extra_arguments$ncenter
+        else
+          ncenter <- cal_ncenter(ncol(FM))
+        
+        if (ncenter > ncol(reduced_dim_res))
+          stop("Error: ncenters must be less than or equal to ncol(X)")
+        
+        centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
+        # 
+        # centers = c()
+        # for (i in (1:length(unique(louvain_modules)))){
+        #   module_members = which(louvain_modules == i)
+        #   num_reps = ceiling((length(module_members)/ncol(reduced_dim_res)) * ncenter)
+        #   module_cds = cds[,module_members]
+        #   
+        #   landmark_res = landmark_selection(module_cds, num_reps)
+        #   module_representatives = row.names(pData(module_cds)[which(landmark_res$flag == 1),])
+        #   #module_representatives = module_members[seq(1, length(module_members), length.out=num_reps)]
+        #   centers = append(centers, module_representatives)
+        # }
+        # #centers = t(reduced_dim_res)[centers,]
+        # 
+        kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
+        reduced_dim_res <- kmean_res$centers
+        
+        #reduced_dim_res = t(reduced_dim_res)[centers,]
+        #reduced_dim_res <- t(reduced_dim_res)
+        rownames(reduced_dim_res) = paste("Y_", 1:nrow(reduced_dim_res), sep = "")
+      }
+      
+      if(verbose)
+        message('running L1-graph ...')
+      
+      #X <- t(reduced_dim_res)
+      X <- t(reduced_dim_res)
+      # D <- nrow(X); N <- ncol(X)
+      # Z <- X
+      
+      if('C0' %in% names(extra_arguments)){
+        C0 <- extra_arguments$C0
+      }
+      else
+        C0 <- X
+      Nz <- ncol(C0)
+      
+      # print(extra_arguments)
+      if('nn' %in% names(extra_arguments))
+        G <- get_knn(C0, K = extra_arguments$nn)
+      else
+        G <- get_knn(C0, K = 5)
+      
+      l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      
+      
+      l1_graph_res <- do.call(principal_graph, l1graph_args)
+      
+      colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
+      DCs <- FM
+      #colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      
+      
+      #colnames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      #rownames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
+      rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
+      
+      
+      # row.names(l1_graph_res$X) <- colnames(cds)
+      reducedDimW(cds) <- l1_graph_res$W
+      reducedDimS(cds) <- DCs
+      reducedDimK(cds) <- l1_graph_res$C
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+      cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
+      cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
+      
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      
+      W <- l1_graph_res$W
+      dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
+      W[W < 1e-5] <- 0
+      gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
+      # dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- gp
+      cds@dim_reduce_type <- "DDRTree"
+      cds <- findNearestPointOnMST(cds)
+    }else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]

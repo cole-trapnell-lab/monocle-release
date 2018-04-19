@@ -5,8 +5,9 @@
 \title{Plots clusters of cells .}
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
-  markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_name_size = 2, min_expr = 0.1, ...)
+  show_density_peak = TRUE, show_density = FALSE, rho_threshold = NULL,
+  delta_threshold = NULL, markers = NULL, show_cell_names = FALSE,
+  cell_size = 1.5, cell_name_size = 2, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -24,8 +25,6 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 \item{cell_size}{The size of the point for each cell}
 
 \item{cell_name_size}{the size of cell name labels}
-
-\item{...}{additional arguments passed into the scale_color_viridis function}
 }
 \value{
 a ggplot2 plot object
@@ -35,10 +34,7 @@ Plots clusters of cells .
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
-HSMM <- reduceDimension(HSMM, reduction_method = 'tSNE')
-HSMM <- clusterCells(HSMM)
+data(HSMM)
 plot_cell_clusters(HSMM)
 plot_cell_clusters(HSMM, color_by="Pseudotime")
 plot_cell_clusters(HSMM, markers="MYH3")

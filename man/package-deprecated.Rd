@@ -46,8 +46,7 @@ predicts their location based on their pseudotime value
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
+data(HSMM)
 plot_cell_trajectory(HSMM)
 plot_cell_trajectory(HSMM, color_by="Pseudotime", show_backbone=FALSE)
 plot_cell_trajectory(HSMM, markers="MYH3")

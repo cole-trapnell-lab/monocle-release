@@ -16,7 +16,7 @@ calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
 
 \item{trend_formula}{trend_formula a formula string specifying the full model in differential expression tests (i.e. likelihood ratio tests) for each gene/feature.}
 
-\item{branch_point}{the point where two branches diverge}
+\item{branch_point}{includeDescrip}
 
 \item{trajectory_states}{states corresponding to two branches}
 

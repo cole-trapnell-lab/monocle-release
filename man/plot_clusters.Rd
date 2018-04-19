@@ -28,10 +28,7 @@ plot_clusters(cds, clustering, drawSummary = TRUE, sumFun = mean_cl_boot,
 a ggplot2 plot object
 }
 \description{
-returns a ggplot2 object showing the shapes of the
-expression patterns followed by a set of pre-selected genes.
-The topographic lines highlight the distributions of the kinetic patterns
-relative to overall trend lines.
+Plots kinetic clusters of genes.
 }
 \examples{
 \dontrun{

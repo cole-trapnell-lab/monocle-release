@@ -18,8 +18,7 @@ Plots the decision map of density clusters .
 }
 \examples{
 \dontrun{
-library(HSMMSingleCell)
-HSMM <- load_HSMM()
+data(HSMM)
 plot_rho_delta(HSMM)
 }
 }

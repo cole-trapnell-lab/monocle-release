@@ -7,6 +7,5 @@
 get_classic_muscle_markers()
 }
 \description{
-Returns a list of classic muscle genes. Used to
-add conveinence for loading HSMM data.
+Return the names of classic muscle genes
 }

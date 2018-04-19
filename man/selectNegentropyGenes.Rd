@@ -23,11 +23,7 @@ selectNegentropyGenes(cds, lower_negentropy_bound = "0\%",
 a vector of gene names
 }
 \description{
-Examines all the genes in the CellDataSet passed in and removes
-all the genes that contain extremely high or low negentropies. You can specify
-which genes to filter out based on the boundaries you can set for expression levels
-and the boundaries you set for which centile to include. the function "dispersionTable"
-is a better form of this function.
+Filter genes with extremely high or low negentropy
 }
 \examples{
 \dontrun{

@@ -5,10 +5,11 @@
 \title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA", "PCA", "tSNE", "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT",
-  "L1-graph", "SGL-tree"), norm_method = c("log", "vstExprs", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
-  auto_param_selection = TRUE, verbose = FALSE, scaling = TRUE, ...)
+  "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree", "DPT"),
+  norm_method = c("vstExprs", "log", "none"),
+  residualModelFormulaStr = NULL, pseudo_expr = NULL,
+  relative_expr = TRUE, auto_param_selection = TRUE, verbose = FALSE,
+  scaling = TRUE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -23,13 +24,13 @@ reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
 
 \item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
 
-\item{relative_expr}{When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.}
+\item{relative_expr}{includeDescrip}
 
-\item{auto_param_selection}{when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.}
+\item{auto_param_selection}{includeDescrip}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
-\item{scaling}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
+\item{scaling}{includeDescrip}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 }
@@ -37,10 +38,10 @@ reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
 an updated CellDataSet object
 }
 \description{
-Monocle aims to learn how cells transition through a biological program of 
-gene expression changes in an experiment. Each cell can be viewed as a point 
-in a high-dimensional space, where each dimension describes the expression of 
-a different gene in the genome. Identifying the program of gene expression 
+Monocle aims to learn how cells transition through a biological program of
+gene expression changes in an experiment. Each cell can be viewed as a point
+in a high-dimensional space, where each dimension describes the expression of
+a different gene in the genome. Identifying the program of gene expression
 changes is equivalent to learning a \emph{trajectory} that the cells follow
 through this space. However, the more dimensions there are in the analysis,
 the harder the trajectory is to learn. Fortunately, many genes typically
@@ -53,7 +54,7 @@ reduced space. You can also provide a model formula indicating some variables
 doesn't contribute to the trajectory.
 }
 \details{
-You can choose two different reduction algorithms: Independent Component 
+You can choose two different reduction algorithms: Independent Component
 Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
 The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
 Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
