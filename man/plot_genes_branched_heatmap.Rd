@@ -2,7 +2,13 @@
 % Please edit documentation in R/plotting.R
 \name{plot_genes_branched_heatmap}
 \alias{plot_genes_branched_heatmap}
-\title{Create a heatmap to demonstrate the bifurcation of gene expression along two branchs}
+\title{Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
+ 
+ @description returns a heatmap that shows changes in both lineages at the same time. 
+ It also requires that you choose a branch point to inspect. 
+ Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. 
+ As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. 
+ The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.}
 \usage{
 plot_genes_branched_heatmap(cds_subset, branch_point = 1,
   branch_states = NULL, branch_labels = c("Cell fate 1", "Cell fate 2"),
@@ -10,7 +16,7 @@ plot_genes_branched_heatmap(cds_subset, branch_point = 1,
   hmcols = NULL, branch_colors = c("#979797", "#F05662", "#7990C8"),
   add_annotation_row = NULL, add_annotation_col = NULL,
   show_rownames = FALSE, use_gene_short_name = TRUE, scale_max = 3,
-  scale_min = -3, norm_method = c("vstExprs", "log"),
+  scale_min = -3, norm_method = c("log", "vstExprs"),
   trend_formula = "~sm.ns(Pseudotime, df=3) * Branch",
   return_heatmap = FALSE, cores = 1, ...)
 }
@@ -61,4 +67,10 @@ annotation_row (annotation data.frame for the row), annotation_col (annotation d
 }
 \description{
 Create a heatmap to demonstrate the bifurcation of gene expression along two branchs
+ 
+ @description returns a heatmap that shows changes in both lineages at the same time. 
+ It also requires that you choose a branch point to inspect. 
+ Columns are points in pseudotime, rows are genes, and the beginning of pseudotime is in the middle of the heatmap. 
+ As you read from the middle of the heatmap to the right, you are following one lineage through pseudotime. As you read left, the other. 
+ The genes are clustered hierarchically, so you can visualize modules of genes that have similar lineage-dependent expression patterns.
 }

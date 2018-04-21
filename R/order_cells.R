@@ -1717,15 +1717,6 @@ reduceDimension <- function(cds,
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
     }else if(reduction_method == "L1-graph") {
-      if("initial_method" %in% names(extra_arguments)){ #need to check whether or not the output match what we want
-        tryCatch({
-          reduced_dim_res <- extra_arguments$initial_method(FM) #variance_explained
-          reduced_dim_res
-        }, error = function(e) {
-          error('Your initial method throws numerical errors!')
-        })
-      }
-      else{
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
           num_dim <- extra_arguments$num_dim #variance_explained
         }
@@ -1763,7 +1754,9 @@ reduceDimension <- function(cds,
                                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
         
-        louvain_modules = igraph::membership(louvain_res$optim_res)
+       
+        #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
+        
         
         cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
         
@@ -1793,12 +1786,11 @@ reduceDimension <- function(cds,
         # #centers = t(reduced_dim_res)[centers,]
         # 
         kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
-        reduced_dim_res <- kmean_res$centers
-        
+        medioids = reduced_dim_res[,apply(as.matrix(proxy::dist(t(FM), kmean_res$centers)), 2, which.min)]
+        reduced_dim_res <- t(medioids)
         #reduced_dim_res = t(reduced_dim_res)[centers,]
         #reduced_dim_res <- t(reduced_dim_res)
-        rownames(reduced_dim_res) = paste("Y_", 1:nrow(reduced_dim_res), sep = "")
-      }
+        #rownames(reduced_dim_res) = paste("Y_", 1:nrow(reduced_dim_res), sep = "")
       
       if(verbose)
         message('running L1-graph ...')
@@ -1821,6 +1813,29 @@ reduceDimension <- function(cds,
       else
         G <- get_knn(C0, K = 5)
       
+      if("louvain_qval" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        louvain_qval <- extra_arguments$louvain_qval #variance_explained
+      }
+      else{
+        louvain_qval <- 0.05
+      }
+      
+      cluster_graph_res <- compute_louvain_connected_components(graph.adjacency(adj_mat, mode = "undirected", weighted = TRUE), louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+      louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+      cds@auxClusteringData[["L1graph"]]$louvain_component = louvain_component
+      names(louvain_component) = colnames(FM)
+      louvain_component = louvain_component[rownames(reduced_dim_res)]
+      louvain_component = as.factor(louvain_component)
+      if (length(levels(louvain_component)) > 1){
+        louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
+        
+        G$G = G$G * louvain_component_mask
+        G$W = G$W * louvain_component_mask
+        rownames(G$G) = rownames(G$W)
+        colnames(G$G) = colnames(G$W)
+      }
+      #louvain_component = data.frame(component=louvain_component)
+     
       l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       

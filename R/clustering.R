@@ -424,6 +424,41 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   return(list(g = g, coord = coord, edge_links = edge_links, optim_res = optim_res))
 }
 
+compute_louvain_connected_components = function(pc_g, g, optim_res, qval_thresh=0.05, verbose = FALSE){
+  cell_membership <- as.factor(igraph::membership(optim_res))
+  membership_matrix = sparse.model.matrix( ~ cell_membership + 0)
+  num_links = t(membership_matrix) %*% as_adjacency_matrix(pc_g) %*% membership_matrix
+  louvain_modules = levels(cell_membership)
+  
+  cluster_mat <- matrix(0, nrow = length(louvain_modules), ncol = length(louvain_modules)) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+  overlapping_threshold <- 1e-5
+  
+  edges_per_module = rowSums(num_links)
+  total_edges = sum(num_links)
+  
+  for(i in 1:length(louvain_modules)){
+    for(j in 1:length(louvain_modules)){
+      
+      theta_i = edges_per_module[i] / total_edges
+      theta_j = edges_per_module[j] / total_edges
+      
+      #all_ij <- num_links[i,j] + num_links[i,i] + num_links[j,j] # edges in all cells from two Louvain landmark groups
+      #only_i <- num_links[i,i] # edges from the first Louvain landmark groups
+      #only_j <- num_links[j,j] # edges from the second Louvain landmark groups
+      #overlap_weight <- (all_ij - only_i - only_j) / all_ij
+      num_links_i_j = num_links[i,j]/total_edges - theta_i * theta_j
+      var_null_num_links_i_j = theta_i * theta_j *( 1 - theta_i * theta_j) / total_edges
+      p_val_i_j = pnorm(num_links_i_j, 0, sqrt(var_null_num_links_i_j), lower.tail = FALSE)
+      cluster_mat[i,j] = p_val_i_j
+    }
+  }
+  cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
+  cluster_mat[cluster_mat > qval_thresh] = 0
+  diag(cluster_mat) = 0
+  cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
+  louvain_modules <- igraph::cluster_louvain(cluster_g)
+  list(cluster_g = cluster_g, cluster_optim_res = optim_res)
+}
 
 # Function to retrieve a graph of cell clusters 
 cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
@@ -476,11 +511,11 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         overlap_weight <- (all_ij - only_i - only_j) / all_ij
         cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
         if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
-            if(verbose) {
-              message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
-                      'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
-                      'with weight ', overlap_weight)
-            }
+            # if(verbose) {
+            #   message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+            #           'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+            #           'with weight ', overlap_weight)
+            # }
             pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
         }
       }

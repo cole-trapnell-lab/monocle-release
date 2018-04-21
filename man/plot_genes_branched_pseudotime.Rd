@@ -51,6 +51,10 @@ plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
 a ggplot2 plot object
 }
 \description{
+Works similarly to plot_genes_in_psuedotime esceptit shows 
+one kinetic trend for each lineage.
+}
+\details{
 This plotting function is used to make the branching plots for a branch dependent gene goes through the progenitor state
 and bifurcating into two distinct branchs (Similar to the pitch-fork bifurcation in dynamic systems). In order to make the  
 bifurcation plot, we first duplicated the progenitor states and by default stretch each branch into maturation level 0-100.  

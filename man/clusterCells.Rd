@@ -7,9 +7,10 @@
 clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
-  frequency_thresh = NULL, enrichment_thresh = NULL,
-  clustering_genes = NULL, method = c("densityPeak", "DDRTree"),
-  verbose = F, ...)
+  frequency_thresh = NULL, enrichment_thresh = NULL, rank_prob_ratio = 2,
+  min_observations = 8, clustering_genes = NULL, k = 20,
+  louvain_iter = 1, weight = FALSE, method = c("densityPeak", "louvain",
+  "DDRTree"), verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -17,7 +18,7 @@ clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
 \item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
 
 \item{num_clusters}{Number of clusters. The algorithm use 0.5 of the rho as the threshold of rho and the delta 
-corresponding to the num_clusters sample with the highest delta as the density peaks and for assigning clusters}
+corresponding to the number_clusters sample with the highest delta as the density peaks and for assigning clusters}
 
 \item{inspect_rho_sigma}{A logical flag to determine whether or not you want to interactively select the rho and sigma for assigning up clusters}
 
@@ -30,18 +31,23 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
-\item{cell_type_hierarchy}{includeDescrip}
+\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
 
 \item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
 
-\item{enrichment_thresh}{includeDescrip}
+\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 
-\item{clustering_genes}{includeDescrip}
+\item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
-\item{method}{method for clustering cells. By default, we use density peak clustering algorithm for clustering. 
-The other method is based on DDRTree.}
+\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50}
 
-\item{verbose}{Verbose parameter for DDRTree}
+\item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1.}
+
+\item{weight}{A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.}
+
+\item{method}{method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm.}
+
+\item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
 }
@@ -53,12 +59,22 @@ Unsupervised clustering of cells is a common step in many single-cell expression
 workflows. In an experiment containing a mixture of cell types, each cluster might
 correspond to a different cell type. This method takes a CellDataSet as input
 along with a requested number of clusters, clusters them with an unsupervised 
-algorithm, and then returns the CellDataSet with the cluster assignments stored in
-the pData table. When number of clusters is set to NULL (num_clusters = NULL), 
-the decision plot as introduced in the above citation will be plotted and the 
-users are required to click on the decision plot to select the rho and delta 
-to determine the number of clusters to cluster.
+algorithm (by default, density peak clustering), and then returns the CellDataSet with the 
+cluster assignments stored in the pData table. When number of clusters is set 
+to NULL (num_clusters = NULL), the decision plot as introduced in the reference 
+will be plotted and the users are required to check the decision plot to select 
+the rho and delta to determine the number of clusters to cluster. When the dataset 
+is big, for example > 50 k, we recommend the user to use the Louvain clustering 
+algorithm which is inspired from phenograph paper. Note Louvain doesn't support the 
+num_cluster argument but the k (number of k-nearest neighbors) is relevant to the final 
+clustering number. The implementation of Louvain clustering is based on the Rphenograph
+package but updated based on our requirement (for example, changed the jaccard_coeff 
+function as well as adding louvain_iter argument, etc.)
 }
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072
+
+Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre: Fast unfolding of communities in large networks. J. Stat. Mech. (2008) P10008
+
+Jacob H. Levine and et.al. Data-Driven Phenotypic Dissection of AML Reveals Progenitor-like Cells that Correlate with Prognosis. Cell, 2015.
 }
