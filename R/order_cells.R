@@ -1753,7 +1753,7 @@ reduceDimension <- function(cds,
         louvain_clustering_args <- c(list(data = t(umap_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
                                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-        
+        cds@auxOrderingData[["L1graph"]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
        
         #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
         
@@ -1762,10 +1762,14 @@ reduceDimension <- function(cds,
         
         reduced_dim_res = FM 
         
-        if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
+        if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
-        else
-          ncenter <- cal_ncenter(ncol(FM))
+        }else{
+          #ncenter <- cal_ncenter(ncol(FM))
+          ncenter = 3 * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
+          ncenter = min(ncol(FM) / 2, ncenter)
+        }
+         
         
         if (ncenter > ncol(reduced_dim_res))
           stop("Error: ncenters must be less than or equal to ncol(X)")
@@ -1820,9 +1824,9 @@ reduceDimension <- function(cds,
         louvain_qval <- 0.05
       }
       
-      cluster_graph_res <- compute_louvain_connected_components(graph.adjacency(adj_mat, mode = "undirected", weighted = TRUE), louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+      cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
       louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-      cds@auxClusteringData[["L1graph"]]$louvain_component = louvain_component
+      cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
       names(louvain_component) = colnames(FM)
       louvain_component = louvain_component[rownames(reduced_dim_res)]
       louvain_component = as.factor(louvain_component)

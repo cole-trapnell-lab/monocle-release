@@ -424,10 +424,11 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   return(list(g = g, coord = coord, edge_links = edge_links, optim_res = optim_res))
 }
 
-compute_louvain_connected_components = function(pc_g, g, optim_res, qval_thresh=0.05, verbose = FALSE){
+compute_louvain_connected_components = function(g, optim_res, qval_thresh=0.05, verbose = FALSE){
   cell_membership <- as.factor(igraph::membership(optim_res))
   membership_matrix = sparse.model.matrix( ~ cell_membership + 0)
-  num_links = t(membership_matrix) %*% as_adjacency_matrix(pc_g) %*% membership_matrix
+  num_links = t(membership_matrix) %*% as_adjacency_matrix(g) %*% membership_matrix
+  diag(num_links) = 0
   louvain_modules = levels(cell_membership)
   
   cluster_mat <- matrix(0, nrow = length(louvain_modules), ncol = length(louvain_modules)) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
