@@ -1571,6 +1571,9 @@ reduceDimension <- function(cds,
       #cds@auxClusteringData[["tSNE"]]$variance_explained <- prop_varex
 
       cds@dim_reduce_type <- "tSNE"
+
+      pData(cds)$tsne_1 = reducedDimA(cds)[1,]
+      pData(cds)$tsne_2 = reducedDimA(cds)[2,]
     }
     else if (reduction_method == "ICA") {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
@@ -1684,6 +1687,9 @@ reduceDimension <- function(cds,
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
+
+      pData(cds)$DDRTree_1 = reducedDimS(cds)[1,]
+      pData(cds)$DDRTree_2 = reducedDimS(cds)[2,]
     }
     else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
@@ -1799,6 +1805,9 @@ reduceDimension <- function(cds,
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
+
+      pData(cds)[, paste0(reduction_method, "_1")] <- reducedDimS(cds)[1,]
+      pData(cds)[, paste0(reduction_method, "_2")] <- reducedDimS(cds)[2,]
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")

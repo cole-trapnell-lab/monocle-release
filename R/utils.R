@@ -455,7 +455,10 @@ estimateSizeFactorsForSparseMatrix <- function(counts,
   }else if(method == 'mean-geometric-mean-total') {
     cell_total <- col_sums(CM)
     sfs <- cell_total / exp(mean(log(cell_total)))
-  } 
+  }else if(method == 'mean-geometric-mean-log-total') {
+    cell_total <- col_sums(CM)
+    sfs <- log(cell_total) / exp(mean(log(log(cell_total))))
+  }
   
   sfs[is.na(sfs)] <- 1 
   sfs   

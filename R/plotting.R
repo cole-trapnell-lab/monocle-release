@@ -1947,6 +1947,7 @@ plot_cell_clusters <- function(cds,
                                show_cell_names=FALSE, 
                                cell_size=1.5,
                                cell_name_size=2, 
+                               min_expr=0.1,
                                ...){
   if (is.null(cds@reducedDimA) | length(pData(cds)$Cluster) == 0){
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
@@ -1970,12 +1971,37 @@ plot_cell_clusters <- function(cds,
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-      markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      cds_subset <- cds[row.names(markers_fData),]
+      if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+        integer_expression <- TRUE
+      }
+      else {
+        integer_expression <- FALSE
+
+      }
+      if (integer_expression) {
+        cds_exprs <- exprs(cds_subset)
+
+        if (is.null(sizeFactors(cds_subset))) {
+         stop("Error: to call this function with relative_expr=TRUE, you must call estimateSizeFactors() first")
+        }
+        cds_exprs <- Matrix::t(Matrix::t(cds_exprs)/sizeFactors(cds_subset))
+
+        cds_exprs <- reshape2::melt(round(as.matrix(cds_exprs)))
+      }
+      else {
+        cds_exprs <- reshape2::melt(as.matrix(exprs(cds_subset)))
+      }
+      markers_exprs <- cds_exprs
+      #markers_exprs <- reshape2::melt(as.matrix(cds_exprs))
       colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
       markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
       #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
       markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
       markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+      markers_exprs$feature_label <- factor(markers_exprs$feature_label,
+                                          levels = markers[which(markers_exprs$feature_label %in% markers)])
+      
     }
   }
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
@@ -1986,11 +2012,17 @@ plot_cell_clusters <- function(cds,
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
   
+  
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    g <- g + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE) + 
-      scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+      g <- g + geom_point(aes(color=log10(value + min_expr)), size=I(cell_size), na.rm = TRUE) + 
+        scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+    }else{
+      g <- g + geom_point(aes(color=value), size=I(cell_size), na.rm = TRUE) + 
+        scale_color_viridis(name = paste0("value"), ...)
+    }
   }else {
     g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
   }
@@ -2179,7 +2211,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
-#' @importFrom igraph V get.edgelist layout_as_tree
+#' @importFrom igraph V get.edgelist layout_as_tree neighborhood
 #' @importFrom reshape2 melt
 #' @importFrom viridis scale_color_viridis
 #' @export
@@ -2281,8 +2313,7 @@ plot_complex_cell_trajectory <- function(cds,
   } else {
     layout_coord <- layout_as_tree(dp_mst, root=root_cell)
   }
-  # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
-  
+
   ### scale the path length 
   layout_coord_ori <- layout_coord 
   row.names(layout_coord) <- V(dp_mst)$name
