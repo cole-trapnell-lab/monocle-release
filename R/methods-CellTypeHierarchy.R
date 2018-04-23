@@ -686,12 +686,17 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
 #' }
 #' 
 classifyCells <- function(cds, cth, method=c("glmnet", "markers-only"), rank_prob_ratio = 2, min_observations=8, max_training_samples=10000, cores=1) {
+  if(is.null(method)) {
+    method = "glmnet"
+  }
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
   if (method == "glmnet"){
     type_res <- classifyCellsGlmNet(cds, cth, rank_prob_ratio, min_observations, max_training_samples, cores)
-  }else if (method == "markers-only"){
-    type_res <- classifyCellsHelperCell(cds, cth)
+  } else if (method == "markers-only"){
+      type_res <- classifyCellsHelperCell(cds, cth)
+  } else {
+      stop("method should either be set to \"glmnet\" or \"markers-only\"")
   }
  
   class_df <- data.frame(rowname = names(type_res), CellType = type_res)
@@ -915,7 +920,7 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
   if (verbose)
     message("Classifying cells according to markers")
   if (reclassify_cells)
-    cds <- classifyCells(cds, cth, 0.05)
+    cds <- classifyCells(cds, cth)
   if (remove_ambig)
     cds <- cds[,pData(cds)$CellType %in% c("Ambiguous") == FALSE]
   if (remove_unknown)
