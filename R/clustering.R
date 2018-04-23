@@ -465,7 +465,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   colnames(coord) <- c('x', 'y')
   row.names(coord) <- 1:nrow(coord)
   coord$Cluster <- 1:nrow(coord)
-  coord$louvain_cluster <- as.character(igraph::membership(optim_res))
+  coord$louvain_cluster <- as.character(igraph::membership(louvain_modules))
 
   edge <- get.data.frame(cluster_g)
   edge <- as.data.frame(edge)
