@@ -8,8 +8,9 @@
 \usage{
 newCellTypeHierarchy()
 
-classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL,
-  ...)
+classifyCells(cds, cth, method = c("glmnet", "markers-only"),
+  rank_prob_ratio = 2, min_observations = 8, max_training_samples = 10000,
+  cores = 1)
 
 calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
   remove_unknown = TRUE)
@@ -19,15 +20,15 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 
 \item{cth}{CellTypeHierarchy}
 
-\item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
-
-\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
-
-\item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
-
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
+
+\item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
+
+\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
+
+\item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 

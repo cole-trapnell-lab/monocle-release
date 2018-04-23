@@ -1313,9 +1313,15 @@ normalize_expr_data <- function(cds,
         FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
 
       if(is.null(pseudo_expr))
-        pseudo_expr <- 1 
-      FM <- FM + pseudo_expr
-      FM <- log2(FM)
+        pseudo_expr <- 1
+      if (pseudo_expr != 1 || isSparseMatrix(exprs(cds)) == FALSE){
+        FM <- FM + pseudo_expr
+        FM <- log2(FM)
+      }else{
+        FM@x = log2(FM@x + 1)
+      }
+      
+
     }else if (norm_method == "none"){
       # If we are using log, normalize by size factor before log-transforming
       FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
@@ -1429,12 +1435,11 @@ reduceDimension <- function(cds,
   extra_arguments <- list(...)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
+  FM <- DelayedArray(normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr))
 
-  #FM <- FM[unlist(sparseApply(FM, 1, sd, convert_to_dense=TRUE)) > 0, ]
-  xm <- Matrix::rowMeans(FM)
-  xsd <- sqrt(Matrix::rowMeans((FM - xm)^2))
-  FM <- FM[xsd > 0,]
+  # For NB: Var(Y)=mu*(1+mu/k)
+  f_expression_var <- DelayedMatrixStats::rowVars(FM)
+  FM <- FM[f_expression_var > 0,]
 
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose)
@@ -1450,17 +1455,18 @@ reduceDimension <- function(cds,
     X.model_mat <- NULL
   }
 
-  if(scaling){
-    FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-    FM <- FM[!is.na(row.names(FM)), ]
-  } else FM <- as.matrix(FM)
-
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
 
   FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {
+    
+    if(scaling){
+      FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+      FM <- FM[!is.na(row.names(FM)), ]
+    } else FM <- as.matrix(FM)
+    
     reducedDim <- reduction_method(FM, ...)
     colnames(reducedDim) <- colnames(FM)
     reducedDimW(cds) <- as.matrix(reducedDim)
@@ -1488,7 +1494,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                center = TRUE, scale. = TRUE)
+                                center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
     }
@@ -1519,7 +1525,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                center = TRUE, scale. = TRUE)
+                                center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       
       # irlba_res <- irlba(FM,
@@ -1558,7 +1564,7 @@ reduceDimension <- function(cds,
       if (verbose)
           message("Reduce dimension by tSNE ...")
 
-      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F,...)
+      tsne_res <- Rtsne::Rtsne(as.matrix(topDim_pca), dims = max_components, pca = F, check_duplicates=FALSE, ...)
 
       tsne_data <- tsne_res$Y[, 1:max_components]
       row.names(tsne_data) <- colnames(tsne_data)
@@ -1579,6 +1585,12 @@ reduceDimension <- function(cds,
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
+      if(scaling){
+        FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+        FM <- FM[!is.na(row.names(FM)), ]
+      } else FM <- as.matrix(FM)
+      
+      
       if (verbose)
         message("Reducing to independent components")
       init_ICA <- ica_helper(Matrix::t(FM), max_components,
@@ -1608,8 +1620,6 @@ reduceDimension <- function(cds,
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
 
-      if (verbose)
-        message("Learning principal graph with DDRTree")
 
       # when num_dim is passed or the number of cells is more than 5 k cells and the feature number is large than 50 (implying the feature is not PCA space), do an intial PCA 
       if("num_dim" %in% names(extra_arguments) | (ncol(FM) > 5000 & nrow(FM) > 50)) { 
@@ -1620,11 +1630,19 @@ reduceDimension <- function(cds,
           num_dim <- 50
         }
 
+        if (verbose)
+          message("Remove noise by PCA ...")
+        
         irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                                  center = TRUE, scale. = TRUE)
+                                  center = scaling, scale. = scaling)
         irlba_pca_res <- t(irlba_res$x)
         colnames(irlba_pca_res) <- colnames(FM)
         FM <- irlba_pca_res #[, 1:num_dim]
+      }else{
+        if(scaling){
+          FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
+          FM <- FM[!is.na(row.names(FM)), ]
+        } else FM <- as.matrix(FM)
       }
 
       if(reduction_method == "UMAPDDRTree") {
@@ -1646,6 +1664,16 @@ reduceDimension <- function(cds,
         cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
       }
 
+
+      if (verbose)
+        message("Learning principal graph with DDRTree")
+      
+      if(reduction_method == "UMAPDDRTree"){
+        no_reduction=TRUE
+      }else{
+        no_reduction=FALSE
+      }
+      
       # TODO: DDRTree should really work with sparse matrices.
       if(auto_param_selection & ncol(cds) >= 1000){
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
@@ -1653,12 +1681,13 @@ reduceDimension <- function(cds,
         else
           ncenter <- cal_ncenter(ncol(FM))
         #add other parameters...
-        ddr_args <- c(list(X=FM, dimensions=max_components, ncenter=ncenter, verbose = verbose),
+        
+        ddr_args <- c(list(X=FM, dimensions=max_components, ncenter=ncenter, no_reduction=no_reduction, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
         #browser()
         ddrtree_res <- do.call(DDRTree, ddr_args)
       } else{
-        ddrtree_res <- DDRTree(FM, max_components, verbose = verbose, ...)
+        ddrtree_res <- DDRTree(FM, max_components, no_reduction=no_reduction, verbose = verbose, ...)
       }
       if(ncol(ddrtree_res$Y) == ncol(cds))
         colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
@@ -1687,11 +1716,169 @@ reduceDimension <- function(cds,
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
-
-      pData(cds)$DDRTree_1 = reducedDimS(cds)[1,]
-      pData(cds)$DDRTree_2 = reducedDimS(cds)[2,]
-    }
-    else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
+ 
+    }else if(reduction_method == "L1-graph") {
+        if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+          num_dim <- extra_arguments$num_dim #variance_explained
+        }
+        else{
+          num_dim <- 50
+        }
+        
+        if (verbose)
+          message("Remove noise by PCA ...")
+        
+        if(verbose)
+          message('running PCA (no further scaling or center) ...')
+        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                                  center = scaling, scale. = scaling)
+        irlba_pca_res <- t(irlba_res$x)
+        colnames(irlba_pca_res) <- colnames(FM)
+        FM <- irlba_pca_res
+        
+        umap_args <- c(list(X = t(as.matrix(FM)), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+                       extra_arguments[names(extra_arguments) %in% 
+                                         c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                           'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+        tmp <- do.call(UMAP, umap_args)
+        umap_res <- t(tmp$embedding_); 
+        
+        adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                                        x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+                                        dimnames = list(colnames(cds), colnames(cds)))
+        
+        colnames(umap_res) <- colnames(FM)
+        FM <- umap_res
+        reducedDimA(cds) <- FM
+        
+        louvain_clustering_args <- c(list(data = t(umap_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                                     extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+        cds@auxOrderingData[["L1graph"]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
+       
+        #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
+        
+        
+        cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
+        
+        reduced_dim_res = FM 
+        
+        if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
+          ncenter <- extra_arguments$ncenter
+        }else{
+          #ncenter <- cal_ncenter(ncol(FM))
+          ncenter = 3 * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
+          ncenter = min(ncol(FM) / 2, ncenter)
+        }
+         
+        
+        if (ncenter > ncol(reduced_dim_res))
+          stop("Error: ncenters must be less than or equal to ncol(X)")
+        
+        centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
+        # 
+        # centers = c()
+        # for (i in (1:length(unique(louvain_modules)))){
+        #   module_members = which(louvain_modules == i)
+        #   num_reps = ceiling((length(module_members)/ncol(reduced_dim_res)) * ncenter)
+        #   module_cds = cds[,module_members]
+        #   
+        #   landmark_res = landmark_selection(module_cds, num_reps)
+        #   module_representatives = row.names(pData(module_cds)[which(landmark_res$flag == 1),])
+        #   #module_representatives = module_members[seq(1, length(module_members), length.out=num_reps)]
+        #   centers = append(centers, module_representatives)
+        # }
+        # #centers = t(reduced_dim_res)[centers,]
+        # 
+        kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
+        medioids = reduced_dim_res[,apply(as.matrix(proxy::dist(t(FM), kmean_res$centers)), 2, which.min)]
+        reduced_dim_res <- t(medioids)
+        #reduced_dim_res = t(reduced_dim_res)[centers,]
+        #reduced_dim_res <- t(reduced_dim_res)
+        #rownames(reduced_dim_res) = paste("Y_", 1:nrow(reduced_dim_res), sep = "")
+      
+      if(verbose)
+        message('running L1-graph ...')
+      
+      #X <- t(reduced_dim_res)
+      X <- t(reduced_dim_res)
+      # D <- nrow(X); N <- ncol(X)
+      # Z <- X
+      
+      if('C0' %in% names(extra_arguments)){
+        C0 <- extra_arguments$C0
+      }
+      else
+        C0 <- X
+      Nz <- ncol(C0)
+      
+      # print(extra_arguments)
+      if('nn' %in% names(extra_arguments))
+        G <- get_knn(C0, K = extra_arguments$nn)
+      else
+        G <- get_knn(C0, K = 5)
+      
+      if("louvain_qval" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
+        louvain_qval <- extra_arguments$louvain_qval #variance_explained
+      }
+      else{
+        louvain_qval <- 0.05
+      }
+      
+      cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+      louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+      cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
+      names(louvain_component) = colnames(FM)
+      louvain_component = louvain_component[rownames(reduced_dim_res)]
+      louvain_component = as.factor(louvain_component)
+      if (length(levels(louvain_component)) > 1){
+        louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
+        
+        G$G = G$G * louvain_component_mask
+        G$W = G$W * louvain_component_mask
+        rownames(G$G) = rownames(G$W)
+        colnames(G$G) = colnames(G$W)
+      }
+      #louvain_component = data.frame(component=louvain_component)
+     
+      l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      
+      
+      l1_graph_res <- do.call(principal_graph, l1graph_args)
+      
+      colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
+      DCs <- FM
+      #colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      
+      
+      #colnames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      #rownames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
+      rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
+      
+      
+      # row.names(l1_graph_res$X) <- colnames(cds)
+      reducedDimW(cds) <- l1_graph_res$W
+      reducedDimS(cds) <- DCs
+      reducedDimK(cds) <- l1_graph_res$C
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+      cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
+      cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
+      
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      
+      W <- l1_graph_res$W
+      dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
+      W[W < 1e-5] <- 0
+      gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
+      # dp_mst <- minimum.spanning.tree(gp)
+      minSpanningTree(cds) <- gp
+      cds@dim_reduce_type <- "L1graph"
+      cds <- findNearestPointOnMST(cds)
+    }else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
@@ -1707,7 +1894,7 @@ reduceDimension <- function(cds,
       }
       
       irlba_res <- prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
-                                      center = TRUE, scale. = TRUE)
+                                      center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       
       if(reduction_method %in% c("UMAP", "UMAPSSE")) {

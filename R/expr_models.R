@@ -359,7 +359,7 @@ parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=
   iter <- 0
   while(TRUE) {
     residuals <- disp_table$disp / ( coefs[1] + coefs[2] / disp_table$mu )
-    good <- disp_table[which( (residuals > coefs[1]) & (residuals < 10000) ),]
+    good <- disp_table[which(disp_table$disp > 0 & (residuals < 10000) ),]
     #good <- disp_table
     if(verbose)
     fit <- glm( disp ~ I(1/mu), data=good,
@@ -472,19 +472,23 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   nzGenes <- Matrix::rowSums(rounded > cds@lowerDetectionLimit)
   nzGenes <- names(nzGenes[nzGenes > min_cells_detected])
 
-  x <- t(t(rounded[nzGenes,]) / pData(cds[nzGenes,])$Size_Factor)
+  # Note: we do these operations as DelayedArray ops because standard operations will trigger a conversion 
+  # to an in-memory dense matrix. DelayedArray uses block processing. Control block size with:
+  # options(DelayedArray.block.size=100e6) 
+  # We should make this clear in the documentation, and possibly
+  # emit a message to users on calling this (and possibly other) functions.
+  x <- DelayedArray(t(t(rounded[nzGenes,]) / pData(cds[nzGenes,])$Size_Factor))
 
   xim <- mean(1/ pData(cds[nzGenes,])$Size_Factor)
 
   if (isSparseMatrix(exprs(cds))){
-    f_expression_mean <- as(Matrix::rowMeans(x), "sparseVector")
+    f_expression_mean <- as(DelayedMatrixStats::rowMeans2(x), "sparseVector")
   }else{
-    f_expression_mean <- Matrix::rowMeans(x)
+    f_expression_mean <- DelayedMatrixStats::rowMeans2(x)
   }
 
-
-    # For NB: Var(Y)=mu*(1+mu/k)
-  f_expression_var <- Matrix::rowMeans((x - f_expression_mean)^2)
+  # For NB: Var(Y)=mu*(1+mu/k)
+  f_expression_var <- DelayedMatrixStats::rowVars(x)
 
   disp_guess_meth_moments <- f_expression_var - xim * f_expression_mean
 
@@ -542,8 +546,8 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
       disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
     }else{
       cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"))
-      disp_table <- as.data.frame(cds_pdata %>% do(disp_calc_helper_NB(cds[,.$rowname], cds@expressionFamily, min_cells_detected)))
-      #disp_table <- data.frame(rowname = names(type_res), CellType = type_res)
+      disp_table <- as.data.frame(disp_calc_helper_NB(cds, cds@expressionFamily, min_cells_detected))
+      #disp_table <- data.frame(rowname = row.names(type_res), CellType = type_res)
     }
 
     #message("fitting disersion curves")

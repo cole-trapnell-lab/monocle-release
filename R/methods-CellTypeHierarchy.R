@@ -45,31 +45,146 @@ classifyCellsHelperCds <- function(cds_subset, cth, frequency_thresh){
   CellType <- cth_classifier_cds(cds_subset, cth, "root", frequency_thresh)
 }
 
-#' @importFrom igraph V
-cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res) {
-  next_nodes <- c()
-  for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
-    type_res <- gate_res[[V(cth@classificationTree) [ child ]$name]]
-    #print (class(type_res[cell_name]))
-    #print (cell_name)
-    if (type_res[cell_name] == TRUE)
-      next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
+count_cell_conflicts <- function(cth, gate_res){
+  conflicts = data.frame()
+  for (i in seq(2, length(gate_res) - 1)){ # Skip the root
+    for (j in seq(i + 1, length(gate_res))){
+      if (i < j){
+        num_conflicts = sum(gate_res[[i]] & gate_res[[j]])
+        conflicts = rbind(conflicts, data.frame("cell_type_1"=names(gate_res)[i], "cell_type_2"=names(gate_res)[j], "conflicts"=num_conflicts))
+        
+      }
+    }
+  }
+  return(conflicts)
+}
+
+# 
+# cth_classifier_cell <- function(cell_name, cth, curr_node, gate_res, max_depth = NULL) {
+#   next_nodes <- c()
+#   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
+#     type_res <- gate_res[[V(cth@classificationTree) [ child ]$name]]
+#     if (V(cth@classificationTree)[curr_node]$name != "root")
+#     {
+#       type_res <- gate_res[[ V(cth@classificationTree)[curr_node]$name]] & type_res 
+#     }
+#     #print (class(type_res[cell_name]))
+#     #print (cell_name)
+#     if (type_res[cell_name] == TRUE)
+#       next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
+#   }
+#   
+#   if (length(next_nodes) == 1){
+#     if (is.null(max_depth)){
+#       CellType <- cth_classifier_cell(cell_name, cth, next_nodes[1], gate_res)
+#     }else if(max_depth > 1){
+#       CellType <- cth_classifier_cell(cell_name, cth, next_nodes[1], gate_res, max_depth=max_depth - 1)
+#     }else{
+#       CellType = V(cth@classificationTree)[next_nodes[1]]$name
+#     }
+#     
+#   }else if(length(next_nodes) == 0){
+#     if (V(cth@classificationTree)[curr_node]$name == "root")
+#       CellType = "Unknown"
+#     else
+#       CellType = V(cth@classificationTree)[curr_node]$name
+#   }else if(length(next_nodes) > 1){
+#     CellType = "Ambiguous"
+#   }else{
+#     CellType = "Unknown"
+#   }
+#   return (CellType)
+# }
+cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
+  
+  ambiguities = rep(FALSE, length(gate_res[[2]]))
+  names(ambiguities) = row.names(gate_res[[2]])
+  
+  # First, mark off the ambiguous cells:
+  for (v in V(cth@classificationTree)){
+    if (length(V(cth@classificationTree) [suppressWarnings(nei(v, mode="out")) ]) > 1){
+      type_res <- gate_res[ V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]$name]
+      mat <- do.call("cBind",type_res)
+      #row.names(mat) = gate_res[[1]]
+      
+      tryCatch({ambiguities[Matrix::rowSums(mat) > 1] = TRUE}, error = function(e) {})
+      
+    }
+  }
+ 
+  
+  assignments = rep("Unknown", length(gate_res[[2]]))
+  names(assignments) = row.names(gate_res[[2]])
+  
+  fill_in_assignments <- function(curr_assignments, cth, v, gate_res, max_depth=NULL){
+    for (child in V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]){
+      # type_res <- gate_res[[V(cth@classificationTree) [ child ]$name]]
+      # if (V(cth@classificationTree)[v]$name != "root")
+      # {
+      #   type_res <- gate_res[[ V(cth@classificationTree)[v]$name]] & type_res 
+      # }
+      parents = V(cth@classificationTree)[igraph::all_simple_paths(cth@classificationTree, v, to = child, mode = "out")[[1]]]$name
+      parents = setdiff(parents, "root")
+      if (length(intersect(parents, names(gate_res))) > 0){
+        type_res <- gate_res[parents]
+        if (length(type_res) > 1){
+          mat <- do.call("cBind",type_res)
+          type_res = apply(mat, 1, function(x) { prod(x) })
+        }else{
+          type_res = type_res[[1]]
+        }
+        
+        curr_assignments[which(type_res == TRUE)] = V(cth@classificationTree) [ child ]$name
+        if(is.null(max_depth) == FALSE){
+          if (max_depth > 1){
+            curr_assignments = fill_in_assignments(curr_assignments, cth, child, gate_res, max_depth-1)
+          }
+        }else{
+          curr_assignments = fill_in_assignments(curr_assignments, cth, child, gate_res)
+        }
+      }
+    }
+    return (curr_assignments)
   }
   
-  if (length(next_nodes) == 1){
-    CellType <- cth_classifier_cell(cell_name, cth, next_nodes[1], gate_res)
-  }else if(length(next_nodes) == 0){
-    if (curr_node == "root")
-      CellType = "Unknown"
-    else
-      CellType = curr_node
-  }else if(length(next_nodes) > 1){
-    CellType = "Ambiguous"
-  }else{
-    CellType = "Unknown"
-  }
-  return (CellType)
+  assignments = fill_in_assignments(assignments, cth, curr_node, gate_res, max_depth)
+  assignments[which(ambiguities == TRUE)] = "Ambiguous"
+  return(assignments)
+  # next_nodes <- c()
+  # for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
+  #   type_res <- gate_res[[V(cth@classificationTree) [ child ]$name]]
+  #   if (V(cth@classificationTree)[curr_node]$name != "root")
+  #   {
+  #     type_res <- gate_res[[ V(cth@classificationTree)[curr_node]$name]] & type_res 
+  #   }
+  #   #print (class(type_res[cell_name]))
+  #   #print (cell_name)
+  #   if (type_res[cell_name] == TRUE)
+  #     next_nodes <- c(next_nodes, V(cth@classificationTree) [ child ]$name)
+  # }
+  # 
+  # if (length(next_nodes) == 1){
+  #   if (is.null(max_depth)){
+  #     CellType <- cth_classifier_cell(cell_name, cth, next_nodes[1], gate_res)
+  #   }else if(max_depth > 1){
+  #     CellType <- cth_classifier_cell(cell_name, cth, next_nodes[1], gate_res, max_depth=max_depth - 1)
+  #   }else{
+  #     CellType = V(cth@classificationTree)[next_nodes[1]]$name
+  #   }
+  #   
+  # }else if(length(next_nodes) == 0){
+  #   if (V(cth@classificationTree)[curr_node]$name == "root")
+  #     CellType = "Unknown"
+  #   else
+  #     CellType = V(cth@classificationTree)[curr_node]$name
+  # }else if(length(next_nodes) > 1){
+  #   CellType = "Ambiguous"
+  # }else{
+  #   CellType = "Unknown"
+  # }
+  # return (CellType)
 }
+
 
 #' @importFrom Biobase exprs pData
 #' @importFrom igraph V
@@ -80,14 +195,28 @@ classifyCellsHelperCell <- function(cds, cth){
   gate_res <- list()
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
+  
+    parent <- environment(cell_class_func)
+    if (is.null(parent))
+      parent <- emptyenv()
+    e1 <- new.env(parent=parent)
+    multiassign(names(pData(cds)), pData(cds), envir=e1)
+    environment(cell_class_func) <- e1
+    
     type_res <- cell_class_func(exprs(cds))
+    if (length(type_res)!= ncol(cds)){
+      message(paste("Error: classification function for", V(cth@classificationTree) [ v ]$name, "returned a malformed result."))
+      stop()
+    }
+    type_res = as(as(type_res,"sparseVector"), "sparseMatrix")
+    row.names(type_res) = row.names(pData(cds))
+    colnames(type_res) =V(cth@classificationTree) [ v ]$name
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
   }
-  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
-  class_df <- as.data.frame(cds_pdata %>% do(CellType = cth_classifier_cell(.$rowname, cth, "root", gate_res)))
-  CellType <- factor(unlist(class_df$CellType))
-  names(CellType) <- class_df$rowname
-  #CellType <- cth_classifier_cell(cds_subset, cth, "root", gate_res)
+  
+  CellType = cth_classifier_cell(cth, gate_res)
+  conflicts = count_cell_conflicts(cth, gate_res)
+  cds@auxClusteringData[["class_conflicts"]] = conflicts
   return(CellType)
 }
 
@@ -164,7 +293,7 @@ newCellTypeHierarchy <- function()
   
   root_node_id <- "root"
   
-  cth@classificationTree <- cth@classificationTree + vertex(root_node_id, classify_func=list(function(x) TRUE))
+  cth@classificationTree <- cth@classificationTree + vertex(root_node_id, classify_func=list(function(x) {rep(TRUE, ncol(x))}))
   #cth@classificationTree %>% add_vertices(1, name = root_node_id, "classify_func"=list(function(x) TRUE))
   return(cth)
 }
@@ -195,6 +324,312 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
   
   cth@classificationTree <- cth@classificationTree + edge(parent_cell_type_name, cell_type_name)
   return (cth)
+}
+
+
+#' @title Classify cells using glmnet
+#' @importFrom glmnet cv.glmnet
+#' @export
+classifyCellsHelperCellGlmNet <- function(cds, cth){
+  
+  cds_sub = cds[,pData(cds)$CellType %in% c("Unknown", "Ambiguous") == FALSE]
+  cds_sub = cds_sub[fData(cds_sub)$use_for_ordering,]
+  test_cells = row.names(pData(cds_sub))[sample(ncol(cds_sub), round(0.2 * ncol(cds_sub)))]
+  training_cells = setdiff(row.names(pData(cds_sub)), test_cells)
+  cds_sub = cds_sub[,training_cells]
+  
+  y = droplevels(pData(cds_sub)$CellType)
+  x = t(t(exprs(cds_sub)) / pData(cds_sub)$Size_Factor)
+  
+  x@x = log(x@x[x@x > 0] + 1)
+  x = t(x)
+  cvfit = cv.glmnet(x, y, family = "multinomial")
+  
+  #selected_lambda = cvfit$lambda.min
+  feature_genes = coef(cvfit, s = "lambda.min")
+  
+  test_cds = cds[fData(cds)$use_for_ordering, test_cells]
+  test_x = t(t(exprs(test_cds)) / pData(test_cds)$Size_Factor)
+  test_x@x = log(test_x@x[test_x@x > 0] + 1)
+  test_x = t(test_x)
+  predictions = predict(cvfit, newx = test_x, s = "lambda.min", type = "class")
+  
+  #fData(cds_sub)[colnames(x)[which(feature_genes[["Myoblast"]][,1] != 0) + 1],]$gene_short_name
+  return(cds)
+}
+
+# Train a multinomial classifier at each internal node of a CellTypeHierarchy
+#' @importFrom igraph V
+cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2, min_observations = 8, max_training_samples = 10000, cores = 1) {
+  message(paste("Classifying children of", V(cth@classificationTree)[curr_node]$name))
+  child_cell_types = V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]$name
+  
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
+  ctf_cell_type = cth_classifier_cell(cth, gate_res, curr_node, max_depth=1)
+  conflicts = count_cell_conflicts(cth, gate_res)
+  cds@auxClusteringData[["class_conflicts"]] = conflicts
+  outgroup_samples =  ctf_cell_type %in% child_cell_types == FALSE & 
+                      gate_res[[V(cth@classificationTree)[curr_node]$name]][,1] == FALSE &
+                      ctf_cell_type != "Ambiguous" 
+  if (sum(outgroup_samples) > 0){
+    outgroup_samples = ctf_cell_type[outgroup_samples]
+  }else{
+    outgroup_samples = c()
+  }
+  
+  ctf_cell_type = ctf_cell_type[ctf_cell_type %in% child_cell_types]
+  #ctf_cell_type[ctf_cell_type %in% child_cell_types == FALSE ]
+  if (length(ctf_cell_type) > max_training_samples){
+    message("Downsampling training data.")
+    obs_counts = table(ctf_cell_type)
+    #obs_prob = 1/obs_counts
+    target_obs_per_cell_type =  ceiling(max_training_samples / length(obs_counts))
+    training_sample = c()
+    for(i in names(obs_counts)){
+      num_obs_for_type_i = min(target_obs_per_cell_type, obs_counts[i])
+      obs_for_type_i = sample(which(ctf_cell_type == i), num_obs_for_type_i)
+      training_sample = append(training_sample, obs_for_type_i)
+    }
+    training_sample = ctf_cell_type[training_sample]
+  }else{
+    training_sample = ctf_cell_type
+  }
+  
+  if (length(outgroup_samples) > 0){
+    num_outgroup = min(max_training_samples, length(outgroup_samples))
+    outgroup = sample(outgroup_samples, num_outgroup)
+    training_sample = append(training_sample, outgroup)
+  }
+  
+  training_sample = factor(training_sample)
+  training_sample = droplevels(training_sample)
+  obs_counts = table(training_sample)
+  
+  gm_mean = function(x, na.rm=TRUE){
+    exp(sum(log(x[x > 0]), na.rm=na.rm) / length(x))
+  }
+  
+  obs_weights = gm_mean(obs_counts) / obs_counts
+  print(obs_counts)
+  excluded_cell_types = names(which(obs_counts < min_observations))
+  training_sample = training_sample[training_sample %in% excluded_cell_types == FALSE]
+  
+  cds_sub = cds[,names(training_sample)]
+  
+  
+  # chi_sq_tests = smartEsApply(cds_sub, 1, function(x) { 
+  #   expr_x = as.factor(x > 0)
+  #   if(length(levels(expr_x)) < 2){
+  #     return (1); 
+  #   }
+  #   return(suppressWarnings(chisq.test(expr_x, ctf_cell_type)$p.value));
+  #   },
+  #   convert_to_dense=FALSE)
+  # chi_sq_tests = unlist(chi_sq_tests)
+  # chi_sq_tests = p.adjust(chi_sq_tests)
+  # candidate_model_genes = sort(names(chi_sq_tests[chi_sq_tests < 0.05]))
+  
+  y = droplevels(training_sample)
+  
+  candidate_model_genes = c()
+  for (cell_type in levels(y)){
+    genes_in_cell_type = names(which(Matrix::rowSums(exprs(cds_sub[,y == cell_type]) > 0) > 0.01 * sum(y == cell_type)))
+    candidate_model_genes = append(candidate_model_genes, genes_in_cell_type)
+  }
+  candidate_model_genes = unique(candidate_model_genes)
+  #candidate_model_genes = names(which(Matrix::rowSums(exprs(cds_sub) > 0) > 0))
+  
+  cds_sub = cds_sub[candidate_model_genes,]
+  
+  
+  #obs_weights = obs_weights*obs_weights
+  
+  #x = t(t(exprs(cds_sub)) / pData(cds_sub)$Size_Factor)
+  
+  #x@x = log(x@x + 1)
+  #x = x > 0
+  x = t(exprs(cds_sub))
+  
+  
+  #require(doMC)
+  #registerDoMC(cores=4)
+  predictions = tryCatch({
+    if (cores > 1){
+      require(doParallel)
+      registerDoParallel(cores=cores)
+      cvfit = cv.glmnet(x, y, 
+                        #weights=pData(cds_sub)$Size_Factor, 
+                        weights=obs_weights[y],
+                        #offset=matrix(rep(log(pData(cds_sub)$Size_Factor), length(levels(y))),ncol=length(levels(y))),
+                        alpha=1, family = "multinomial", type.multinomial = "grouped", 
+                        type.measure="class",
+                        type.logistic = "modified.Newton",
+                        lambda.min.ratio=0.001,
+                        standardize=FALSE,
+                        parallel=TRUE,
+                        thresh=1e-6,
+                        nfolds=3,
+                        nlambda=20)
+    }else{
+      cvfit = cv.glmnet(x, y, 
+                        #weights=pData(cds_sub)$Size_Factor, 
+                        weights=obs_weights[y],
+                        #offset=matrix(rep(log(pData(cds_sub)$Size_Factor), length(levels(y))),ncol=length(levels(y))),
+                        alpha=1, family = "multinomial", type.multinomial = "grouped", 
+                        type.logistic = "modified.Newton",
+                        type.measure="class",
+                        lambda.min.ratio=0.001,
+                        standardize=FALSE,
+                        parallel=FALSE,
+                        thresh=1e-6,
+                        nfolds=3,
+                        nlambda=20)
+    }
+    feature_genes = coef(cvfit, s = "lambda.min")
+    #sort(names(which(Matrix::rowSums(abs(feature_genes$`T cell`)) > 0)))
+    message("Model training finished.")
+    
+    #x = t(t(exprs(cds[candidate_model_genes,])) / pData(cds)$Size_Factor)
+    x = t(exprs(cds[candidate_model_genes,]))
+    
+    message("Making predictions...")
+    prediction_probs = as.data.frame(predict(cvfit, 
+                                             newx = x,
+                                             #newoffset=matrix(rep(log(pData(cds)$Size_Factor), length(levels(y))),ncol=length(levels(y))),
+                                             s = "lambda.min", type = "response"))
+    prediction_probs = melt(rownames_to_column(prediction_probs))
+    prediction_probs = prediction_probs %>% dplyr::group_by(rowname) %>% dplyr::mutate(assignment_prob = value / max(value))
+    prediction_probs = prediction_probs %>% dplyr::arrange(rowname, desc(assignment_prob)) %>% dplyr::top_n(2) %>% dplyr::mutate(odds_ratio = value / min(value))
+    
+    assignments = prediction_probs %>% dplyr::filter(odds_ratio > rank_prob_ratio)
+    
+    random_guess_thresh = 1.0 / length(levels(y))
+    #min_guess_prob = 0.8
+    assignments = assignments %>% dplyr::filter(value > random_guess_thresh)
+    
+    assignments = dplyr::left_join(data.frame(rowname=row.names(pData(cds))), assignments)
+    #assignments = assignments, class_df)
+    #assignments$CurrLevelCellType = unlist(assignments$CurrLevelCellType)
+    assignments$variable = as.character(unlist(assignments$variable))
+    
+    assignments$variable = str_replace_all(assignments$variable, "\\.1", "")
+    
+    #assignments = assignments %>% dplyr::mutate(FinalCellType = dplyr::if_else(dplyr::if_else(variable %in% row.names(type_distances) == TRUE && CellType %in% row.names(type_distances) == TRUE,
+    #                                                     is.finite(type_distances[CellType, variable]), CellType, variable), variable))
+    
+    predictions = dcast(assignments, rowname ~ variable)
+    row.names(predictions) = predictions$rowname
+    
+    if (ncol(predictions) > 2){
+      predictions = predictions[,setdiff(colnames(predictions), "NA")]
+      predictions = predictions[,-1]
+      predictions = predictions[rownames(pData(cds)),]
+      predictions = as.matrix(predictions)
+      predictions[is.na(predictions)] = FALSE
+      predictions[predictions != 0] = TRUE
+      cell_type_names = colnames(predictions)
+      
+      predictions = split(predictions, rep(1:ncol(predictions), each = nrow(predictions)))
+      excluded_cell_types = append(excluded_cell_types, setdiff(levels(y), cell_type_names))
+      if (length(excluded_cell_types > 0)){
+        excluded_cell_type_predictions = matrix(FALSE, nrow=nrow(pData(cds)), ncol=length(excluded_cell_types), dimnames=list(row.names(pData(cds)), excluded_cell_types))
+        excluded_cell_type_predictions = split(excluded_cell_type_predictions, rep(1:ncol(excluded_cell_type_predictions), each = nrow(excluded_cell_type_predictions)))
+        predictions = append(predictions, excluded_cell_type_predictions)
+        names(predictions) = c(cell_type_names, excluded_cell_types)
+      }else{
+        names(predictions) = cell_type_names
+      }
+    }else{
+      cell_type_names = levels(y)
+      predictions = matrix(FALSE, nrow=nrow(pData(cds)), ncol=length(cell_type_names), dimnames=list(row.names(pData(cds)), cell_type_names))
+      predictions = split(predictions, rep(1:ncol(predictions), each = nrow(predictions)))
+      names(predictions) = cell_type_names
+    }
+    predictions
+  }, error = function(e) { 
+    print (e)
+    cell_type_names = levels(y)
+    predictions = matrix(FALSE, nrow=nrow(pData(cds)), ncol=length(cell_type_names), dimnames=list(row.names(pData(cds)), cell_type_names))
+    predictions = split(predictions, rep(1:ncol(predictions), each = nrow(predictions)))
+    names(predictions) = cell_type_names
+    predictions
+  })
+  
+  #predictions = data.frame(row.names = assignments$rowname, CellType = assignments$variable)
+  #colnames(predictions) = "CellType"
+  #row.names(predictions) = rownames(x)
+  #predictions = model.matrix(~.+0,predictions)
+
+  for (i in 1:length(predictions)){
+    p = as(as(predictions[[i]], "sparseVector"), "sparseMatrix")
+    row.names(p) = row.names(pData(cds))
+    predictions[[i]] = p
+  }
+  
+  return(predictions)
+}
+
+
+#' @title Classify cells using glmnet
+#' @export
+classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
+  
+  gate_res <- list()
+  for (v in V(cth@classificationTree)){
+    cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
+    
+    parent <- environment(cell_class_func)
+    if (is.null(parent))
+      parent <- emptyenv()
+    e1 <- new.env(parent=parent)
+    multiassign(names(pData(cds)), pData(cds), envir=e1)
+    environment(cell_class_func) <- e1
+    
+    type_res <- cell_class_func(exprs(cds))
+    if (length(type_res)!= ncol(cds)){
+      message(paste("Error: classification function for", V(cth@classificationTree) [ v ]$name, "returned a malformed result."))
+      stop()
+    }
+    type_res = as(as(type_res,"sparseVector"), "sparseMatrix")
+    row.names(type_res) = row.names(pData(cds))
+    colnames(type_res) =V(cth@classificationTree) [ v ]$name
+    gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
+  }
+  
+  imputed_gate_res <- list()
+  for (v in V(cth@classificationTree)){
+    child_cell_types = V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]$name
+    if (length(child_cell_types) > 0){
+      new_gate_res = cth_train_glmnet(cds, cth, v, gate_res, 
+                                      rank_prob_ratio=rank_prob_ratio, 
+                                      min_observations=min_observations, 
+                                      max_training_samples=max_training_samples, 
+                                      cores=cores)
+      imputed_gate_res = append(imputed_gate_res, new_gate_res)
+    }
+  }
+  
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
+  CellType = cth_classifier_cell(cth, imputed_gate_res)
+  MarkerCellType = cth_classifier_cell(cth, gate_res)
+
+  type_distances = igraph::distances(cth@classificationTree, mode = "out")
+  cells_to_assign = names(CellType)[which(CellType %in% c("Unknown", "Ambiguous") == FALSE & MarkerCellType %in% row.names(type_distances))]
+  cells_to_assign = names(CellType[cells_to_assign])[which(is.finite(type_distances[cbind(
+                                                                         CellType[cells_to_assign], 
+                                                                         MarkerCellType[cells_to_assign])]))]
+  if (length(cells_to_assign > 0)){
+    CellType[cells_to_assign] = MarkerCellType[cells_to_assign]
+  }
+  
+  cells_to_assign = names(CellType)[which(CellType == "Unknown")]
+  if (length(cells_to_assign > 0)){
+    CellType[cells_to_assign] = MarkerCellType[cells_to_assign]
+  }
+  
+  #CellType <- cth_classifier_cell(cds_subset, cth, "root", gate_res)
+  return(CellType)
+  
 }
 
 #' @title Classify cells according to a set of markers
@@ -250,38 +685,22 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' mix <- classifyCells(mix, Cluster, 0.05)
 #' }
 #' 
-classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NULL, ...) {
+classifyCells <- function(cds, cth, method=c("glmnet", "markers-only"), rank_prob_ratio = 2, min_observations=8, max_training_samples=10000, cores=1) {
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
-  if (length(list(...)) > 0){
-    if (is.null(enrichment_thresh) && is.null(frequency_thresh))
-      stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
-    
-    cds <- classifyCells(cds, cth)
-    if (is.null(frequency_thresh)){
-      frequency_thresholds <- prop.table(table(pData(cds)$CellType))
-      frequency_thresholds <- frequency_thresholds * enrichment_thresh
-      frequency_thresholds <- unlist(lapply(frequency_thresholds, min, 1.0))
-    }else
-      frequency_thresholds <- frequency_thresh
-
-    cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", ...), ...) 
-    class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyCellsHelperCds(cds[,.$rowname], cth, frequency_thresh)))
-    class_df$CellType <-  as.character(unlist(class_df$CellType))
-    #class_df$rowname <- as.character(class_df$rowname)
-  }else{
+  if (method == "glmnet"){
+    type_res <- classifyCellsGlmNet(cds, cth, rank_prob_ratio, min_observations, max_training_samples, cores)
+  }else if (method == "markers-only"){
     type_res <- classifyCellsHelperCell(cds, cth)
-    class_df <- data.frame(rowname = names(type_res), CellType = type_res)
-    class_df$CellType <- as.character(class_df$CellType)
-    class_df$rowname <- as.character(class_df$rowname)
   }
+ 
+  class_df <- data.frame(rowname = names(type_res), CellType = type_res)
+  class_df$CellType <- as.character(class_df$CellType)
+  class_df$rowname <- as.character(class_df$rowname)
   
   options(dplyr.show_progress = progress_opts)
   
   pData(cds) <- pData(cds)[!(names(pData(cds)) %in% "CellType")]
-  
-  #pData(cds)$cell_type <- cds_types
-  
   
   pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
   
@@ -291,6 +710,93 @@ classifyCells <- function(cds, cth, frequency_thresh=NULL, enrichment_thresh=NUL
   pData(cds) <- pData(cds)[,-1]
   cds
 }   
+
+#' @import methods
+#' @importFrom Biobase exprs pData
+#' @importFrom igraph V
+cth_classifier_cluster_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
+  #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
+  next_nodes <- c()
+  print (paste ("Cluster", unique(pData(cds_subset)$Cluster)))
+  for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
+    
+    #child_cell_class_func <- V(cth@classificationTree) [ child ]$classify_func[[1]]
+    #type_res <- sparseApply(exprs(cds_subset), 2, child_cell_class_func, convert_to_dense=FALSE)
+    #type_res <- child_cell_class_func(exprs(cds_subset))
+    type_res <- pData(cds_subset)$CellType %in% V(cth@classificationTree)[subcomponent(cth@classificationTree, child, "out")]$name
+    
+    #type_res <- unlist(type_res)
+    if (sum(type_res) > 0){
+      names(type_res) <- row.names(pData(cds_subset))
+      cell_type_name <- V(cth@classificationTree) [ child ]$name
+      if (length(frequency_thresh) > 1)
+        required_thresh <- frequency_thresh[cell_type_name]
+      else
+        required_thresh <- frequency_thresh
+      fraction_present = sum(type_res) / length(type_res)
+      print (paste("       ", cell_type_name, fraction_present))
+      if (fraction_present > frequency_thresh){
+        next_nodes <- c(next_nodes, cell_type_name)
+      }
+    }
+    #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
+  }
+  
+  if (length(next_nodes) == 1){
+    CellType <- cth_classifier_cluster_cds(cds_subset, cth, next_nodes[1], frequency_thresh)
+  }else if(length(next_nodes) == 0){
+    if (curr_node == "root")
+      CellType = "Unknown"
+    else
+      CellType = curr_node
+  }else if(length(next_nodes) > 1){
+    CellType = "Ambiguous"
+  }else{
+    CellType = "Unknown"
+  }
+  return (CellType)
+}
+
+classifyClustersHelperCds <- function(cds_subset, cth, frequency_thresh){
+  CellType <- cth_classifier_cluster_cds(cds_subset, cth, "root", frequency_thresh)
+}
+
+
+#' @title Impute cell type classifications using clustering results
+#' @export
+classifyCellClusters <- function(cds, cth, frequency_thresh=0.80, grouping_var = "Cluster") {
+  progress_opts <- options()$dplyr.show_progress
+  options(dplyr.show_progress = F)
+  
+  if (is.null(frequency_thresh))
+    stop("Error: to use classifyCells in grouped mode, you must also set frequency_thresh")
+  
+  cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname", grouping_var), grouping_var) 
+  class_df <- as.data.frame(cds_pdata %>% dplyr::do(CellType = classifyClustersHelperCds(cds[,.$rowname], cth, frequency_thresh)))
+  class_df$CellType <-  as.character(unlist(class_df$CellType))
+  #class_df$rowname <- as.character(class_df$rowname)
+  
+  options(dplyr.show_progress = progress_opts)
+  
+  old_cell_types = as.character(pData(cds)$CellType)
+  
+  pData(cds) <- pData(cds)[!(names(pData(cds)) %in% "CellType")]
+  
+  #pData(cds)$cell_type <- cds_types
+  
+  pData(cds) <- as.data.frame(suppressMessages(inner_join(rownames_to_column(pData(cds)), class_df)))
+  
+  row.names(pData(cds)) <- pData(cds)$rowname
+  pData(cds) <- pData(cds)[,-1]
+  
+  pData(cds)$CellType[pData(cds)$CellType == "Unknown"] = old_cell_types[pData(cds)$CellType == "Unknown"]
+  
+  pData(cds)$CellType <- factor(pData(cds)$CellType)
+  
+  cds
+}   
+
+
 
 #' @describeIn newCellTypeHierarchy Calculate each gene's specificity for each cell type 
 #' 
