@@ -53,7 +53,8 @@ Imports:
     stats,
     biocViews,
     RANN(>= 2.5),
-    Rcpp (>= 0.12.0)
+    Rcpp (>= 0.12.0),
+    rgl
 LinkingTo: Rcpp
 Suggests:
     destiny,
@@ -62,7 +63,8 @@ Suggests:
     Seurat,
     scater,
     testthat, 
-    reticulate
+    reticulate,
+    magick
 Remotes:
     bioc::Biobase,
     bioc::BiocGenerics,

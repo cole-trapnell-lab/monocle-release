@@ -3259,3 +3259,165 @@ plot_cluster_graph <- function(cds,
               size=I(cluster_name_size), color="black", na.rm=TRUE, data=coord)
   
 }
+
+
+#' Plot a dataset and trajectory in 3 dimensions
+#'
+#' @param cds CellDataSet for the experiment
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
+#' @param webGL_filename the name of a file to which you'd to write a webGL file containing the plot
+#' @param movie_filename the name of a file to which you'd to write an animated GIF containing the plot
+#' @param show_backbone whether to show the principal graph used to order the cells
+#' @param scale_expr whether to tranform the log expression values to z scores
+#' @param palette the color palette used for plotting,
+#' @param useNULL_GLdev if TRUE, don't show the plot on the screen (to be used with webGL or movie output)
+#' @return a ggplot2 plot object
+#' @import rgl
+#' @export
+#' @examples
+#' \dontrun{
+#' plot_3d_cell_trajectory(cds, markers=c("Rbfox3, Neurod1", "Sox2"))
+#' }
+#' 
+plot_3d_cell_trajectory <- function(cds, 
+                                    color_by=NULL,
+                                    markers=NULL,
+                                    markers_linear=FALSE,
+                                    webGL_filename=NULL,
+                                    movie_filename=NULL,
+                                    show_backbone=TRUE,
+                                    scale_expr=TRUE,
+                                    palette = NULL,
+                                    useNULL_GLdev = FALSE,
+                                    ...){
+  gene_short_name <- NA
+  sample_name <- NA
+  sample_state <- pData(cds)$State
+  data_dim_1 <- NA
+  data_dim_2 <- NA
+  
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info_with_pseudo <- pData(cds)
+  
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  }
+  
+  if (cds@dim_reduce_type == "ICA"){
+    reduced_dim_coords <- reducedDimS(cds)
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP") ){
+    reduced_dim_coords <- reducedDimK(cds)
+  }else {
+    stop("Error: unrecognized dimensionality reduction method.")
+  }
+  
+  ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[1:3,]))
+  colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2",  "prin_graph_dim_3")
+  
+  ica_space_df$sample_name <- row.names(ica_space_df)
+  ica_space_df$sample_state <- row.names(ica_space_df)
+  #ica_space_with_state_df <- merge(ica_space_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  #print(ica_space_with_state_df)
+  dp_mst <- minSpanningTree(cds)
+  
+  if (is.null(dp_mst)){
+    stop("You must first call orderCells() before using this function")
+  }
+  
+  edge_list <- as.data.frame(get.edgelist(dp_mst))
+  colnames(edge_list) <- c("source", "target")
+  
+  edge_df <- merge(ica_space_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+  #edge_df <- ica_space_df
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2", "prin_graph_dim_3"="source_prin_graph_dim_3"))
+  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2", "prin_graph_dim_3"="target_prin_graph_dim_3"))
+  
+  S_matrix <- 
+    reducedDimS(cds)
+  data_df <- data.frame(t(S_matrix[1:3,]))
+  #data_df <- cbind(data_df, sample_state)
+  colnames(data_df) <- c("data_dim_1", "data_dim_2", "data_dim_3")
+  data_df$sample_name <- row.names(data_df)
+  data_df <- merge(data_df, lib_info_with_pseudo, by.x="sample_name", by.y="row.names")
+  
+  markers_exprs = NULL
+  if (is.null(markers) == FALSE){
+    markers_fData <- subset(fData(cds), gene_short_name %in% markers)
+    if (nrow(markers_fData) >= 1){
+      #   markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
+      #   colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
+      #   markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
+      #   #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+      markers_expr_val <- exprs(cds[row.names(markers_fData),])
+      markers_expr_val = Matrix::colSums(markers_expr_val)
+      markers_expr_val = markers_expr_val / pData(cds)$Size_Factor
+      if (scale_expr){
+        markers_expr_val = scale(log10(markers_expr_val+1))
+        markers_expr_val[markers_expr_val < -3] = -3
+        markers_expr_val[markers_expr_val > 3] = 3
+      }
+      
+      markers_exprs = data.frame(cell_id = row.names(pData(cds)))
+      markers_exprs$value = markers_expr_val
+    }
+  }
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
+    data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
+    map2color<-function(x,pal,limits=NULL){
+      # if(is.null(limits)) limits=range(x)
+      # print (limits)
+      # inter = findInterval(x,seq(limits[1],limits[2],length.out=length(pal)+1), all.inside=TRUE)
+      # print(inter)
+      # pal[inter]
+      if (is.null(limits) == FALSE){
+        x[x < limits[1]] = limits[1]
+        x[x > limits[2]] = limits[2]
+      }
+      
+      ii <- cut(x, breaks = seq(min(x), max(x), len = 100), 
+                include.lowest = TRUE)
+      colors <- colorRampPalette(c("lightgrey", "darkslateblue"))(99)[ii]
+      return(colors)
+    }
+    mypal <- colorRampPalette( c( "lightgrey", "darkslateblue" ) )( 256 )
+    #mypal = viridis(256)
+    if(markers_linear || scale_expr){        
+      point_colors = map2color(data_df$value, mypal, c(-3, 3))
+    } else {
+      point_colors = map2color(log10(data_df$value+0.1), mypal)
+    }
+  }else if (is.null(color_by) == FALSE){
+    gg_color_hue <- function(n) {
+      hues = seq(15, 375, length = n + 1)
+      hcl(h = hues, l = 65, c = 100)[1:n]
+    }
+    num_colors = length(levels(pData(cds)[,color_by]))
+    if (is.null(palette)){
+      colors = gg_color_hue(num_colors)
+      names(colors) = levels(pData(cds)[,color_by])
+    }else{
+      colors = palette
+    }
+    point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
+  }
+  open3d(windowRect=c(0,0,1024,1024), useNULL=useNULL_GLdev)
+  if (show_backbone){
+    segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2)
+    points3d(Matrix::t(reduced_dim_coords[1:3,]), color="red")
+  }
+  
+  points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors, alpha=0.5)
+  
+  if (is.null(webGL_filename) == FALSE){
+    writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
+  }
+  
+  if (is.null(movie_filename) == FALSE){
+    movie3d(spin3d(axis = c(0, 0, 1)), duration = 10, convert=TRUE, dir=getwd(), movie=movie_filename)
+  }
+  rgl.bringtotop()
+}
+
