@@ -7,7 +7,7 @@
 #' @export
 landmark_selection <- function(cds, landmark_num) {
   if(landmark_num >= ncol(cds) | landmark_num < 1) {
-    stop('number of landmarks should be smaller than the number of cells and larger than 1!')
+    stop('number of landmarks should be smaller than the number of cells and larger than 1')
   }
   
   data_class <- class(cds@assayData$exprs)
