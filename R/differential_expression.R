@@ -236,11 +236,19 @@ spatialDifferentialTest <- function(cds,
   # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
 
   # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
-
+  
+  if(verbose) {
+    message("retrieve the matrices for Moran's test...")
+  }
+  
   data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
   cell2pp_map <- cds@auxOrderingData[["L1graph"]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
   principal_g <- cds@auxOrderingData[["L1graph"]]$W 
   
+  
+  if(verbose) {
+    message("Identify connecting principal point pairs ...")
+  }
   # Use all pairings of i and j
   # principal_g[upper.tri(principal_g)] <- 0
   i_vec <- rep(seq_len(ncol(principal_g)), times = apply(principal_g, 1, function(x) sum(x > 0)))
@@ -251,8 +259,8 @@ spatialDifferentialTest <- function(cds,
                        FUN = function(i, j) {
                          # message('i, j are ', i, ' ', j)
                          cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
-                         data <- data[cells_id_to_pp, ]
-                         res <- RANN::nn2(data, data, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]][, ]
+                         data_subset <- data[cells_id_to_pp, ]
+                         res <- RANN::nn2(data_subset, data_subset, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]]
                          res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
                       },
                       mc.cores = cores
@@ -260,7 +268,11 @@ spatialDifferentialTest <- function(cds,
   conn_kNN_graph <- do.call(rbind, conn_kNN_graph)
   conn_kNN_graph <- unique(conn_kNN_graph)[, ]
   
-  res <- list(nn = conn_kNN_graph[, -1], np = nrow(conn_kNN_graph), 
+  # an alternative approach to make the kNN graph based on the principal graph 
+  
+  # convert the original cell id to the id from conn_kNN_graph with duplciated cells
+  cell2kNN_id <- unlist(lapply(1:ncol(cds), function(x) min(which(x == conn_kNN_graph[, 1])))) 
+  res <- list(nn = matrix(cell2kNN_id[conn_kNN_graph[, -1]], ncol = k, byrow = F), np = nrow(conn_kNN_graph), 
               k = k, dimension = ncol(data), x = data[conn_kNN_graph[, 1], ])
 
   class(res) <- "knn"
@@ -276,9 +288,9 @@ spatialDifferentialTest <- function(cds,
       exprs_val <- x 
     }else{
       if(relative_expr) {
-        exprs_val <- log10(exprs_val / sizeFactors(cds) + 1)
+        exprs_val <- log10(exprs_val / sizeFactors(cds) + 0.1)
       } else {
-        exprs_val <- log10(exprs_val + 1)
+        exprs_val <- log10(exprs_val + 0.1)
       }
     }
     
