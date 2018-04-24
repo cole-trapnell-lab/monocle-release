@@ -1861,9 +1861,9 @@ reduceDimension <- function(cds,
       reducedDimW(cds) <- l1_graph_res$W
       reducedDimS(cds) <- DCs
       reducedDimK(cds) <- l1_graph_res$C
-      cds@auxOrderingData[["L1graph"]]$objective_vals <- tail(l1_graph_res$objs, 1)
-      cds@auxOrderingData[["L1graph"]]$W <- l1_graph_res$W
-      cds@auxOrderingData[["L1graph"]]$P <- l1_graph_res$P
+      cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+      cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
+      cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
       
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
@@ -2016,7 +2016,7 @@ findNearestPointOnMST <- function(cds){
   closest_vertex_df <- as.matrix(closest_vertex) #index on Z
   row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
 
-  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
 }
 

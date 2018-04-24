@@ -1,0 +1,29 @@
+#include<random>
+#include<iostream>
+#include<unordered_set>
+using namespace std;
+
+class RandomGenerator{
+public:
+	RandomGenerator()
+};
+
+
+void select_landmarks(const double *data, const double *indices,
+		const double *indptr, const int n, int num)
+{
+	default_random_engine generator;
+	uniform_int_distribution<int> distribution(0,9);
+
+	for(int i=0;i<100;i++)
+	{
+		int number = distribution(generator);
+		cout<<number<<endl;
+	}
+
+}
+
+int main()
+{
+
+}
