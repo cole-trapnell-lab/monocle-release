@@ -5,7 +5,6 @@
 #include<string>
 #include<sstream>
 #include<cstdlib>
-#include<omp.h>
 #include<cmath>
 #include<cstdio>
 #include<cfloat>
