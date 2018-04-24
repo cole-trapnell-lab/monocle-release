@@ -1716,7 +1716,6 @@ reduceDimension <- function(cds,
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
- 
     }else if(reduction_method == "L1-graph") {
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
           num_dim <- extra_arguments$num_dim #variance_explained
@@ -1759,7 +1758,7 @@ reduceDimension <- function(cds,
         #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
         
         
-        cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
+        cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
         
@@ -1876,7 +1875,7 @@ reduceDimension <- function(cds,
       gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
       # dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- gp
-      cds@dim_reduce_type <- "L1graph"
+      cds@dim_reduce_type <- "DDRTree"
       cds <- findNearestPointOnMST(cds)
     }else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
@@ -1992,9 +1991,6 @@ reduceDimension <- function(cds,
       pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
-
-      pData(cds)[, paste0(reduction_method, "_1")] <- reducedDimS(cds)[1,]
-      pData(cds)[, paste0(reduction_method, "_2")] <- reducedDimS(cds)[2,]
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")
