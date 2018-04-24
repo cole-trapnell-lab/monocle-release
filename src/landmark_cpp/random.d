@@ -1,1 +1,0 @@
-random.d: random.cpp
