@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;lankmark_selector/landmark_selector.py&apos; to &apos;landmark_selector.cpp&apos;" description="Rename resource &apos;landmark_selector.py&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="landmark_selector.py" name="landmark_selector.cpp" stamp="1513889217110" updateReferences="true"/>
+</session>

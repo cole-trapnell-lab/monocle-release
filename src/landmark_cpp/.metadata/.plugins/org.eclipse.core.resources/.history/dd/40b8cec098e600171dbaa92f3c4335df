@@ -1,0 +1,30 @@
+#include<random>
+#include<iostream>
+#include<unordered_set>
+using namespace std;
+
+void select_landmarks(const double *data, const double *indices,
+		const double *indptr, const int n, int num)
+{
+}
+
+int get_index(default_random_engine &generator, unordered_set<int> &index_set)
+{
+	uniform_int_distribution<int> distribution(0,index_set.size());
+	unordered_set<int>::iterator it=index_set.begin();
+	int number = distribution(generator);
+	it += number;
+	int ind = *(it);
+	return ind;
+}
+
+int main()
+{
+	default_random_engine generator;
+	unordered_set<int> index_set({1,3,7,9,11,30,40,99});
+
+	for(int i = 0;i<10;i++){
+		int ind = get_index(generator, index_set);
+		cout<<ind<<endl;
+	}
+}
