@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Delete resource &apos;lankmark_selector/test.cpp&apos;" deleteContents="false" description="Delete resource &apos;lankmark_selector/test.cpp&apos;" element1="/lankmark_selector/test.cpp" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1513890035329"/>
-</session>

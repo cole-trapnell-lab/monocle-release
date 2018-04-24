@@ -206,3 +206,100 @@ differentialGeneTest <- function(cds,
 
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
+
+#' Test genes for differential expression
+#' 
+#' Tests each gene for differential expression as a function of pseudotime 
+#' or according to other covariates as specified. \code{differentialGeneTest} is
+#' Monocle's main differential analysis routine. 
+#' It accepts a CellDataSet and two model formulae as input, which specify generalized
+#' lineage models as implemented by the \code{VGAM} package. 
+#' 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param relative_expr Whether to transform expression into relative values.
+#' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I test procedure
+#' @param cores the number of cores to be used while testing each gene for differential expression.
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
+#' @importFrom spdep knn2nb nb2listw moran.test 
+#' @importFrom stats p.adjust 
+#' @seealso \code{\link[spdep]{moran.test}}
+#' @export
+spatialDifferentialTest <- function(cds, 
+                                 relative_expr=TRUE,
+                                 k = 5, 
+                                 cores=1, 
+                                 verbose=FALSE) {
+
+  # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
+  # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
+  # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
+
+  # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
+
+  data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
+  cell2pp_map <- cds@auxOrderingData[["L1graph"]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+  principal_g <- cds@auxOrderingData[["L1graph"]]$W 
+  
+  # Use all pairings of i and j
+  # principal_g[upper.tri(principal_g)] <- 0
+  i_vec <- rep(seq_len(ncol(principal_g)), times = apply(principal_g, 1, function(x) sum(x > 0)))
+  j_vec <- as.vector(unlist(apply(principal_g, 1, function(x) which(x > 0))))
+  
+  # calculate kNN in parallel for cells belong to each pair of connected principal points
+  conn_kNN_graph <- mcmapply(i_vec[which(j_vec != 0)], j_vec[which(j_vec != 0)], 
+                       FUN = function(i, j) {
+                         # message('i, j are ', i, ' ', j)
+                         cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
+                         data <- data[cells_id_to_pp, ]
+                         res <- RANN::nn2(data, data, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]][, ]
+                         res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
+                      },
+                      mc.cores = cores
+              ) 
+  conn_kNN_graph <- do.call(rbind, conn_kNN_graph)
+  conn_kNN_graph <- unique(conn_kNN_graph)[, ]
+  
+  res <- list(nn = conn_kNN_graph[, -1], np = nrow(conn_kNN_graph), 
+              k = k, dimension = ncol(data), x = data[conn_kNN_graph[, 1], ])
+
+  class(res) <- "knn"
+  attr(res, "call") <- match.call()
+
+  k1 <- knn2nb(res)
+  lw <- nb2listw(k1, zero.policy=TRUE)
+  
+  moran_test_res <- mclapply(row.names(cds), FUN = function(x) {
+    exprs_val <- exprs(cds)[x, ]
+    
+    if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
+      exprs_val <- x 
+    }else{
+      if(relative_expr) {
+        exprs_val <- log10(exprs_val / sizeFactors(cds) + 1)
+      } else {
+        exprs_val <- log10(exprs_val + 1)
+      }
+    }
+    
+    test_res <- tryCatch({
+      mt <- moran.test(exprs_val[conn_kNN_graph[, 1]], lw, zero.policy=TRUE)
+      data.frame(status = 'OK', pval = mt$p.value, statistics = mt$statistic)
+    }, 
+      error = function(e) {
+        data.frame(status = 'FAIL', pval = NA, statistics = NA)
+      })
+  }, mc.cores = cores)
+  
+  moran_test_res <- do.call(rbind.data.frame, moran_test_res)
+  row.names(moran_test_res) <- row.names(cds)
+  
+  moran_test_res <- merge(moran_test_res, fData(cds), by="row.names")
+  row.names(moran_test_res) <- moran_test_res[, 1] #remove the first column and set the row names to the first column
+  moran_test_res[, 1] <- NULL 
+  moran_test_res$qval <- 1
+  moran_test_res$qval[which(moran_test_res$status == 'OK')] <- p.adjust(subset(moran_test_res, status == 'OK')[, 'pval'], method="BH")
+  
+  moran_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
+}
+
