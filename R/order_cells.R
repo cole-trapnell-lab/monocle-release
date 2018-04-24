@@ -1716,6 +1716,7 @@ reduceDimension <- function(cds,
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
+ 
     }else if(reduction_method == "L1-graph") {
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
           num_dim <- extra_arguments$num_dim #variance_explained
@@ -1758,7 +1759,7 @@ reduceDimension <- function(cds,
         #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
         
         
-        cds@auxOrderingData[["DDRTree"]]$adj_mat <- adj_mat
+        cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
         
@@ -1861,9 +1862,9 @@ reduceDimension <- function(cds,
       reducedDimW(cds) <- l1_graph_res$W
       reducedDimS(cds) <- DCs
       reducedDimK(cds) <- l1_graph_res$C
-      cds@auxOrderingData[["DDRTree"]]$objective_vals <- tail(l1_graph_res$objs, 1)
-      cds@auxOrderingData[["DDRTree"]]$W <- l1_graph_res$W
-      cds@auxOrderingData[["DDRTree"]]$P <- l1_graph_res$P
+      cds@auxOrderingData[["L1graph"]]$objective_vals <- tail(l1_graph_res$objs, 1)
+      cds@auxOrderingData[["L1graph"]]$W <- l1_graph_res$W
+      cds@auxOrderingData[["L1graph"]]$P <- l1_graph_res$P
       
       adjusted_K <- Matrix::t(reducedDimK(cds))
       dp <- as.matrix(dist(adjusted_K))
@@ -1875,7 +1876,7 @@ reduceDimension <- function(cds,
       gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
       # dp_mst <- minimum.spanning.tree(gp)
       minSpanningTree(cds) <- gp
-      cds@dim_reduce_type <- "DDRTree"
+      cds@dim_reduce_type <- "L1graph"
       cds <- findNearestPointOnMST(cds)
     }else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
       cds@dim_reduce_type <- reduction_method
@@ -1992,6 +1993,9 @@ reduceDimension <- function(cds,
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
         louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
 
+      pData(cds)[, paste0(reduction_method, "_1")] <- reducedDimS(cds)[1,]
+      pData(cds)[, paste0(reduction_method, "_2")] <- reducedDimS(cds)[2,]
+
     } else {
       stop("Error: unrecognized dimensionality reduction method")
     }
@@ -2016,7 +2020,7 @@ findNearestPointOnMST <- function(cds){
   closest_vertex_df <- as.matrix(closest_vertex) #index on Z
   row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
 
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
 }
 

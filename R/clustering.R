@@ -253,7 +253,7 @@ clusterCells <- function(cds,
     }
 
     cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, data, verbose)
-
+    # compute_louvain_connected_components
     pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
 
     cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res, cluster_graph_res = cluster_graph_res)
@@ -424,7 +424,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   return(list(g = g, coord = coord, edge_links = edge_links, optim_res = optim_res))
 }
 
-compute_louvain_connected_components = function(g, optim_res, qval_thresh=0.05, verbose = FALSE){
+compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05, verbose = FALSE){
   cell_membership <- as.factor(igraph::membership(optim_res))
   membership_matrix = sparse.model.matrix( ~ cell_membership + 0)
   num_links = t(membership_matrix) %*% as_adjacency_matrix(g) %*% membership_matrix
@@ -458,7 +458,24 @@ compute_louvain_connected_components = function(g, optim_res, qval_thresh=0.05, 
   diag(cluster_mat) = 0
   cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
   louvain_modules <- igraph::cluster_louvain(cluster_g)
-  list(cluster_g = cluster_g, cluster_optim_res = optim_res)
+
+  # return also the layout coordinates and the edges link for the graph of clusters
+  coord <- igraph::layout_components(cluster_g) 
+  coord <- as.data.frame(coord)
+  colnames(coord) <- c('x', 'y')
+  row.names(coord) <- 1:nrow(coord)
+  coord$Cluster <- 1:nrow(coord)
+  coord$louvain_cluster <- as.character(igraph::membership(louvain_modules))
+
+  edge <- get.data.frame(cluster_g)
+  edge <- as.data.frame(edge)
+  colnames(edge) <- c('start', 'end', 'weight')
+  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+  edge_links <- as.data.frame(edge_links)
+  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+  edge_links$weight <- edge[, 3]
+
+  list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
 }
 
 # Function to retrieve a graph of cell clusters 
