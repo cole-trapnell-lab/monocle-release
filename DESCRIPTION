@@ -54,7 +54,8 @@ Imports:
     biocViews,
     RANN(>= 2.5),
     Rcpp (>= 0.12.0),
-    rgl
+    rgl,
+    spdep
 LinkingTo: Rcpp
 Suggests:
     destiny,

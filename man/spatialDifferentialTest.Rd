@@ -2,7 +2,7 @@
 % Please edit documentation in R/differential_expression.R
 \name{spatialDifferentialTest}
 \alias{spatialDifferentialTest}
-\title{Test genes for differential expression}
+\title{Test genes for differential expression based on the low dimensional embedding and the principal graph}
 \usage{
 spatialDifferentialTest(cds, relative_expr = TRUE, k = 5, cores = 1,
   verbose = FALSE)

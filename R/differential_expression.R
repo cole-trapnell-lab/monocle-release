@@ -207,7 +207,7 @@ differentialGeneTest <- function(cds,
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-#' Test genes for differential expression
+#' Test genes for differential expression based on the low dimensional embedding and the principal graph 
 #' 
 #' Tests each gene for differential expression as a function of pseudotime 
 #' or according to other covariates as specified. \code{differentialGeneTest} is
@@ -241,10 +241,14 @@ spatialDifferentialTest <- function(cds,
     message("retrieve the matrices for Moran's test...")
   }
   
-  data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
-  cell2pp_map <- cds@auxOrderingData[["L1graph"]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
-  principal_g <- cds@auxOrderingData[["L1graph"]]$W 
-  
+  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+  if(cds@dim_reduce_type == 'L1graph') {
+    data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
+    principal_g <- cds@auxOrderingData[["L1graph"]]$W 
+  } else if(cds@dim_reduce_type == 'DDRTree') {
+    data <- t(reducedDimS(cds))
+    principal_g <-  cds@auxOrderingData[["DDRTree"]]$stree[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
+  }
   
   if(verbose) {
     message("Identify connecting principal point pairs ...")
@@ -259,6 +263,10 @@ spatialDifferentialTest <- function(cds,
                        FUN = function(i, j) {
                          # message('i, j are ', i, ' ', j)
                          cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
+                         
+                         if(length(cells_id_to_pp) < 2) {
+                           return(NULL)
+                         }
                          data_subset <- data[cells_id_to_pp, ]
                          res <- RANN::nn2(data_subset, data_subset, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]]
                          res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
@@ -272,7 +280,7 @@ spatialDifferentialTest <- function(cds,
   
   # convert the original cell id to the id from conn_kNN_graph with duplciated cells
   cell2kNN_id <- unlist(lapply(1:ncol(cds), function(x) min(which(x == conn_kNN_graph[, 1])))) 
-  res <- list(nn = matrix(cell2kNN_id[conn_kNN_graph[, -1]], ncol = k, byrow = F), np = nrow(conn_kNN_graph), 
+  res <- list(nn = matrix(as.integer(cell2kNN_id[conn_kNN_graph[, -1]]), ncol = k, byrow = F), np = nrow(conn_kNN_graph), # knn graph need to be integerx
               k = k, dimension = ncol(data), x = data[conn_kNN_graph[, 1], ])
 
   class(res) <- "knn"
@@ -314,4 +322,3 @@ spatialDifferentialTest <- function(cds,
   
   moran_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
-

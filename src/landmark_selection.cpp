@@ -6,12 +6,10 @@
 #include<string>
 #include<sstream>
 #include<cstdlib>
-#include<omp.h>
 #include<cmath>
 #include<cstdio>
 #include<cfloat>
 #include "./random.h"
-#include<omp.h>
 // [[Rcpp::plugins(openmp)]]
 
 using namespace std;
@@ -211,23 +209,6 @@ void select_landmarks_cpp(const vector<float> &data, const vector<int> &indices,
   }
 }
 
-int test2()
-{
-  int total = omp_get_max_threads();
-  cout<<total;
-  
-  int i;
-  int numthreads = total;
-#pragma omp parallel for default(none) num_threads(numthreads) private(i)
-  for (i = 0; i < 100; i++)
-  {
-    int tid = omp_get_thread_num();
-    printf("Hello world from omp thread %d\n", tid);
-  }
-  
-  return 0;
-}
-
 int main(int argc, char**argv){
   
   InputParser parser(argc, argv);
@@ -270,12 +251,6 @@ int main(int argc, char**argv){
     return 0;
   }
   
-  //	int count = 10;
-  //	int num_proc = 8;
-  omp_set_dynamic(0);     // Explicitly disable dynamic teams
-  omp_set_num_threads(num_proc);
-  
-  double t1 = omp_get_wtime();
   string line;
   
   cout<<"loading "<<indptr_file<<endl;
@@ -305,18 +280,13 @@ int main(int argc, char**argv){
   vector<int> indices;
   parse_string_2_int(line, indices);
   findices.close();
-  t1 = omp_get_wtime() - t1;
   
-  double t = omp_get_wtime();
   vector<float> dist(n, FLT_MAX); // will this cause a lot memory footprint? 
   vector<int> assign(n, -1);
   // 0 for non-landmark, 1 for landmark
   vector<int> flag(n, 0);
   select_landmarks_cpp(data, indices, indptr, n, dim, count, dist, assign, flag);
-  t = omp_get_wtime() - t;
   
-  // output files
-  double t2 = omp_get_wtime();
   string landmark_file = output_dir+"/landmark.txt";
   ofstream out_landmark(landmark_file, ofstream::out);
   for(int i = 0;i<n;i++){
@@ -333,12 +303,6 @@ int main(int argc, char**argv){
   for(int i=0;i<n;i++){
     out_dist<<i<<" "<<assign[i]<<" "<<dist[i]<<"\n";
   }
-  t2 = omp_get_wtime() - t2;
-  
-  cout<<"loading data takes "<<t1<<" seconds"<<endl;
-  cout<<"processing takes "<<t<<" seconds"<<endl;
-  cout<<"output data takes "<<t2<<" seconds"<<endl;
-  printf ("It took me %f seconds in total.\n",t1+t+t2);
   
   return 0;
 }

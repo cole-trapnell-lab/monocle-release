@@ -1,5 +1,39 @@
 Monocle 2.0.0 Series NEWS
-================================================================================
+================================================================================	 
+-Version 2.6.2	
+---------------------------------------------------------------------------------	
+-  o Added a new method for size factor calculations, "mean-geometric-mean-log-total"	
+-  o Added an argument to override the pseudocount value in plot_cell_clusters	
+-  	
+-Version 2.6.0	
+---------------------------------------------------------------------------------	
+-  o knn-based density peak clustering is not general for all datasets. Rolled back to 	
+-    the previous densityPeak clustering algorithm and set it to be the default algorithm.	
+-    A new Louvain clustering algorithm for dealing with large datasets (like > 500 k cells)	
+-    is added. 	
+-  o A few bug fixes for importCDS, exportCDS functions.	
+-	
+-Version 2.5.0	
+---------------------------------------------------------------------------------	
+-  o Various plot utilities for visualizing complex developmental trajectory 	
+-    (plot_complex_cell_trajectory), multi-way kinetic curve and multi-way heatmap	
+-    (plot_multiple_branches_pseudotime, plot_multiple_branches_heatmap). 	
+-  o ClusterCells now in principle supports clustering for 100 k+ cells which depends on 	
+-    a procedure of kNN based density peak clustering algorithm. densityClust package 	
+-    version 0.3 are required for users to use this functionality.  	
+-  o New functions supporting importing scater or Seurat cds into monocle or vice versa	
+-    (importCDS, exportCDS).	
+-	
+-	
+-Version 2.4.0	
+---------------------------------------------------------------------------------	
+-  o The default expressionFamily is now negbinomial.size, instead of Tobit. If 	
+-    you are using TPM or FPKM data, we urge you to convert it to relative 	
+-    transcript counts with relative2abs and use the negative binomial distribution	
+-    in your CellDataSet objects.	
+-  o Revamped clusterCells functionality based on t-SNE and densityPeak	
+-  o New procedure for selected ordering genes called "dpFeature". See vignette	
+-    for details.
 
 Version 2.1.1
 --------------------------------------------------------------------------------

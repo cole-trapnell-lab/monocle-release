@@ -2340,6 +2340,9 @@ plot_complex_cell_trajectory <- function(cds,
       modified_vec <- c(modified_vec, curr_vertex)
     }
   }
+  # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
+ 
+  
   
   row.names(layout_coord) <- NULL
   #ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[c(x,y),]))
