@@ -1174,7 +1174,7 @@ orderCells <- function(cds,
     }
     cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
 
-    if(ncol(cds) > 1000) {
+    if(ncol(cds) > 100) {
       R <- cds@auxOrderingData$DDRTree$R
       edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
 
