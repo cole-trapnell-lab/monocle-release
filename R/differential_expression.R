@@ -234,29 +234,11 @@ spatialDifferentialTest <- function(cds,
                                  cores=1, 
                                  verbose=FALSE) {
 
-  # perform landmark selection: 
-  if(!is.null(landmark_num)) {
-    landmark_res <- landmark_selection(cds, landmark_num = landmark_num)
-    data <- t(reducedDimA(cds))[landmark_res$flag == 0, ] # cell coordinates on low dimensional 
-    exprs_mat <- aggregate(t(as.matrix(exprs(cds))), by = list(landmark_res$assign), mean) 
-    
-    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
-    
-  } else {
-    exprs_mat <- exprs(cds)
-  }
-  
-  # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
-  # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
-  # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
-
-  # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
   
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
   
-  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
   if(cds@dim_reduce_type == 'L1graph') {
     data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
     principal_g <- cds@auxOrderingData[["L1graph"]]$W 
@@ -265,6 +247,29 @@ spatialDifferentialTest <- function(cds,
     principal_g <-  cds@auxOrderingData[["DDRTree"]]$stree[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
   
+  # perform landmark selection: 
+  if(!is.null(landmark_num)) {
+    if(verbose) {
+      message("Performing landmark selection: ...")
+    }
+    
+    landmark_res <- landmark_selection(cds, landmark_num = landmark_num)
+    data <- data[landmark_res$flag == 1, ] # cell coordinates on low dimensional 
+    exprs_mat <- t(aggregate(t(as.matrix(exprs(cds))), by = list(landmark_res$assign), mean))[-1, ]
+    
+    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[landmark_res$flag == 1, ] # mapping from each cell to the principal points 
+    
+  } else {
+    exprs_mat <- exprs(cds)
+    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+  }
+  
+  # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
+  # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
+  # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
+
+  # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
+
   if(verbose) {
     message("Identify connecting principal point pairs ...")
   }
@@ -341,6 +346,9 @@ spatialDifferentialTest <- function(cds,
   lw <- nb2listw(k1, zero.policy=TRUE)
   }
   
+  if(verbose) {
+    message("Performing Moran's test: ...")
+  }
   moran_test_res <- mclapply(row.names(exprs_mat), FUN = function(x) {
     exprs_val <- exprs_mat[x, ]
     
@@ -366,6 +374,10 @@ spatialDifferentialTest <- function(cds,
         data.frame(status = 'FAIL', pval = NA, statistics = NA)
       })
   }, mc.cores = cores)
+  
+  if(verbose) {
+    message("returning results: ...")
+  }
   
   moran_test_res <- do.call(rbind.data.frame, moran_test_res)
   row.names(moran_test_res) <- row.names(cds)
