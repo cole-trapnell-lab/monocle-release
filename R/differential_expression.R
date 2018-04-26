@@ -216,6 +216,7 @@ differentialGeneTest <- function(cds,
 #' lineage models as implemented by the \code{VGAM} package. 
 #' 
 #' @param cds a CellDataSet object upon which to perform this operation
+#' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used) 
 #' @param relative_expr Whether to transform expression into relative values.
 #' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I test procedure
 #' @param cores the number of cores to be used while testing each gene for differential expression.
@@ -226,11 +227,25 @@ differentialGeneTest <- function(cds,
 #' @seealso \code{\link[spdep]{moran.test}}
 #' @export
 spatialDifferentialTest <- function(cds, 
+                                 kNN_type = c(1, 2), 
+                                 landmark_num = NULL, 
                                  relative_expr=TRUE,
-                                 k = 5, 
+                                 k = 25, 
                                  cores=1, 
                                  verbose=FALSE) {
 
+  # perform landmark selection: 
+  if(!is.null(landmark_num)) {
+    landmark_res <- landmark_selection(cds, landmark_num = landmark_num)
+    data <- t(reducedDimA(cds))[landmark_res$flag == 0, ] # cell coordinates on low dimensional 
+    exprs_mat <- aggregate(t(as.matrix(exprs(cds))), by = list(landmark_res$assign), mean) 
+    
+    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+    
+  } else {
+    exprs_mat <- exprs(cds)
+  }
+  
   # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
   # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
   # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
@@ -253,6 +268,44 @@ spatialDifferentialTest <- function(cds,
   if(verbose) {
     message("Identify connecting principal point pairs ...")
   }
+
+  ########################################################################################################################################################################
+  if(kNN_type == 1) {
+  # an alternative approach to make the kNN graph based on the principal graph 
+  knn_res <- RANN::nn2(data, data, k + 1, searchtype = "standard")[[1]]
+  kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
+
+  principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
+  diag(principal_g_tmp) <- 1 # so set diagnol as 1 
+
+  # find cell kNN connections that are connected across two disconnected principal points (cells correpond to disconnected principal points should not connected)  
+  kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
+  knn_list <- apply(kNN_res_pp_map, 1, function(x) {
+    tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
+    
+    # remove those edges in the kNN neighbo list 
+    if(length(tmp) > 0) {
+      knn_res_tmp <- knn_res[x[1], - tmp][-1] #[-1]: remove itself
+      if(length(knn_res_tmp) == 0) { 
+        return(knn_res[x[1], 1]) # when there is no neighbors, return index 0 
+      }
+      else {
+        knn_res_tmp
+      }
+    } else {
+      knn_res[x[1], ][-1]
+    }
+  })
+  
+  # create the lw list for moran.test  
+  class(knn_list) <- "nb"
+  attr(knn_list, "region.id") <- row.names(cds)
+  attr(knn_list, "call") <- match.call()
+  # attr(knn_list, "type") <- "queen"
+  lw <- nb2listw(knn_list, zero.policy = TRUE)
+  }
+  ########################################################################################################################################################################
+  if(kNN_type == 2) {
   # Use all pairings of i and j
   # principal_g[upper.tri(principal_g)] <- 0
   i_vec <- rep(seq_len(ncol(principal_g)), times = apply(principal_g, 1, function(x) sum(x > 0)))
@@ -260,23 +313,21 @@ spatialDifferentialTest <- function(cds,
   
   # calculate kNN in parallel for cells belong to each pair of connected principal points
   conn_kNN_graph <- mcmapply(i_vec[which(j_vec != 0)], j_vec[which(j_vec != 0)], 
-                       FUN = function(i, j) {
-                         # message('i, j are ', i, ' ', j)
-                         cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
-                         
-                         if(length(cells_id_to_pp) < 2) {
-                           return(NULL)
-                         }
-                         data_subset <- data[cells_id_to_pp, ]
-                         res <- RANN::nn2(data_subset, data_subset, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]]
-                         res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
-                      },
-                      mc.cores = cores
-              ) 
+                             FUN = function(i, j) {
+                               # message('i, j are ', i, ' ', j)
+                               cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
+                               
+                               if(length(cells_id_to_pp) < 2) {
+                                 return(NULL)
+                               }
+                               data_subset <- data[cells_id_to_pp, ]
+                               res <- RANN::nn2(data_subset, data_subset, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]]
+                               res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
+                             },
+                             mc.cores = cores
+  ) 
   conn_kNN_graph <- do.call(rbind, conn_kNN_graph)
   conn_kNN_graph <- unique(conn_kNN_graph)[, ]
-  
-  # an alternative approach to make the kNN graph based on the principal graph 
   
   # convert the original cell id to the id from conn_kNN_graph with duplciated cells
   cell2kNN_id <- unlist(lapply(1:ncol(cds), function(x) min(which(x == conn_kNN_graph[, 1])))) 
@@ -288,12 +339,13 @@ spatialDifferentialTest <- function(cds,
 
   k1 <- knn2nb(res)
   lw <- nb2listw(k1, zero.policy=TRUE)
+  }
   
-  moran_test_res <- mclapply(row.names(cds), FUN = function(x) {
-    exprs_val <- exprs(cds)[x, ]
+  moran_test_res <- mclapply(row.names(exprs_mat), FUN = function(x) {
+    exprs_val <- exprs_mat[x, ]
     
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
-      exprs_val <- x 
+      exprs_val <- exprs_val 
     }else{
       if(relative_expr) {
         exprs_val <- log10(exprs_val / sizeFactors(cds) + 0.1)
@@ -303,7 +355,11 @@ spatialDifferentialTest <- function(cds,
     }
     
     test_res <- tryCatch({
+      if(kNN_type == 2) {
       mt <- moran.test(exprs_val[conn_kNN_graph[, 1]], lw, zero.policy=TRUE)
+      } else {
+        mt <- moran.test(exprs_val, lw, zero.policy=TRUE)
+      }
       data.frame(status = 'OK', pval = mt$p.value, statistics = mt$statistic)
     }, 
       error = function(e) {

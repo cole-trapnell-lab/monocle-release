@@ -4,11 +4,13 @@
 \alias{spatialDifferentialTest}
 \title{Test genes for differential expression based on the low dimensional embedding and the principal graph}
 \usage{
-spatialDifferentialTest(cds, relative_expr = TRUE, k = 5, cores = 1,
-  verbose = FALSE)
+spatialDifferentialTest(cds, kNN_type = c(1, 2), landmark_num = NULL,
+  relative_expr = TRUE, k = 25, cores = 1, verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
+
+\item{landmark_num}{Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)}
 
 \item{relative_expr}{Whether to transform expression into relative values.}
 
