@@ -227,62 +227,50 @@ differentialGeneTest <- function(cds,
 #' @seealso \code{\link[spdep]{moran.test}}
 #' @export
 spatialDifferentialTest <- function(cds, 
-                                 kNN_type = c(1, 2), 
-                                 landmark_num = NULL, 
-                                 relative_expr=TRUE,
-                                 k = 25, 
-                                 cores=1, 
-                                 verbose=FALSE) {
-
+                                    relative_expr=TRUE,
+                                    k = 25, 
+                                    cores=1, 
+                                    verbose=FALSE) {
+  
   
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
   
   if(cds@dim_reduce_type == 'L1graph') {
-    data <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
+    cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
     principal_g <- cds@auxOrderingData[["L1graph"]]$W 
   } else if(cds@dim_reduce_type == 'DDRTree') {
-    data <- t(reducedDimS(cds))
+    cell_coords <- t(reducedDimS(cds))
     principal_g <-  cds@auxOrderingData[["DDRTree"]]$stree[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
   
-  # perform landmark selection: 
-  if(!is.null(landmark_num)) {
-    if(verbose) {
-      message("Performing landmark selection: ...")
-    }
-    
-    landmark_res <- landmark_selection(cds, landmark_num = landmark_num)
-    data <- data[landmark_res$flag == 1, ] # cell coordinates on low dimensional 
-    exprs_mat <- t(aggregate(t(as.matrix(exprs(cds))), by = list(landmark_res$assign), mean))[-1, ]
-    
-    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[landmark_res$flag == 1, ] # mapping from each cell to the principal points 
-    
-  } else {
-    exprs_mat <- exprs(cds)
-    cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
-  }
+  exprs_mat <- exprs(cds)
+  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+  
+  # This cds object might be a subset of the one on which ordering was performed,
+  # so we may need to subset the nearest vertex and low-dim coordinate matrices:
+  cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
+  cell_coords = cell_coords[row.names(cell2pp_map),]
+  
   
   # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
   # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
   # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
-
+  
   # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
-
+  
   if(verbose) {
     message("Identify connecting principal point pairs ...")
   }
-
-  ########################################################################################################################################################################
-  if(kNN_type == 1) {
+  
   # an alternative approach to make the kNN graph based on the principal graph 
-  knn_res <- RANN::nn2(data, data, k + 1, searchtype = "standard")[[1]]
+  knn_res <- RANN::nn2(cell_coords, cell_coords, k + 1, searchtype = "standard")[[1]]
   kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
-
+  
   principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
   diag(principal_g_tmp) <- 1 # so set diagnol as 1 
-
+  
   # find cell kNN connections that are connected across two disconnected principal points (cells correpond to disconnected principal points should not connected)  
   kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
   knn_list <- apply(kNN_res_pp_map, 1, function(x) {
@@ -308,47 +296,12 @@ spatialDifferentialTest <- function(cds,
   attr(knn_list, "call") <- match.call()
   # attr(knn_list, "type") <- "queen"
   lw <- nb2listw(knn_list, zero.policy = TRUE)
-  }
-  ########################################################################################################################################################################
-  if(kNN_type == 2) {
-  # Use all pairings of i and j
-  # principal_g[upper.tri(principal_g)] <- 0
-  i_vec <- rep(seq_len(ncol(principal_g)), times = apply(principal_g, 1, function(x) sum(x > 0)))
-  j_vec <- as.vector(unlist(apply(principal_g, 1, function(x) which(x > 0))))
-  
-  # calculate kNN in parallel for cells belong to each pair of connected principal points
-  conn_kNN_graph <- mcmapply(i_vec[which(j_vec != 0)], j_vec[which(j_vec != 0)], 
-                             FUN = function(i, j) {
-                               # message('i, j are ', i, ' ', j)
-                               cells_id_to_pp <- which(cell2pp_map %in% c(i, j))
-                               
-                               if(length(cells_id_to_pp) < 2) {
-                                 return(NULL)
-                               }
-                               data_subset <- data[cells_id_to_pp, ]
-                               res <- RANN::nn2(data_subset, data_subset, min(k + 1, length(cells_id_to_pp)), searchtype = "standard")[[1]]
-                               res <- matrix(cells_id_to_pp[res], ncol = k + 1, byrow = F)
-                             },
-                             mc.cores = cores
-  ) 
-  conn_kNN_graph <- do.call(rbind, conn_kNN_graph)
-  conn_kNN_graph <- unique(conn_kNN_graph)[, ]
-  
-  # convert the original cell id to the id from conn_kNN_graph with duplciated cells
-  cell2kNN_id <- unlist(lapply(1:ncol(cds), function(x) min(which(x == conn_kNN_graph[, 1])))) 
-  res <- list(nn = matrix(as.integer(cell2kNN_id[conn_kNN_graph[, -1]]), ncol = k, byrow = F), np = nrow(conn_kNN_graph), # knn graph need to be integerx
-              k = k, dimension = ncol(data), x = data[conn_kNN_graph[, 1], ])
-
-  class(res) <- "knn"
-  attr(res, "call") <- match.call()
-
-  k1 <- knn2nb(res)
-  lw <- nb2listw(k1, zero.policy=TRUE)
-  }
   
   if(verbose) {
     message("Performing Moran's test: ...")
   }
+  
+  wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
   moran_test_res <- mclapply(row.names(exprs_mat), FUN = function(x) {
     exprs_val <- exprs_mat[x, ]
     
@@ -363,16 +316,12 @@ spatialDifferentialTest <- function(cds,
     }
     
     test_res <- tryCatch({
-      if(kNN_type == 2) {
-      mt <- moran.test(exprs_val[conn_kNN_graph[, 1]], lw, zero.policy=TRUE)
-      } else {
-        mt <- moran.test(exprs_val, lw, zero.policy=TRUE)
-      }
+      mt <- my.moran.test(exprs_val, lw, wc)
       data.frame(status = 'OK', pval = mt$p.value, statistics = mt$statistic)
     }, 
-      error = function(e) {
-        data.frame(status = 'FAIL', pval = NA, statistics = NA)
-      })
+    error = function(e) {
+      data.frame(status = 'FAIL', pval = NA, statistics = NA)
+    })
   }, mc.cores = cores)
   
   if(verbose) {
@@ -389,4 +338,74 @@ spatialDifferentialTest <- function(cds,
   moran_test_res$qval[which(moran_test_res$status == 'OK')] <- p.adjust(subset(moran_test_res, status == 'OK')[, 'pval'], method="BH")
   
   moran_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
+}
+
+my.moran.test <- function (x, listw, wc, randomisation = TRUE) 
+{
+  zero.policy = TRUE
+  adjust.n = TRUE
+  alternative = "greater"
+  na.action = na.fail
+  drop.EI2 = FALSE
+  xname <- deparse(substitute(x))
+  wname <- deparse(substitute(listw))
+  NAOK <- deparse(substitute(na.action)) == "na.pass"
+  x <- na.action(x)
+  na.act <- attr(x, "na.action")
+  if (!is.null(na.act)) {
+    subset <- !(1:length(listw$neighbours) %in% na.act)
+    listw <- subset(listw, subset, zero.policy = zero.policy)
+  }
+  n <- length(listw$neighbours)
+  if (n != length(x)) 
+    stop("objects of different length")
+  
+  S02 <- wc$S0 * wc$S0
+  res <- moran(x, listw, wc$n, wc$S0, zero.policy = zero.policy, 
+               NAOK = NAOK)
+  I <- res$I
+  K <- res$K
+  
+  EI <- (-1)/wc$n1
+  if (randomisation) {
+    VI <- wc$n * (wc$S1 * (wc$nn - 3 * wc$n + 3) - wc$n * 
+                    wc$S2 + 3 * S02)
+    tmp <- K * (wc$S1 * (wc$nn - wc$n) - 2 * wc$n * wc$S2 + 
+                  6 * S02)
+    if (tmp > VI) 
+      warning("Kurtosis overflow,\ndistribution of variable does not meet test assumptions")
+    VI <- (VI - tmp)/(wc$n1 * wc$n2 * wc$n3 * S02)
+    if (!drop.EI2) 
+      VI <- (VI - EI^2)
+    if (VI < 0) 
+      warning("Negative variance,\ndistribution of variable does not meet test assumptions")
+  }
+  else {
+    VI <- (wc$nn * wc$S1 - wc$n * wc$S2 + 3 * S02)/(S02 * 
+                                                      (wc$nn - 1))
+    if (!drop.EI2) 
+      VI <- (VI - EI^2)
+    if (VI < 0) 
+      warning("Negative variance,\ndistribution of variable does not meet test assumptions")
+  }
+  ZI <- (I - EI)/sqrt(VI)
+  statistic <- ZI
+  names(statistic) <- "Moran I statistic standard deviate"
+  if (alternative == "two.sided") 
+    PrI <- 2 * pnorm(abs(ZI), lower.tail = FALSE)
+  else if (alternative == "greater") 
+    PrI <- pnorm(ZI, lower.tail = FALSE)
+  else PrI <- pnorm(ZI)
+  if (!is.finite(PrI) || PrI < 0 || PrI > 1) 
+    warning("Out-of-range p-value: reconsider test arguments")
+  vec <- c(I, EI, VI)
+  names(vec) <- c("Moran I statistic", "Expectation", "Variance")
+  method <- paste("Moran I test under", ifelse(randomisation, 
+                                               "randomisation", "normality"))
+  
+  res <- list(statistic = statistic, p.value = PrI, estimate = vec)
+  if (!is.null(na.act)) 
+    attr(res, "na.action") <- na.act
+  class(res) <- "htest"
+  res
 }
