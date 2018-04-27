@@ -222,7 +222,7 @@ differentialGeneTest <- function(cds,
 #' @param cores the number of cores to be used while testing each gene for differential expression.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
-#' @importFrom spdep knn2nb nb2listw moran.test 
+#' @importFrom spdep knn2nb nb2listw moran.test spweights.constants
 #' @importFrom stats p.adjust 
 #' @seealso \code{\link[spdep]{moran.test}}
 #' @export
