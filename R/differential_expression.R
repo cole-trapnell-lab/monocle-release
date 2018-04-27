@@ -264,7 +264,7 @@ spatialDifferentialTest <- function(cds,
   }
   
   # an alternative approach to make the kNN graph based on the principal graph 
-  knn_res <- RANN::nn2(cell_coords, cell_coords, k + 1, searchtype = "standard")[[1]]
+  knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
   kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
   
   principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
