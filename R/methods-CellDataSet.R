@@ -9,6 +9,59 @@ setValidity( "CellDataSet", function( object ) {
   TRUE
 } )
 
+setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
+  if (missing(drop))
+    drop <- FALSE
+  if (missing(i) && missing(j)) {
+    if (!missing(...))
+      stop("specify genes or samples to subset; use '",
+           substitute(x), "$", names(list(...))[[1]],
+           "' to access phenoData variables")
+    return(x)
+  }
+  if (!isVersioned(x) || !isCurrent(x)["eSet"])
+    x <- updateObject(x)
+  if (!missing(j)) {
+    phenoData(x) <- phenoData(x)[j,, ..., drop = drop]
+    protocolData(x) <- protocolData(x)[j,, ..., drop = drop]
+  }
+  if (!missing(i))
+    featureData(x) <- featureData(x)[i,,..., drop=drop]
+  ## assayData; implemented here to avoid function call
+  orig <- assayData(x)
+  storage.mode <-  Biobase:::assayDataStorageMode(orig)
+  assayData(x) <-
+    switch(storage.mode,
+           environment =,
+           lockedEnvironment = {
+             aData <- new.env(parent=emptyenv())
+             if (missing(i))                     # j must be present
+               for(nm in ls(orig)) aData[[nm]] <- orig[[nm]][, j, ..., drop = drop]
+               else {                              # j may or may not be present
+                 if (missing(j))
+                   for(nm in ls(orig)) aData[[nm]] <- orig[[nm]][i,, ..., drop = drop]
+                   else
+                     for(nm in ls(orig)) aData[[nm]] <- orig[[nm]][i, j, ..., drop = drop]
+               }
+               if ("lockedEnvironment" == storage.mode) assayDataEnvLock(aData)
+               aData
+           },
+           list = {
+             if (missing(i))                     # j must be present
+               lapply(orig, function(obj) obj[, j, ..., drop = drop])
+             else {                              # j may or may not be present
+               if (missing(j))
+                 lapply(orig, function(obj) obj[i,, ..., drop = drop])
+               else
+                 lapply(orig, function(obj) obj[i, j, ..., drop = drop])
+             }
+           })
+  x@auxOrderingData = as.environment(as.list(x@auxOrderingData, all.names=TRUE))
+  x@auxClusteringData = as.environment(as.list(x@auxClusteringData, all.names=TRUE))
+  x
+})
+
+
 #' @rdname CellDataSet-methods
 #' @aliases CellDataSet,ANY,ANY-method
 setMethod("sizeFactors", signature(object="CellDataSet"), function(object) {
