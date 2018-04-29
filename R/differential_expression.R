@@ -233,6 +233,10 @@ spatialDifferentialTest <- function(cds,
                                     verbose=FALSE) {
   
   
+  # first retrieve the association from each cell to any principal points, then build kNN graph for all cells 
+  # remove edges that connected between groups that disconnected in the corresponding principal graph and 
+  # finally use this kNN graph to calculate a global Moran’s I and get the p-value
+  
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
@@ -253,11 +257,6 @@ spatialDifferentialTest <- function(cds,
   cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
   cell_coords = cell_coords[row.names(cell2pp_map),]
   
-  
-  # 1. first retrieve the association from each cell to any principal points. Then for any two connected principal points, 
-  # find all cells associated with the two principal points,  build kNN graph, then pool all kNN and then remove redundant 
-  # points and finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  
   # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
   
   if(verbose) {
@@ -265,13 +264,13 @@ spatialDifferentialTest <- function(cds,
   }
   
   # an alternative approach to make the kNN graph based on the principal graph 
-  knn_res <- RANN::nn2(cell_coords, cell_coords, k + 1, searchtype = "standard")[[1]]
+  knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
   kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
   
   principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
   diag(principal_g_tmp) <- 1 # so set diagnol as 1 
   
-  # find cell kNN connections that are connected across two disconnected principal points (cells correpond to disconnected principal points should not connected)  
+  # find cell kNN connections that are connected across two disconnected principal points and remove them (cells correpond to disconnected principal points should not connected)  
   kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
   knn_list <- apply(kNN_res_pp_map, 1, function(x) {
     tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
@@ -361,7 +360,7 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
     stop("objects of different length")
   
   S02 <- wc$S0 * wc$S0
-  res <- moran(x, listw, wc$n, wc$S0, zero.policy = zero.policy, 
+  res <- spdep::moran(x, listw, wc$n, wc$S0, zero.policy = zero.policy, 
                NAOK = NAOK)
   I <- res$I
   K <- res$K
