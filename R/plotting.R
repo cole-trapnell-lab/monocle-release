@@ -3275,9 +3275,12 @@ plot_cluster_graph <- function(cds,
 #' @param show_backbone whether to show the principal graph used to order the cells
 #' @param scale_expr whether to tranform the log expression values to z scores
 #' @param palette the color palette used for plotting,
+#' @param width the width of the plot in pixels
+#' @param height the height of the plot in pixels
 #' @param useNULL_GLdev if TRUE, don't show the plot on the screen (to be used with webGL or movie output)
 #' @return a ggplot2 plot object
 #' @import rgl
+#' @import htmltools
 #' @export
 #' @examples
 #' \dontrun{
@@ -3293,7 +3296,9 @@ plot_3d_cell_trajectory <- function(cds,
                                     show_backbone=TRUE,
                                     scale_expr=TRUE,
                                     palette = NULL,
-                                    useNULL_GLdev = FALSE,
+                                    width=800,
+                                    height=600,
+                                    useNULL_GLdev = !interactive(),
                                     ...){
   gene_short_name <- NA
   sample_name <- NA
@@ -3367,6 +3372,9 @@ plot_3d_cell_trajectory <- function(cds,
       markers_exprs$value = markers_expr_val
     }
   }
+  
+  point_colors = "darkgray"
+  
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
     map2color<-function(x,pal,limits=NULL){
@@ -3392,7 +3400,7 @@ plot_3d_cell_trajectory <- function(cds,
     } else {
       point_colors = map2color(log10(data_df$value+0.1), mypal)
     }
-  }else if (is.null(color_by) == FALSE){
+  }else if (is.null(color_by) == FALSE && color_by %in% colnames(pData(cds))){
     gg_color_hue <- function(n) {
       hues = seq(15, 375, length = n + 1)
       hcl(h = hues, l = 65, c = 100)[1:n]
@@ -3405,8 +3413,10 @@ plot_3d_cell_trajectory <- function(cds,
       colors = palette
     }
     point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
+    point_colors[is.na(point_colors)] = "darkgray"
   }
-  open3d(windowRect=c(0,0,1024,1024), useNULL=useNULL_GLdev)
+  open3d(#windowRect=c(0,0,1024,1024), 
+         useNULL=useNULL_GLdev)
   if (show_backbone){
     segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), color="red")
@@ -3414,13 +3424,18 @@ plot_3d_cell_trajectory <- function(cds,
   
   points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors, alpha=0.5)
   
+  widget <- rglwidget(elementId = "example", width=width, height=height,
+                      controllers = "player")
+  
   if (is.null(webGL_filename) == FALSE){
-    writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
+    #writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
+    htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=TRUE)
   }
   
   if (is.null(movie_filename) == FALSE){
     movie3d(spin3d(axis = c(0, 0, 1)), duration = 10, convert=TRUE, dir=getwd(), movie=movie_filename)
   }
-  rgl.bringtotop()
+  
+  return(widget)
 }
 
