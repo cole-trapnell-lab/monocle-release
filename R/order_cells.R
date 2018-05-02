@@ -1458,8 +1458,11 @@ reduceDimension <- function(cds,
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
-
-  FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
+  
+  fm_rowsums = DelayedMatrixStats::rowSums2(FM)
+  FM = FM[is.finite(fm_rowsums),]
+  
+  #FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {
     
     if(scaling){
@@ -1527,38 +1530,8 @@ reduceDimension <- function(cds,
       irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
-      
-      # irlba_res <- irlba(FM,
-      #                    nv=min(num_dim, min(dim(FM)) - 1),
-      #                        nu=0,
-      #                        center=cell_means,
-      #                        scale=sqrt(cell_vars),
-      #                        right_only=TRUE)
-      # irlba_pca_res <- irlba_res$v
-      # row.names(irlba_pca_res) <- genes_to_keep
-
-      # pca_res <- prcomp(t(FM), center = T, scale = T)
-      # std_dev <- pca_res$sdev
-      # pr_var <- std_dev^2
-      # prop_varex <- pr_var/sum(pr_var)
-      # prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
 
       topDim_pca <- irlba_pca_res#[, 1:num_dim]
-
-      # #perform the model formula transformation right before tSNE:
-      # if (is.null(residualModelFormulaStr) == FALSE) {
-      #   if (verbose)
-      #     message("Removing batch effects")
-      #   X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
-      #                                      data = pData(cds), drop.unused.levels = TRUE)
-
-      #   fit <- limma::lmFit(topDim_pca, X.model_mat, ...)
-      #   beta <- fit$coefficients[, -1, drop = FALSE]
-      #   beta[is.na(beta)] <- 0
-      #   topDim_pca <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-      # }else{
-      #   X.model_mat <- NULL
-      # }
 
       #then run tSNE
       if (verbose)
@@ -1581,46 +1554,10 @@ reduceDimension <- function(cds,
       pData(cds)$tsne_1 = reducedDimA(cds)[1,]
       pData(cds)$tsne_2 = reducedDimA(cds)[2,]
     }
-    else if (reduction_method == "ICA") {
-      # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-      # FM <- FM[!is.na(row.names(FM)), ]
-
-      if(scaling){
-        FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
-        FM <- FM[!is.na(row.names(FM)), ]
-      } else FM <- as.matrix(FM)
-      
-      
-      if (verbose)
-        message("Reducing to independent components")
-      init_ICA <- ica_helper(Matrix::t(FM), max_components,
-                             use_irlba = TRUE, ...)
-      x_pca <- Matrix::t(Matrix::t(FM) %*% init_ICA$K)
-      W <- Matrix::t(init_ICA$W)
-      weights <- W
-      A <- Matrix::t(solve(weights) %*% Matrix::t(init_ICA$K))
-      colnames(A) <- colnames(weights)
-      rownames(A) <- rownames(FM)
-      S <- weights %*% x_pca
-      rownames(S) <- colnames(weights)
-      colnames(S) <- colnames(FM)
-      reducedDimW(cds) <- as.matrix(W)
-      reducedDimA(cds) <- as.matrix(A)
-      reducedDimS(cds) <- as.matrix(S)
-      reducedDimK(cds) <- as.matrix(init_ICA$K)
-      adjusted_S <- Matrix::t(reducedDimS(cds))
-      dp <- as.matrix(dist(adjusted_S))
-      cellPairwiseDistances(cds) <- dp
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
-      minSpanningTree(cds) <- dp_mst
-      cds@dim_reduce_type <- "ICA"
-    }
     else if (reduction_method %in% c("DDRTree", "UMAPDDRTree")) {
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
-
-
+      
       # when num_dim is passed or the number of cells is more than 5 k cells and the feature number is large than 50 (implying the feature is not PCA space), do an intial PCA 
       if("num_dim" %in% names(extra_arguments) | (ncol(FM) > 5000 & nrow(FM) > 50)) { 
         if("num_dim" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
@@ -1731,11 +1668,11 @@ reduceDimension <- function(cds,
           message('running PCA (no further scaling or center) ...')
         irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                   center = scaling, scale. = scaling)
-        irlba_pca_res <- t(irlba_res$x)
+        irlba_pca_res <- as.matrix(t(irlba_res$x))
         colnames(irlba_pca_res) <- colnames(FM)
         FM <- irlba_pca_res
         
-        umap_args <- c(list(X = t(as.matrix(FM)), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+        umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                        extra_arguments[names(extra_arguments) %in% 
                                          c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
                                            'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
@@ -1755,9 +1692,6 @@ reduceDimension <- function(cds,
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
         cds@auxOrderingData[["L1graph"]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
        
-        #pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
-        
-        
         cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
@@ -1848,11 +1782,7 @@ reduceDimension <- function(cds,
       
       colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
       DCs <- FM
-      #colnames(DCs) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       
-      
-      #colnames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      #rownames(l1_graph_res$W) <- colnames(FM)[1:ncol(l1_graph_res$C)] #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
       rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
       

@@ -412,51 +412,15 @@ estimateSizeFactorsForSparseMatrix <- function(counts,
                                                locfunc = median, 
                                                round_exprs=TRUE, 
                                                method="mean-geometric-mean-total"){
-  CM <- counts
+  #counts <- DelayedArray(counts)
   if (round_exprs)
-    CM <- round(CM)
-  CM <- asSlamMatrix(CM)
+    counts <- round(counts)
   
-  if (method == "weighted-median"){
-
-    log_medians <- rowapply_simple_triplet_matrix(CM, function(cell_expr) { 
-      log(locfunc(cell_expr))
-    })
-    
-    weights <- rowapply_simple_triplet_matrix(CM, function(cell_expr) {
-      num_pos <- sum(cell_expr > 0)
-      num_pos / length(cell_expr)
-    })
-    
-    sfs <- colapply_simple_triplet_matrix(CM, function(cnts) {
-      norm_cnts <-  weights * (log(cnts) -  log_medians)
-      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
-      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
-      #print (head(norm_cnts))
-      exp( mean(norm_cnts) )
-    })
-  }else if (method == "median-geometric-mean"){
-    log_geo_means <- rowapply_simple_triplet_matrix(CM, function(x) { mean(log(CM)) })
-    
-    sfs <- colapply_simple_triplet_matrix(CM, function(cnts) {
-      norm_cnts <- log(cnts) -  log_geo_means
-      norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
-      norm_cnts <- norm_cnts[is.finite(norm_cnts)]
-      #print (head(norm_cnts))
-      exp( locfunc( norm_cnts ))
-    })
-  }else if(method == "median"){
-    stop("Error: method 'median' not yet supported for sparse matrices")
-  }else if(method == 'mode'){
-    stop("Error: method 'mode' not yet supported for sparse matrices")
-  }else if(method == 'geometric-mean-total') {
-    cell_total <- col_sums(CM)
-    sfs <- log(cell_total) / mean(log(cell_total))
-  }else if(method == 'mean-geometric-mean-total') {
-    cell_total <- col_sums(CM)
+  if(method == 'mean-geometric-mean-total') {
+    cell_total <- Matrix::colSums(counts)
     sfs <- cell_total / exp(mean(log(cell_total)))
   }else if(method == 'mean-geometric-mean-log-total') {
-    cell_total <- col_sums(CM)
+    cell_total <- Matrix::colSums(counts)
     sfs <- log(cell_total) / exp(mean(log(log(cell_total))))
   }
   
