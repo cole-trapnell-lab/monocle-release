@@ -395,7 +395,7 @@ qplot(pData[, 'tsne_1'], pData[, 'tsne_2'], color = pData[, 'day']) # reduce to 
 
 write.table(pData(cds)[unique(Jun_landmark$assign) + 1, ], '/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/June/Jun_X_1500_pd.csv', quote = F, sep = '\t')
 
-irlba_res <- prcomp_irlba(t(log(valid_Jun_X_1500 + 1)), n = 20,
+irlba_res <- sparse_prcomp_irlba(t(log(valid_Jun_X_1500 + 1)), n = 20,
                           center = TRUE, scale. = TRUE)
 
 irlba_res <- irlba((log(valid_Jun_X_1500 + 1)), nv = 20)

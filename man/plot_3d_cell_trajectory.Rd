@@ -6,8 +6,8 @@
 \usage{
 plot_3d_cell_trajectory(cds, color_by = NULL, markers = NULL,
   markers_linear = FALSE, webGL_filename = NULL, movie_filename = NULL,
-  show_backbone = TRUE, scale_expr = TRUE, palette = NULL,
-  useNULL_GLdev = FALSE, ...)
+  show_backbone = TRUE, scale_expr = TRUE, palette = NULL, width = 800,
+  height = 600, useNULL_GLdev = !interactive(), ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -27,6 +27,10 @@ plot_3d_cell_trajectory(cds, color_by = NULL, markers = NULL,
 \item{scale_expr}{whether to tranform the log expression values to z scores}
 
 \item{palette}{the color palette used for plotting,}
+
+\item{width}{the width of the plot in pixels}
+
+\item{height}{the height of the plot in pixels}
 
 \item{useNULL_GLdev}{if TRUE, don't show the plot on the screen (to be used with webGL or movie output)}
 }

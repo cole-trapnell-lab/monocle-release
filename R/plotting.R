@@ -2146,7 +2146,7 @@ plot_pc_variance_explained <- function(cds,
     
     # FM <- convert2DRData(cds, norm_method = 'log') 
     # FM <- FM[rowSums(is.na(FM)) == 0, ]
-    irlba_res <- prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
+    irlba_res <- sparse_prcomp_irlba(t(FM), n = min(max_components, min(dim(FM)) - 1),
                               center = TRUE, scale. = TRUE)
     prop_varex <- irlba_res$sdev^2 / sum(irlba_res$sdev^2)
     # 

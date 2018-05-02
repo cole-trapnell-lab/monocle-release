@@ -1496,7 +1496,7 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+      irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
@@ -1527,7 +1527,7 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+      irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                 center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
 
@@ -1570,7 +1570,7 @@ reduceDimension <- function(cds,
         if (verbose)
           message("Remove noise by PCA ...")
         
-        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+        irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                   center = scaling, scale. = scaling)
         irlba_pca_res <- t(irlba_res$x)
         colnames(irlba_pca_res) <- colnames(FM)
@@ -1666,7 +1666,7 @@ reduceDimension <- function(cds,
         
         if(verbose)
           message('running PCA (no further scaling or center) ...')
-        irlba_res <- prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+        irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                   center = scaling, scale. = scaling)
         irlba_pca_res <- as.matrix(t(irlba_res$x))
         colnames(irlba_pca_res) <- colnames(FM)
@@ -1822,7 +1822,7 @@ reduceDimension <- function(cds,
         num_dim <- 50
       }
       
-      irlba_res <- prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
+      irlba_res <- sparse_prcomp_irlba(Matrix::t(FM), n = min(num_dim, min(dim(FM)) - 1), 
                                       center = scaling, scale. = scaling)
       irlba_pca_res <- irlba_res$x
       
