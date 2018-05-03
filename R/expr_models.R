@@ -468,6 +468,7 @@ vstExprs <- function(cds, dispModelName="blind", expr_matrix=NULL, round_vals=TR
 #' @importFrom Biobase exprs pData fData
 disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
 
+  
   rounded <- round(exprs(cds))
   nzGenes <- Matrix::rowSums(rounded > cds@lowerDetectionLimit)
   nzGenes <- names(nzGenes[nzGenes > min_cells_detected])

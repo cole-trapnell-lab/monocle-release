@@ -678,10 +678,11 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
             control that algorithm's convergence tolerance. See `?prcomp_irlba` for help.")
   # Try to convert to a matrix...
   #if (!is.matrix(x)) x <- as.matrix(x)
+  orig_x = x
   if (class(x) != "DelayedMatrix")
     x = DelayedArray(x)
   
-  args <- list(A=x, nv=n)
+  args <- list(A=orig_x, nv=n)
   if (is.logical(center))
   {
     if (center) args$center <- DelayedMatrixStats::colMeans2(x)
@@ -692,7 +693,7 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
     {
       #f <- function(i) sqrt(sum((x[, i] - args$center[i]) ^ 2) / (nrow(x) - 1L))
       #scale. <- vapply(seq(ncol(x)), f, pi, USE.NAMES=FALSE)
-      scale. = sqrt(DelayedMatrixStats::rowVars(t(x)))
+      scale. = sqrt(DelayedMatrixStats::colVars(x))
       if (ans$scale) ans$totalvar <- ncol(x)
       else ans$totalvar <- sum(scale. ^ 2)
     } else
@@ -722,7 +723,7 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
   }
   if (!missing(...)) args <- c(args, list(...))
   
-  args$A = as(args$A, "sparseMatrix") 
+  #args$A = as(args$A, "sparseMatrix") 
   s <- do.call(irlba, args=args)
   ans$sdev <- s$d / sqrt(max(1, nrow(x) - 1))
   ans$rotation <- s$v

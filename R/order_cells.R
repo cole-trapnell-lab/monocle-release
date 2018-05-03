@@ -1435,11 +1435,11 @@ reduceDimension <- function(cds,
   extra_arguments <- list(...)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
-  FM <- DelayedArray(normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr))
+  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
 
   # For NB: Var(Y)=mu*(1+mu/k)
-  f_expression_var <- DelayedMatrixStats::rowVars(FM)
-  FM <- FM[f_expression_var > 0,]
+  #f_expression_var <- DelayedMatrixStats::rowVars(FM)
+  #FM <- FM[f_expression_var > 0,]
 
   if (is.null(residualModelFormulaStr) == FALSE) {
     if (verbose)
@@ -1459,8 +1459,8 @@ reduceDimension <- function(cds,
     stop("Error: all rows have standard deviation zero")
   }
   
-  fm_rowsums = DelayedMatrixStats::rowSums2(FM)
-  FM = FM[is.finite(fm_rowsums),]
+  fm_rowsums = Matrix::rowSums(FM)
+  FM = FM[is.finite(fm_rowsums) | fm_rowsums != 0,]
   
   #FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {

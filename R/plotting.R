@@ -3413,7 +3413,7 @@ plot_3d_cell_trajectory <- function(cds,
     }else{
       colors = palette
     }
-    point_colors_df = data_frame(sample_name=data_df$sample_name, 
+    point_colors_df = dplyr::data_frame(sample_name=data_df$sample_name, 
                                  color_by=as.character(pData(cds)[data_df$sample_name,color_by]))
     point_colors_df$point_colors = colors[point_colors_df$color_by]
     #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
@@ -3430,7 +3430,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (is.null(point_colors_df$color_by) == FALSE){
     point_colors_df = inner_join(point_colors_df, data_df)
-    medoid_df = point_colors_df %>% group_by(color_by, point_colors) %>% summarize(mean_d1 = median(data_dim_1), 
+    medoid_df = point_colors_df %>% dplyr::group_by(color_by, point_colors) %>% dplyr::summarize(mean_d1 = median(data_dim_1), 
                                                                      mean_d2 = median(data_dim_2),
                                                                      mean_d3 = median(data_dim_3))
     text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
