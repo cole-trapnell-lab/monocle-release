@@ -3373,7 +3373,8 @@ plot_3d_cell_trajectory <- function(cds,
     }
   }
   
-  point_colors = "darkgray"
+  point_colors_df = data.frame(sample_name = data_df$sample_name,
+                               point_colors = "darkgray")
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
@@ -3396,9 +3397,9 @@ plot_3d_cell_trajectory <- function(cds,
     mypal <- colorRampPalette( c( "lightgrey", "darkslateblue" ) )( 256 )
     #mypal = viridis(256)
     if(markers_linear || scale_expr){        
-      point_colors = map2color(data_df$value, mypal, c(-3, 3))
+      point_colors_df$point_colors = map2color(data_df$value, mypal, c(-3, 3))
     } else {
-      point_colors = map2color(log10(data_df$value+0.1), mypal)
+      point_colors_df$point_colors = map2color(log10(data_df$value+0.1), mypal)
     }
   }else if (is.null(color_by) == FALSE && color_by %in% colnames(pData(cds))){
     gg_color_hue <- function(n) {
@@ -3412,8 +3413,11 @@ plot_3d_cell_trajectory <- function(cds,
     }else{
       colors = palette
     }
-    point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
-    point_colors[is.na(point_colors)] = "darkgray"
+    point_colors_df = data_frame(sample_name=data_df$sample_name, 
+                                 color_by=as.character(pData(cds)[data_df$sample_name,color_by]))
+    point_colors_df$point_colors = colors[point_colors_df$color_by]
+    #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
+    point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
   }
   open3d(#windowRect=c(0,0,1024,1024), 
          useNULL=useNULL_GLdev)
@@ -3422,8 +3426,15 @@ plot_3d_cell_trajectory <- function(cds,
     points3d(Matrix::t(reduced_dim_coords[1:3,]), color="red")
   }
   
-  points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors, alpha=0.5)
+  points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors_df$point_colors, alpha=0.5)
   
+  if (is.null(point_colors_df$color_by) == FALSE){
+    point_colors_df = inner_join(point_colors_df, data_df)
+    medoid_df = point_colors_df %>% group_by(color_by, point_colors) %>% summarize(mean_d1 = median(data_dim_1), 
+                                                                     mean_d2 = median(data_dim_2),
+                                                                     mean_d3 = median(data_dim_3))
+    text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
+  }
   widget <- rglwidget(elementId = "example", width=width, height=height,
                       controllers = "player")
   
