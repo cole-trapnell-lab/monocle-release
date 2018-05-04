@@ -1751,8 +1751,8 @@ reduceDimension <- function(cds,
       else
         G <- get_knn(C0, K = 5)
       
-      if("louvain_qval" %in% names(extra_arguments)){ #when you pass pca_dim to the function, the number of dimension used for tSNE dimension reduction is used
-        louvain_qval <- extra_arguments$louvain_qval #variance_explained
+      if("louvain_qval" %in% names(extra_arguments)){ 
+        louvain_qval <- extra_arguments$louvain_qval 
       }
       else{
         louvain_qval <- 0.05
@@ -1861,7 +1861,7 @@ reduceDimension <- function(cds,
         colnames(A) <- colnames(FM)
         reducedDimA(cds) <- A
         SSE_res <- NULL
-        pg_spanning_tree <- NULL
+        l1_graph_res <- NULL
       }
       
       if(reduction_method %in% c("SSE", "UMAPSSE")) {
@@ -1877,6 +1877,30 @@ reduceDimension <- function(cds,
           data = umap_res
         }
 
+        # if number of cells is larger than 20 k, peform landmark selection and do SSE, L1 on the landmarks. We will project others cells on the learn SSE space 
+        if(ncol(cds) > 10000) {
+          data_ori <- data 
+          adj_mat_ori <- adj_mat
+          FM_ori <- FM
+
+        
+          if("landmark_num" %in% names(extra_arguments)) {
+            landmark_num <- extra_arguments$landmark_num
+          } else {
+            landmark_num <- 2000
+          }
+
+          centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
+          kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
+          landmark_id <- apply(as.matrix(proxy::dist(data_ori, kmean_res$centers)), 2, which.min)
+
+          # data_ori <- as(data_ori, 'sparseMatrix')  
+          # landmark_res <- monocle:::select_landmarks(data_ori@x, data_ori@i, data_ori@p, data_ori@Dim[2], data_ori@Dim[1], landmark_num)
+
+          data <- data_ori[landmark_id, ]
+          adj_mat <- adj_mat_ori[landmark_id, landmark_id] 
+          FM <- FM_ori[, landmark_id]
+        }
         # we are gonna ignore the method arugment here 
         sse_args <- c(list(data=data, dist_mat = adj_mat, embeding_dim=max_components, d = max_components, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
@@ -1886,41 +1910,146 @@ reduceDimension <- function(cds,
         if(verbose)
           message("Running louvain clustering algorithm ...")
         
+        SSE_res$Y <- SSE_res$Y * 100 # magnify the SSE space to avoid space shrinking in L1graph step 
         row.names(SSE_res$Y) <- colnames(FM)
         louvain_clustering_args <- c(list(data = SSE_res$Y, pd = pData(cds)[colnames(FM), ], verbose = verbose),
                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+        cds@auxOrderingData[[reduction_method]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
+
+        reduced_dim_res = t(SSE_res$Y) 
         
+        if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
+          ncenter <- extra_arguments$ncenter
+        }else{
+          #ncenter <- cal_ncenter(ncol(FM))
+          ncenter = 3 * length(levels(cds@auxOrderingData[[reduction_method]]$louvain_module))
+          ncenter = min(ncol(FM) / 2, ncenter)
+        }
+                 
+        if (ncenter > ncol(reduced_dim_res))
+          stop("Error: ncenters must be less than or equal to ncol(X)")
+        
+        centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
+
+        kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
+        medioids = reduced_dim_res[,apply(as.matrix(proxy::dist(t(reduced_dim_res), kmean_res$centers)), 2, which.min)]
+        reduced_dim_res <- t(medioids)
+
         if(verbose)
           message("Running generalized SimplePPT algorithm ...")
   
-        pg_args <- c(list(X = t(SSE_res$Y), C0 = t(SSE_res$Y), G = NULL, verbose = verbose, gstruct = c("span-tree")),
-                      extra_arguments[names(extra_arguments) %in% c("gstruct", "lambda", "gamma", " sigma", "nn", "maxiter")]) # "maxiter", 
-        pg_spanning_tree <- do.call(principal_graph, pg_args)
-     
-        Y <- t(SSE_res$Y)
-        W <- pg_spanning_tree$W
-        W[W == T] <- 1; W[W == F] <- 0
-        gp <- graph_from_adjacency_matrix(W)
+        if('C0' %in% names(extra_arguments)){
+          C0 <- extra_arguments$C0
+        }
+        else
+          C0 <- medioids
+        Nz <- ncol(C0)
         
+        # print(extra_arguments)
+        if('nn' %in% names(extra_arguments))
+          G <- get_knn(C0, K = extra_arguments$nn)
+        else
+          G <- get_knn(C0, K = 5)
+
+        if("louvain_qval" %in% names(extra_arguments)){ 
+          louvain_qval <- extra_arguments$louvain_qval 
+        }
+        else{
+          louvain_qval <- 0.05
+        }
+
+        # reduced_dim_res <- t(SSE_res$Y) 
+        cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+        louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+        cds@auxOrderingData[[reduction_method]]$louvain_component = louvain_component
+        names(louvain_component) = colnames(FM)
+        louvain_component = louvain_component[rownames(reduced_dim_res)]
+        louvain_component = as.factor(louvain_component)
+        if (length(levels(louvain_component)) > 1){
+          louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
+          
+          G$G = G$G * louvain_component_mask
+          G$W = G$W * louvain_component_mask
+          rownames(G$G) = rownames(G$W)
+          colnames(G$G) = colnames(G$W)
+        }
+
+        pg_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G$G, gstruct = c("l1-graph"),  verbose = verbose), #span-tree
+                      extra_arguments[names(extra_arguments) %in% c("maxiter", "eps", "L1.lambda", "L1.gamma", "L1.sigma", "nn")]) # "l1-graph", 
+        l1_graph_res <- do.call(principal_graph, pg_args)
+     
+        colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
+        Y <- t(SSE_res$Y)
+
+        # now let us project other cells back to the landmark space 
+        if(ncol(cds) > 10000) {
+          projection_res <<- matrix(0, nrow = max_components, ncol = ncol(cds))
+
+          # get a graph with distance between cells as the weight 
+          relations <- louvain_res$relations
+          relations$weight <- reshape2::melt(t(louvain_res$distMatrix))[, 3]
+          g <- igraph::graph.data.frame(relations, directed = FALSE)
+
+          lapply(landmark_id, function(x) {
+              dist_mat <- igraph::distances(g, v = colnames(cds)[x], to = colnames(cds)[landmark_id])
+
+              # rank top 5 landmark cells
+              project_coord <- apply(dist_mat, 1, function(x) {
+                top_5 <- sort(x, index.return = T, decreasing = FALSE) # find the closest cells 
+                bandwidth <- mean(range(top_5$x[1:5])) # half of the range of the 5 nearest landmark as bindwidth 
+                p <- exp(-top_5$x[1:5]/bandwidth) # Gaussian kernel 
+                weight <- p / sum(p)  
+                Y[, top_5$ix[1:5]] %*% weight            
+                })
+
+              projection_res[, x] <<- project_coord
+            })
+
+          rm(g, dist_mat, links, relations)
+
+          Y <- projection_res
+          FM <- FM_ori
+        }
+
         colnames(Y) <- colnames(FM)
         reducedDimA(cds) <- Y
 
+        colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
+        rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
+        reducedDimW(cds) <- l1_graph_res$W
+
+        reducedDimS(cds) <- Y
+        reducedDimK(cds) <- l1_graph_res$C
+        cds@auxOrderingData[[reduction_method]]$objective_vals <- tail(l1_graph_res$objs, 1)
+        cds@auxOrderingData[[reduction_method]]$W <- l1_graph_res$W
+        cds@auxOrderingData[[reduction_method]]$P <- l1_graph_res$P
+        
+        adjusted_K <- Matrix::t(reducedDimK(cds))
+        dp <- as.matrix(dist(adjusted_K))
+        cellPairwiseDistances(cds) <- dp
+        
+        W <- l1_graph_res$W
+        dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
+        W[W < 1e-5] <- 0
+        gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
+        # dp_mst <- minimum.spanning.tree(gp)
         minSpanningTree(cds) <- gp
+        cds@dim_reduce_type <- reduction_method
+        cds <- findNearestPointOnMST(cds)
       }
       
       colnames(S) <- colnames(FM)
       colnames(Y) <- colnames(FM)
-      colnames(W) <- colnames(FM)
-      reducedDimW(cds) <- as.matrix(W)
+      reducedDimW(cds) <- l1_graph_res$W # update this !!! 
       reducedDimS(cds) <- as.matrix(Y)
-      reducedDimK(cds) <- as.matrix(Y)
+      reducedDimK(cds) <- l1_graph_res$C
 
       # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
    
-      pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
+      # pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
-        louvain_res = louvain_res, PG_res = pg_spanning_tree, adj_mat = adj_mat)
+        louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat)
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")

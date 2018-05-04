@@ -4,13 +4,16 @@
 \alias{plot_3d_cell_trajectory}
 \title{Plot a dataset and trajectory in 3 dimensions}
 \usage{
-plot_3d_cell_trajectory(cds, color_by = NULL, markers = NULL,
-  markers_linear = FALSE, webGL_filename = NULL, movie_filename = NULL,
-  show_backbone = TRUE, scale_expr = TRUE, palette = NULL, width = 800,
-  height = 600, useNULL_GLdev = !interactive(), ...)
+plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
+  markers = NULL, markers_linear = FALSE, webGL_filename = NULL,
+  movie_filename = NULL, show_backbone = TRUE, scale_expr = TRUE,
+  palette = NULL, width = 800, height = 600,
+  useNULL_GLdev = !interactive(), ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{dim}{the dimensions used to create the 3D plot, by default it is the first three dimension}
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
 

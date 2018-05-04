@@ -355,8 +355,10 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   if (verbose) {
     cat("  Finding nearest neighbors...")
   }
-  t1 <- system.time(neighborMatrix <- RANN::nn2(data, data, k +
-                                            1, searchtype = "standard")[[1]][, -1])
+  t1 <- system.time(tmp <- RANN::nn2(data, data, k +
+                                            1, searchtype = "standard"))
+  neighborMatrix <- tmp[[1]][, -1]
+  distMatrix <- tmp[[2]][, -1]
   if (verbose) {
     cat("DONE ~", t1[3], "s\n", " Compute jaccard coefficient between nearest-neighbor sets ...")
   }
@@ -421,7 +423,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   }
   
   V(g)$names <- as.character(V(g))
-  return(list(g = g, coord = coord, edge_links = edge_links, optim_res = optim_res))
+  return(list(g = g, relations = relations, distMatrix = distMatrix, coord = coord, edge_links = edge_links, optim_res = optim_res))
 }
 
 compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05, verbose = FALSE){

@@ -3267,6 +3267,7 @@ plot_cluster_graph <- function(cds,
 #' Plot a dataset and trajectory in 3 dimensions
 #'
 #' @param cds CellDataSet for the experiment
+#' @param dim the dimensions used to create the 3D plot, by default it is the first three dimension 
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
@@ -3288,6 +3289,7 @@ plot_cluster_graph <- function(cds,
 #' }
 #' 
 plot_3d_cell_trajectory <- function(cds, 
+                                    dim=c(1, 2, 3),
                                     color_by=NULL,
                                     markers=NULL,
                                     markers_linear=FALSE,
@@ -3321,7 +3323,10 @@ plot_3d_cell_trajectory <- function(cds,
     stop("Error: unrecognized dimensionality reduction method.")
   }
   
-  ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[1:3,]))
+  if(length(dim) != 3) 
+    dim <- 1:3
+
+  ica_space_df <- data.frame(Matrix::t(reduced_dim_coords[dim,]))
   colnames(ica_space_df) <- c("prin_graph_dim_1", "prin_graph_dim_2",  "prin_graph_dim_3")
   
   ica_space_df$sample_name <- row.names(ica_space_df)
@@ -3345,7 +3350,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   S_matrix <- 
     reducedDimS(cds)
-  data_df <- data.frame(t(S_matrix[1:3,]))
+  data_df <- data.frame(t(S_matrix[dim,]))
   #data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2", "data_dim_3")
   data_df$sample_name <- row.names(data_df)
@@ -3423,7 +3428,7 @@ plot_3d_cell_trajectory <- function(cds,
          useNULL=useNULL_GLdev)
   if (show_backbone){
     segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2)
-    points3d(Matrix::t(reduced_dim_coords[1:3,]), color="red")
+    points3d(Matrix::t(reduced_dim_coords[dim,]), color="red")
   }
   
   points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors_df$point_colors, alpha=0.5)
