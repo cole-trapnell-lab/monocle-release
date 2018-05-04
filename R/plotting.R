@@ -3445,6 +3445,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (is.null(webGL_filename) == FALSE){
     #writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
+    options("pandoc.stack.size" = "4096m")
     htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=TRUE)
   }
   
