@@ -3435,13 +3435,13 @@ plot_3d_cell_trajectory <- function(cds,
                                                                      mean_d3 = median(data_dim_3))
     text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
   }
-  widget <- rglwidget(elementId = "example", width=width, height=height,
-                      controllers = "player")
-  
+  widget = NULL
   if (is.null(webGL_filename) == FALSE){
+    widget <- rglwidget(elementId = "example", width=width, height=height,
+                        controllers = "player")
     #writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
-    options("pandoc.stack.size" = "4096m")
-    htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=TRUE)
+    #options("pandoc.stack.size" = "4096m")
+    htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=FALSE)
   }
   
   if (is.null(movie_filename) == FALSE){
