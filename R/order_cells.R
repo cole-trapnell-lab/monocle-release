@@ -1871,7 +1871,7 @@ reduceDimension <- function(cds,
 
         # if number of cells is larger than 20 k, peform landmark selection and do SSE, L1 on the landmarks. We will project others cells on the learn SSE space 
         landmark_id <- NULL
-        if(ncol(cds) > 1000) {
+        if(ncol(cds) > 5000) {
           data_ori <- data 
           adj_mat_ori <- adj_mat
           FM_ori <- FM
@@ -1885,13 +1885,14 @@ reduceDimension <- function(cds,
 
           centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
           kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
+          # landmark_id = sort(unique(findNearestVertex(t(kmean_res$centers), t(data_ori))))
           landmark_id <- sort(unique(apply(as.matrix(proxy::dist(data_ori, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
 
           # data_ori <- as(data_ori, 'sparseMatrix')  
           # landmark_res <- monocle:::select_landmarks(data_ori@x, data_ori@i, data_ori@p, data_ori@Dim[2], data_ori@Dim[1], landmark_num)
 
           data <- data_ori[landmark_id, ]
-          adj_mat <- NULL # adj_mat_ori[landmark_id, landmark_id] 
+          adj_mat <- NULL # adj_mat_ori[landmark_id, landmark_id]  # # adj_mat_ori[landmark_id, landmark_id] 
           FM <- FM_ori[, landmark_id]
 
           if(verbose)
@@ -1990,8 +1991,8 @@ reduceDimension <- function(cds,
         Y <- t(SSE_res$Y)
 
         # now let us project other cells back to the landmark space 
-        if(ncol(cds) > 1000) {
-          projection_res <<- matrix(0, nrow = max_components, ncol = ncol(cds))
+        if(ncol(cds) > 5000) {
+          projection_res <- matrix(0, nrow = max_components, ncol = ncol(cds))
 
           # get a graph with distance between cells as the weight 
           relations <- louvain_res_ori$relations
@@ -2008,24 +2009,24 @@ reduceDimension <- function(cds,
           if(verbose) 
             message('project other non-landmark cells to the landmark SSE space ...')
 
-          mclapply(setdiff(1:ncol(cds), landmark_id), function(x) {
+          tmp <- mclapply(setdiff(1:ncol(cds), landmark_id), function(x) {
               dist_mat <- igraph::distances(g, v = colnames(cds)[x], to = colnames(cds)[landmark_id])
 
               # rank top 5 landmark cells
-              project_coord <- apply(dist_mat, 1, function(x) {
-                top_5 <- sort(x, index.return = T, decreasing = FALSE) # find the closest cells 
-                bandwidth <- mean(range(top_5$x[1:5])) # half of the range of the 5 nearest landmark as bindwidth 
-                p <- exp(-top_5$x[1:5]/bandwidth) # Gaussian kernel 
-                weight <- p / sum(p)  
-                Y[, top_5$ix[1:5]] %*% weight            
-                })
+              top_5 <- sort(dist_mat, index.return = T, decreasing = FALSE) # find the closest cells 
+              valid_id <- which(is.finite(top_5$x[1:5]))
+              bandwidth <- mean(range(top_5$x[valid_id])) # half of the range of the 5 nearest landmark as bindwidth 
+              p <- exp(-top_5$x[valid_id]/bandwidth) # Gaussian kernel 
+              weight <- p / sum(p)  
+              Y[, top_5$ix[valid_id]] %*% matrix(weight, ncol = 1)            
+                
+            }, mc.cores = cores)
 
-              projection_res[, x] <<- project_coord
-            }, mc.core = cores)
-
+          tmp <- do.call(cbind, tmp)
+          projection_res[, setdiff(1:ncol(cds), landmark_id)] <- tmp
           rm(g, dist_mat, links, relations)
 
-          projection_res[, landmark_id] <<- Y
+          projection_res[, landmark_id] <- Y
           Y <- projection_res
 
           FM <- FM_ori
@@ -2087,7 +2088,7 @@ findNearestVertex = function(data_matrix, vertex_coords, block_size=50000){
       block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
     }
     distances_Z_to_Y <- proxy::dist(t(block), t(vertex_coords))
-    closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
+    closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
     closest_vertex = append(closest_vertex, closest_vertex_for_block)
   }
   
