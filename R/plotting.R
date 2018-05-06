@@ -3435,6 +3435,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (is.null(point_colors_df$color_by) == FALSE){
     point_colors_df = inner_join(point_colors_df, data_df)
+    
     medoid_df = point_colors_df %>% dplyr::group_by(color_by, point_colors) %>% dplyr::summarize(mean_d1 = median(data_dim_1), 
                                                                      mean_d2 = median(data_dim_2),
                                                                      mean_d3 = median(data_dim_3))
