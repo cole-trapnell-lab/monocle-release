@@ -1700,7 +1700,7 @@ reduceDimension <- function(cds,
           ncenter <- extra_arguments$ncenter
         }else{
           #ncenter <- cal_ncenter(ncol(FM))
-          ncenter = 3 * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
+          ncenter = 2 * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
           ncenter = min(ncol(FM) / 2, ncenter)
         }
          
@@ -1709,22 +1709,10 @@ reduceDimension <- function(cds,
           stop("Error: ncenters must be less than or equal to ncol(X)")
         
         centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
-        # 
-        # centers = c()
-        # for (i in (1:length(unique(louvain_modules)))){
-        #   module_members = which(louvain_modules == i)
-        #   num_reps = ceiling((length(module_members)/ncol(reduced_dim_res)) * ncenter)
-        #   module_cds = cds[,module_members]
-        #   
-        #   landmark_res = landmark_selection(module_cds, num_reps)
-        #   module_representatives = row.names(pData(module_cds)[which(landmark_res$flag == 1),])
-        #   #module_representatives = module_members[seq(1, length(module_members), length.out=num_reps)]
-        #   centers = append(centers, module_representatives)
-        # }
-        # #centers = t(reduced_dim_res)[centers,]
-        # 
+        
         kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
-        medioids = reduced_dim_res[,apply(as.matrix(proxy::dist(t(FM), kmean_res$centers)), 2, which.min)]
+        nearest_center = findNearestVertex(FM, t(kmean_res$centers))
+        medioids = reduced_dim_res[,unique(nearest_center)]
         reduced_dim_res <- t(medioids)
         #reduced_dim_res = t(reduced_dim_res)[centers,]
         #reduced_dim_res <- t(reduced_dim_res)
@@ -1747,9 +1735,14 @@ reduceDimension <- function(cds,
       
       # print(extra_arguments)
       if('nn' %in% names(extra_arguments))
-        G <- get_knn(C0, K = extra_arguments$nn)
+        G_knn <- get_knn(C0, K = extra_arguments$nn)
       else
-        G <- get_knn(C0, K = 5)
+        G_knn <- get_knn(C0, K = 5)
+      
+      G_T = get_mst(C0)
+      G = G_T$G + G_knn$G
+      G[G > 0] = 1
+      W = G_T$W + G_knn$W
       
       if("louvain_qval" %in% names(extra_arguments)){ 
         louvain_qval <- extra_arguments$louvain_qval 
@@ -1767,14 +1760,14 @@ reduceDimension <- function(cds,
       if (length(levels(louvain_component)) > 1){
         louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
         
-        G$G = G$G * louvain_component_mask
-        G$W = G$W * louvain_component_mask
-        rownames(G$G) = rownames(G$W)
-        colnames(G$G) = colnames(G$W)
+        G = G * louvain_component_mask
+        W = W * louvain_component_mask
+        rownames(G) = rownames(W)
+        colnames(G) = colnames(W)
       }
       #louvain_component = data.frame(component=louvain_component)
      
-      l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G$G, gstruct = 'l1-graph', verbose = verbose),
+      l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       
       
@@ -2084,6 +2077,24 @@ reduceDimension <- function(cds,
   cds
 }
 
+findNearestVertex = function(data_matrix, vertex_coords, block_size=50000){
+  closest_vertex = c()
+  num_blocks = ceiling(ncol(data_matrix) / block_size)
+  for (i in 1:num_blocks){
+    if (i < num_blocks){
+      block = data_matrix[,(((i-1) * block_size)+1:(i*block_size))]
+    }else{
+      block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
+    }
+    distances_Z_to_Y <- proxy::dist(t(block), t(vertex_coords))
+    closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
+    closest_vertex = append(closest_vertex, closest_vertex_for_block)
+  }
+  
+  #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
+  return (closest_vertex)
+}
+
 # Project each point to the nearest on the MST:
 findNearestPointOnMST <- function(cds){
   dp_mst <- minSpanningTree(cds)
@@ -2092,10 +2103,10 @@ findNearestPointOnMST <- function(cds){
 
   tip_leaves <- names(which(degree(dp_mst) == 1))
 
-  distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
-  closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
-  #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
-
+  #distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
+  #closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
+  closest_vertex = findNearestVertex(Z, Y)
+  
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
   closest_vertex_df <- as.matrix(closest_vertex) #index on Z

@@ -148,6 +148,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
     reticulate::import("umap")
   }, warning = function(w) {
   }, error = function(e) {
+    print (e)
     stop('please pass the python home directory where umap is installed with python_home argument!')
   }, finally = {
   })
