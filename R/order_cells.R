@@ -1835,6 +1835,7 @@ reduceDimension <- function(cds,
                                        c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
                                         'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
         tmp <- do.call(UMAP, umap_args)
+        tmp$embedding_ <- (tmp$embedding_ - min(tmp$embedding_)) / max(tmp$embedding_) # normalize UMAP space
         umap_res <- tmp$embedding_; 
 
         adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
@@ -1865,8 +1866,6 @@ reduceDimension <- function(cds,
       }
       
       if(reduction_method %in% c("SSE", "UMAPSSE")) {
-        if (verbose)
-          message("Running Smooth Skeleton Embedding ...")
 
         if(reduction_method == "SSE") {
           umap_res <- NULL
@@ -1878,7 +1877,8 @@ reduceDimension <- function(cds,
         }
 
         # if number of cells is larger than 20 k, peform landmark selection and do SSE, L1 on the landmarks. We will project others cells on the learn SSE space 
-        if(ncol(cds) > 10000) {
+        landmark_id <- NULL
+        if(ncol(cds) > 1000) {
           data_ori <- data 
           adj_mat_ori <- adj_mat
           FM_ori <- FM
@@ -1892,15 +1892,28 @@ reduceDimension <- function(cds,
 
           centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
           kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
-          landmark_id <- apply(as.matrix(proxy::dist(data_ori, kmean_res$centers)), 2, which.min)
+          landmark_id <- sort(unique(apply(as.matrix(proxy::dist(data_ori, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
 
           # data_ori <- as(data_ori, 'sparseMatrix')  
           # landmark_res <- monocle:::select_landmarks(data_ori@x, data_ori@i, data_ori@p, data_ori@Dim[2], data_ori@Dim[1], landmark_num)
 
           data <- data_ori[landmark_id, ]
-          adj_mat <- adj_mat_ori[landmark_id, landmark_id] 
+          adj_mat <- NULL # adj_mat_ori[landmark_id, landmark_id] 
           FM <- FM_ori[, landmark_id]
+
+          if(verbose)
+            message("Running louvain clustering algorithm (UMAP space) ...")
+          row.names(umap_res) <- colnames(FM_ori)
+          louvain_clustering_args <- c(list(data = umap_res, pd = pData(cds)[colnames(FM_ori), ], verbose = verbose),
+                                       extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+          louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+
+          louvain_res_ori <- louvain_res 
         }
+
+        if (verbose)
+          message("Running Smooth Skeleton Embedding ...")
+
         # we are gonna ignore the method arugment here 
         sse_args <- c(list(data=data, dist_mat = adj_mat, embeding_dim=max_components, d = max_components, verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
@@ -1910,7 +1923,8 @@ reduceDimension <- function(cds,
         if(verbose)
           message("Running louvain clustering algorithm ...")
         
-        SSE_res$Y <- SSE_res$Y * 100 # magnify the SSE space to avoid space shrinking in L1graph step 
+        SSE_res$Y <- SSE_res$Y * 100 
+        # SSE_res$Y <- (SSE_res$Y - min(SSE_res$Y)) / max(SSE_res$Y) # normalize the SSE space to avoid space shrinking in L1graph step 
         row.names(SSE_res$Y) <- colnames(FM)
         louvain_clustering_args <- c(list(data = SSE_res$Y, pd = pData(cds)[colnames(FM), ], verbose = verbose),
                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
@@ -1933,7 +1947,7 @@ reduceDimension <- function(cds,
         centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
 
         kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
-        medioids = reduced_dim_res[,apply(as.matrix(proxy::dist(t(reduced_dim_res), kmean_res$centers)), 2, which.min)]
+        medioids = reduced_dim_res[, unique(apply(as.matrix(proxy::dist(t(reduced_dim_res), kmean_res$centers)), 2, which.min))] # avoid duplicated points 
         reduced_dim_res <- t(medioids)
 
         if(verbose)
@@ -1983,15 +1997,25 @@ reduceDimension <- function(cds,
         Y <- t(SSE_res$Y)
 
         # now let us project other cells back to the landmark space 
-        if(ncol(cds) > 10000) {
+        if(ncol(cds) > 1000) {
           projection_res <<- matrix(0, nrow = max_components, ncol = ncol(cds))
 
           # get a graph with distance between cells as the weight 
-          relations <- louvain_res$relations
-          relations$weight <- reshape2::melt(t(louvain_res$distMatrix))[, 3]
+          relations <- louvain_res_ori$relations
+          relations$weight <- reshape2::melt(t(louvain_res_ori$distMatrix))[, 3]
           g <- igraph::graph.data.frame(relations, directed = FALSE)
 
-          lapply(landmark_id, function(x) {
+          # iterate each non-landmark cells and project it to the SSE space
+          if("cores" %in% names(extra_arguments)) {
+            cores <- extra_arguments$landmark_num
+          } else {
+            cores <- detectCores() 
+          }
+
+          if(verbose) 
+            message('project other non-landmark cells to the landmark SSE space ...')
+
+          mclapply(setdiff(1:ncol(cds), landmark_id), function(x) {
               dist_mat <- igraph::distances(g, v = colnames(cds)[x], to = colnames(cds)[landmark_id])
 
               # rank top 5 landmark cells
@@ -2004,11 +2028,13 @@ reduceDimension <- function(cds,
                 })
 
               projection_res[, x] <<- project_coord
-            })
+            }, mc.core = cores)
 
           rm(g, dist_mat, links, relations)
 
+          projection_res[, landmark_id] <<- Y
           Y <- projection_res
+
           FM <- FM_ori
         }
 
@@ -2049,7 +2075,7 @@ reduceDimension <- function(cds,
    
       # pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
-        louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat)
+        louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat, landmark_id = landmark_id)
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")
