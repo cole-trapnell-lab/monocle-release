@@ -1745,7 +1745,9 @@ reduceDimension <- function(cds,
         G_knn <- get_knn(C0, K = 5)
       
       G_T = get_mst(C0)
+      
       G = G_T$G + G_knn$G
+      
       G[G > 0] = 1
       W = G_T$W + G_knn$W
       
@@ -2062,7 +2064,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
     num_blocks = ceiling(ncol(data_matrix) / block_size)
     for (i in 1:num_blocks){
       if (i < num_blocks){
-        block = data_matrix[,(((i-1) * block_size)+1:(i*block_size))]
+        block = data_matrix[,((((i-1) * block_size)+1):(i*block_size))]
       }else{
         block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
       }
@@ -2074,7 +2076,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
     num_blocks = ceiling(ncol(target_points) / block_size)
     for (i in 1:num_blocks){
       if (i < num_blocks){
-        block = target_points[,(((i-1) * block_size)+1:(i*block_size))]
+        block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
       }else{
         block = target_points[,((((i-1) * block_size)+1):(ncol(target_points)))]
       }
