@@ -1806,6 +1806,8 @@ reduceDimension <- function(cds,
       cds@dim_reduce_type <- "L1graph"
       cds <- findNearestPointOnMST(cds)
     }else if (reduction_method %in% c("UMAP", "SSE", "UMAPSSE") ) {
+      landmark_id <- NULL
+
       cds@dim_reduce_type <- reduction_method
       # FM <- as.matrix(Matrix::t(scale(Matrix::t(FM))))
       # FM <- FM[!is.na(row.names(FM)), ]
@@ -1875,7 +1877,6 @@ reduceDimension <- function(cds,
         }
 
         # if number of cells is larger than 20 k, peform landmark selection and do SSE, L1 on the landmarks. We will project others cells on the learn SSE space 
-        landmark_id <- NULL
         if(ncol(cds) > 5000) {
           data_ori <- data 
           adj_mat_ori <- adj_mat
@@ -2066,9 +2067,9 @@ reduceDimension <- function(cds,
       
       colnames(S) <- colnames(FM)
       colnames(Y) <- colnames(FM)
-      reducedDimW(cds) <- l1_graph_res$W # update this !!! 
+      reducedDimW(cds) <- W # update this !!! 
       reducedDimS(cds) <- as.matrix(Y)
-      reducedDimK(cds) <- l1_graph_res$C
+      # reducedDimK(cds) <- Y
 
       # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
    
