@@ -434,6 +434,8 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   louvain_modules = levels(cell_membership)
   
   cluster_mat <- matrix(0, nrow = length(louvain_modules), ncol = length(louvain_modules)) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+  enrichment_mat <- matrix(0, nrow = length(louvain_modules), ncol = length(louvain_modules)) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+  
   overlapping_threshold <- 1e-5
   
   edges_per_module = rowSums(num_links)
@@ -453,12 +455,17 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       var_null_num_links_i_j = theta_i * theta_j *( 1 - theta_i * theta_j) / total_edges
       p_val_i_j = pnorm(num_links_i_j, 0, sqrt(var_null_num_links_i_j), lower.tail = FALSE)
       cluster_mat[i,j] = p_val_i_j
+      enrichment_mat[i,j] = num_links_i_j
     }
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
-  cluster_mat[cluster_mat > qval_thresh] = 0
-  diag(cluster_mat) = 0
-  cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
+  #cluster_mat[cluster_mat > qval_thresh] = 0
+  
+  sig_links = num_links
+  sig_links[cluster_mat > qval_thresh] = 0
+  diag(sig_links) = 0
+  
+  cluster_g <- igraph::graph_from_adjacency_matrix(sig_links, weighted = T, mode = 'undirected')
   louvain_modules <- igraph::cluster_louvain(cluster_g)
 
   # return also the layout coordinates and the edges link for the graph of clusters
