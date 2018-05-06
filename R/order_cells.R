@@ -1699,8 +1699,13 @@ reduceDimension <- function(cds,
         if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
         }else{
+          if("L1.pr_graph_vertex_per_louvain_module" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
+            L1.pr_graph_vertex_per_louvain_module <- extra_arguments$L1.pr_graph_vertex_per_louvain_module
+          }else{
+            L1.pr_graph_vertex_per_louvain_module = 3
+          }
           #ncenter <- cal_ncenter(ncol(FM))
-          ncenter = 2 * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
+          ncenter = L1.pr_graph_vertex_per_louvain_module * length(levels(cds@auxOrderingData[["L1graph"]]$louvain_module))
           ncenter = min(ncol(FM) / 2, ncenter)
         }
          
@@ -1711,7 +1716,7 @@ reduceDimension <- function(cds,
         centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
         
         kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
-        nearest_center = findNearestVertex(FM, t(kmean_res$centers))
+        nearest_center = findNearestVertex(t(kmean_res$centers), FM, process_targets_in_blocks=TRUE)
         medioids = reduced_dim_res[,unique(nearest_center)]
         reduced_dim_res <- t(medioids)
         #reduced_dim_res = t(reduced_dim_res)[centers,]
@@ -2078,20 +2083,33 @@ reduceDimension <- function(cds,
   cds
 }
 
-findNearestVertex = function(data_matrix, vertex_coords, block_size=50000){
+findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
-  num_blocks = ceiling(ncol(data_matrix) / block_size)
-  for (i in 1:num_blocks){
-    if (i < num_blocks){
-      block = data_matrix[,(((i-1) * block_size)+1:(i*block_size))]
-    }else{
-      block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
+  if (process_targets_in_blocks == FALSE){
+    num_blocks = ceiling(ncol(data_matrix) / block_size)
+    for (i in 1:num_blocks){
+      if (i < num_blocks){
+        block = data_matrix[,(((i-1) * block_size)+1:(i*block_size))]
+      }else{
+        block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
+      }
+      distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
+      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex = append(closest_vertex, closest_vertex_for_block)
     }
-    distances_Z_to_Y <- proxy::dist(t(block), t(vertex_coords))
-    closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
-    closest_vertex = append(closest_vertex, closest_vertex_for_block)
+  }else{
+    num_blocks = ceiling(ncol(target_points) / block_size)
+    for (i in 1:num_blocks){
+      if (i < num_blocks){
+        block = target_points[,(((i-1) * block_size)+1:(i*block_size))]
+      }else{
+        block = target_points[,((((i-1) * block_size)+1):(ncol(target_points)))]
+      }
+      distances_Z_to_Y <- proxy::dist(t(data_matrix), t(block))
+      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex = append(closest_vertex, closest_vertex_for_block)
+    }
   }
-  
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   return (closest_vertex)
 }
