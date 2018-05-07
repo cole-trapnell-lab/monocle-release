@@ -1423,7 +1423,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1690,8 +1690,8 @@ reduceDimension <- function(cds,
         louvain_clustering_args <- c(list(data = t(umap_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
                                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-        cds@auxOrderingData[["L1graph"]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
-       
+        cds@auxOrderingData[["L1graph"]]$louvain_module <- as.factor(igraph::membership(louvain_res$optim_res))
+        cds@auxOrderingData[["L1graph"]]$louvain_res <- louvain_res
         cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
@@ -1863,6 +1863,7 @@ reduceDimension <- function(cds,
         reducedDimA(cds) <- A
         SSE_res <- NULL
         l1_graph_res <- NULL
+        K <- S
       }
       
       if(reduction_method %in% c("SSE", "UMAPSSE")) {
@@ -2047,6 +2048,8 @@ reduceDimension <- function(cds,
 
         reducedDimS(cds) <- Y
         reducedDimK(cds) <- l1_graph_res$C
+        K <- l1_graph_res$C
+
         cds@auxOrderingData[[reduction_method]]$objective_vals <- tail(l1_graph_res$objs, 1)
         cds@auxOrderingData[[reduction_method]]$W <- l1_graph_res$W
         cds@auxOrderingData[[reduction_method]]$P <- l1_graph_res$P
@@ -2069,13 +2072,13 @@ reduceDimension <- function(cds,
       colnames(Y) <- colnames(FM)
       reducedDimW(cds) <- W # update this !!! 
       reducedDimS(cds) <- as.matrix(Y)
-      # reducedDimK(cds) <- Y
+      reducedDimK(cds) <- K
 
       # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
    
       # pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
-        louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat, landmark_id = landmark_id)
+        louvain_res = louvain_res_ori, SSE_louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat, landmark_id = landmark_id)
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")

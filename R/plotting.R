@@ -3267,7 +3267,7 @@ plot_cluster_graph <- function(cds,
 #' Plot a dataset and trajectory in 3 dimensions
 #'
 #' @param cds CellDataSet for the experiment
-#' @param dim the dimensions used to create the 3D plot, by default it is the first three dimension 
+#' @param dim the dimensions used to create the 3D plot, by default it is the first three dimensions 
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
@@ -3275,7 +3275,7 @@ plot_cluster_graph <- function(cds,
 #' @param movie_filename the name of a file to which you'd to write an animated GIF containing the plot
 #' @param show_backbone whether to show the principal graph used to order the cells
 #' @param scale_expr whether to tranform the log expression values to z scores
-#' @param palette the color palette used for plotting,
+#' @param palette the color palette used for plotting
 #' @param width the width of the plot in pixels
 #' @param height the height of the plot in pixels
 #' @param useNULL_GLdev if TRUE, don't show the plot on the screen (to be used with webGL or movie output)
@@ -3317,7 +3317,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("L1graph", "simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP") ){
+  }else if (cds@dim_reduce_type %in% c("L1graph", "simplePPT", "DDRTree", "UMAPDDRTree", "SSE", "UMAPSSE", "UMAP") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -3348,8 +3348,7 @@ plot_3d_cell_trajectory <- function(cds,
   edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")], by.x="target", by.y="sample_name", all=TRUE)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2", "prin_graph_dim_3"="target_prin_graph_dim_3"))
   
-  S_matrix <- 
-    reducedDimS(cds)
+  S_matrix <- reducedDimS(cds)
   data_df <- data.frame(t(S_matrix[dim,]))
   #data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2", "data_dim_3")
@@ -3360,25 +3359,48 @@ plot_3d_cell_trajectory <- function(cds,
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-      #   markers_exprs <- reshape2::melt(as.matrix(exprs(cds[row.names(markers_fData),])))
-      #   colnames(markers_exprs)[1:2] <- c('feature_id','cell_id')
-      #   markers_exprs <- merge(markers_exprs, markers_fData, by.x = "feature_id", by.y="row.names")
-      #   #print (head( markers_exprs[is.na(markers_exprs$gene_short_name) == FALSE,]))
+
+      # get a graph with distance between cells as the weight 
+      louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res
+      # cds@auxOrderingData[[cds@dim_reduce_type]]$adj_mat # use UMAP graph 
+
+      if(is.null(louvain_res)) {
+        louvain_clustering_args <- c(list(data = t(S_matrix), pd = pData(cds)[colnames(S_matrix), ], verbose = verbose),
+                                       extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+      }
+
+      # convolve the gene expression by calculating weighted average of gene expression with kNN graph  
+      relations <- louvain_res$relations
+      distMatrix <- louvain_res$distMatrix
+      distMatrix <- t(apply(distMatrix, 1, function(x) {
+          bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
+          p <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
+          p / sum(p)
+      }))
+
+      relations$weight <- reshape2::melt(t(distMatrix))[, 3]
+      g <- igraph::graph.data.frame(relations, directed = T) #directed is used to ensure the asymmetric kNN graph 
+      g_adj_mat <- as_adjacency_matrix(g, attr="weight")
+
       markers_expr_val <- exprs(cds[row.names(markers_fData),])
-      markers_expr_val = Matrix::colSums(markers_expr_val)
-      markers_expr_val = markers_expr_val / pData(cds)$Size_Factor
+      markers_expr_val <- Matrix::colSums(markers_expr_val)
+      markers_expr_val <- markers_expr_val / pData(cds)$Size_Factor
+
+      markers_expr_val <- g_adj_mat %*% as(matrix(markers_expr_val, ncol = 1), 'sparseMatrix')
+
       if (scale_expr){
-        markers_expr_val = scale(log10(markers_expr_val+1))
+        markers_expr_val <- scale(log10(markers_expr_val+1))
         markers_expr_val[markers_expr_val < -3] = -3
         markers_expr_val[markers_expr_val > 3] = 3
       }
       
-      markers_exprs = data.frame(cell_id = row.names(pData(cds)))
-      markers_exprs$value = markers_expr_val
+      markers_exprs <- data.frame(cell_id = row.names(pData(cds)))
+      markers_exprs$value <- markers_expr_val
     }
   }
   
-  point_colors_df = data.frame(sample_name = data_df$sample_name,
+  point_colors_df <- data.frame(sample_name = data_df$sample_name,
                                point_colors = "darkgray")
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
