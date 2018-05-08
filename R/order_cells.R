@@ -2413,10 +2413,13 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       }
       distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
       closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
-      closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      closest_vertex <- append(closest_vertex, closest_vertex_for_block)
     }
   }else{
     num_blocks = ceiling(ncol(target_points) / block_size)
+    previous_min <- rep(Inf, ncol(target_points))
+    previous_closest_vertex <- rep(0, ncol(target_points))
+
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
@@ -2424,8 +2427,15 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
         block = target_points[,((((i-1) * block_size)+1):(ncol(target_points)))]
       }
       distances_Z_to_Y <- proxy::dist(t(data_matrix), t(block))
-      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
-      closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      current_min <- apply(distances_Z_to_Y, 1, function(z) { min(z) } )
+      current_closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) + ((i-1) * block_size) } )
+      # closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      pre_cur_closest_vertex_mat <- cbind(previous_min, current_closest_vertex)
+      closest_vertex_index_in_mat <- cbind(1:ncol(data_matrix), apply(cbind(previous_min, current_min), 1, which.min))
+      closest_vertex <- pre_cur_closest_vertex_mat[closest_vertex_index_in_mat]
+
+      previous_min <- current_min
+      previous_closest_vertex <- current_closest_vertex
     }
   }
   stopifnot(length(closest_vertex) == ncol(data_matrix))
