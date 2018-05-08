@@ -16,5 +16,6 @@ def umap(i, j, val, dim, n, n_c, metric, negative_sample_rate, alpha, init, mdis
 				  	gamma = gamma,
 				  	bandwidth = bandwidth,
 				  	angular_rp_forest = angular_rp_forest,
+				  	random_state=0,
 				  	verbose = verbose).fit(data)
   return res
