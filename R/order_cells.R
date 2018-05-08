@@ -1423,7 +1423,7 @@ projectPCA <- function(cds, num_dim=50,
   }
   
   fm_rowsums = Matrix::rowSums(FM)
-  FM <- FM[is.finite(fm_rowsums) | fm_rowsums != 0, ]
+  FM <- FM[is.finite(fm_rowsums) & fm_rowsums != 0, ]
 
   if (verbose)
     message("Remove noise by PCA ...")
@@ -2212,6 +2212,7 @@ reduceDimension <- function(cds,
         if(is.null(landmark_id)) {
           reduced_dim_res = t(Y) 
           row.names(Y) <- colnames(FM)
+          landmark_id <- 1:ncol(cds)
         } else {
           reduced_dim_res = t(Y)           
           row.names(Y) <- colnames(FM[, landmark_id])
@@ -2225,6 +2226,9 @@ reduceDimension <- function(cds,
         louvain_module_length = length(levels(cds@auxOrderingData[['UMAP']]$louvain_module))
 
         landmark_id <- cds@auxOrderingData[['UMAP']]$landmark_id
+        if(is.null(landmark_id)) {
+          landmark_id <- 1:ncol(cds)
+        }
       } else {
         stop('L1graph can be only applied to either the MAP or SSE Ureduced space, please first apply those dimension reduction techniques!')
       }
@@ -2278,7 +2282,7 @@ reduceDimension <- function(cds,
       cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
       louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
       cds@auxOrderingData[[reduction_method]]$louvain_component = louvain_component
-      names(louvain_component) = colnames(FM[, landmark_id])
+      names(louvain_component) = colnames(cds[, landmark_id])
       louvain_component = louvain_component[rownames(reduced_dim_res)]
       louvain_component = as.factor(louvain_component)
       if (length(levels(louvain_component)) > 1){
