@@ -1423,7 +1423,7 @@ normalize_expr_data <- function(cds,
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'SGL-tree'),
+                            reduction_method=c("DDRTree", "ICA", "PCA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -1690,8 +1690,8 @@ reduceDimension <- function(cds,
         louvain_clustering_args <- c(list(data = t(umap_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
                                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-        cds@auxOrderingData[["L1graph"]]$louvain_module = as.factor(igraph::membership(louvain_res$optim_res))
-       
+        cds@auxOrderingData[["L1graph"]]$louvain_module <- as.factor(igraph::membership(louvain_res$optim_res))
+        cds@auxOrderingData[["L1graph"]]$louvain_res <- louvain_res
         cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
@@ -1868,6 +1868,7 @@ reduceDimension <- function(cds,
         reducedDimA(cds) <- A
         SSE_res <- NULL
         l1_graph_res <- NULL
+        K <- S
       }
       
       if(reduction_method %in% c("SSE", "UMAPSSE")) {
@@ -1903,8 +1904,20 @@ reduceDimension <- function(cds,
           # landmark_res <- monocle:::select_landmarks(data_ori@x, data_ori@i, data_ori@p, data_ori@Dim[2], data_ori@Dim[1], landmark_num)
 
           data <- data_ori[landmark_id, ]
-          adj_mat <- NULL # adj_mat_ori[landmark_id, landmark_id]  # # adj_mat_ori[landmark_id, landmark_id] 
           FM <- FM_ori[, landmark_id]
+
+          # run UMAP to get the adjacency graph for downstream SSE learning 
+          umap_args <- c(list(X = irlba_pca_res[landmark_id, ], log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
+                                       extra_arguments[names(extra_arguments) %in% 
+                                       c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                        'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+          tmp <- do.call(UMAP, umap_args)
+          adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
+                        x = -as.numeric(tmp$graph$data), dims = c(length(landmark_id), length(landmark_id)), index1 = F, 
+                        dimnames = list(colnames(cds)[landmark_id], colnames(cds)[landmark_id]))
+
+          # adj_mat <- NULL # adj_mat_ori[landmark_id, landmark_id]  # # adj_mat_ori[landmark_id, landmark_id] 
+          # adj_mat <- adj_mat_ori[landmark_id, landmark_id]  # # adj_mat_ori[landmark_id, landmark_id] 
 
           if(verbose)
             message("Running louvain clustering algorithm (UMAP space) ...")
@@ -2019,26 +2032,51 @@ reduceDimension <- function(cds,
 
           if(verbose) 
             message('project other non-landmark cells to the landmark SSE space ...')
+          
+          # using matrix multiplication to accelerate the process (optimize it to handle millions of points)
+          block_size <- 50000
+          num_blocks = ceiling(nrow(data_ori) / block_size)
+          weight_mat <- NULL
+          for (i in 1:num_blocks){
+            if (i < num_blocks){
+              block = data_ori[((((i-1) * block_size)+1):(i*block_size)), ]
+            }else{
+              block = data_ori[((((i-1) * block_size)+1):(nrow(data_ori))),]
+            }
+            distances_Z_to_Y <- proxy::dist(block, data_ori[landmark_id, ])
 
-          tmp <- mclapply(setdiff(1:ncol(cds), landmark_id), function(x) {
-              dist_mat <- igraph::distances(g, v = colnames(cds)[x], to = colnames(cds)[landmark_id])
+            tmp <- as(t(apply(distances_Z_to_Y , 1, function(x) {
+                tmp <- sort(x)[6] 
+                x[x > tmp] <- 0; p <- rep(0, length(x))
+                bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
+                p[x > 0] <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
+                p / sum(p) 
+            })), 'sparseMatrix')
 
-              # rank top 5 landmark cells
-              top_5 <- sort(dist_mat, index.return = T, decreasing = FALSE) # find the closest cells 
-              valid_id <- which(is.finite(top_5$x[1:5]))
-              bandwidth <- mean(range(top_5$x[valid_id])) # half of the range of the 5 nearest landmark as bindwidth 
-              p <- exp(-top_5$x[valid_id]/bandwidth) # Gaussian kernel 
-              weight <- p / sum(p)  
-              Y[, top_5$ix[valid_id]] %*% matrix(weight, ncol = 1)            
+            weight_mat <- rBind(weight_mat, tmp)
+          }
+
+          projection_res <- t(weight_mat %*% as(t(Y), 'sparseMatrix'))
+
+          # tmp <- mclapply(setdiff(1:ncol(cds), landmark_id), function(x) {
+          #     dist_mat <- igraph::distances(g, v = colnames(cds)[x], to = colnames(cds)[landmark_id])
+
+          #     # rank top 5 landmark cells
+          #     top_5 <- sort(dist_mat, index.return = T, decreasing = FALSE) # find the closest cells 
+          #     valid_id <- which(is.finite(top_5$x[1:5]))
+          #     bandwidth <- mean(range(top_5$x[valid_id])) # half of the range of the 5 nearest landmark as bindwidth 
+          #     p <- exp(-top_5$x[valid_id]/bandwidth) # Gaussian kernel 
+          #     weight <- p / sum(p)  
+          #     Y[, top_5$ix[valid_id]] %*% matrix(weight, ncol = 1)            
                 
-            }, mc.cores = cores)
+          #   }, mc.cores = cores)
 
-          tmp <- do.call(cbind, tmp)
-          projection_res[, setdiff(1:ncol(cds), landmark_id)] <- tmp
-          rm(g, dist_mat, links, relations)
+          # tmp <- do.call(cbind, tmp)
+          # projection_res[, setdiff(1:ncol(cds), landmark_id)] <- tmp
+          # rm(g, dist_mat, links, relations)
 
           projection_res[, landmark_id] <- Y
-          Y <- projection_res
+          Y <- as.matrix(projection_res)
 
           FM <- FM_ori
         }
@@ -2052,6 +2090,8 @@ reduceDimension <- function(cds,
 
         reducedDimS(cds) <- Y
         reducedDimK(cds) <- l1_graph_res$C
+        K <- l1_graph_res$C
+
         cds@auxOrderingData[[reduction_method]]$objective_vals <- tail(l1_graph_res$objs, 1)
         cds@auxOrderingData[[reduction_method]]$W <- l1_graph_res$W
         cds@auxOrderingData[[reduction_method]]$P <- l1_graph_res$P
@@ -2074,13 +2114,13 @@ reduceDimension <- function(cds,
       colnames(Y) <- colnames(FM)
       reducedDimW(cds) <- W # update this !!! 
       reducedDimS(cds) <- as.matrix(Y)
-      # reducedDimK(cds) <- Y
+      reducedDimK(cds) <- K
 
       # cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, t(as.matrix(Y)))
    
       # pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
       cds@auxOrderingData[[reduction_method]] <- list(umap_res = umap_res, SSE_res = SSE_res, 
-        louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat, landmark_id = landmark_id)
+        louvain_res = louvain_res_ori, SSE_louvain_res = louvain_res, PG_res = l1_graph_res, adj_mat = adj_mat, landmark_id = landmark_id)
 
     } else {
       stop("Error: unrecognized dimensionality reduction method")
