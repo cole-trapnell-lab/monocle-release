@@ -1649,8 +1649,8 @@ reduceDimension <- function(cds,
       if(reduction_method == "UMAPDDRTree") {
         umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                                extra_arguments[names(extra_arguments) %in% 
-                               c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+                               c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
         tmp <- do.call(UMAP, umap_args)
         umap_res <- t(tmp$embedding_); 
 
@@ -1738,8 +1738,8 @@ reduceDimension <- function(cds,
         
         umap_args <- c(list(X = t(FM), log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                        extra_arguments[names(extra_arguments) %in% 
-                                         c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                           'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+                                         c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
         tmp <- do.call(UMAP, umap_args)
         umap_res <- t(tmp$embedding_); 
         
@@ -1897,8 +1897,8 @@ reduceDimension <- function(cds,
 
       umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                                      extra_arguments[names(extra_arguments) %in% 
-                                     c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                      'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+                                     c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
       tmp <- do.call(UMAP, umap_args)
       tmp$embedding_ <- (tmp$embedding_ - min(tmp$embedding_)) / max(tmp$embedding_) # normalize UMAP space
       umap_res <- tmp$embedding_; 
@@ -1975,8 +1975,8 @@ reduceDimension <- function(cds,
         # run UMAP to get the adjacency graph for downstream SSE learning 
         umap_args <- c(list(X = irlba_pca_res[landmark_id, ], log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                                      extra_arguments[names(extra_arguments) %in% 
-                                     c("python_home", "n_neighbors", "metric", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                      'set_op_mix_ratio', 'local_connectivity', 'gamma', 'bandwidth', 'angular_rp_forest', 'verbose')])
+                                     c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
+                                'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
         tmp <- do.call(UMAP, umap_args)
         adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
                       x = -as.numeric(tmp$graph$data), dims = c(length(landmark_id), length(landmark_id)), index1 = F, 

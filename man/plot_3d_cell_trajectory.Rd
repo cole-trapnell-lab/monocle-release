@@ -13,7 +13,7 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 \arguments{
 \item{cds}{CellDataSet for the experiment}
 
-\item{dim}{the dimensions used to create the 3D plot, by default it is the first three dimension}
+\item{dim}{the dimensions used to create the 3D plot, by default it is the first three dimensions}
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
 
@@ -29,7 +29,7 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 
 \item{scale_expr}{whether to tranform the log expression values to z scores}
 
-\item{palette}{the color palette used for plotting,}
+\item{palette}{the color palette used for plotting}
 
 \item{width}{the width of the plot in pixels}
 

@@ -51,6 +51,7 @@
 #'   can have arguments passed via the metric_kwds dictionary. At this
 #'   time care must be taken and dictionary elements must be ordered
 #'   appropriately; this will hopefully be fixed in the future.
+#' @param n_epochs: int The number of training epochs to use in optimization.
 #' @param negative_sample_rate int (optional, default 5)
 #' The number of negative edge/1-simplex samples to use per positive 
 #' edge/1-simplex sample in optimizing the low dimensional embedding. 
@@ -129,6 +130,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   n_neighbors = 15L, 
   n_component = 2L, 
   metric = "euclidean", 
+  n_epochs = NULL, 
   negative_sample_rate = 5L,
   alpha = 1.0,
   init = 'spectral',
@@ -136,8 +138,12 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   spread = 1.0,
   set_op_mix_ratio = 1.0,
   local_connectivity = 1L,
-  gamma = 1.0,
   bandwidth = 1.0, 
+  gamma = 1.0,
+  a = NULL,
+  b = NULL, 
+  random_state = 0L,
+  metric_kwds = list(), 
   angular_rp_forest = FALSE,
   verbose = FALSE,
   return_all = FALSE) {
@@ -174,6 +180,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
                     as.integer(n_neighbors), 
                     as.integer(n_component), 
                     as.character(metric), 
+                    as.integer(n_epochs), 
                     as.integer(negative_sample_rate),
                     as.numeric(alpha),
                     as.character(init),
@@ -181,8 +188,12 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
                     as.numeric(spread),
                     as.numeric(set_op_mix_ratio),
                     as.integer(local_connectivity),
-                    as.numeric(gamma),
                     as.numeric(bandwidth),
+                    as.numeric(gamma),
+                    as.numeric(a),
+                    as.numeric(b),
+                    as.integer(random_state),
+                    as.list(metric_kwds),
                     as.logical(angular_rp_forest),
                     as.logical(verbose))
   

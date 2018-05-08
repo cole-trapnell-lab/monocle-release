@@ -6,9 +6,10 @@
 \usage{
 UMAP(X, python_home = system("which python", intern = TRUE), log = TRUE,
   n_neighbors = 15L, n_component = 2L, metric = "euclidean",
-  negative_sample_rate = 5L, alpha = 1, init = "spectral",
-  min_dist = 0.1, spread = 1, set_op_mix_ratio = 1,
-  local_connectivity = 1L, gamma = 1, bandwidth = 1,
+  n_epochs = NULL, negative_sample_rate = 5L, alpha = 1,
+  init = "spectral", min_dist = 0.1, spread = 1, set_op_mix_ratio = 1,
+  local_connectivity = 1L, bandwidth = 1, gamma = 1, a = NULL,
+  b = NULL, random_state = 0L, metric_kwds = list(),
   angular_rp_forest = FALSE, verbose = FALSE, return_all = FALSE)
 }
 \arguments{
@@ -66,16 +67,36 @@ The higher this value the more connected the manifold becomes
 locally. In practice this should be not more than the local intrinsic
 dimension of the manifold.}
 
-\item{gamma}{float (optional, default 1.0)
-Weighting applied to negative samples in low dimensional embedding
-optimization. Values higher than one will result in greater weight
-being given to negative samples.}
-
 \item{bandwidth}{float (optional, default 1.0)
 The effective bandwidth of the kernel if we view the algorithm as
 similar to Laplacian eigenmaps. Larger values induce more
 connectivity and a more global view of the data, smaller values
 concentrate more locally.}
+
+\item{gamma}{float (optional, default 1.0)
+Weighting applied to negative samples in low dimensional embedding
+optimization. Values higher than one will result in greater weight
+being given to negative samples.}
+
+\item{a}{float (optional, default None) (not passed in)
+More specific parameters controlling the embedding. If None these
+values are set automatically as determined by ``min_dist`` and
+``spread``.}
+
+\item{b}{float (optional, default None) (not passed in)
+More specific parameters controlling the embedding. If None these
+values are set automatically as determined by ``min_dist`` and
+``spread``.}
+
+\item{random_state}{int, RandomState instance or None, optional (default: None) (not passed in)
+If int, random_state is the seed used by the random number generator;
+If RandomState instance, random_state is the random number generator;
+If None, the random number generator is the RandomState instance used
+by `np.random`.}
+
+\item{metric_kwds}{dict (optional, default {})  (not passed in)
+Arguments to pass on to the metric, such as the ``p`` value for
+Minkowski distance.}
 
 \item{angular_rp_forest}{bool (optional, default False)
 Whether to use an angular random projection forest to initialise
@@ -125,25 +146,7 @@ include:
   time care must be taken and dictionary elements must be ordered
   appropriately; this will hopefully be fixed in the future.}
 
-\item{a}{float (optional, default None) (not passed in)
-More specific parameters controlling the embedding. If None these
-values are set automatically as determined by ``min_dist`` and
-``spread``.}
-
-\item{b}{float (optional, default None) (not passed in)
-More specific parameters controlling the embedding. If None these
-values are set automatically as determined by ``min_dist`` and
-``spread``.}
-
-\item{random_state}{int, RandomState instance or None, optional (default: None) (not passed in)
-If int, random_state is the seed used by the random number generator;
-If RandomState instance, random_state is the random number generator;
-If None, the random number generator is the RandomState instance used
-by `np.random`.}
-
-\item{metric_kwds}{dict (optional, default {})  (not passed in)
-Arguments to pass on to the metric, such as the ``p`` value for
-Minkowski distance.}
+\item{n_epochs:}{int The number of training epochs to use in optimization.}
 }
 \value{
 Embedding of the training data in low-dimensional space if return_all is set to be FALSE, 
