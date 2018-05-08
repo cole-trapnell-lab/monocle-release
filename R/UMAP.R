@@ -109,7 +109,8 @@
 #' by `np.random`.
 #' @param metric_kwds dict (optional, default {})  (not passed in)
 #' Arguments to pass on to the metric, such as the ``p`` value for
-#' Minkowski distance.
+#' Minkowski distance. In R, a list should be passed in if you want to use this argument. 
+#' The dict function from reticulate package will then convert it into a dictionary for python to use. 
 #' @param angular_rp_forest bool (optional, default False)
 #' Whether to use an angular random projection forest to initialise
 #' the approximate nearest neighbor search. This can be faster, but is
@@ -143,7 +144,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   a = NULL,
   b = NULL, 
   random_state = 0L,
-  metric_kwds = list(), 
+  metric_kwds = reticulate::dict(), 
   angular_rp_forest = FALSE,
   verbose = FALSE,
   return_all = FALSE) {
@@ -176,11 +177,27 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
     val <- X@x
   }
   dim <- as.integer(X@Dim)
+
+  if(is.null(n_epochs) == F) {
+    n_epochs <- as.integer(n_epochs)
+  }
+  if(is.null(a) == F) {
+    a <- as.numeric(a)
+  }
+  if(is.null(b) == F) {
+    n_epochs <- as.numeric(b)
+  }
+  if(is.list(metric_kwds) == F) {
+    metric_kwds <- reticulate::dict()
+  } else {
+    metric_kwds <- reticulate::dict(metric_kwds)
+  }
+
   umap_res <- umap(i, j, val, dim, 
                     as.integer(n_neighbors), 
                     as.integer(n_component), 
                     as.character(metric), 
-                    as.integer(n_epochs), 
+                    n_epochs,
                     as.integer(negative_sample_rate),
                     as.numeric(alpha),
                     as.character(init),
@@ -190,10 +207,10 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
                     as.integer(local_connectivity),
                     as.numeric(bandwidth),
                     as.numeric(gamma),
-                    as.numeric(a),
-                    as.numeric(b),
+                    a,
+                    b,
                     as.integer(random_state),
-                    as.list(metric_kwds),
+                    metric_kwds,
                     as.logical(angular_rp_forest),
                     as.logical(verbose))
   

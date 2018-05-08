@@ -9,7 +9,7 @@ UMAP(X, python_home = system("which python", intern = TRUE), log = TRUE,
   n_epochs = NULL, negative_sample_rate = 5L, alpha = 1,
   init = "spectral", min_dist = 0.1, spread = 1, set_op_mix_ratio = 1,
   local_connectivity = 1L, bandwidth = 1, gamma = 1, a = NULL,
-  b = NULL, random_state = 0L, metric_kwds = list(),
+  b = NULL, random_state = 0L, metric_kwds = reticulate::dict(),
   angular_rp_forest = FALSE, verbose = FALSE, return_all = FALSE)
 }
 \arguments{
@@ -96,7 +96,8 @@ by `np.random`.}
 
 \item{metric_kwds}{dict (optional, default {})  (not passed in)
 Arguments to pass on to the metric, such as the ``p`` value for
-Minkowski distance.}
+Minkowski distance. In R, a list should be passed in if you want to use this argument. 
+The dict function from reticulate package will then convert it into a dictionary for python to use.}
 
 \item{angular_rp_forest}{bool (optional, default False)
 Whether to use an angular random projection forest to initialise
