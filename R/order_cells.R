@@ -1691,8 +1691,8 @@ reduceDimension <- function(cds,
                                      extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
         cds@auxOrderingData[["L1graph"]]$louvain_module <- as.factor(igraph::membership(louvain_res$optim_res))
-        cds@auxOrderingData[["L1graph"]]$louvain_res <- louvain_res
-        cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
+        #cds@auxOrderingData[["L1graph"]]$louvain_res <- louvain_res
+        #cds@auxOrderingData[["L1graph"]]$adj_mat <- adj_mat
         
         reduced_dim_res = FM 
         
@@ -1741,18 +1741,19 @@ reduceDimension <- function(cds,
         C0 <- X
       Nz <- ncol(C0)
       
+      G_T = get_mst_with_shortcuts(C0)
+      
       # print(extra_arguments)
       if('nn' %in% names(extra_arguments))
         G_knn <- get_knn(C0, K = extra_arguments$nn)
       else
         G_knn <- get_knn(C0, K = 5)
       
-      G_T = get_mst(C0)
-      
-      G = G_T$G + G_knn$G
+
+      G = G_T$G #+ G_knn$G
       
       G[G > 0] = 1
-      W = G_T$W + G_knn$W
+      W = G_T$W #+ G_knn$W
       
       if("louvain_qval" %in% names(extra_arguments)){ 
         louvain_qval <- extra_arguments$louvain_qval 
@@ -2134,7 +2135,7 @@ reduceDimension <- function(cds,
 #' @param target_points the target points
 #' @param block_size the number of input matrix rows to process per blocl
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
-findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
+findNearestVertex = function(data_matrix, target_points, block_size=250, process_targets_in_blocks=FALSE){
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
     num_blocks = ceiling(ncol(data_matrix) / block_size)
@@ -2150,6 +2151,8 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
     }
   }else{
     num_blocks = ceiling(ncol(target_points) / block_size)
+    dist_to_closest_vertex = rep(Inf, length(ncol(data_matrix)))
+    closest_vertex = rep(NA, length(ncol(data_matrix)))
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
@@ -2158,7 +2161,11 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       }
       distances_Z_to_Y <- proxy::dist(t(data_matrix), t(block))
       closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
-      closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      new_block_distances = distances_Z_to_Y[cbind(1:nrow(distances_Z_to_Y), closest_vertex_for_block)]
+      updated_nearest_idx = which(new_block_distances < dist_to_closest_vertex)
+      closest_vertex[updated_nearest_idx] = closest_vertex_for_block[updated_nearest_idx]
+      dist_to_closest_vertex[updated_nearest_idx] = new_block_distances[updated_nearest_idx]
+      #closest_vertex = append(closest_vertex, closest_vertex_for_block)
     }
   }
   stopifnot(length(closest_vertex) == ncol(data_matrix))
