@@ -1780,6 +1780,9 @@ reduceDimension <- function(cds,
         centers = t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
         
         kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
+        if (kmean_res$ifault != 0){
+          message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
+        }
         nearest_center = findNearestVertex(t(kmean_res$centers), FM, process_targets_in_blocks=TRUE)
         medioids = reduced_dim_res[,unique(nearest_center)]
         reduced_dim_res <- t(medioids)
@@ -2393,6 +2396,11 @@ reduceDimension <- function(cds,
   cds
 }
 
+#' Finds the nearest principal graph node
+#' @param data_matrix the input matrix
+#' @param target_points the target points
+#' @param block_size the number of input matrix rows to process per blocl
+#' @param process_targets_in_blocks whether to process the targets points in blocks instead
 findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
@@ -2420,6 +2428,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       closest_vertex = append(closest_vertex, closest_vertex_for_block)
     }
   }
+  stopifnot(length(closest_vertex) == ncol(data_matrix))
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   return (closest_vertex)
 }
