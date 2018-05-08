@@ -1805,20 +1805,26 @@ reduceDimension <- function(cds,
         C0 <- X
       Nz <- ncol(C0)
       
-      #G_T = get_mst_with_shortcuts(C0)
-      G_T = get_mst(C0)
+      
+      #G_T = get_mst(C0)
+      
+      # # print(extra_arguments)
+      # if('nn' %in% names(extra_arguments))
+      #   G_knn <- get_knn(C0, K = extra_arguments$nn)
+      # else
+      #   G_knn <- get_knn(C0, K = 5)
       
       # print(extra_arguments)
       if('nn' %in% names(extra_arguments))
-        G_knn <- get_knn(C0, K = extra_arguments$nn)
+        G_T = get_mst_with_shortcuts(C0, K = extra_arguments$nn)
       else
-        G_knn <- get_knn(C0, K = 5)
+        G_T = get_mst_with_shortcuts(C0, K = 5)
       
 
-      G = G_T$G + G_knn$G
+      G = G_T$G #+ G_knn$G
       
       G[G > 0] = 1
-      W = G_T$W + G_knn$W
+      W = G_T$W #+ G_knn$W
       
       if("louvain_qval" %in% names(extra_arguments)){ 
         louvain_qval <- extra_arguments$louvain_qval 
@@ -2403,7 +2409,7 @@ reduceDimension <- function(cds,
 #' @param target_points the target points
 #' @param block_size the number of input matrix rows to process per blocl
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
-findNearestVertex = function(data_matrix, target_points, block_size=250, process_targets_in_blocks=FALSE){
+findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
     num_blocks = ceiling(ncol(data_matrix) / block_size)
