@@ -3359,35 +3359,36 @@ plot_3d_cell_trajectory <- function(cds,
   if (is.null(markers) == FALSE){
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
-
-      # get a graph with distance between cells as the weight 
-      louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res
-      # cds@auxOrderingData[[cds@dim_reduce_type]]$adj_mat # use UMAP graph 
-
-      if(is.null(louvain_res)) {
-        louvain_clustering_args <- c(list(data = t(S_matrix), pd = pData(cds)[colnames(S_matrix), ], verbose = verbose),
-                                       extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-        louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-      }
-
-      # convolve the gene expression by calculating weighted average of gene expression with kNN graph  
-      relations <- louvain_res$relations
-      distMatrix <- louvain_res$distMatrix
-      distMatrix <- t(apply(distMatrix, 1, function(x) {
-          bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
-          p <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
-          p / sum(p)
-      }))
-
-      relations$weight <- reshape2::melt(t(distMatrix))[, 3]
-      g <- igraph::graph.data.frame(relations, directed = T) #directed is used to ensure the asymmetric kNN graph 
-      g_adj_mat <- as_adjacency_matrix(g, attr="weight")
-
+      
       markers_expr_val <- exprs(cds[row.names(markers_fData),])
       markers_expr_val <- Matrix::colSums(markers_expr_val)
       markers_expr_val <- markers_expr_val / pData(cds)$Size_Factor
-
-      markers_expr_val <- g_adj_mat %*% as(matrix(markers_expr_val, ncol = 1), 'sparseMatrix')
+     
+      # FIXME: Put this code back after some fixes and more testing  
+#    
+#       # get a graph with distance between cells as the weight 
+#       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res
+#       # cds@auxOrderingData[[cds@dim_reduce_type]]$adj_mat # use UMAP graph 
+# 
+#       if(is.null(louvain_res)) {
+#         louvain_clustering_args <- c(list(data = t(S_matrix), pd = pData(cds)[colnames(S_matrix), ], verbose = verbose),
+#                                        extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+#         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+#       }
+# 
+#       # convolve the gene expression by calculating weighted average of gene expression with kNN graph  
+#       relations <- louvain_res$relations
+#       distMatrix <- louvain_res$distMatrix
+#       distMatrix <- t(apply(distMatrix, 1, function(x) {
+#           bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
+#           p <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
+#           p / sum(p)
+#       }))
+# 
+#       relations$weight <- reshape2::melt(t(distMatrix))[, 3]
+#       g <- igraph::graph.data.frame(relations, directed = T) #directed is used to ensure the asymmetric kNN graph 
+#       g_adj_mat <- as_adjacency_matrix(g, attr="weight")
+#      markers_expr_val <- g_adj_mat %*% as(matrix(markers_expr_val, ncol = 1), 'sparseMatrix')
 
       if (scale_expr){
         markers_expr_val <- scale(log10(markers_expr_val+1))
