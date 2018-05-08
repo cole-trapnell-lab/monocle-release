@@ -1540,7 +1540,7 @@ reduceDimension <- function(cds,
   }
   
   fm_rowsums = Matrix::rowSums(FM)
-  FM = FM[is.finite(fm_rowsums) | fm_rowsums != 0,]
+  FM = FM[is.finite(fm_rowsums) & fm_rowsums != 0,]
   
   #FM <- FM[apply(FM, 1, function(x) all(is.finite(x))), ] #ensure all the expression values are finite values
   if (is.function(reduction_method)) {
