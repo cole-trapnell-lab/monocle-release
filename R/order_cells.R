@@ -1519,7 +1519,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'LSI'),
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'graphL1'),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT", 'L1-graph', 'L1graph'),
                             norm_method = c("log", "vstExprs", "none"),
                             residualModelFormulaStr=NULL,
                             pseudo_expr=1,
@@ -2215,7 +2215,7 @@ reduceDimension <- function(cds,
         louvain_res_ori = louvain_res_ori, louvain_res = louvain_res, adj_mat = adj_mat, landmark_id = landmark_id)
 
       cds@dim_reduce_type <- reduction_method
-    } else if(reduction_method == "graphL1") {
+    } else if(reduction_method == "L1graph") {
       if(cds@dim_reduce_type == "SSE") {
         Y <- cds@auxOrderingData[['SSE']]$SSE_res$Y
         Y <- Y 
