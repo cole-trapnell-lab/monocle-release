@@ -1370,6 +1370,10 @@ normalize_expr_data <- function(cds,
 #' learn any arbitrary graph structure. Both methods can be applied to the UMAP space or the smoothed SSE space.   
 #'
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param method the initial dimension method to use, current either PCA or LSI. For LSI (latent semantic indexing), 
+#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency) matrix and then performs a 
+#' SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules 
+#  and cell clusters at the same time. It removes noise in the data and thus makes the UMAP result even better. 
 #' @param num_dim the dimensionality of the reduced space
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
@@ -1383,10 +1387,12 @@ normalize_expr_data <- function(cds,
 #' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
 #' @importFrom fastICA  ica.R.def ica.R.par
+#' @importFrom quanteda tfidf textmodel_lsa
 #' @import irlba
 #' @importFrom stats dist prcomp
 #' @export
-projectPCA <- function(cds, num_dim=50,
+preprocessCDS <- function(cds, method = c('PCA', 'LSI'),
+                        num_dim=50,
                         norm_method = c("log", "vstExprs", "none"),
                         residualModelFormulaStr=NULL,
                         pseudo_expr=1,
@@ -1425,17 +1431,27 @@ projectPCA <- function(cds, num_dim=50,
   fm_rowsums = Matrix::rowSums(FM)
   FM <- FM[is.finite(fm_rowsums) & fm_rowsums != 0, ]
 
-  if (verbose)
-    message("Remove noise by PCA ...")
-  
-  irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                            center = scaling, scale. = scaling)
-  irlba_pca_res <- irlba_res$x
-  reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+  if(method == 'PCA') {
+    if (verbose)
+      message("Remove noise by PCA ...")
+    
+    irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
+                              center = scaling, scale. = scaling)
+    irlba_pca_res <- irlba_res$x
+    reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+  } else if(method == 'LSI') {
+    FM <- as(FM, "dgCMatrix")
+    cds_dfm <- new("dfmSparse", FM)
+    cds_dfm <- quanteda::dfm_tfidf(cds_dfm)
+    cds_dfm_lsa <- quanteda::textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
+    irlba_pca_res <- cds_dfm_lsa$features
+  }
+
   cds@auxOrderingData[["PCA"]]$irlba_pca_res <- irlba_pca_res
 
   cds
 }
+
 
 #' Compute a projection of a CellDataSet object into a lower dimensional space
 #' 
@@ -2200,7 +2216,7 @@ reduceDimension <- function(cds,
 
       cds@dim_reduce_type <- reduction_method
     } else if(reduction_method == "L1graph") {
-      if(c("SSE") %in% names(cds@auxOrderingData)) {
+      if(cds@dim_reduce_type == "SSE") {
         Y <- cds@auxOrderingData[['SSE']]$SSE_res$Y
         Y <- Y 
         # SSE_res$Y <- (SSE_res$Y - min(SSE_res$Y)) / max(SSE_res$Y) # normalize the SSE space to avoid space shrinking in L1graph step 
@@ -2216,21 +2232,32 @@ reduceDimension <- function(cds,
         } else {
           reduced_dim_res = t(Y)           
           row.names(Y) <- colnames(FM[, landmark_id])
-      }
-      } else if(c("UMAP") %in% names(cds@auxOrderingData)) {
+        }
+      } else if(cds@dim_reduce_type == "UMAP") {
         Y <- cds@auxOrderingData[['UMAP']]$umap_res
         row.names(Y) <- colnames(FM)
         reduced_dim_res = t(Y) 
 
         louvain_res <- cds@auxOrderingData[["UMAP"]]$louvain_res
-        louvain_module_length = length(levels(cds@auxOrderingData[['UMAP']]$louvain_module))
+        louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
 
-        landmark_id <- cds@auxOrderingData[['UMAP']]$landmark_id
-        if(is.null(landmark_id)) {
+        if(ncol(cds) < 5000) {
           landmark_id <- 1:ncol(cds)
+        } else {
+          if("landmark_num" %in% names(extra_arguments)) {
+            landmark_num <- extra_arguments$landmark_num
+          } else {
+            landmark_num <- 2000
+          }
+
+          centers <- Y[seq(1, nrow(Y), length.out=landmark_num), ]
+          kmean_res <- kmeans(Y, landmark_num, centers=centers, iter.max = 100)
+          landmark_id <- sort(unique(apply(as.matrix(proxy::dist(Y, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
+          reduced_dim_res <- reduced_dim_res[, landmark_id]
         }
+
       } else {
-        stop('L1graph can be only applied to either the MAP or SSE Ureduced space, please first apply those dimension reduction techniques!')
+        stop('L1graph can be only applied to either the MAP or SSE reduced space, please first apply those dimension reduction techniques!')
       }
        
       if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
