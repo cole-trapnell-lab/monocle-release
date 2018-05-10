@@ -3291,13 +3291,16 @@ plot_cluster_graph <- function(cds,
 plot_3d_cell_trajectory <- function(cds, 
                                     dim=c(1, 2, 3),
                                     color_by=NULL,
+                                    palette = NULL,
                                     markers=NULL,
                                     markers_linear=FALSE,
+                                    cell_size=5,
+                                    cell_alpha=0.5,
+                                    backbone_segment_color="#77B6EA",
+                                    backbone_vertex_color=NULL,
                                     webGL_filename=NULL,
                                     movie_filename=NULL,
-                                    show_backbone=TRUE,
                                     scale_expr=TRUE,
-                                    palette = NULL,
                                     width=800,
                                     height=600,
                                     useNULL_GLdev = !interactive(),
@@ -3363,38 +3366,13 @@ plot_3d_cell_trajectory <- function(cds,
       markers_expr_val <- exprs(cds[row.names(markers_fData),])
       markers_expr_val <- Matrix::colSums(markers_expr_val)
       markers_expr_val <- markers_expr_val / pData(cds)$Size_Factor
-     
-      # FIXME: Put this code back after some fixes and more testing  
-#    
-#       # get a graph with distance between cells as the weight 
-#       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res
-#       # cds@auxOrderingData[[cds@dim_reduce_type]]$adj_mat # use UMAP graph 
-# 
-#       if(is.null(louvain_res)) {
-#         louvain_clustering_args <- c(list(data = t(S_matrix), pd = pData(cds)[colnames(S_matrix), ], verbose = verbose),
-#                                        extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-#         louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-#       }
-# 
-#       # convolve the gene expression by calculating weighted average of gene expression with kNN graph  
-#       relations <- louvain_res$relations
-#       distMatrix <- louvain_res$distMatrix
-#       distMatrix <- t(apply(distMatrix, 1, function(x) {
-#           bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
-#           p <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
-#           p / sum(p)
-#       }))
-# 
-#       relations$weight <- reshape2::melt(t(distMatrix))[, 3]
-#       g <- igraph::graph.data.frame(relations, directed = T) #directed is used to ensure the asymmetric kNN graph 
-#       g_adj_mat <- as_adjacency_matrix(g, attr="weight")
-#      markers_expr_val <- g_adj_mat %*% as(matrix(markers_expr_val, ncol = 1), 'sparseMatrix')
-
+      nz_points = markers_expr_val != 0
       if (scale_expr){
-        markers_expr_val <- scale(log10(markers_expr_val+1))
+        markers_expr_val[nz_points] <- scale(log10(markers_expr_val[nz_points]))
         markers_expr_val[markers_expr_val < -3] = -3
         markers_expr_val[markers_expr_val > 3] = 3
       }
+      markers_expr_val[markers_expr_val == 0] = NA
       
       markers_exprs <- data.frame(cell_id = row.names(pData(cds)))
       markers_exprs$value <- markers_expr_val
@@ -3406,28 +3384,24 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    map2color<-function(x,pal,limits=NULL){
-      # if(is.null(limits)) limits=range(x)
-      # print (limits)
-      # inter = findInterval(x,seq(limits[1],limits[2],length.out=length(pal)+1), all.inside=TRUE)
-      # print(inter)
-      # pal[inter]
+    map2color<-function(x, limits=NULL){
+
       if (is.null(limits) == FALSE){
         x[x < limits[1]] = limits[1]
         x[x > limits[2]] = limits[2]
       }
       
-      ii <- cut(x, breaks = seq(min(x), max(x), len = 100), 
+      ii <- cut(x, breaks = seq(min(x, na.rm=T), max(x, na.rm=T), len = 100), 
                 include.lowest = TRUE)
-      colors <- colorRampPalette(c("lightgrey", "darkslateblue"))(99)[ii]
+      #colors <- colorRampPalette(c("white", "#E05263"))(99)[ii]
+      colors = viridisLite::viridis(99)[ii]
       return(colors)
     }
-    mypal <- colorRampPalette( c( "lightgrey", "darkslateblue" ) )( 256 )
-    #mypal = viridis(256)
+
     if(markers_linear || scale_expr){        
-      point_colors_df$point_colors = map2color(data_df$value, mypal, c(-3, 3))
+      point_colors_df$point_colors = map2color(data_df$value, c(-3, 3))
     } else {
-      point_colors_df$point_colors = map2color(log10(data_df$value+0.1), mypal)
+      point_colors_df$point_colors = map2color(log10(data_df$value+0.1))
     }
   }else if (is.null(color_by) == FALSE && color_by %in% colnames(pData(cds))){
     gg_color_hue <- function(n) {
@@ -3449,13 +3423,23 @@ plot_3d_cell_trajectory <- function(cds,
   }
   open3d(#windowRect=c(0,0,1024,1024), 
          useNULL=useNULL_GLdev)
-  if (show_backbone){
-    segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2)
-    points3d(Matrix::t(reduced_dim_coords[dim,]), color="red")
+  
+  if (is.null(backbone_segment_color) == FALSE){
+    segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2, 
+               col=backbone_segment_color,
+               line_antialias=TRUE)
+    if (is.null(backbone_vertex_color) == FALSE)
+      points3d(Matrix::t(reduced_dim_coords[dim,]), col=backbone_vertex_color)
   }
-  
-  points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], col=point_colors_df$point_colors, alpha=0.5)
-  
+  point_colors_df$point_alpha = cell_alpha
+  point_colors_df$point_alpha[is.na(point_colors_df$point_colors)] = 0
+  points3d(data_df[,c("data_dim_1", "data_dim_2", "data_dim_3")], 
+            size = cell_size,
+            col=point_colors_df$point_colors,
+            alpha=point_colors_df$point_alpha,
+            shininess=75,
+           point_antialias=TRUE)
+  #bg3d(fogtype="linear")
   if (is.null(point_colors_df$color_by) == FALSE){
     point_colors_df = inner_join(point_colors_df, data_df)
     
@@ -3466,10 +3450,11 @@ plot_3d_cell_trajectory <- function(cds,
   }
   widget = NULL
   if (is.null(webGL_filename) == FALSE){
-    widget <- rglwidget(elementId = "example", width=width, height=height,
-                        controllers = "player")
-    #writeWebGL(dir = "webGL", filename = file.path(webGL_filename), width=1024, height=1024)
-    #options("pandoc.stack.size" = "4096m")
+    widget <- rglwidget(elementId = "example",
+                        controllers = "player",
+                        sizingPolicy = htmlwidgets::sizingPolicy(
+                          browser.fill = TRUE
+                        ))
     htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=FALSE)
   }
   
