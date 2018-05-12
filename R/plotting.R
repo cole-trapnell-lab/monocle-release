@@ -3298,11 +3298,13 @@ plot_3d_cell_trajectory <- function(cds,
                                     cell_alpha=0.5,
                                     backbone_segment_color="#77B6EA",
                                     backbone_vertex_color=NULL,
+                                    show_group_labels=TRUE,
                                     webGL_filename=NULL,
-                                    movie_filename=NULL,
+                                    image_filename=NULL,
                                     scale_expr=TRUE,
                                     width=800,
                                     height=600,
+                                    view_matrix=NULL,
                                     useNULL_GLdev = !interactive(),
                                     ...){
   gene_short_name <- NA
@@ -3421,9 +3423,11 @@ plot_3d_cell_trajectory <- function(cds,
     #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
     point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
   }
-  open3d(#windowRect=c(0,0,1024,1024), 
+  open3d(windowRect=c(0,0,width,height), 
          useNULL=useNULL_GLdev)
-  
+  if (is.null(view_matrix) == FALSE){
+    view3d(userMatrix=view_matrix)
+  }
   if (is.null(backbone_segment_color) == FALSE){
     segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2, 
                col=backbone_segment_color,
@@ -3446,8 +3450,16 @@ plot_3d_cell_trajectory <- function(cds,
     medoid_df = point_colors_df %>% dplyr::group_by(color_by, point_colors) %>% dplyr::summarize(mean_d1 = median(data_dim_1), 
                                                                      mean_d2 = median(data_dim_2),
                                                                      mean_d3 = median(data_dim_3))
-    text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
+    if (show_group_labels){
+      text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
+    }
   }
+  
+  if (is.null(image_filename) == FALSE){
+    rgl.snapshot(image_filename)
+  }
+  
+  
   widget = NULL
   if (is.null(webGL_filename) == FALSE){
     widget <- rglwidget(elementId = "example",
@@ -3458,10 +3470,7 @@ plot_3d_cell_trajectory <- function(cds,
     htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=FALSE)
   }
   
-  if (is.null(movie_filename) == FALSE){
-    movie3d(spin3d(axis = c(0, 0, 1)), duration = 10, convert=TRUE, dir=getwd(), movie=movie_filename)
-  }
-  
+
   return(widget)
 }
 
