@@ -1172,6 +1172,8 @@ orderCells <- function(cds,
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } else {
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   }
 
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
