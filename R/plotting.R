@@ -83,7 +83,7 @@ plot_cell_trajectory <- function(cds,
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type == "ICA"){
+  if (cds@dim_reduce_type %in% c("ICA", "function_passed")){
     reduced_dim_coords <- reducedDimS(cds)
   } else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree") ){
     reduced_dim_coords <- reducedDimK(cds)
