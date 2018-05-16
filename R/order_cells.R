@@ -1393,7 +1393,7 @@ reduceDimension <- function(cds,
     reducedDimA(cds) <- as.matrix(reducedDim)
     reducedDimS(cds) <- as.matrix(reducedDim)
     reducedDimK(cds) <- as.matrix(reducedDim)
-    dp <- as.matrix(dist(reducedDim))
+    dp <- as.matrix(dist(t(reducedDimS(cds))))
     cellPairwiseDistances(cds) <- dp
     gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
     dp_mst <- minimum.spanning.tree(gp)
