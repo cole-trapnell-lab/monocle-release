@@ -3301,6 +3301,7 @@ plot_3d_cell_trajectory <- function(cds,
                                     show_group_labels=TRUE,
                                     webGL_filename=NULL,
                                     image_filename=NULL,
+                                    obj_filename=NULL,
                                     scale_expr=TRUE,
                                     width=800,
                                     height=600,
@@ -3423,6 +3424,7 @@ plot_3d_cell_trajectory <- function(cds,
     #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
     point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
   }
+
   open3d(windowRect=c(0,0,width,height), 
          useNULL=useNULL_GLdev)
   if (is.null(view_matrix) == FALSE){
@@ -3455,10 +3457,13 @@ plot_3d_cell_trajectory <- function(cds,
     }
   }
   
+  if (is.null(obj_filename) == FALSE){
+    writeOBJ(obj_filename)
+  }
+  
   if (is.null(image_filename) == FALSE){
     rgl.snapshot(image_filename)
   }
-  
   
   widget = NULL
   if (is.null(webGL_filename) == FALSE){

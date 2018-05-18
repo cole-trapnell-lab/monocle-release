@@ -316,10 +316,10 @@ spatialDifferentialTest <- function(cds,
     
     test_res <- tryCatch({
       mt <- my.moran.test(exprs_val, lw, wc)
-      data.frame(status = 'OK', pval = mt$p.value, statistics = mt$statistic)
+      data.frame(status = 'OK', pval = mt$p.value, morans_test_statistic = mt$statistic, morans_I = mt$estimate[["Moran I statistic"]])
     }, 
     error = function(e) {
-      data.frame(status = 'FAIL', pval = NA, statistics = NA)
+      data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
   }, mc.cores = cores)
   
