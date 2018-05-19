@@ -279,7 +279,7 @@ spatialDifferentialTest <- function(cds,
     if(length(tmp) > 0) {
       knn_res_tmp <- knn_res[x[1], - tmp][-1] #[-1]: remove itself
       if(length(knn_res_tmp) == 0) { 
-        return(knn_res[x[1], 1]) # when there is no neighbors, return index 0 
+        return(0L) # when there is no neighbors, return index 0 
       }
       else {
         knn_res_tmp
