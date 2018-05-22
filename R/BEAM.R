@@ -262,7 +262,7 @@ buildBranchCellDataSet <- function(cds,
     
     # Duplicate the root cell to make sure both regression start at pseudotime zero:
     zero_pseudotime_root_cell <- common_ancestor_cells[progenitor_pseudotime_order[1]]
-    exprs_data <- cBind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
+    exprs_data <- cbind(exprs(cds), 'duplicate_root' = exprs(cds)[, zero_pseudotime_root_cell])
     pData <- rbind(pData, pData[zero_pseudotime_root_cell, ])
     row.names(pData)[nrow(pData)] <- 'duplicate_root'
     pData[nrow(pData), 'Branch'] <- names(paths_to_root)[2]
