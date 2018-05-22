@@ -1758,7 +1758,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
     BranchB_exprs <- log10(BranchB_exprs + 1)
   }
   
-  heatmap_matrix <- cBind(BranchA_exprs[, (col_gap_ind - 1):1], BranchB_exprs)
+  heatmap_matrix <- cbind(BranchA_exprs[, (col_gap_ind - 1):1], BranchB_exprs)
   
   heatmap_matrix=heatmap_matrix[!apply(heatmap_matrix, 1, sd)==0,]
   heatmap_matrix=Matrix::t(scale(Matrix::t(heatmap_matrix),center=TRUE))
