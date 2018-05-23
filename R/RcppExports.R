@@ -2,6 +2,6 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 jaccard_coeff <- function(R_idx, R_weight) {
-    .Call('_monocle_jaccard_coeff', PACKAGE = 'monocle', R_idx, R_weight)
+    .Call('monocle_jaccard_coeff', PACKAGE = 'monocle', R_idx, R_weight)
 }
 
