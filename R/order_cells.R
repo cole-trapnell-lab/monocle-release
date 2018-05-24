@@ -54,7 +54,10 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 
   parents = rep(NA, length(V(pr_graph)))
   states = rep(NA, length(V(pr_graph)))
-  
+
+  if(any(is.na(E(pg)$weight)) {
+    E(pg)$weight <- 1
+  }  
   pr_graph_node_distances = distances(pr_graph, v=root_cell)
   if (length(root_cell) > 1){
     node_names = colnames(pr_graph_node_distances)
@@ -163,7 +166,7 @@ orderCells <- function(cds,
   
   if (cds@dim_reduce_type %in%  c("L1graph", "DDRTree", "SimplePPT")){
     cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-    closest_vertex = cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex
+    closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
     pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
   } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
