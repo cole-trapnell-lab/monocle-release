@@ -38,7 +38,8 @@ setClass( "CellDataSet",
                     dispFitInfo = "environment",
                     dim_reduce_type="character",
                     auxOrderingData = "environment", 
-                    auxClusteringData = "environment"
+                    auxClusteringData = "environment",
+                    normalized_data_projection = "matrix"
                     ),
           prototype = prototype( new( "VersionedBiobase",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.2.0" ) ))

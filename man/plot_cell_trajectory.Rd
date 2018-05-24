@@ -4,7 +4,7 @@
 \alias{plot_cell_trajectory}
 \title{Plots the minimum spanning tree on cells.}
 \usage{
-plot_cell_trajectory(cds, x = 1, y = 2, color_by = "State",
+plot_cell_trajectory(cds, x = 1, y = 2, color_by = "Pseudotime",
   show_tree = TRUE, show_backbone = TRUE, backbone_color = "black",
   markers = NULL, use_color_gradient = FALSE, markers_linear = FALSE,
   show_cell_names = FALSE, show_state_number = FALSE, cell_size = 1.5,
