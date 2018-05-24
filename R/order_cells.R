@@ -55,7 +55,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   parents = rep(NA, length(V(pr_graph)))
   states = rep(NA, length(V(pr_graph)))
 
-  if(any(is.na(E(pg)$weight)) {
+  if(any(is.na(E(pg)$weight))) {
     E(pg)$weight <- 1
   }  
   pr_graph_node_distances = distances(pr_graph, v=root_cell)
