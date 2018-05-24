@@ -55,8 +55,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   parents = rep(NA, length(V(pr_graph)))
   states = rep(NA, length(V(pr_graph)))
 
-  if(any(is.na(E(pg)$weight))) {
-    E(pg)$weight <- 1
+  if(any(is.na(E(pr_graph)$weight))) {
+    E(pr_graph)$weight <- 1
   }  
   pr_graph_node_distances = distances(pr_graph, v=root_cell)
   if (length(root_cell) > 1){
@@ -1787,7 +1787,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
+  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
     reduced_dim_coords <- reducedDimK(cds)
   } else {
     stop("Error: unrecognized dimensionality reduction method.")
