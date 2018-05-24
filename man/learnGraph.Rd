@@ -5,8 +5,8 @@
 \title{Learn principal graph from the reduced space using reversed graph embedding}
 \usage{
 learnGraph(cds, max_components = 2, RGE_method = c("L1graph", "SimplePPT",
-  "DDRTree"), auto_param_selection = TRUE, scale = FALSE, verbose = FALSE,
-  ...)
+  "DDRTree"), auto_param_selection = TRUE, partition_component = TRUE,
+  scale = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -16,6 +16,8 @@ learnGraph(cds, max_components = 2, RGE_method = c("L1graph", "SimplePPT",
 \item{RGE_method}{Determines how to transform expression values prior to reducing dimensionality}
 
 \item{auto_param_selection}{when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.}
+
+\item{partition_component}{When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component.}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 

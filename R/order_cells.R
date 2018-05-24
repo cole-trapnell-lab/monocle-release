@@ -1985,6 +1985,7 @@ smoothEmbedding <- function(cds,
 #' @param max_components the dimensionality of the reduced space
 #' @param RGE_method Determines how to transform expression values prior to reducing dimensionality
 #' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
+#' @param partition_component When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
@@ -2003,6 +2004,7 @@ learnGraph <- function(cds,
                        max_components=2,
                        RGE_method = c('L1graph', 'SimplePPT', 'DDRTree'), 
                        auto_param_selection = TRUE, 
+                       partition_component = TRUE, 
                        scale = FALSE, 
                        verbose = FALSE, 
                        ...){
@@ -2396,56 +2398,122 @@ learnGraph <- function(cds,
       message("Learning principal graph with DDRTree")
     
     # TODO: DDRTree should really work with sparse matrices.
-    if(auto_param_selection & ncol(cds) >= 100){
-      if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
-        ncenter <- extra_arguments$ncenter
-      else
-        ncenter <- cal_ncenter(nrow(irlba_pca_res))
-      #add other parameters...
+    louvain_component <- pData(cds)$louvain_component
+    
+    if(length(louvain_component) == ncol(cds) & partition_component) {
+      X <- t(irlba_pca_res)
+      
+      reducedDimK_coord <- NULL  
+      dp_mst <- NULL 
+      pr_graph_cell_proj_closest_vertex <- NULL 
+      cell_name_vec <- NULL
+      
+      for(cur_comp in unique(louvain_component)) {
+        X_subset <- X[, louvain_component == cur_comp]
+        
+        #add other parameters...
+        if(scale) 
+          X_subset <- t(as.matrix(scale(t(X_subset))))
+        
+        ncenter <- cal_ncenter(ncol(X_subset))
+        
+        ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
+                      extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
+        #browser()
+        ddrtree_res <- do.call(DDRTree, ddr_args)
+        
+        if(is.null(reducedDimK_coord)) {
+          curr_cell_names <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+          pr_graph_cell_proj_closest_vertex <- matrix(apply(ddrtree_res$R, 1, which.max))
+          cell_name_vec <- colnames(X_subset)
+        } else {
+          curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(ddrtree_res$Y), sep = "")
+          pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
+          cell_name_vec <- c(cell_name_vec, colnames(X_subset))
+        }
+        
+        tmp <- ddrtree_res$Y
+        
+        reducedDimK_coord <- cbind(reducedDimK_coord, tmp)
+        
+        
+        dp <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
+        dimnames(dp) <- list(curr_cell_names, curr_cell_names)
+        
+        dp_mst <- graph.union(dp_mst, graph.adjacency(dp, mode = "undirected", weighted = TRUE))
+        
+        tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
+        
+      }
+      
+      row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
+      
+      ddrtree_res_W <- ddrtree_res$W
+      ddrtree_res_Z <- cds@reducedDimS
+      ddrtree_res_Y <- reducedDimK_coord
+      
+      colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
+      
+      cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+      cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
+      
+    } else {
+      ncenter <- NULL
+      if(auto_param_selection & ncol(cds) >= 100){
+        if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
+          ncenter <- extra_arguments$ncenter
+        else
+          ncenter <- cal_ncenter(nrow(irlba_pca_res))
+        
+      } 
+      
       if(scale) 
         X <- as.matrix(scale(t(irlba_pca_res)))
       else 
         X <- t(irlba_pca_res)
       
+      #add other parameters...
       ddr_args <- c(list(X=X, dimensions=max_components, ncenter=ncenter, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol", "no_reduction")])
       #browser()
       ddrtree_res <- do.call(DDRTree, ddr_args)
-    } else{
-      if(scale) 
-        X <- as.matrix(scale(t(irlba_pca_res)))
-      else 
-        X <- t(irlba_pca_res)
       
-      ddrtree_res <- DDRTree(X, max_components, verbose = verbose, ...)
+      if(ncol(ddrtree_res$Y) == ncol(cds))
+        colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      else
+        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      
+      colnames(ddrtree_res$Z) <- colnames(FM)
+      
+      ddrtree_res_W <- ddrtree_res$W
+      ddrtree_res_Z <- ddrtree_res$Z
+      ddrtree_res_Y <- ddrtree_res$Y
+      
+      adjusted_K <- Matrix::t(reducedDimK(cds))
+      dp <- as.matrix(dist(adjusted_K))
+      cellPairwiseDistances(cds) <- dp
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      
+      cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+      
+      if(ncol(cds) < 100) { 
+        cds <- findNearestPointOnMST(cds)
+      } else {
+        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        row.names(tmp) <- colnames(cds)
+        cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
+      }
     }
-    if(ncol(ddrtree_res$Y) == ncol(cds))
-      colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-    else
-      colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
     
-    colnames(ddrtree_res$Z) <- colnames(FM)
-    reducedDimW(cds) <- ddrtree_res$W
-    reducedDimS(cds) <- ddrtree_res$Z
-    reducedDimK(cds) <- ddrtree_res$Y
-    cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+    reducedDimW(cds) <- ddrtree_res_W
+    reducedDimS(cds) <- ddrtree_res_Z
+    reducedDimK(cds) <- ddrtree_res_Y
     
-    adjusted_K <- Matrix::t(reducedDimK(cds))
-    dp <- as.matrix(dist(adjusted_K))
-    cellPairwiseDistances(cds) <- dp
-    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-    dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- dp_mst
     
     cds@dim_reduce_type <- "DDRTree"
     
-    if(ncol(cds) < 100) { 
-      cds <- findNearestPointOnMST(cds)
-    } else {
-      tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
-      row.names(tmp) <- colnames(cds)
-      cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
-    }
   }
   cds 
 }
