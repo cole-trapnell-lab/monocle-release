@@ -161,36 +161,11 @@ orderCells <- function(cds,
   
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
   
-  if (cds@dim_reduce_type == "L1graph"){
+  if (cds@dim_reduce_type %in%  c("L1graph", "DDRTree", "SimplePPT")){
     cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
     closest_vertex = cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex
-   
     pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-    pData(cds)$State = cc_ordering[closest_vertex[row.names(pData(cds)),],]$state
-    
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
-    
-    mst_branch_nodes <- NULL
-  }else if (cds@dim_reduce_type == "DDRTree"){
-    
-    cc_ordering <- extract_mst_ordering(cds, root_pr_nodes)
-    
-    R <- cds@auxOrderingData$DDRTree$R
-    edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
-    
-    pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
-    if(is.null(root_state) == TRUE) {
-      pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
-    }
-    
-    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-  } else if (cds@dim_reduce_type == "SimplePPT"){
-    cc_ordering <- extract_mst_ordering(cds, root_pr_nodes)
-    
-    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-    pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
-    
-    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
     
     ########################################################################################################################################################################
@@ -201,14 +176,7 @@ orderCells <- function(cds,
     # identify branch
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   }
-  
-  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
-  # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
-  # for now
-  #if(scale_pseudotime) {
-  #cds <- scale_pseudotime(cds)
-  #}
-  
+
   cds
 }
 
