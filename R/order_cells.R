@@ -584,248 +584,6 @@ extract_good_ordering <- function(pq_tree, curr_node, dist_matrix)
 
 
 
-#' Extract a linear ordering of cells from a PQ tree
-#'
-#' @param orig_pq_tree The PQ object to use for ordering
-#' @param curr_node The node in the PQ tree to use as the start of ordering
-#' @param dist_matrix A symmetric matrix containing pairwise distances between cells
-#' @param num_branches The number of outcomes allowed in the trajectory.
-#' @param reverse_main_path Whether to reverse the direction of the trajectory
-#' 
-#' @importFrom igraph V vertex edge graph.empty get.edgelist
-extract_good_branched_ordering <- function(orig_pq_tree, curr_node, dist_matrix, num_branches, reverse_main_path=FALSE)
-{
-  requireNamespace("plyr")
-  nei <- NULL
-  type <- NA
-  pseudo_time <- NA
-
-  pq_tree <- orig_pq_tree
-
-  # children_counts <- rep(0, length(as.vector(V(pq_tree))))
-  #     names(children_counts) <- V(pq_tree)$name
-  # children_counts <- count_leaf_descendents(pq_tree, curr_node, children_counts)
-  #
-  # branch_node_counts <- children_counts[V(res$subtree)[type == "P"]]
-  # branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  # print (branch_node_counts)
-
-
-  branch_node_counts <- V(pq_tree)[type == "Q"]$diam_path_len
-  names(branch_node_counts) <- V(pq_tree)[type == "Q"]$name
-  if(length(names(branch_node_counts)) < num_branches)
-    stop('Number of branches attempted is larger than the branches constructed from pq_tree algorithm')
-
-  branch_node_counts <- sort(branch_node_counts, decreasing=TRUE)
-  #print (branch_node_counts)
-
-
-  cell_states <- rep(NA, length(as.vector(V(pq_tree)[type=="leaf"])))
-  names(cell_states) <- V(pq_tree)[type=="leaf"]$name
-
-  cell_states <- assign_cell_lineage(pq_tree, curr_node, 1, cell_states)
-
-  branch_point_roots <- list()
-
-  # Start building the ordering tree. Each pseudo-time segment will be a node.
-  branch_tree <- graph.empty()
-  #root_branch_id <- "Q_1"
-  #branch_tree <- branch_tree + vertex(root_branch_id)
-
-  for (i in 1:num_branches)
-  {
-    #cell_states <- assign_cell_lineage(pq_tree, names(branch_node_counts)[i], i+1, cell_states)
-    #print (head(cell_states))
-    #print(names(branch_node_counts)[i])
-
-    branch_point_roots[[length(branch_point_roots) + 1]] <- names(branch_node_counts)[i]
-    branch_id <- names(branch_node_counts)[i]
-    #print (branch_id)
-    branch_tree <- branch_tree + vertex(branch_id)
-    parents <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
-    if (length(parents) > 0 && parents$type == "P")
-    {
-      p_node_parent <- V(pq_tree)[suppressWarnings(nei(names(branch_node_counts)[i], mode="in"))]
-      parent_branch_id <- V(pq_tree)[suppressWarnings(nei(p_node_parent, mode="in"))]$name
-      #print (parent_branch_id)
-      #print (branch_id)
-      branch_tree <- branch_tree + edge(parent_branch_id, branch_id)
-    }
-    pq_tree[V(pq_tree) [ suppressWarnings(nei(names(branch_node_counts)[i], mode="in")) ], names(branch_node_counts)[i] ] <- FALSE
-  }
-
-  #branch_point_roots[[length(branch_point_roots) + 1]] <- curr_node
-  #branch_point_roots <- rev(branch_point_roots)
-  branch_pseudotimes <- list()
-
-  for (i in 1:length(branch_point_roots))
-  {
-    branch_ordering <- extract_good_ordering(pq_tree, branch_point_roots[[i]], dist_matrix)
-    branch_ordering_time <- weight_of_ordering(branch_ordering, dist_matrix)
-    names(branch_ordering_time) <- branch_ordering
-    branch_pseudotimes[[length(branch_pseudotimes) + 1]] = branch_ordering_time
-    names(branch_pseudotimes)[length(branch_pseudotimes)] = branch_point_roots[[i]]
-  }
-
-  cell_ordering_tree <- graph.empty()
-  curr_branch <- "Q_1"
-
-  extract_branched_ordering_helper <- function(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_ordering=FALSE)
-  {
-    nei <- NULL
-
-    curr_branch_pseudotimes <- branch_pseudotimes[[curr_branch]]
-    #print (curr_branch_pseudotimes)
-    curr_branch_root_cell <- NA
-    for (i in 1:length(curr_branch_pseudotimes))
-    {
-      cell_ordering_tree <- cell_ordering_tree + vertex(names(curr_branch_pseudotimes)[i])
-      if (i > 1)
-      {
-        if (reverse_ordering == FALSE){
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i-1], names(curr_branch_pseudotimes)[i])
-        }else{
-          cell_ordering_tree <- cell_ordering_tree + edge(names(curr_branch_pseudotimes)[i], names(curr_branch_pseudotimes)[i-1])
-        }
-      }
-    }
-
-    if (reverse_ordering == FALSE)
-    {
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[1]
-    }else{
-      curr_branch_root_cell <- names(curr_branch_pseudotimes)[length(curr_branch_pseudotimes)]
-    }
-
-    for (child in V(branch_tree) [ suppressWarnings(nei(curr_branch, mode="out")) ])
-    {
-      child_cell_ordering_subtree <- graph.empty()
-
-      child_head <- names(branch_pseudotimes[[child]])[1]
-      child_tail <- names(branch_pseudotimes[[child]])[length(branch_pseudotimes[[child]])]
-
-      # find the closest cell in the parent branch for each of the head and the tail
-
-      curr_branch_cell_names <- names(branch_pseudotimes[[curr_branch]])
-      head_dist_to_curr <- dist_matrix[child_head, curr_branch_cell_names]
-      closest_to_head <- names(head_dist_to_curr)[which(head_dist_to_curr == min(head_dist_to_curr))]
-
-      head_dist_to_anchored_branch = NA
-      branch_index_for_head <- NA
-
-      head_dist_to_anchored_branch <- dist_matrix[closest_to_head, child_head]
-
-      tail_dist_to_curr <- dist_matrix[child_tail, curr_branch_cell_names]
-      closest_to_tail <- names(tail_dist_to_curr)[which(tail_dist_to_curr == min(tail_dist_to_curr))]
-
-      tail_dist_to_anchored_branch = NA
-      branch_index_for_tail <- NA
-
-      tail_dist_to_anchored_branch <- dist_matrix[closest_to_tail, child_tail]
-
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        reverse_child <- TRUE
-      }else{
-        reverse_child <- FALSE
-      }
-
-      res <- extract_branched_ordering_helper(branch_tree, child, child_cell_ordering_subtree, branch_pseudotimes, dist_matrix, reverse_child)
-      child_cell_ordering_subtree <- res$subtree
-      child_subtree_root <- res$root
-
-      # Works, but slow:
-      for (v in V(child_cell_ordering_subtree))
-      {
-        cell_ordering_tree <- cell_ordering_tree + vertex(V(child_cell_ordering_subtree)[v]$name)
-      }
-
-      edge_list <- get.edgelist(child_cell_ordering_subtree)
-      for (i in 1:nrow(edge_list))
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(V(cell_ordering_tree)[edge_list[i, 1]]$name, V(cell_ordering_tree)[edge_list[i, 2]]$name)
-      }
-
-      if (tail_dist_to_anchored_branch < head_dist_to_anchored_branch)
-      {
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_tail, child_subtree_root)
-      }else{
-        cell_ordering_tree <- cell_ordering_tree + edge(closest_to_head, child_subtree_root)
-      }
-
-    }
-
-    return (list(subtree=cell_ordering_tree, root=curr_branch_root_cell, last_cell_state=1, last_cell_pseudotime=0.0))
-  }
-
-  res <- extract_branched_ordering_helper(branch_tree, curr_branch, cell_ordering_tree, branch_pseudotimes, dist_matrix, reverse_main_path)
-  cell_ordering_tree <- res$subtree
-
-  curr_state <- 1
-
-  assign_cell_state_helper <- function(ordering_tree_res, curr_cell)
-  {
-    nei <- NULL
-
-    cell_tree <- ordering_tree_res$subtree
-    V(cell_tree)[curr_cell]$cell_state = curr_state
-
-    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
-    ordering_tree_res$subtree <- cell_tree
-
-    if (length(children) == 1){
-      ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[children]$name)
-    }else{
-      for (child in children) {
-        curr_state <<- curr_state + 1
-        ordering_tree_res <- assign_cell_state_helper(ordering_tree_res, V(cell_tree)[child]$name)
-      }
-    }
-    return (ordering_tree_res)
-  }
-
-  res <- assign_cell_state_helper(res, res$root)
-
-  assign_pseudotime_helper <- function(ordering_tree_res, dist_matrix, last_pseudotime, curr_cell)
-  {
-    nei <- NULL
-
-    cell_tree <- ordering_tree_res$subtree
-    curr_cell_pseudotime <- last_pseudotime
-    V(cell_tree)[curr_cell]$pseudotime = curr_cell_pseudotime
-    V(cell_tree)[curr_cell]$parent =  V(cell_tree)[ suppressWarnings(nei(curr_cell, mode="in")) ]$name
-    #print (curr_cell_pseudotime)
-
-    ordering_tree_res$subtree <- cell_tree
-    children <- V(cell_tree) [ suppressWarnings(nei(curr_cell, mode="out")) ]
-
-    for (child in children) {
-      next_node <- V(cell_tree)[child]$name
-      delta_pseudotime <- dist_matrix[curr_cell, next_node]
-      ordering_tree_res <- assign_pseudotime_helper(ordering_tree_res, dist_matrix, last_pseudotime + delta_pseudotime, next_node)
-    }
-
-    return (ordering_tree_res)
-  }
-
-  res <- assign_pseudotime_helper(res, dist_matrix, 0.0, res$root)
-
-  cell_names <- V(res$subtree)$name
-  cell_states <- V(res$subtree)$cell_state
-  cell_pseudotime <- V(res$subtree)$pseudotime
-  cell_parents <- V(res$subtree)$parent
-  # print (cell_names)
-  # print (cell_states)
-  # print (cell_pseudotime)
-  ordering_df <- data.frame(sample_name = cell_names,
-                            cell_state = factor(cell_states),
-                            pseudo_time = cell_pseudotime,
-                            parent = cell_parents)
-
-  ordering_df <- plyr::arrange(ordering_df, pseudo_time)
-  return(list("ordering_df"=ordering_df, "cell_ordering_tree"=cell_ordering_tree))
-}
-
 reverse_ordering <- function(pseudo_time_ordering)
 {
   pt <- pseudo_time_ordering$pseudo_time
@@ -935,7 +693,7 @@ ica_helper <- function(X, n.comp, alg.typ = c("parallel", "deflation"), fun = c(
 }
 
 #' @importFrom igraph V minimum.spanning.tree graph.adjacency degree get.diameter graph.dfs
-extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
+extract_mst_ordering <- function(cds, root_cell, verbose=T)
 {
 
   dp <- cellPairwiseDistances(cds)
@@ -996,9 +754,46 @@ extract_ddrtree_ordering <- function(cds, root_cell, verbose=T)
   return(ordering_df)
 }
 
+
+#' @importFrom igraph V distances
+extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
+{
+  pr_graph <- minSpanningTree(cds)
+  
+  res <- list(subtree = pr_graph, root = root_cell)
+
+  parents = rep(NA, length(V(pr_graph)))
+  states = rep(NA, length(V(pr_graph)))
+  
+  pr_graph_node_distances = distances(pr_graph, v=root_cell)
+  if (length(root_cell) > 1){
+    node_names = colnames(pr_graph_node_distances)
+    pseudotimes = apply(pr_graph_node_distances, 2, min)
+  }else{
+    node_names = names(pr_graph_node_distances)
+    pseudotimes = pr_graph_node_distances
+  }
+  
+  
+  names(pseudotimes) <- node_names
+  
+  ordering_df <- data.frame(sample_name = V(pr_graph)$name,
+                            cell_state = states,
+                            pseudo_time = as.vector(pseudotimes),
+                            parent = parents)
+  row.names(ordering_df) <- ordering_df$sample_name
+  return(ordering_df)
+}
+
+
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency minimum.spanning.tree V
-select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
+#' @export
+selectRootCell <- function(cds, root_state=NULL, reverse=FALSE){
+  
+  if(cds@dim_reduce_type == "L1graph") 
+    stop('selectRootCell does not work with L1-graph trajectories')
+  
   if (is.null(root_state) == FALSE & vcount(minSpanningTree(cds)) == ncol(cds)) {
     if (is.null(pData(cds)$State)){
       stop("Error: State has not yet been set. Please call orderCells() without specifying root_state, then try this call again.")
@@ -1031,8 +826,8 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 
     #root_cell = names(diameter)[tip_leaves %in% names(diameter)]
     root_cell_candidates <- root_cell_candidates[names(diameter),]
-    if (is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell) == FALSE &&
-        pData(cds)[cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell,]$State == root_state){
+    if (is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes) == FALSE &&
+        pData(cds)[cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes,]$State == root_state){
         root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == min(root_cell_candidates$Pseudotime))]
     }else{
       root_cell <- row.names(root_cell_candidates)[which(root_cell_candidates$Pseudotime == max(root_cell_candidates$Pseudotime))]
@@ -1107,13 +902,12 @@ select_root_cell <- function(cds, root_state=NULL, reverse=FALSE){
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
-#' 
+#'
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
 orderCells <- function(cds,
-                       root_state=NULL,
-                       num_paths = NULL,
-                       reverse=NULL){
+                       root_pr_nodes=NULL,
+                       root_cells=NULL){
   
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
@@ -1126,121 +920,70 @@ orderCells <- function(cds,
   if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 0))) {
     stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
   }
-
+  
   if(igraph::vcount(minSpanningTree(cds)) > 50000) {
     stop("orderCells doesn't support more than 50k centroids (cells)")
   }
-
-  root_cell <- select_root_cell(cds, root_state, reverse)
-
-  if (cds@dim_reduce_type == "ICA"){
-    cds@auxOrderingData <- new.env( hash=TRUE )
-    if (is.null(num_paths)){
-      num_paths = 1
+  if (is.null(root_pr_nodes) == FALSE & is.null(root_cells) == FALSE){
+    stop("Error: please specify either root_pr_nodes or root_cells, not both")
+  }
+  if (is.null(root_pr_nodes) & is.null(root_cells)){
+    if (interactive()){
+      root_pr_nodes = selectTrajectoryRoots(cds)
+    }else{
+      stop("Error: You must provide one or more root cells (or principal graph nodes) in non-interactive mode")
     }
-    adjusted_S <- t(cds@reducedDimS)
-
-    dp <- as.matrix(dist(adjusted_S))
-
-    cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
-    # Build an MST of the cells in ICA space.
-    gp <- graph.adjacency(dp, mode="undirected", weighted=TRUE)
-    dp_mst <- minimum.spanning.tree(gp)
-    minSpanningTree(cds) <- dp_mst
-    # Build the PQ tree
-    next_node <<- 0
-    res <- pq_helper(dp_mst, use_weights=FALSE, root_node=root_cell)
-
-    cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
-
-    order_list <- extract_good_branched_ordering(res$subtree, res$root, cellPairwiseDistances(cds), num_paths, FALSE)
-    cc_ordering <- order_list$ordering_df
-    row.names(cc_ordering) <- cc_ordering$sample_name
-
-    minSpanningTree(cds)  <- as.undirected(order_list$cell_ordering_tree)
-
-    pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-    pData(cds)$State <-  cc_ordering[row.names(pData(cds)),]$cell_state
-    #pData(cds)$Parent <-  cc_ordering[row.names(pData(cds)),]$parent
-
-    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-
-    minSpanningTree(cds) <- dp_mst
-    cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
-
-  } else if (cds@dim_reduce_type == "DDRTree"){
-    if (is.null(num_paths) == FALSE){
-      message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
+  }else if(is.null(root_pr_nodes)){
+    valid_root_cells = intersect(root_cells, row.names(pData(cds)))
+    if (length(valid_root_cells) == 0){
+      stop("Error: no such cell")
     }
-    cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
-
-    if(ncol(cds) > 100) {
-      R <- cds@auxOrderingData$DDRTree$R
-      edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
-
-      pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
-      if(is.null(root_state) == TRUE) {
-        pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
-      }
-      
-      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
-    } else {
-      cds@auxOrderingData <- new.env( hash=TRUE )
-      pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
-
-      K_old <- reducedDimK(cds)
-      old_dp <- cellPairwiseDistances(cds)
-      old_mst <- minSpanningTree(cds)
-      old_A <- reducedDimA(cds)
-      old_W <- reducedDimW(cds)
-
-      cds <- project2MST(cds, project_point_to_line_segment) #project_point_to_line_segment can be changed into other states
-      minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
-
-      root_cell_idx <- which(V(old_mst)$name == root_cell, arr.ind=T)
-      cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == root_cell_idx)
-      if(length(cells_mapped_to_graph_root) == 0) { #avoid the issue of multiple cells projected to the same point on the principal graph
-        cells_mapped_to_graph_root <- root_cell_idx
-      }
-
-      cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
-
-      tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
-      root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% tip_leaves][1]
-      if(is.na(root_cell)) {
-        root_cell <- select_root_cell(cds, root_state, reverse)
-      }
-
-      cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
-
-      cc_ordering_new_pseudotime <- extract_ddrtree_ordering(cds, root_cell) #re-calculate the pseudotime again
-
-      pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)),]$pseudo_time
-      if (is.null(root_state) == TRUE) {
-        closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-        pData(cds)$State <- cc_ordering[closest_vertex[, 1],]$cell_state #assign the state to the states from the closet vertex
-      }
-
-      reducedDimK(cds) <-  K_old
-      cellPairwiseDistances(cds) <- old_dp
-      minSpanningTree(cds) <- old_mst
-      reducedDimA(cds) <- old_A
-      reducedDimW(cds) <- old_W
+    closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+    root_pr_nodes = closest_vertex[valid_root_cells,]
+  }else{
+    if (length(intersect(root_pr_nodes, V(minSpanningTree(cds))$name)) == 0){
+      stop("Error: no such principal graph node")
     }
-
+  }
+  
+  if (is.null(root_pr_nodes) || length(root_pr_nodes) == 0){
+    stop("Error: no valid root principal graph nodes.")
+  }
+  
+  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  
+  if (cds@dim_reduce_type == "L1graph"){
+    cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
+    closest_vertex = cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex
+   
+    pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
+    pData(cds)$State = cc_ordering[closest_vertex[row.names(pData(cds)),],]$state
+    
+    cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+    
+    mst_branch_nodes <- NULL
+  }else if (cds@dim_reduce_type == "DDRTree"){
+    
+    cc_ordering <- extract_mst_ordering(cds, root_pr_nodes)
+    
+    R <- cds@auxOrderingData$DDRTree$R
+    edge <- data.frame(start = 1:nrow(R), end = apply(R, 1, which.max), weight = R[cbind(1:nrow(R), apply(R, 1, which.max))])
+    
+    pData(cds)$Pseudotime <- cc_ordering[edge$end, 'pseudo_time']
+    if(is.null(root_state) == TRUE) {
+      pData(cds)$State <- cc_ordering[edge$end, 'cell_state']
+    }
+    
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type == "SimplePPT"){
-    if (is.null(num_paths) == FALSE){
-      message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
-    }
-    cc_ordering <- extract_ddrtree_ordering(cds, root_cell)
-
+    cc_ordering <- extract_mst_ordering(cds, root_pr_nodes)
+    
     pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
-
+    
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
-
+    
     ########################################################################################################################################################################
     # downstream pseudotime and branch analysis 
     ########################################################################################################################################################################
@@ -1249,14 +992,14 @@ orderCells <- function(cds,
     # identify branch
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   }
-
+  
   cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
   # FIXME: the scaling code is totally broken after moving to DDRTree. Disabled
   # for now
   #if(scale_pseudotime) {
-    #cds <- scale_pseudotime(cds)
+  #cds <- scale_pseudotime(cds)
   #}
-
+  
   cds
 }
 
@@ -2721,3 +2464,63 @@ reverseEmbeddingCDS <- function(cds) {
 cal_ncenter <- function(ncells, ncells_limit = 100){
   round(2 * ncells_limit * log(ncells)/ (log(ncells) + log(ncells_limit)))
 }
+
+
+#' Select the roots of the principal graph 
+#' 
+#' 
+selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
+{
+  #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
+  lib_info_with_pseudo <- pData(cds)
+  
+  if (is.null(cds@dim_reduce_type)){
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  }
+  
+  if (cds@dim_reduce_type == "ICA"){
+    reduced_dim_coords <- reducedDimS(cds)
+  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
+    reduced_dim_coords <- reducedDimK(cds)
+  } else {
+    stop("Error: unrecognized dimensionality reduction method.")
+  }
+  
+  ica_space_df <- Matrix::t(reduced_dim_coords) %>%
+    as.data.frame() %>%
+    select_(prin_graph_dim_1 = x, prin_graph_dim_2 = y) %>%
+    mutate(sample_name = rownames(.), sample_state = rownames(.))
+  
+  dp_mst <- minSpanningTree(cds)
+  
+  if (is.null(dp_mst)){
+    stop("You must first call orderCells() before using this function")
+  }
+  
+  edge_df <- dp_mst %>%
+    igraph::as_data_frame() %>%
+    select_(source = "from", target = "to") %>%
+    left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
+    left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
+  
+  if (is.null(num_roots)){
+    num_roots = nrow(ica_space_df)
+  }
+  #xy <- xy.coords(x, y); x <- xy$x; y <- xy$y
+  sel <- rep(FALSE, nrow(ica_space_df))
+  
+  plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel]);
+  segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
+  
+  while(sum(sel) < num_roots) {
+    ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
+    if(!length(ans)) break
+    ans <- which(!sel)[ans]
+    points(ica_space_df$prin_graph_dim_1[ans], ica_space_df$prin_graph_dim_2[ans], pch = pch)
+    sel[ans] <- TRUE
+  }
+  ## return indices of selected points
+  as.character(ica_space_df$sample_name[which(sel)])
+}
+
+

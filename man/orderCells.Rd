@@ -4,7 +4,7 @@
 \alias{orderCells}
 \title{Orders cells according to pseudotime.}
 \usage{
-orderCells(cds, root_state = NULL, num_paths = NULL, reverse = NULL)
+orderCells(cds, root_pr_nodes = NULL)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

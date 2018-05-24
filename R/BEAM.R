@@ -29,6 +29,8 @@ buildBranchCellDataSet <- function(cds,
                                    branch_labels = NULL, 
                                    stretch = TRUE)
 {
+  if(cds@dim_reduce_type == "L1graph") 
+    stop('buildBranchCellDataSet does not work with L1-graph trajectories')
   # TODO: check that branches are on the same paths
   if(is.null(pData(cds)$State) | is.null(pData(cds)$Pseudotime)) 
     stop('Please first order the cells in pseudotime using orderCells()')
