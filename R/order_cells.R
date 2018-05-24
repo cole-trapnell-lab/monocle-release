@@ -1763,6 +1763,10 @@ reverseEmbeddingCDS <- function(cds) {
 
 # Function to decide a good number of centers for running DDRTree on big datasets
 cal_ncenter <- function(ncells, ncells_limit = 100){
+  if(ncells < ncells_limit) {
+    return(NULL)
+  }
+  
   round(2 * ncells_limit * log(ncells)/ (log(ncells) + log(ncells_limit)))
 }
 

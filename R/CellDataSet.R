@@ -45,3 +45,32 @@ setClass( "CellDataSet",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.2.0" ) ))
 )
 
+#' Functions to update a old CDS to the current version  
+#' @export
+updateCDS <- function(cds) {
+  cds_update <- tryCatch({
+    validObject(valid_subset_GSE72857_cds2)
+  }, error = function(e) {
+    pd <- new("AnnotatedDataFrame",data=pData(cds))
+    fd <- new("AnnotatedDataFrame",data=fData(cds))
+    
+    cds_update <- newCellDataSet(exprs(cds), phenoData = pd,featureData =fd,
+                                 expressionFamily = cds@expressionFamily,
+                                 lowerDetectionLimit = cds@lowerDetectionLimit)
+    cds_update@reducedDimS <- cds@reducedDimS
+    cds_update@reducedDimW <- cds@reducedDimW
+    cds_update@reducedDimA <- cds@reducedDimA
+    cds_update@reducedDimK <- cds@reducedDimK
+    cds_update@minSpanningTree <- cds@minSpanningTree
+    cds_update@cellPairwiseDistances <- cds@cellPairwiseDistances
+    cds_update@dispFitInfo <- cds@dispFitInfo
+    cds_update@dim_reduce_type <- cds@dim_reduce_type
+    cds_update@auxOrderingData <- cds@auxOrderingData
+    cds_update@auxClusteringData <- cds@auxClusteringData
+    
+    cds_update
+  }
+  )
+  
+  cds_update
+}
