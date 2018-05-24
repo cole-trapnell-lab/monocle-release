@@ -5,9 +5,11 @@
 \title{Plot a dataset and trajectory in 3 dimensions}
 \usage{
 plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
-  markers = NULL, markers_linear = FALSE, webGL_filename = NULL,
-  movie_filename = NULL, show_backbone = TRUE, scale_expr = TRUE,
-  palette = NULL, width = 800, height = 600,
+  palette = NULL, markers = NULL, markers_linear = FALSE, cell_size = 5,
+  cell_alpha = 0.5, backbone_segment_color = "#77B6EA",
+  backbone_vertex_color = NULL, show_group_labels = TRUE,
+  webGL_filename = NULL, image_filename = NULL, obj_filename = NULL,
+  scale_expr = TRUE, width = 800, height = 600, view_matrix = NULL,
   useNULL_GLdev = !interactive(), ...)
 }
 \arguments{
@@ -17,25 +19,25 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
 
+\item{palette}{the color palette used for plotting}
+
 \item{markers}{a gene name or gene id to use for setting the size of each cell in the plot}
 
 \item{markers_linear}{a boolean used to indicate whether you want to scale the markers logarithimically or linearly}
 
 \item{webGL_filename}{the name of a file to which you'd to write a webGL file containing the plot}
 
-\item{movie_filename}{the name of a file to which you'd to write an animated GIF containing the plot}
-
-\item{show_backbone}{whether to show the principal graph used to order the cells}
-
 \item{scale_expr}{whether to tranform the log expression values to z scores}
-
-\item{palette}{the color palette used for plotting}
 
 \item{width}{the width of the plot in pixels}
 
 \item{height}{the height of the plot in pixels}
 
 \item{useNULL_GLdev}{if TRUE, don't show the plot on the screen (to be used with webGL or movie output)}
+
+\item{movie_filename}{the name of a file to which you'd to write an animated GIF containing the plot}
+
+\item{show_backbone}{whether to show the principal graph used to order the cells}
 }
 \value{
 a ggplot2 plot object

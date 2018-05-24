@@ -5,10 +5,8 @@
 \title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA", "tSNE", "UMAP", "UMAPDDRTree", "UMAPSSE", "SSE", "SimplePPT",
-  "L1-graph", "L1graph"), norm_method = c("log", "vstExprs", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
-  auto_param_selection = TRUE, verbose = FALSE, scaling = TRUE, ...)
+  "ICA", "tSNE", "UMAP"), auto_param_selection = TRUE, scaling = TRUE,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -17,19 +15,11 @@ reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
 
 \item{reduction_method}{A character string specifying the algorithm to use for dimensionality reduction.}
 
-\item{norm_method}{Determines how to transform expression values prior to reducing dimensionality}
-
-\item{residualModelFormulaStr}{A model formula specifying the effects to subtract from the data before clustering.}
-
-\item{pseudo_expr}{amount to increase expression values before dimensionality reduction}
-
-\item{relative_expr}{When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.}
-
 \item{auto_param_selection}{when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.}
 
-\item{verbose}{Whether to emit verbose output during dimensionality reduction}
-
 \item{scaling}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
+
+\item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
 }
@@ -53,7 +43,7 @@ reduced space. You can also provide a model formula indicating some variables
 doesn't contribute to the trajectory.
 }
 \details{
-You can choose two different reduction algorithms: Independent Component 
+You can choose a few different reduction algorithms: Independent Component 
 Analysis (ICA) and Discriminative Dimensionality Reduction with Trees (DDRTree).
 The choice impacts numerous downstream analysis steps, including \code{\link{orderCells}}.
 Choosing ICA will execute the ordering procedure described in Trapnell and Cacchiarelli et al.,
