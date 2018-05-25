@@ -713,7 +713,7 @@ reduceDimension <- function(cds,
 #' @return an updated CellDataSet object
 smoothEmbedding <- function(cds,
                             max_components = 2, 
-                            smooth_method = c('SSE'), #, 'FDL'
+                            smooth_method = c('SSE', 'FDL'), #, 'FDL'
                             verbose = FALSE, 
                             ...){
   extra_arguments <- list(...)
