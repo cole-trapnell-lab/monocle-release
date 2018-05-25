@@ -1794,9 +1794,15 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   }
   
   ica_space_df <- Matrix::t(reduced_dim_coords) %>%
-    as.data.frame() %>%
-    select_(prin_graph_dim_1 = x, prin_graph_dim_2 = y) %>%
-    mutate(sample_name = rownames(.), sample_state = rownames(.))
+    as.data.frame() 
+  use_3d = ncol(ica_space_df) >= 3
+  if (use_3d){
+    colnames(ica_space_df) = c("prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")
+  }
+  else{
+    colnames(ica_space_df) = c("prin_graph_dim_1", "prin_graph_dim_2")
+  }
+  ica_space_df = ica_space_df %>% mutate(sample_name = rownames(.), sample_state = rownames(.))
   
   dp_mst <- minSpanningTree(cds)
   
@@ -1804,31 +1810,56 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
     stop("You must first call orderCells() before using this function")
   }
   
-  edge_df <- dp_mst %>%
-    igraph::as_data_frame() %>%
-    select_(source = "from", target = "to") %>%
-    left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
-    left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
-  
+  if (use_3d){
+    edge_df <- dp_mst %>%
+      igraph::as_data_frame() %>%
+      select_(source = "from", target = "to") %>%
+      left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2", source_prin_graph_dim_3="prin_graph_dim_3"), by = "source") %>%
+      left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2", target_prin_graph_dim_3="prin_graph_dim_3"), by = "target")
+  }else{
+    edge_df <- dp_mst %>%
+      igraph::as_data_frame() %>%
+      select_(source = "from", target = "to") %>%
+      left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
+      left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
+  }
+
   if (is.null(num_roots)){
     num_roots = nrow(ica_space_df)
   }
   #xy <- xy.coords(x, y); x <- xy$x; y <- xy$y
   sel <- rep(FALSE, nrow(ica_space_df))
   
-  plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel]);
-  segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
+  if (use_3d){
+    open3d(windowRect=c(0,0,1024,1024))
+    segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5,6,7,8)])), ncol=3, byrow=T), lwd=2, 
+               col="black",
+               line_antialias=TRUE)
+    points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
+    while(sum(sel) < num_roots) {
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, ...)
+      if(!length(ans)) break
+      ans <- which(!sel)[ans]
+      #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
+      sel[ans] <- TRUE
+    }
+  }else{
+    plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel]);
+    segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
   
-  while(sum(sel) < num_roots) {
-    ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
-    if(!length(ans)) break
-    ans <- which(!sel)[ans]
-    points(ica_space_df$prin_graph_dim_1[ans], ica_space_df$prin_graph_dim_2[ans], pch = pch)
-    sel[ans] <- TRUE
+    while(sum(sel) < num_roots) {
+      ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
+      if(!length(ans)) break
+      ans <- which(!sel)[ans]
+      points(ica_space_df$prin_graph_dim_1[ans], ica_space_df$prin_graph_dim_2[ans], pch = pch)
+      sel[ans] <- TRUE
+    }
   }
   ## return indices of selected points
   as.character(ica_space_df$sample_name[which(sel)])
 }
+
+
 
 
 #' Run improved force directed layout for cells in low dimensional space.
