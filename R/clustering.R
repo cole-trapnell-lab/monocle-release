@@ -407,16 +407,19 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   }
 
   if(igraph::vcount(g) < 3000) {
-    coord <- igraph::layout_components(g) 
-    coord <- as.data.frame(coord)
-    colnames(coord) <- c('x', 'y')
-    row.names(coord) <- row.names(pd)
-    coord <- cbind(coord, pd)
+    # coord <- igraph::layout_components(g) 
+    # coord <- as.data.frame(coord)
+    # colnames(coord) <- c('x', 'y')
+    # row.names(coord) <- row.names(pd)
+    # coord <- cbind(coord, pd)
+    # 
+    # edge_links <- cbind(coord[relations$from, 1:2], coord[relations$to, 1:2])
+    # edge_links <- as.data.frame(edge_links)
+    # colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+    # edge_links$weight <- relations[, 3]
     
-    edge_links <- cbind(coord[relations$from, 1:2], coord[relations$to, 1:2])
-    edge_links <- as.data.frame(edge_links)
-    colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
-    edge_links$weight <- relations[, 3]
+    coord <- NULL
+    edge_links <- NULL
   } else {
     coord <- NULL
     edge_links <- NULL
