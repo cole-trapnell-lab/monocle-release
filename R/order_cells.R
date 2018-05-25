@@ -922,6 +922,7 @@ smoothEmbedding <- function(cds,
 #' @param max_components the dimensionality of the reduced space
 #' @param RGE_method Determines how to transform expression values prior to reducing dimensionality
 #' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
+#' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param partition_component When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param verbose Whether to emit verbose output during dimensionality reduction
@@ -941,10 +942,13 @@ learnGraph <- function(cds,
                        max_components=2,
                        RGE_method = c('L1graph', 'SimplePPT', 'DDRTree'), 
                        auto_param_selection = TRUE, 
+                       partition_group = 'louvain_component', 
                        partition_component = TRUE, 
                        scale = FALSE, 
                        verbose = FALSE, 
                        ...){
+  if(!(partition_group %in% colnames(pData(cds))))
+    stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds ...')
   
   extra_arguments <- list(...)
   FM <- cds@auxOrderingData$normalize_expr_data
@@ -1105,8 +1109,9 @@ learnGraph <- function(cds,
       irlba_pca_res <- t(cds@reducedDimS)
     }
     
+    louvain_component <- pData(cds)[, partition_group]
     if(length(louvain_component) == ncol(cds) & partition_component) {
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, irlba_pca_res, max_components, extra_arguments, verbose)
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1145,7 +1150,7 @@ learnGraph <- function(cds,
       ddrtree_res_Z <- ddrtree_res$Z
       ddrtree_res_Y <- ddrtree_res$Y
       
-      adjusted_K <- Matrix::t(reducedDimK(cds))
+      adjusted_K <- t(ddrtree_res_Y)
       dp <- as.matrix(dist(adjusted_K))
       cellPairwiseDistances(cds) <- dp
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
@@ -1357,55 +1362,13 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      for(cur_comp in unique(louvain_component)) {
-        X_subset <- X[, louvain_component == cur_comp]
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
         
-        #add other parameters...
-        if(scale) 
-          X_subset <- t(as.matrix(scale(t(X_subset))))
-        
-        ncenter <- cal_ncenter(ncol(X_subset))
-        
-        ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
-                      extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
-        #browser()
-        ddrtree_res <- do.call(DDRTree, ddr_args)
-        
-        if(is.null(reducedDimK_coord)) {
-          curr_cell_names <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-          pr_graph_cell_proj_closest_vertex <- matrix(apply(ddrtree_res$R, 1, which.max))
-          cell_name_vec <- colnames(X_subset)
-        } else {
-          curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(ddrtree_res$Y), sep = "")
-          pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
-          cell_name_vec <- c(cell_name_vec, colnames(X_subset))
-        }
-        
-        tmp <- ddrtree_res$Y
-        
-        reducedDimK_coord <- cbind(reducedDimK_coord, tmp)
-        
-        
-        dp <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
-        dimnames(dp) <- list(curr_cell_names, curr_cell_names)
-        
-        dp_mst <- graph.union(dp_mst, graph.adjacency(dp, mode = "undirected", weighted = TRUE))
-        
-        tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
-        
-      }
-      
-      row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
-      
-      ddrtree_res_W <- ddrtree_res$W
-      ddrtree_res_Z <- cds@reducedDimS
-      ddrtree_res_Y <- reducedDimK_coord
-      
-      colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
-      
-      cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-      cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
-      
+      ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
+      ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
+      ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
+      cds <- multi_tree_DDRTree_res$cds
+      dp_mst <- multi_tree_DDRTree_res$dp_mst
     } else {
       ncenter <- NULL
       if(auto_param_selection & ncol(cds) >= 100){
@@ -1438,7 +1401,7 @@ learnGraph <- function(cds,
       ddrtree_res_Z <- ddrtree_res$Z
       ddrtree_res_Y <- ddrtree_res$Y
       
-      adjusted_K <- Matrix::t(reducedDimK(cds))
+      adjusted_K <- t(ddrtree_res_Y)
       dp <- as.matrix(dist(adjusted_K))
       cellPairwiseDistances(cds) <- dp
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
@@ -2217,7 +2180,7 @@ procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE)
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
-multi_tree_DDRTree <- function(cds, group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, verbose) {
+multi_tree_DDRTree <- function(cds, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, verbose) {
   louvain_component <- pData(cds)[, 'louvain_component']
   
   X <- t(irlba_pca_res)

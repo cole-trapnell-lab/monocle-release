@@ -85,7 +85,7 @@ plot_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("simplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
+  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
     reduced_dim_coords <- reducedDimK(cds)
   } else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -2994,7 +2994,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (cds@dim_reduce_type == "ICA"){
     reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("L1graph", "simplePPT", "DDRTree", "UMAPDDRTree", "SSE", "UMAPSSE", "UMAP") ){
+  }else if (cds@dim_reduce_type %in% c("L1graph", "SimplePPT", "DDRTree", "UMAPDDRTree", "SSE", "UMAPSSE", "UMAP") ){
     reduced_dim_coords <- reducedDimK(cds)
   }else {
     stop("Error: unrecognized dimensionality reduction method.")
