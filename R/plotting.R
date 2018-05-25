@@ -2590,7 +2590,7 @@ plot_multiple_branches_pseudotime <- function(cds,
                                               
                                               min_expr = NULL,                                     
                                               cell_size = 0.75,                                           
-                                              norm_method = c("vstExprs", "log"), 
+                                              norm_method = c("log", "vstExprs"), 
                                               nrow = NULL, 
                                               ncol = 1, 
                                               panel_order = NULL, 

@@ -210,7 +210,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     }
     
     if("var.genes" %in% slotNames(otherCDS)) {
-      var.genes <- setOrderingFilter(monocle_cds, otherCDS@var.genes)
+      monocle_cds <- setOrderingFilter(monocle_cds, otherCDS@var.genes)
       
     }
     monocle_cds@auxClusteringData$seurat <- mist_list

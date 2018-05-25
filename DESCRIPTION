@@ -15,7 +15,7 @@ Description: Monocle performs differential expression and time-series analysis
     with RNA-Seq and qPCR data, but could be used with other types as well.
 License: Artistic-2.0
 Depends:
-    R (>= 2.10.0),
+    R (>= 3.5),
     methods,
     Matrix (>= 1.2-6),
     DelayedArray,
