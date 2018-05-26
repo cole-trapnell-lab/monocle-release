@@ -49,7 +49,7 @@ setClass( "CellDataSet",
 #' @export
 updateCDS <- function(cds) {
   cds_update <- tryCatch({
-    validObject(valid_subset_GSE72857_cds2)
+    validObject(cds)
   }, error = function(e) {
     pd <- new("AnnotatedDataFrame",data=pData(cds))
     fd <- new("AnnotatedDataFrame",data=fData(cds))

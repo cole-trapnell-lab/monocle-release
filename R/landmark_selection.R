@@ -11,8 +11,8 @@ landmark_selection <- function(cds, landmark_num) {
   }
   
   data_class <- class(cds@assayData$exprs)
-  if(data_class == "matrix" | data_class == 'data.frame') {
-    cds@assayData$exprs <- as(cds@assayData$exprs, 'sparseMatrix')  
+  if(data_class != "dgCMatrix") {
+    cds@assayData$exprs <- as(cds@assayData$exprs, 'dgCMatrix')  
   }
   sp_data <- cds@assayData$exprs
   

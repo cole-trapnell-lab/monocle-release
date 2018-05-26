@@ -1111,7 +1111,7 @@ learnGraph <- function(cds,
     
     louvain_component <- pData(cds)[, partition_group]
     if(length(louvain_component) == ncol(cds) & partition_component) {
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1362,7 +1362,7 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
         
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1741,7 +1741,7 @@ reverseEmbeddingCDS <- function(cds) {
 
 # Function to decide a good number of centers for running DDRTree on big datasets
 cal_ncenter <- function(ncells, ncells_limit = 100){
-  if(ncells < ncells_limit) {
+  if(ncells <= ncells_limit) {
     return(NULL)
   }
   
@@ -2180,8 +2180,8 @@ procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE)
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
-multi_tree_DDRTree <- function(cds, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, verbose) {
-  louvain_component <- pData(cds)[, 'louvain_component']
+multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, verbose) {
+  louvain_component <- pData(cds)[, partition_group]
   
   X <- t(irlba_pca_res)
   
@@ -2234,14 +2234,14 @@ multi_tree_DDRTree <- function(cds, partition_group = 'louvain_component', irlba
   ddrtree_res_Z <- cds@reducedDimS
   ddrtree_res_Y <- reducedDimK_coord
   
-  cds@auxOrderingData[["SimplePPT"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-  cds@auxOrderingData[["SimplePPT"]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
+  cds@auxOrderingData[[RGE_method]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
   
   colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
   
   return(list(cds = cds, 
-              ddrtree_res_W = ddrtree_res$W, 
-              ddrtree_res_Z = cds@reducedDimS, 
-              ddrtree_res_Y = reducedDimK_coord, 
+              ddrtree_res_W = ddrtree_res_W, 
+              ddrtree_res_Z = ddrtree_res_Z, 
+              ddrtree_res_Y = ddrtree_res_Y, 
               dp_mst = dp_mst))
 }
