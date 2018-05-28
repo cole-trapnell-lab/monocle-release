@@ -663,27 +663,6 @@ reduceDimension <- function(cds,
       Y <- S
       W <- t(irlba_pca_res)
       
-      if(verbose)
-        message("Running louvain clustering algorithm ...")
-      row.names(umap_res) <- colnames(FM)
-      louvain_clustering_args <- c(list(data = umap_res, pd = pData(cds)[colnames(FM), ], verbose = verbose),
-                                   extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-      louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-      
-      if("louvain_qval" %in% names(extra_arguments)){ 
-        louvain_qval <- extra_arguments$louvain_qval 
-      }
-      else{
-        louvain_qval <- 0.05
-      }
-      
-      cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
-      louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-      cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
-      names(louvain_component) = colnames(FM)
-      louvain_component = as.factor(louvain_component)
-      pData(cds)$louvain_component <- louvain_component
-      
       #minSpanningTree(cds) <- louvain_res$g
       
       A <- S
@@ -696,7 +675,7 @@ reduceDimension <- function(cds,
       reducedDimS(cds) <- as.matrix(Y)
       reducedDimK(cds) <- S
       
-      cds@auxOrderingData$UMAP <- list(umap_res = umap_res, louvain_res = louvain_res, adj_mat = adj_mat, cluster_graph_res = cluster_graph_res)
+      #cds@auxOrderingData$UMAP <- list(umap_res = umap_res, adj_mat = adj_mat)
       cds@dim_reduce_type <- reduction_method
     } else {
       stop("Error: unrecognized dimensionality reduction method")
@@ -958,47 +937,48 @@ learnGraph <- function(cds,
   FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
   
+  Y <- reducedDimS(cds)
+  reduced_dim_res = Y 
+  
+  if(verbose)
+    message("Running louvain clustering algorithm ...")
+  #row.names(umap_res) <- colnames(FM)
+  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                               extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+  louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  
+  if("louvain_qval" %in% names(extra_arguments)){ 
+    louvain_qval <- extra_arguments$louvain_qval 
+  }
+  else{
+    louvain_qval <- 0.05
+  }
+  
+  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+  louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+  cds@auxOrderingData[[RGE_method]]$louvain_component = louvain_component
+  names(louvain_component) = colnames(FM)
+  louvain_component = as.factor(louvain_component)
+  pData(cds)$louvain_component <- louvain_component
+  
+  #louvain_res <- cds@auxOrderingData[["SSE"]]$louvain_res
+  louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
+  
   if(RGE_method == 'L1graph') { 
+    # FIXME: This case is broken, because I didn't have time to update the landmark
+    # stuff during the refactor.
     if(cds@dim_reduce_type == "SSE") {
-      Y <- cds@auxOrderingData[['SSE']]$SSE_res$Y
-      Y <- Y 
-      # SSE_res$Y <- (SSE_res$Y - min(SSE_res$Y)) / max(SSE_res$Y) # normalize the SSE space to avoid space shrinking in L1graph step 
-      
-      louvain_res <- cds@auxOrderingData[["SSE"]]$louvain_res
-      louvain_module_length = length(levels(cds@auxOrderingData[['SSE']]$louvain_module))
-      
+
       landmark_id <- cds@auxOrderingData[['SSE']]$landmark_id
       if(is.null(landmark_id)) {
-        reduced_dim_res = t(Y) 
-        row.names(Y) <- colnames(FM)
+        #reduced_dim_res = t(Y) 
+        #row.names(Y) <- colnames(FM)
         landmark_id <- 1:ncol(cds)
       } else {
-        reduced_dim_res = t(Y)           
+        #reduced_dim_res = t(Y)           
         row.names(Y) <- colnames(FM[, landmark_id])
       }
     } else if(cds@dim_reduce_type == "UMAP") {
-      Y <- cds@auxOrderingData[['UMAP']]$umap_res
-      row.names(Y) <- colnames(FM)
-      reduced_dim_res = t(Y) 
-      
-      louvain_res <- cds@auxOrderingData[["UMAP"]]$louvain_res
-      louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
-      
-      if(ncol(cds) < 5000) {
-        landmark_id <- 1:ncol(cds)
-      } else {
-        if("landmark_num" %in% names(extra_arguments)) {
-          landmark_num <- extra_arguments$landmark_num
-        } else {
-          landmark_num <- 2000
-        }
-        
-        centers <- Y[seq(1, nrow(Y), length.out=landmark_num), ]
-        centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-        kmean_res <- kmeans(Y, landmark_num, centers=centers, iter.max = 100)
-        landmark_id <- sort(unique(apply(as.matrix(proxy::dist(Y, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
-        reduced_dim_res <- reduced_dim_res[, landmark_id]
-      }
       
     } else {
       stop('L1graph can be only applied to either the MAP or SSE reduced space, please first apply those dimension reduction techniques!')
@@ -1016,30 +996,30 @@ learnGraph <- function(cds,
       ncenter = min(ncol(FM) / 2, ncenter)
     }
     
-    if (ncenter > ncol(reduced_dim_res))
+    if (ncenter > ncol(Y))
       stop("Error: ncenters must be less than or equal to ncol(X)")
     
-    centers <- t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
-    centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
+    centers <- reduced_dim_res[,seq(1, ncol(reduced_dim_res), length.out=ncenter)]
+    #centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
     
-    kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
+    kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=t(centers), iter.max = 100)
     if (kmean_res$ifault != 0){
       message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
     }
     nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
     medioids = reduced_dim_res[,unique(nearest_center)]
-    reduced_dim_res <- t(medioids)
+    reduced_dim_res <- medioids
 
     if(verbose)
       message('running L1-graph ...')
     
-    X <- t(reduced_dim_res)
+    #X <- t(reduced_dim_res)
 
     if('C0' %in% names(extra_arguments)){
       C0 <- extra_arguments$C0
     }
     else
-      C0 <- X
+      C0 <- reduced_dim_res
     Nz <- ncol(C0)
     
     if('nn' %in% names(extra_arguments))
@@ -1060,14 +1040,14 @@ learnGraph <- function(cds,
       louvain_qval <- 0.05
     }
     
-    cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
-    louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-    cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
-    names(louvain_component) <- colnames(cds[, landmark_id])
-    louvain_component <- louvain_component[rownames(reduced_dim_res)]
-    louvain_component <- as.factor(louvain_component)
-    if (length(levels(louvain_component)) > 1){
-      louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
+    # cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+    # louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+    # cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
+    # names(louvain_component) <- colnames(cds)
+    louvain_component_for_medioids <- louvain_component[colnames(reduced_dim_res)]
+    #louvain_component_for_medioids <- as.factor(louvain_component_for_medioids)
+    if (length(levels(louvain_component_for_medioids)) > 1){
+      louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component_for_medioids + 0)))
       
       G = G * louvain_component_mask
       W = W * louvain_component_mask
@@ -1075,17 +1055,17 @@ learnGraph <- function(cds,
       colnames(G) = colnames(W)
     }
 
-    l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
+    l1graph_args <- c(list(X = reduced_dim_res, C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
     
     
     l1_graph_res <- do.call(principal_graph, l1graph_args)
     
-    colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
-    DCs <- t(reduced_dim_res) #FM
+    colnames(l1_graph_res$C) <-  colnames(reduced_dim_res)
+    #DCs <- reduced_dim_res #FM
     
-    colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
-    rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
+    colnames(l1_graph_res$W) <- colnames(reduced_dim_res)
+    rownames(l1_graph_res$W) <- colnames(reduced_dim_res)
     
     
     # row.names(l1_graph_res$X) <- colnames(cds)
@@ -1106,7 +1086,7 @@ learnGraph <- function(cds,
     gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
-    cds@dim_reduce_type <- "L1graph"
+    #cds@dim_reduce_type <- "L1graph"
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -1177,174 +1157,8 @@ learnGraph <- function(cds,
     
     minSpanningTree(cds) <- dp_mst
     
-    cds@dim_reduce_type <- "SimplePPT"
-    # if(cds@dim_reduce_type == "SSE") {
-    #   Y <- cds@auxOrderingData[['SSE']]$SSE_res$Y
-    #   Y <- Y 
-    #   # SSE_res$Y <- (SSE_res$Y - min(SSE_res$Y)) / max(SSE_res$Y) # normalize the SSE space to avoid space shrinking in L1graph step 
-    
-    #   louvain_res <- cds@auxOrderingData[["SSE"]]$louvain_res
-    #   louvain_module_length = length(levels(cds@auxOrderingData[['SSE']]$louvain_module))
-    
-    #   landmark_id <- cds@auxOrderingData[['SSE']]$landmark_id
-    #   if(is.null(landmark_id)) {
-    #     reduced_dim_res = t(Y) 
-    #     row.names(Y) <- colnames(FM)
-    #     landmark_id <- 1:ncol(cds)
-    #   } else {
-    #     reduced_dim_res = t(Y)           
-    #     row.names(Y) <- colnames(FM[, landmark_id])
-    #   }
-    # } else if(cds@dim_reduce_type == "UMAP") {
-    #   Y <- cds@auxOrderingData[['UMAP']]$umap_res
-    #   row.names(Y) <- colnames(FM)
-    #   reduced_dim_res = t(Y) 
-    
-    #   louvain_res <- cds@auxOrderingData[["UMAP"]]$louvain_res
-    #   louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
-    
-    #   if(ncol(cds) < 5000) {
-    #     landmark_id <- 1:ncol(cds)
-    #   } else {
-    #     if("landmark_num" %in% names(extra_arguments)) {
-    #       landmark_num <- extra_arguments$landmark_num
-    #     } else {
-    #       landmark_num <- 2000
-    #     }
-    
-    #     centers <- Y[seq(1, nrow(Y), length.out=landmark_num), ]
-    #     centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-    #     kmean_res <- kmeans(Y, landmark_num, centers=centers, iter.max = 100)
-    #     landmark_id <- sort(unique(apply(as.matrix(proxy::dist(Y, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
-    #     reduced_dim_res <- reduced_dim_res[, landmark_id]
-    #   }
-    
-    # } else {
-    #   stop('L1graph can be only applied to either the MAP or SSE reduced space, please first apply those dimension reduction techniques!')
-    # }
-    
-    # if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
-    #   ncenter <- extra_arguments$ncenter
-    # }else{
-    #   if("L1.pr_graph_vertex_per_louvain_module" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
-    #     L1.pr_graph_vertex_per_louvain_module <- extra_arguments$L1.pr_graph_vertex_per_louvain_module
-    #   }else{
-    #     L1.pr_graph_vertex_per_louvain_module = 3
-    #   }
-    #   ncenter = L1.pr_graph_vertex_per_louvain_module * louvain_module_length
-    #   ncenter = min(ncol(FM) / 2, ncenter)
-    # }
-    
-    # if (ncenter > ncol(reduced_dim_res))
-    #   stop("Error: ncenters must be less than or equal to ncol(X)")
-    
-    # centers <- t(reduced_dim_res)[seq(1, ncol(reduced_dim_res), length.out=ncenter),]
-    # centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-    
-    # kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=centers, iter.max = 100)
-    # if (kmean_res$ifault != 0){
-    #   message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
-    # }
-    # nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
-    # medioids = reduced_dim_res[,unique(nearest_center)]
-    # reduced_dim_res <- t(medioids)
-    # #reduced_dim_res = t(reduced_dim_res)[centers,]
-    # #reduced_dim_res <- t(reduced_dim_res)
-    # #rownames(reduced_dim_res) = paste("Y_", 1:nrow(reduced_dim_res), sep = "")
-    
-    # if(verbose)
-    #   message('running L1-graph ...')
-    
-    # #X <- t(reduced_dim_res)
-    # X <- t(reduced_dim_res)
-    # # D <- nrow(X); N <- ncol(X)
-    # # Z <- X
-    
-    # if('C0' %in% names(extra_arguments)){
-    #   C0 <- extra_arguments$C0
-    # }
-    # else
-    #   C0 <- X
-    # Nz <- ncol(C0)
-    
-    
-    # #G_T = get_mst(C0)
-    
-    # # # print(extra_arguments)
-    # # if('nn' %in% names(extra_arguments))
-    # #   G_knn <- get_knn(C0, K = extra_arguments$nn)
-    # # else
-    # #   G_knn <- get_knn(C0, K = 5)
-    
-    # # print(extra_arguments)
-    # if('nn' %in% names(extra_arguments))
-    #   G_T = get_mst_with_shortcuts(C0, K = extra_arguments$nn)
-    # else
-    #   G_T = get_mst_with_shortcuts(C0, K = 5)
-    
-    
-    # G = G_T$G #+ G_knn$G
-    
-    # G[G > 0] = 1
-    # W = G_T$W #+ G_knn$W
-    
-    # if("louvain_qval" %in% names(extra_arguments)){ 
-    #   louvain_qval <- extra_arguments$louvain_qval 
-    # }
-    # else{
-    #   louvain_qval <- 0.05
-    # }
-    
-    # cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
-    # louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-    # cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
-    # # pData(cds)$louvain_component <- as.factor(louvain_component)
-    # names(louvain_component) <- colnames(cds[, landmark_id])
-    # louvain_component <- louvain_component[rownames(reduced_dim_res)]
-    # louvain_component <- as.factor(louvain_component)
-    # if (length(levels(louvain_component)) > 1){
-    #   louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component + 0)))
-    
-    #   G = G * louvain_component_mask
-    #   W = W * louvain_component_mask
-    #   rownames(G) = rownames(W)
-    #   colnames(G) = colnames(W)
-    # }
-    # #louvain_component = data.frame(component=louvain_component)
-    
-    # l1graph_args <- c(list(X = t(reduced_dim_res), C0 = C0, G = G, gstruct = 'span-tree', verbose = verbose),
-    #                   extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
-    
-    
-    # l1_graph_res <- do.call(principal_graph, l1graph_args)
-    
-    # colnames(l1_graph_res$C) <-  rownames(reduced_dim_res)
-    # DCs <- t(reduced_dim_res) #FM
-    
-    # colnames(l1_graph_res$W) <- rownames(reduced_dim_res)
-    # rownames(l1_graph_res$W) <- rownames(reduced_dim_res)
-    
-    
-    # # row.names(l1_graph_res$X) <- colnames(cds)
-    # reducedDimW(cds) <- l1_graph_res$W
-    # reducedDimS(cds) <- DCs
-    # reducedDimK(cds) <- l1_graph_res$C
-    # cds@auxOrderingData[["SimplePPT"]]$objective_vals <- tail(l1_graph_res$objs, 1)
-    # cds@auxOrderingData[["SimplePPT"]]$W <- l1_graph_res$W
-    # cds@auxOrderingData[["SimplePPT"]]$P <- l1_graph_res$P
-    
-    # adjusted_K <- Matrix::t(reducedDimK(cds))
-    # dp <- as.matrix(dist(adjusted_K))
-    # cellPairwiseDistances(cds) <- dp
-    
-    # W <- l1_graph_res$W
-    # dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
-    # W[W < 1e-5] <- 0
-    # gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
-    # # dp_mst <- minimum.spanning.tree(gp)
-    # minSpanningTree(cds) <- gp
-    # cds@dim_reduce_type <- "SimplePPT"
-    # cds <- findNearestPointOnMST(cds)
+    #cds@dim_reduce_type <- "SimplePPT"
+   
   } else if(RGE_method == 'DDRTree') {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
@@ -1428,7 +1242,7 @@ learnGraph <- function(cds,
     
     minSpanningTree(cds) <- dp_mst
     
-    cds@dim_reduce_type <- "DDRTree"
+    #cds@dim_reduce_type <- "DDRTree"
     
   }
   cds 
