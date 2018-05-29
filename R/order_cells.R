@@ -930,9 +930,6 @@ learnGraph <- function(cds,
                        scale = FALSE, 
                        verbose = FALSE, 
                        ...){
-  if(!(partition_group %in% colnames(pData(cds))))
-    stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds ...')
-  
   extra_arguments <- list(...)
   FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
@@ -960,6 +957,9 @@ learnGraph <- function(cds,
   names(louvain_component) = colnames(FM)
   louvain_component = as.factor(louvain_component)
   pData(cds)$louvain_component <- louvain_component
+  
+  if(partition_component && !(partition_group %in% colnames(pData(cds))))
+    stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds ...')
   
   #louvain_res <- cds@auxOrderingData[["SSE"]]$louvain_res
   louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
@@ -1046,7 +1046,7 @@ learnGraph <- function(cds,
     # names(louvain_component) <- colnames(cds)
     louvain_component_for_medioids <- louvain_component[colnames(reduced_dim_res)]
     #louvain_component_for_medioids <- as.factor(louvain_component_for_medioids)
-    if (length(levels(louvain_component_for_medioids)) > 1){
+    if (partition_component && length(levels(louvain_component_for_medioids)) > 1){
       louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component_for_medioids + 0)))
       
       G = G * louvain_component_mask
@@ -1093,8 +1093,8 @@ learnGraph <- function(cds,
       irlba_pca_res <- t(cds@reducedDimS)
     }
     
-    louvain_component <- pData(cds)[, partition_group]
-    if(length(louvain_component) == ncol(cds) & partition_component) {
+    #louvain_component <- pData(cds)[, partition_group]
+    if(partition_component && length(louvain_component) == ncol(cds)) {
       multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
@@ -1170,9 +1170,9 @@ learnGraph <- function(cds,
       message("Learning principal graph with DDRTree")
     
     # TODO: DDRTree should really work with sparse matrices.
-    louvain_component <- pData(cds)$louvain_component
+    #louvain_component <- pData(cds)$louvain_component
     
-    if(length(louvain_component) == ncol(cds) & partition_component) {
+    if(partition_component && length(louvain_component) == ncol(cds)) {
       X <- t(irlba_pca_res)
       
       reducedDimK_coord <- NULL  
