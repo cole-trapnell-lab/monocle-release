@@ -683,7 +683,7 @@ reduceDimension <- function(cds,
       names(louvain_component) = colnames(FM)
       louvain_component = as.factor(louvain_component)
       pData(cds)$louvain_component <- louvain_component
-      
+      pData(cds)$louvain_component <- louvain_component
       #minSpanningTree(cds) <- louvain_res$g
       
       A <- S
