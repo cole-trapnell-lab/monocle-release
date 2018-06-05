@@ -252,47 +252,83 @@ spatialDifferentialTest <- function(cds,
   exprs_mat <- exprs(cds)
   cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
   
-  if(is.null(cell2pp_map))
-    cell2pp_map <- data.frame(y = 1:nrow(cds), row.names = colnames(cds))
-  
-  # This cds object might be a subset of the one on which ordering was performed,
-  # so we may need to subset the nearest vertex and low-dim coordinate matrices:
-  cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
-  
-  cell_coords = cell_coords[row.names(cell2pp_map),]
-  
-  # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
-  
-  if(verbose) {
-    message("Identify connecting principal point pairs ...")
-  }
-  
-  # an alternative approach to make the kNN graph based on the principal graph 
-  knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
-  kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
-  
-  principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
-  diag(principal_g_tmp) <- 1 # so set diagnol as 1 
-  
-  # find cell kNN connections that are connected across two disconnected principal points and remove them (cells correpond to disconnected principal points should not connected)  
-  kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
-  knn_list <- apply(kNN_res_pp_map, 1, function(x) {
-    tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
+  if(is.null(cell2pp_map)) {
+    knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(principal_g), function(x) {
+      res <- which(as.numeric(x) > 0)
+      if(length(res) == 0) 
+        res <- 0L
+      res
+    })
+  } else {
+    # This cds object might be a subset of the one on which ordering was performed,
+    # so we may need to subset the nearest vertex and low-dim coordinate matrices:
+    cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
     
-    # remove those edges in the kNN neighbo list 
-    if(length(tmp) > 0) {
-      knn_res_tmp <- knn_res[x[1], -1][- tmp] #[-1]: remove itself
-      if(length(knn_res_tmp) == 0) { 
-        return(0L) # when there is no neighbors, return index 0 
-      }
-      else {
-        knn_res_tmp
-      }
-    } else {
-      knn_res[x[1], ][-1]
+    cell_coords = cell_coords[row.names(cell2pp_map),]
+    
+    # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
+    
+    if(verbose) {
+      message("Identify connecting principal point pairs ...")
     }
-  })
-  
+    
+    # an alternative approach to make the kNN graph based on the principal graph 
+    knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
+    # kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
+    
+    principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
+    diag(principal_g_tmp) <- 1 # so set diagnol as 1 
+    
+    cell_membership <- as.factor(cell2pp_map)
+    uniq_member <- sort(unique(cell_membership))
+    
+    membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
+    colnames(membership_matrix) <- levels(uniq_member)
+    
+    # sparse matrix multiplication for calculating the feasible space 
+    feasible_space <- membership_matrix %*% principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))] %*% t(membership_matrix)
+    
+    links <- monocle:::jaccard_coeff(knn_res[, -1], F)
+    links <- links[links[, 1] > 0, ]
+    relations <- as.data.frame(links)
+    colnames(relations) <- c("from", "to", "weight")
+    knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    # remove edges across cells belong to two disconnected principal points 
+    tmp <- get.adjacency(knn_res_graph) * feasible_space 
+    
+    knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(tmp), function(x) {
+      res <- which(as.numeric(x) > 0)
+      if(length(res) == 0) 
+        res <- 0L
+      res
+    })
+    # apply(tmp, 1, function(x) {
+    #   res <- which(as.numeric(x) > 0)
+    #   if(length(res) == 0) 
+    #     res <- 0L
+    #   res
+    # })
+    
+    # # find cell kNN connections that are connected across two disconnected principal points and remove them (cells correpond to disconnected principal points should not connected)  
+    # kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
+    # knn_list <- apply(kNN_res_pp_map, 1, function(x) {
+    #   tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
+    #   
+    #   # remove those edges in the kNN neighbo list 
+    #   if(length(tmp) > 0) {
+    #     knn_res_tmp <- knn_res[x[1], -1][- tmp] #[-1]: remove itself
+    #     if(length(knn_res_tmp) == 0) { 
+    #       return(0L) # when there is no neighbors, return index 0 
+    #     }
+    #     else {
+    #       knn_res_tmp
+    #     }
+    #   } else {
+    #     knn_res[x[1], ][-1]
+    #   }
+    # })
+  }
   # create the lw list for moran.test  
   class(knn_list) <- "nb"
   attr(knn_list, "region.id") <- row.names(cds)
