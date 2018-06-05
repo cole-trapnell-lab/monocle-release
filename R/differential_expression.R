@@ -244,17 +244,21 @@ spatialDifferentialTest <- function(cds,
   if(cds@dim_reduce_type == 'L1graph') {
     cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
     principal_g <- cds@auxOrderingData[["L1graph"]]$W 
-  } else if(cds@dim_reduce_type == 'DDRTree') {
+  } else if(cds@dim_reduce_type %in% c('DDRTree', 'SimplePPT', 'UMAP')) {
     cell_coords <- t(reducedDimS(cds))
-    principal_g <-  cds@auxOrderingData[["DDRTree"]]$stree[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
+    principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
   
   exprs_mat <- exprs(cds)
   cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
   
+  if(is.null(cell2pp_map))
+    cell2pp_map <- data.frame(y = 1:nrow(cds), row.names = colnames(cds))
+  
   # This cds object might be a subset of the one on which ordering was performed,
   # so we may need to subset the nearest vertex and low-dim coordinate matrices:
   cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
+  
   cell_coords = cell_coords[row.names(cell2pp_map),]
   
   # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
@@ -277,7 +281,7 @@ spatialDifferentialTest <- function(cds,
     
     # remove those edges in the kNN neighbo list 
     if(length(tmp) > 0) {
-      knn_res_tmp <- knn_res[x[1], - tmp][-1] #[-1]: remove itself
+      knn_res_tmp <- knn_res[x[1], -1][- tmp] #[-1]: remove itself
       if(length(knn_res_tmp) == 0) { 
         return(0L) # when there is no neighbors, return index 0 
       }
@@ -408,3 +412,36 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
   class(res) <- "htest"
   res
 }
+
+# cell_membership <- as.factor(cell2pp_map)
+# uniq_member <- sort(unique(cell_membership))
+# g <- make_ring(0)
+# g_list <- lapply(1:length(uniq_member), function(i) {
+#   curr_principal_point <- uniq_member[i]
+#   message('current number of nodes is', sum(cell_membership == curr_principal_point))
+#   g <- make_full_graph(sum(cell_membership == curr_principal_point)) %>% 
+#     set_vertex_attr("name", value = which(cell_membership == curr_principal_point)) %>% 
+#     get.adjacency() %>% 
+#     graph.adjacency()
+#   g
+# })
+# g <- Reduce(graph.union, g_list)
+# #
+# membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
+# colnames(membership_matrix) <- levels(uniq_member)
+# num_links <- membership_matrix %*% principal_g[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))] %*% t(membership_matrix)
+# num_links_graph <- igraph::graph.adjacency(num_links, directed = T)
+# g <- graph.union(g, num_links_graph, byname = T)
+# graph_mat <- get.adjacency(g)[as.character(1:vcount(g)), as.character(1:vcount(g))]
+# #
+# links <- monocle:::jaccard_coeff(knn_res[, -1], F)
+# links <- links[links[, 1] > 0, ]
+# relations <- as.data.frame(links)
+# colnames(relations) <- c("from", "to", "weight")
+# knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+# #
+# tmp <- graph_mat * get.adjacency(knn_res_graph) 
+# sort(knn_list[[1]])
+# which(tmp[1, ] > 0)
+# which(graph_mat[1, ] > 0)
+# which(knn_res_graph[1, ] > 0)

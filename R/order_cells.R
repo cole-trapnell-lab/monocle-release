@@ -1,37 +1,3 @@
-# run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
-#   data <- t(data) 
-#   data <- data[!duplicated(data), ]
-#   dm <- DiffusionMap(as.matrix(data))
-#   return(dm@eigenvectors)
-# }
-# run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
-#   if (!requireNamespace("destiny", quietly = TRUE)) {
-#     stop("destiny package needed for this function to work. Please install it.",
-#          call. = FALSE)
-#   }
-#   
-#   if(verbose)
-#     message('root should be the id to the cell not the cell name ....')
-#   
-#   data <- t(data)
-#   data <- data[!duplicated(data), ]
-#   dm <- DiffusionMap(as.matrix(data))
-#   dpt <- DPT(dm, branching = branching)
-# 
-#  ts <- dm@transitions
-#  M <- destiny::accumulated_transitions(dm)
-#
-#  branch <- dpt@branch
-#  row.names(branch) <- row.names(data[!duplicated(data), ])
-#
-#  if(is.null(root))
-#    root <- random_root(dm)[1]
-#  pt <- dpt[root, ]
-#  dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
-# 
-#   return(dm@eigenvectors)
-# }
-
 #' Marks genes for clustering
 #' @description The function marks genes that will be used for clustering in subsequent calls to clusterCells. 
 #' The list of selected genes can be altered at any time.
@@ -169,7 +135,7 @@ orderCells <- function(cds,
     closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
     pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
     cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
-  } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
+  } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE", "PSL")){
     
     ########################################################################################################################################################################
     # downstream pseudotime and branch analysis 
@@ -663,7 +629,7 @@ reduceDimension <- function(cds,
       Y <- S
       W <- t(irlba_pca_res)
       
-      #minSpanningTree(cds) <- louvain_res$g
+      minSpanningTree(cds) <- graph_from_adjacency_matrix(adj_mat, weighted=TRUE)
       
       A <- S
       colnames(A) <- colnames(FM)
@@ -865,6 +831,43 @@ smoothEmbedding <- function(cds,
                   extra_arguments[names(extra_arguments) %in% c("separate_group", "method", "merge_coords_method", "start.temp", "k", "cell_num_threshold")])
     cds <- do.call(FDL, FDL_args)
   }
+  
+  cds
+}
+
+# cluster cells function? clusterCells ->  particiption_clusters -> learnGraph? 
+particiption_clusters <- function(cds, 
+         louvain_qval = 0.05, 
+         verbose = T, 
+         ...) {
+  extra_arguments <- list(...)
+  FM <- cds@auxOrderingData$normalize_expr_data
+  irlba_pca_res <- cds@normalized_data_projection
+  
+  Y <- reducedDimS(cds)
+  reduced_dim_res = Y 
+  
+  if(verbose)
+    message("Running louvain clustering algorithm ...")
+  #row.names(umap_res) <- colnames(FM)
+  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
+                               extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
+  louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  
+  if("louvain_qval" %in% names(extra_arguments)){ 
+    louvain_qval <- extra_arguments$louvain_qval 
+  }
+  else{
+    louvain_qval <- 0.05
+  }
+  
+  louvain_res <- cds@auxClusteringData[["louvian"]]$louvain_res
+  
+  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+  louvain_component <- components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+
+  louvain_component <- as.factor(louvain_component)
+  pData(cds)$louvain_component <- louvain_component
   
   cds
 }
@@ -1087,6 +1090,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
+    cds@dim_reduce_type <- RGE_method
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -1245,13 +1249,16 @@ learnGraph <- function(cds,
     #cds@dim_reduce_type <- "DDRTree"
     
   }
+  
+  cds@dim_reduce_type <- RGE_method
+  
   cds 
 }
 
 #' Finds the nearest principal graph node
 #' @param data_matrix the input matrix
 #' @param target_points the target points
-#' @param block_size the number of input matrix rows to process per blocl
+#' @param block_size the number of input matrix rows to process per bloclk
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
 findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
@@ -1630,7 +1637,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")

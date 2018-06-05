@@ -252,11 +252,15 @@ clusterCells <- function(cds,
       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
     }
 
-    cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, data, verbose)
-
+    cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, verbose = verbose, ...)
+    louvain_component <-  components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+    names(louvain_component) <- V(louvain_res$g)$name
+    louvain_component <- as.factor(louvain_component)
+    pData(cds)$louvain_component <- louvain_component
+    
     pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
 
-    cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res, cluster_graph_res = cluster_graph_res)
+    cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res)
 
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
