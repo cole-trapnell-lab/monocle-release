@@ -286,7 +286,7 @@ spatialDifferentialTest <- function(cds,
     colnames(membership_matrix) <- levels(uniq_member)
     
     # sparse matrix multiplication for calculating the feasible space 
-    feasible_space <- membership_matrix %*% principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))] %*% t(membership_matrix)
+    feasible_space <- membership_matrix %*% tcrossprod(principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))], membership_matrix)
     
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
     links <- links[links[, 1] > 0, ]
@@ -303,31 +303,6 @@ spatialDifferentialTest <- function(cds,
         res <- 0L
       res
     })
-    # apply(tmp, 1, function(x) {
-    #   res <- which(as.numeric(x) > 0)
-    #   if(length(res) == 0) 
-    #     res <- 0L
-    #   res
-    # })
-    
-    # # find cell kNN connections that are connected across two disconnected principal points and remove them (cells correpond to disconnected principal points should not connected)  
-    # kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
-    # knn_list <- apply(kNN_res_pp_map, 1, function(x) {
-    #   tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
-    #   
-    #   # remove those edges in the kNN neighbo list 
-    #   if(length(tmp) > 0) {
-    #     knn_res_tmp <- knn_res[x[1], -1][- tmp] #[-1]: remove itself
-    #     if(length(knn_res_tmp) == 0) { 
-    #       return(0L) # when there is no neighbors, return index 0 
-    #     }
-    #     else {
-    #       knn_res_tmp
-    #     }
-    #   } else {
-    #     knn_res[x[1], ][-1]
-    #   }
-    # })
   }
   # create the lw list for moran.test  
   class(knn_list) <- "nb"
@@ -448,36 +423,3 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
   class(res) <- "htest"
   res
 }
-
-# cell_membership <- as.factor(cell2pp_map)
-# uniq_member <- sort(unique(cell_membership))
-# g <- make_ring(0)
-# g_list <- lapply(1:length(uniq_member), function(i) {
-#   curr_principal_point <- uniq_member[i]
-#   message('current number of nodes is', sum(cell_membership == curr_principal_point))
-#   g <- make_full_graph(sum(cell_membership == curr_principal_point)) %>% 
-#     set_vertex_attr("name", value = which(cell_membership == curr_principal_point)) %>% 
-#     get.adjacency() %>% 
-#     graph.adjacency()
-#   g
-# })
-# g <- Reduce(graph.union, g_list)
-# #
-# membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
-# colnames(membership_matrix) <- levels(uniq_member)
-# num_links <- membership_matrix %*% principal_g[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))] %*% t(membership_matrix)
-# num_links_graph <- igraph::graph.adjacency(num_links, directed = T)
-# g <- graph.union(g, num_links_graph, byname = T)
-# graph_mat <- get.adjacency(g)[as.character(1:vcount(g)), as.character(1:vcount(g))]
-# #
-# links <- monocle:::jaccard_coeff(knn_res[, -1], F)
-# links <- links[links[, 1] > 0, ]
-# relations <- as.data.frame(links)
-# colnames(relations) <- c("from", "to", "weight")
-# knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
-# #
-# tmp <- graph_mat * get.adjacency(knn_res_graph) 
-# sort(knn_list[[1]])
-# which(tmp[1, ] > 0)
-# which(graph_mat[1, ] > 0)
-# which(knn_res_graph[1, ] > 0)
