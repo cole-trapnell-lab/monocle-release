@@ -423,3 +423,80 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
   class(res) <- "htest"
   res
 }
+
+#' Find marker genes for each group of cells 
+#' 
+#' Tests each gene for differential expression as a function of pseudotime 
+#' or according to other covariates as specified. \code{differentialGeneTest} is
+#' Monocle's main differential analysis routine. 
+#' It accepts a CellDataSet and two model formulae as input, which specify generalized
+#' lineage models as implemented by the \code{VGAM} package. 
+#' 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param spatial_res the result returned from spatialDifferentialTest
+#' @param group_by a column in the pData specifying the groups for calculating the specifities. By default it is Cluster
+#' @param qval_threshold The q-value threshold for genes to be selected
+#' @param morans_I_threshold The lowest Morans' I threshold for selecting genes 
+#' @param lower_threshold The lowest gene expression threshold for genes to be considered as expressed
+#' @param pseudocount Pseduo-count added to gene expression before calculating the log 
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @importFrom dplyr group_by summarize desc arrange top_n do
+#' @import reshape2 melt
+#' @seealso \code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
+#' @export
+#' 
+find_cluster_markers <- function(cds, 
+                                spatial_res,
+                                group_by = 'Cluster',
+                                qval_threshold = 0.05,
+                                morans_I_threshold = 0.25, 
+                                lower_threshold = 0,
+                                pseudocount = 1,
+                                verbose = FALSE, 
+                                ...) {
+  if(!(group_by %in% colnames(pData(cds)))) {
+    stop('Please ensure group_by is included in the pData')
+  }
+  if(identical(c("status", "pval", "morans_test_statistic", "morans_I", "gene_short_name", "qval"), colnames(spatial_res))) {
+    stop('Please make sure the spatial_res result you passed in comes from the spatialDifferentialTest')
+  }
+  
+  gene_ids <- row.names(subset(spatial_res, qval < qval_threshold & morans_I > morans_I_threshold))
+  exprs_mat <- as.matrix(cds@assayData$exprs[gene_ids, ])
+
+  exprs_mat <- melt(exprs_mat)
+  colnames(exprs_mat) <- c('Cell', 'Gene', 'Expression')
+  exprs_mat$Gene <- as.character(exprs_mat$Gene)
+  exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
+  
+  ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
+  
+  ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
+  ExpVal$Group <- as.numeric(ExpVal$Group)
+  
+  FUN <- function(df) {
+    class_df <- data.frame(Group = df$Group, mean = df$mean)
+    uniq_group <- unique(df$Group)
+    specificity <- rep(0, length(uniq_group))
+    for(cell_type_i in 1:length(uniq_group)) {
+      perfect_specificity <- rep(0.0, nrow(class_df))
+      perfect_specificity[cell_type_i] <- 1.0
+      
+      if(sum(class_df$mean) > 0) {
+        specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$mean), perfect_specificity)
+      } else {
+        specificity[cell_type_i] <- 0
+      }
+    }
+    specificity 
+  }
+  
+  specificity_res <- ExpVal %>% group_by(Gene) %>% do({
+    tmp <- as_data_frame(.)
+    tmp$specificity = FUN(tmp) 
+    tmp 
+  }) %>% arrange(desc(-Group), desc(specificity), desc(-qval), desc(morans_I))
+  
+  specificity_res
+}
