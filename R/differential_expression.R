@@ -438,7 +438,8 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @param qval_threshold The q-value threshold for genes to be selected
 #' @param morans_I_threshold The lowest Morans' I threshold for selecting genes 
 #' @param lower_threshold The lowest gene expression threshold for genes to be considered as expressed
-#' @param pseudocount Pseduo-count added to gene expression before calculating the log 
+#' @param pseudocount Pseduo-count added to gene expression before calculating the log
+#' @param top_n_by_group Select top_n_by_group from each group based on the specificity 
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
@@ -453,6 +454,7 @@ find_cluster_markers <- function(cds,
                                 morans_I_threshold = 0.25, 
                                 lower_threshold = 0,
                                 pseudocount = 1,
+                                top_n_by_group = NULL,
                                 verbose = FALSE, 
                                 ...) {
   if(!(group_by %in% colnames(pData(cds)))) {
@@ -497,6 +499,10 @@ find_cluster_markers <- function(cds,
     tmp$specificity = FUN(tmp) 
     tmp 
   }) %>% arrange(desc(-Group), desc(specificity), desc(-qval), desc(morans_I))
+  
+  if(!is.null(top_n_by_group)) {
+    specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
+  }
   
   specificity_res
 }
