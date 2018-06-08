@@ -466,7 +466,7 @@ find_cluster_markers <- function(cds,
   exprs_mat <- as.matrix(cds@assayData$exprs[gene_ids, ])
 
   exprs_mat <- melt(exprs_mat)
-  colnames(exprs_mat) <- c('Cell', 'Gene', 'Expression')
+  colnames(exprs_mat) <- c('Gene', 'Cell', 'Expression')
   exprs_mat$Gene <- as.character(exprs_mat$Gene)
   exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
   
