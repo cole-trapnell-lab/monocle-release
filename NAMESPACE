@@ -3,6 +3,7 @@
 export("cellPairwiseDistances<-")
 export("minSpanningTree<-")
 export("reducedDimA<-")
+export(exprs)
 export(UMAP)
 export(addCellType)
 export(calculateMarkerSpecificity)

@@ -475,18 +475,18 @@ find_cluster_markers <- function(cds,
   ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
   
   ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
-  ExpVal$Group <- as.numeric(ExpVal$Group)
+  ExpVal$Group <- ExpVal$Group
   
   FUN <- function(df) {
-    class_df <- data.frame(Group = df$Group, mean = df$mean)
+    class_df <- data.frame(Group = df$Group, percentage = df$percentage)
     uniq_group <- unique(df$Group)
     specificity <- rep(0, length(uniq_group))
     for(cell_type_i in 1:length(uniq_group)) {
       perfect_specificity <- rep(0.0, nrow(class_df))
       perfect_specificity[cell_type_i] <- 1.0
       
-      if(sum(class_df$mean) > 0) {
-        specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$mean), perfect_specificity)
+      if(sum(class_df$percentage) > 0) {
+        specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$percentage), perfect_specificity)
       } else {
         specificity[cell_type_i] <- 0
       }
@@ -498,7 +498,7 @@ find_cluster_markers <- function(cds,
     tmp <- as_data_frame(.)
     tmp$specificity = FUN(tmp) 
     tmp 
-  }) %>% arrange(desc(-Group), desc(specificity), desc(-qval), desc(morans_I))
+  }) %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
   
   if(!is.null(top_n_by_group)) {
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
