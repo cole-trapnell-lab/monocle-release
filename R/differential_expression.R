@@ -244,51 +244,66 @@ spatialDifferentialTest <- function(cds,
   if(cds@dim_reduce_type == 'L1graph') {
     cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
     principal_g <- cds@auxOrderingData[["L1graph"]]$W 
-  } else if(cds@dim_reduce_type == 'DDRTree') {
+  } else if(cds@dim_reduce_type %in% c('DDRTree', 'SimplePPT', 'UMAP')) {
     cell_coords <- t(reducedDimS(cds))
-    principal_g <-  cds@auxOrderingData[["DDRTree"]]$stree[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
+    principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
   
   exprs_mat <- exprs(cds)
   cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
   
-  # This cds object might be a subset of the one on which ordering was performed,
-  # so we may need to subset the nearest vertex and low-dim coordinate matrices:
-  cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
-  cell_coords = cell_coords[row.names(cell2pp_map),]
-  
-  # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
-  
-  if(verbose) {
-    message("Identify connecting principal point pairs ...")
-  }
-  
-  # an alternative approach to make the kNN graph based on the principal graph 
-  knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
-  kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
-  
-  principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
-  diag(principal_g_tmp) <- 1 # so set diagnol as 1 
-  
-  # find cell kNN connections that are connected across two disconnected principal points and remove them (cells correpond to disconnected principal points should not connected)  
-  kNN_res_pp_map <- cbind(1:nrow(kNN_res_pp_map), kNN_res_pp_map)
-  knn_list <- apply(kNN_res_pp_map, 1, function(x) {
-    tmp <- which(principal_g_tmp[cbind(x[2], x[-c(1:2)])] == 0)
+  if(is.null(cell2pp_map)) {
+    knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(principal_g), function(x) {
+      res <- which(as.numeric(x) > 0)
+      if(length(res) == 0) 
+        res <- 0L
+      res
+    })
+  } else {
+    # This cds object might be a subset of the one on which ordering was performed,
+    # so we may need to subset the nearest vertex and low-dim coordinate matrices:
+    cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
     
-    # remove those edges in the kNN neighbo list 
-    if(length(tmp) > 0) {
-      knn_res_tmp <- knn_res[x[1], - tmp][-1] #[-1]: remove itself
-      if(length(knn_res_tmp) == 0) { 
-        return(0L) # when there is no neighbors, return index 0 
-      }
-      else {
-        knn_res_tmp
-      }
-    } else {
-      knn_res[x[1], ][-1]
+    cell_coords = cell_coords[row.names(cell2pp_map),]
+    
+    # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
+    
+    if(verbose) {
+      message("Identify connecting principal point pairs ...")
     }
-  })
-  
+    
+    # an alternative approach to make the kNN graph based on the principal graph 
+    knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
+    # kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
+    
+    principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
+    diag(principal_g_tmp) <- 1 # so set diagnol as 1 
+    
+    cell_membership <- as.factor(cell2pp_map)
+    uniq_member <- sort(unique(cell_membership))
+    
+    membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
+    colnames(membership_matrix) <- levels(uniq_member)
+    
+    # sparse matrix multiplication for calculating the feasible space 
+    feasible_space <- membership_matrix %*% tcrossprod(principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))], membership_matrix)
+    
+    links <- monocle:::jaccard_coeff(knn_res[, -1], F)
+    links <- links[links[, 1] > 0, ]
+    relations <- as.data.frame(links)
+    colnames(relations) <- c("from", "to", "weight")
+    knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    # remove edges across cells belong to two disconnected principal points 
+    tmp <- get.adjacency(knn_res_graph) * feasible_space 
+    
+    knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(tmp), function(x) {
+      res <- which(as.numeric(x) > 0)
+      if(length(res) == 0) 
+        res <- 0L
+      res
+    })
+  }
   # create the lw list for moran.test  
   class(knn_list) <- "nb"
   attr(knn_list, "region.id") <- row.names(cds)
@@ -407,4 +422,87 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
     attr(res, "na.action") <- na.act
   class(res) <- "htest"
   res
+}
+
+#' Find marker genes for each group of cells 
+#' 
+#' Tests each gene for differential expression as a function of pseudotime 
+#' or according to other covariates as specified. \code{differentialGeneTest} is
+#' Monocle's main differential analysis routine. 
+#' It accepts a CellDataSet and two model formulae as input, which specify generalized
+#' lineage models as implemented by the \code{VGAM} package. 
+#' 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param spatial_res the result returned from spatialDifferentialTest
+#' @param group_by a column in the pData specifying the groups for calculating the specifities. By default it is Cluster
+#' @param qval_threshold The q-value threshold for genes to be selected
+#' @param morans_I_threshold The lowest Morans' I threshold for selecting genes 
+#' @param lower_threshold The lowest gene expression threshold for genes to be considered as expressed
+#' @param pseudocount Pseduo-count added to gene expression before calculating the log
+#' @param top_n_by_group Select top_n_by_group from each group based on the specificity 
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+#' @importFrom dplyr group_by summarize desc arrange top_n do
+#' @import reshape2 melt
+#' @seealso \code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
+#' @export
+#' 
+find_cluster_markers <- function(cds, 
+                                spatial_res,
+                                group_by = 'Cluster',
+                                qval_threshold = 0.05,
+                                morans_I_threshold = 0.25, 
+                                lower_threshold = 0,
+                                pseudocount = 1,
+                                top_n_by_group = NULL,
+                                verbose = FALSE, 
+                                ...) {
+  if(!(group_by %in% colnames(pData(cds)))) {
+    stop('Please ensure group_by is included in the pData')
+  }
+  if(identical(c("status", "pval", "morans_test_statistic", "morans_I", "gene_short_name", "qval"), colnames(spatial_res))) {
+    stop('Please make sure the spatial_res result you passed in comes from the spatialDifferentialTest')
+  }
+  
+  gene_ids <- row.names(subset(spatial_res, qval < qval_threshold & morans_I > morans_I_threshold))
+  exprs_mat <- as.matrix(cds@assayData$exprs[gene_ids, ])
+
+  exprs_mat <- melt(exprs_mat)
+  colnames(exprs_mat) <- c('Gene', 'Cell', 'Expression')
+  exprs_mat$Gene <- as.character(exprs_mat$Gene)
+  exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
+  
+  ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
+  
+  ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
+  ExpVal$Group <- ExpVal$Group
+  
+  FUN <- function(df) {
+    class_df <- data.frame(Group = df$Group, percentage = df$percentage)
+    uniq_group <- unique(df$Group)
+    specificity <- rep(0, length(uniq_group))
+    for(cell_type_i in 1:length(uniq_group)) {
+      perfect_specificity <- rep(0.0, nrow(class_df))
+      perfect_specificity[cell_type_i] <- 1.0
+      
+      if(sum(class_df$percentage) > 0) {
+        specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$percentage), perfect_specificity)
+      } else {
+        specificity[cell_type_i] <- 0
+      }
+    }
+    specificity 
+  }
+  
+  specificity_res <- ExpVal %>% group_by(Gene) %>% do({
+    tmp <- as_data_frame(.)
+    tmp$specificity = FUN(tmp) 
+    tmp 
+  }) %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
+  
+  if(!is.null(top_n_by_group)) {
+    specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
+  }
+  
+  specificity_res
 }

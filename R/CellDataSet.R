@@ -50,6 +50,7 @@ setClass( "CellDataSet",
 updateCDS <- function(cds) {
   cds_update <- tryCatch({
     validObject(cds)
+    cds
   }, error = function(e) {
     pd <- new("AnnotatedDataFrame",data=pData(cds))
     fd <- new("AnnotatedDataFrame",data=fData(cds))

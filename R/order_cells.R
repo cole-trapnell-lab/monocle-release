@@ -1,37 +1,3 @@
-# run_dpt <- function(data, branching = T, norm_method = 'log', verbose = F){
-#   data <- t(data) 
-#   data <- data[!duplicated(data), ]
-#   dm <- DiffusionMap(as.matrix(data))
-#   return(dm@eigenvectors)
-# }
-# run_dpt <- function(data, branching = T, norm_method = 'log', root = NULL, verbose = F){
-#   if (!requireNamespace("destiny", quietly = TRUE)) {
-#     stop("destiny package needed for this function to work. Please install it.",
-#          call. = FALSE)
-#   }
-#   
-#   if(verbose)
-#     message('root should be the id to the cell not the cell name ....')
-#   
-#   data <- t(data)
-#   data <- data[!duplicated(data), ]
-#   dm <- DiffusionMap(as.matrix(data))
-#   dpt <- DPT(dm, branching = branching)
-# 
-#  ts <- dm@transitions
-#  M <- destiny::accumulated_transitions(dm)
-#
-#  branch <- dpt@branch
-#  row.names(branch) <- row.names(data[!duplicated(data), ])
-#
-#  if(is.null(root))
-#    root <- random_root(dm)[1]
-#  pt <- dpt[root, ]
-#  dp_res <- list(dm = dm, pt = pt, ts = ts, M = M, ev = dm@eigenvectors, branch = branch)
-# 
-#   return(dm@eigenvectors)
-# }
-
 #' Marks genes for clustering
 #' @description The function marks genes that will be used for clustering in subsequent calls to clusterCells. 
 #' The list of selected genes can be altered at any time.
@@ -164,12 +130,10 @@ orderCells <- function(cds,
   
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
   
-
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
   closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
-  
 
   cds
 }
@@ -269,86 +233,6 @@ normalize_expr_data <- function(cds,
   # if(norm_method != "none")
     #normalize_expr_data
   return (FM)
-}
-
-#' project a CellDataSet object into a lower dimensional PCA space
-#'
-#' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
-#' low dimensional PCA space. projectPCA will be used to first project a CellDataSet object into a lower dimensional PCA space 
-#' before we apply clustering with community detection algorithm or other non-linear dimension reduction method, for example 
-#' UMAP, tSNE, DDRTree, L1-graph, etc.  
-#' While tSNE is especially suitable for visualizing clustering result, comparing to UMAP, the global distance in tSNE space is 
-#' not meaningful. UMAP can either be used for visualizing clustering result or as a general non-linear dimension reduction method. 
-#' DDRTree and L1-graph are two complementary 
-#' trajectory inference method where the first one is very great at learning a tree structure but the later is general and can 
-#' learn any arbitrary graph structure.   
-#'
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param num_dim the dimensionality of the reduced space
-#' @param norm_method Determines how to transform expression values prior to reducing dimensionality
-#' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
-#' @param pseudo_expr amount to increase expression values before dimensionality reduction
-#' @param relative_expr When this argument is set to TRUE (default), we intend to convert the expression into a relative expression.
-#' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
-#' @param verbose Whether to emit verbose output during dimensionality reduction
-#' @param ... additional arguments to pass to the dimensionality reduction function
-#' @return an updated CellDataSet object
-#' @import methods
-#' @importFrom matrixStats rowSds
-#' @importFrom limma removeBatchEffect
-#' @importFrom fastICA  ica.R.def ica.R.par
-#' @import irlba
-#' @importFrom stats dist prcomp
-#' @export
-projectPCA <- function(cds, num_dim=50,
-                        norm_method = c("log", "vstExprs", "none"),
-                        residualModelFormulaStr=NULL,
-                        pseudo_expr=1,
-                        relative_expr=TRUE,
-                        auto_param_selection = TRUE,
-                        verbose=FALSE,
-                        scaling = TRUE,
-                        ...) {
-  extra_arguments <- list(...)
-  set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
-  
-  FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
-
-  # For NB: Var(Y)=mu*(1+mu/k)
-  #f_expression_var <- DelayedMatrixStats::rowVars(FM)
-  #FM <- FM[f_expression_var > 0,]
-
-  if (is.null(residualModelFormulaStr) == FALSE) {
-    if (verbose)
-      message("Removing batch effects")
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
-                                       data = pData(cds), drop.unused.levels = TRUE)
-
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-  }else{
-    X.model_mat <- NULL
-  }
-
-  if (nrow(FM) == 0) {
-    stop("Error: all rows have standard deviation zero")
-  }
-  
-  fm_rowsums = Matrix::rowSums(FM)
-  FM <- FM[is.finite(fm_rowsums) & fm_rowsums != 0, ]
-
-  if (verbose)
-    message("Remove noise by PCA ...")
-  
-  irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
-                            center = scaling, scale. = scaling)
-  irlba_pca_res <- irlba_res$x
-  reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
-  cds@auxOrderingData[["PCA"]]$irlba_pca_res <- irlba_pca_res
-
-  cds
 }
 
 #' project a CellDataSet object into a lower dimensional PCA space after normalize the data 
@@ -455,7 +339,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
     irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                      center = scaling, scale. = scaling)
     irlba_pca_res <- irlba_res$x
-    reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+    # reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
   } else if(method == 'none') {
     irlba_pca_res <- FM
   } else {
@@ -654,7 +538,7 @@ reduceDimension <- function(cds,
       Y <- S
       W <- t(irlba_pca_res)
       
-      #minSpanningTree(cds) <- louvain_res$g
+      # minSpanningTree(cds) <- graph_from_adjacency_matrix(adj_mat, weighted=TRUE)
       
       A <- S
       colnames(A) <- colnames(FM)
@@ -672,6 +556,69 @@ reduceDimension <- function(cds,
       stop("Error: unrecognized dimensionality reduction method")
     }
   }
+  cds
+}
+
+#' This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues 
+#' @description Recently Alex Wolf and colleague first proposed the idea to represent the data with an “abstract partition graph”
+#' of clusters identified by Louvain clustering by simply connecting significantly overlapping Louvain clusters (Wolf et al. 2017). 
+#' Similar methods for “abstract partition graph” are also recently developed and applied in analyzing the zebrafish / frog cell 
+#' atlas datasets (Wagner et al. 2018; Briggs et al. 2018). This coarse-graining representation of the data address a few limitations 
+#' of tree-based trajectory inference algorithms, for example, the default principal tree learning algorithm (DDRTree) in Monocle 2. 
+#' Although the particion graph doesn’t learn an explicit simplified principal tree as DDRTree in Monocle 2, it can naturally separate 
+#' outlier cell groups and potentially also parallel trajectories while DDRTree often requires pre-processing before hand to robustly 
+#' reconstruct trajectory and cannot handle non-tree like structure. Instead of directly learn a coarse-graining graph of clusters, 
+#' we instead take advantage of the participation graph and use it as merely a heuristic initial condition for L1-graph algorithm 
+#' (as explained in the next section) to learn the principal points and principal graph at the same time directly from the reduced 
+#' UMAP data space. In contrast to the cluster participation method, the principal graph learnt provides an abstraction of the data 
+#' manifold while also preserves the local information from the original data space as it is directly embedded in the original data space. 
+#' In Monocle 3, we uses the clustering_louvain function from the igraph package to perform community detection and implemented an efficient
+#' version of “abstract partition graph” from Alex Wolf. Basically, we first create a design matrix $$X$$ representing the allocation of 
+#' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
+#' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
+#' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
+#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ \times A \times X$$. Once $$M$$ is constructed, we can then follow 
+#' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
+#' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
+
+#' 
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
+#' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
+#' @param louvain_iter the number of iteraction for louvain clustering (pass to louvain_clustering function)
+#' @param louvain_qval The q-val threshold used to determine the partition of cells (pass to compute_louvain_connected_components)
+#' @param verbose Whether to emit verbose output during louvain clustering
+#' @param ... additional arguments to pass to the smoothEmbedding function
+#' @return an updated CellDataSet object
+#' @export
+partitionCells <- function(cds,
+                           k = 20, 
+                           weight = F, 
+                           louvain_iter = 1, 
+                           louvain_qval = 0.05, 
+                           verbose = FALSE, ...){
+  extra_arguments <- list(...)
+  FM <- cds@auxOrderingData$normalize_expr_data
+  irlba_pca_res <- cds@normalized_data_projection
+  
+  Y <- reducedDimS(cds)
+  reduced_dim_res = Y 
+  
+  if(verbose)
+    message("Running louvain clustering algorithm ...")
+  #row.names(umap_res) <- colnames(FM)
+  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
+                                    weight = weight , louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
+  louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  
+  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
+  louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+  names(louvain_component) = colnames(FM)
+  louvain_component = as.factor(louvain_component)
+  pData(cds)$louvain_component <- louvain_component
+  
+  cds@auxClusteringData$partitionCells <- louvain_res
+  
   cds
 }
 
@@ -714,6 +661,7 @@ reduceDimension <- function(cds,
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param partition_component When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
+#' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
@@ -732,8 +680,9 @@ learnGraph <- function(cds,
                        RGE_method = c('L1graph', 'SimplePPT', 'DDRTree'), 
                        auto_param_selection = TRUE, 
                        partition_group = 'louvain_component', 
-                       partition_component = TRUE, 
+                       do_partition = TRUE, 
                        scale = FALSE, 
+                       close_loop = FALSE, 
                        verbose = FALSE, 
                        ...){
   extra_arguments <- list(...)
@@ -743,31 +692,18 @@ learnGraph <- function(cds,
   Y <- reducedDimS(cds)
   reduced_dim_res = Y 
   
-  if(verbose)
-    message("Running louvain clustering algorithm ...")
-  #row.names(umap_res) <- colnames(FM)
-  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], verbose = verbose),
-                               extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-  louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  # 
+  if(do_partition && !(partition_group %in% colnames(pData(cds))))
+    stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds!')
   
-  if("louvain_qval" %in% names(extra_arguments)){ 
-    louvain_qval <- extra_arguments$louvain_qval 
-  }
-  else{
-    louvain_qval <- 0.05
-  }
+  louvain_res <- cds@auxClusteringData$partitionCells
   
-  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
-  louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-  cds@auxOrderingData[[RGE_method]]$louvain_component = louvain_component
-  names(louvain_component) = colnames(FM)
-  louvain_component = as.factor(louvain_component)
-  pData(cds)$louvain_component <- louvain_component
-  
-  if(partition_component && !(partition_group %in% colnames(pData(cds))))
-    stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds ...')
+  if(is.null(louvain_res))
+    stop('Please run partitionCells function before run learnGraph!')
   
   louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
+  louvain_component <- pData(cds)$louvain_component
+  names(louvain_component) <- colnames(cds)
   
   if(RGE_method == 'L1graph') { 
     # FIXME: This case is broken, because I didn't have time to update the landmark
@@ -803,12 +739,12 @@ learnGraph <- function(cds,
     nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
     medioids = reduced_dim_res[,unique(nearest_center)]
     reduced_dim_res <- medioids
-
+    
     if(verbose)
       message('running L1-graph ...')
     
     #X <- t(reduced_dim_res)
-
+    
     if('C0' %in% names(extra_arguments)){
       C0 <- extra_arguments$C0
     }
@@ -840,7 +776,7 @@ learnGraph <- function(cds,
     # names(louvain_component) <- colnames(cds)
     louvain_component_for_medioids <- louvain_component[colnames(reduced_dim_res)]
     #louvain_component_for_medioids <- as.factor(louvain_component_for_medioids)
-    if (partition_component && length(levels(louvain_component_for_medioids)) > 1){
+    if (do_partition && length(levels(louvain_component_for_medioids)) > 1){
       louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component_for_medioids + 0)))
       
       G = G * louvain_component_mask
@@ -848,7 +784,7 @@ learnGraph <- function(cds,
       rownames(G) = rownames(W)
       colnames(G) = colnames(W)
     }
-
+    
     l1graph_args <- c(list(X = reduced_dim_res, C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
     
@@ -881,6 +817,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
+    cds@dim_reduce_type <- RGE_method
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -888,8 +825,8 @@ learnGraph <- function(cds,
     }
     
     #louvain_component <- pData(cds)[, partition_group]
-    if(partition_component && length(louvain_component) == ncol(cds)) {
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
+    if(do_partition && length(louvain_component) == ncol(cds)) {
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -952,7 +889,7 @@ learnGraph <- function(cds,
     minSpanningTree(cds) <- dp_mst
     
     #cds@dim_reduce_type <- "SimplePPT"
-   
+    
   } else if(RGE_method == 'DDRTree') {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
@@ -966,7 +903,7 @@ learnGraph <- function(cds,
     # TODO: DDRTree should really work with sparse matrices.
     #louvain_component <- pData(cds)$louvain_component
     
-    if(partition_component && length(louvain_component) == ncol(cds)) {
+    if(do_partition && length(louvain_component) == ncol(cds)) {
       X <- t(irlba_pca_res)
       
       reducedDimK_coord <- NULL  
@@ -974,8 +911,8 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, verbose)
-        
+      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
+      
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
       ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
@@ -1039,13 +976,16 @@ learnGraph <- function(cds,
     #cds@dim_reduce_type <- "DDRTree"
     
   }
+  
+  cds@dim_reduce_type <- RGE_method
+  
   cds 
 }
 
 #' Finds the nearest principal graph node
 #' @param data_matrix the input matrix
 #' @param target_points the target points
-#' @param block_size the number of input matrix rows to process per blocl
+#' @param block_size the number of input matrix rows to process per bloclk
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
 findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
@@ -1422,7 +1362,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
@@ -1445,7 +1385,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
-multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, verbose) {
+multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
   X <- t(irlba_pca_res)
@@ -1479,17 +1419,50 @@ multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group =
       cell_name_vec <- c(cell_name_vec, colnames(X_subset))
     }
     
-    tmp <- ddrtree_res$Y
+    curr_reducedDimK_coord <- ddrtree_res$Y
     
-    reducedDimK_coord <- cbind(reducedDimK_coord, tmp)
-    
-    
-    dp <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
+    dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
     dimnames(dp) <- list(curr_cell_names, curr_cell_names)
     
-    dp_mst <- graph.union(dp_mst, graph.adjacency(dp, mode = "undirected", weighted = TRUE))
+    cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
     
     tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
+    
+    if(length(close_loop) == length(unique(louvain_component)))
+      curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
+    else 
+      curr_close_loop <- close_loop[1]
+    
+    if(curr_close_loop == TRUE) {
+      colnames(curr_reducedDimK_coord) <- curr_cell_names
+      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], ddrtree_res$R, cur_dp_mst, 
+                                     curr_reducedDimK_coord, cds@reducedDimS[, louvain_component == cur_comp])
+      
+      curr_reducedDimK_coord <- connectTips_res$reducedDimK_df
+      cur_dp_mst <- connectTips_res$mst_g
+      
+      current_W <- as.matrix(get.adjacency(cur_dp_mst))
+      message('current_W dim is ', nrow(current_W), ncol(current_W))
+      l1graph_args <- c(list(X = curr_reducedDimK_coord, C0 = curr_reducedDimK_coord, G = current_W, gstruct = 'l1-graph', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      
+      l1_graph_res <- do.call(principal_graph, l1graph_args)
+      
+      W <- l1_graph_res$W
+      message('W dim is ', nrow(W), ncol(W))
+      message('nrow(ddrtree_res$R) is ', nrow(ddrtree_res$R))
+      start_id <- min(nrow(ddrtree_res$R), nrow(current_W))
+      
+      dimnames(W) <- list(V(cur_dp_mst)$name, V(cur_dp_mst)$name)
+      current_W[, start_id:nrow(current_W)] <- W[, start_id:nrow(current_W)]
+      current_W[start_id:nrow(current_W), ] <- W[start_id:nrow(current_W), ]
+      
+      # W[W < 1e-5] <- 0
+      cur_dp_mst <- graph.adjacency(current_W, mode = "undirected", weighted = TRUE)
+    }
+    
+    dp_mst <- graph.union(dp_mst, cur_dp_mst)
+    reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
     
   }
   
@@ -1509,4 +1482,66 @@ multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group =
               ddrtree_res_Z = ddrtree_res_Z, 
               ddrtree_res_Y = ddrtree_res_Y, 
               dp_mst = dp_mst))
+}
+
+connectTips <- function(pd,
+                        R, 
+                        mst_g_old, 
+                        reducedDimK_old, 
+                        reducedDimS_old, 
+                        k = 10, 
+                        weight = F,
+                        qval_thresh = 0.05, 
+                        kmean_num = 5, 
+                        verbose = FALSE,
+                        ...) {
+  tmp <- matrix(apply(R, 1, which.max))
+  
+  row.names(tmp) <- colnames(reducedDimS_old)
+  
+  tip_pc_points <- which(degree(mst_g_old) == 1)
+  raw_data_tip_pc_points <- which(tmp[, 1] %in% tip_pc_points)
+  
+  data <- t(reducedDimS_old[, raw_data_tip_pc_points])
+  
+  louvain_res <- louvain_clustering(data, pd[raw_data_tip_pc_points, ], k = k, weight = weight, verbose = verbose)
+  
+  louvain_res$optim_res$memberships[1, ] <-  tmp[raw_data_tip_pc_points, 1]
+  louvain_res$optim_res$membership <- tmp[raw_data_tip_pc_points, 1]
+  
+  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, qval_thresh=qval_thresh, verbose = verbose)
+  
+  valid_connection <- which(cluster_graph_res$cluster_mat < qval_thresh, arr.ind = T)
+  
+  if(nrow(valid_connection) == 0) {
+    return(list(mst_g = mst_g_old, reducedDimK_df = reducedDimK_old))
+  }
+  
+  mst_g <- mst_g_old
+  diameter_dis <- diameter(mst_g_old)
+  reducedDimK_df <- reducedDimK_old
+  
+  for(i in 1:nrow(valid_connection)) {
+    edge_vec <- unique(louvain_res$optim_res$membership)[valid_connection[i, ]]
+    
+    if((distances(mst_g, edge_vec[1], edge_vec[2]) > 7 * diameter_dis / 8) & 
+       (distances(mst_g, edge_vec[1], edge_vec[2]) < diameter_dis)) {
+      raw_data_tip_pc_points_tmp <- which(tmp[, 1] %in% edge_vec)
+      
+      data <- t(reducedDimS_old[, raw_data_tip_pc_points_tmp])
+      kmeans_res <- kmeans(data, min(kmean_num, nrow(data) - 1))$centers
+      
+      curr_id <- as.numeric(strsplit(V(mst_g)$name[vcount(mst_g)], "_")[[1]][2])
+      row.names(kmeans_res) <- paste0("Y_", (curr_id + 1):(curr_id + nrow(kmeans_res)))
+      adjusted_K <- rbind(kmeans_res, t(reducedDimK_df[, edge_vec]))
+      dp <- as.matrix(dist(adjusted_K))
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst <- minimum.spanning.tree(gp)
+      
+      mst_g <- add_vertices(mst_g, nrow(kmeans_res), name = row.names(kmeans_res)) %>% add_edges(as.vector(t(get.edgelist(dp_mst))), weight = E(dp_mst)$weight) 
+      reducedDimK_df <- cbind(reducedDimK_df, t(kmeans_res))  
+    }
+  }
+  
+  list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)
 }

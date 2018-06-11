@@ -99,7 +99,7 @@ clusterCells <- function(cds,
                          k = 20, 
                          louvain_iter = 1, 
                          weight = FALSE,
-                         method = c('densityPeak', 'louvain', 'DDRTree'),
+                         method = c('densityPeak', 'louvain'),
                          verbose = F, 
                          cores=1,
                          ...) {
@@ -111,42 +111,15 @@ clusterCells <- function(cds,
     }
   }
     
-  if(method == 'DDRTree') { # this option will be removed in future
-    ################### DDRTREE START ###################
-    # disp_table <- dispersionTable(cds)
-    # ordering_genes <- row.names(subset(disp_table, dispersion_empirical >= 2 * dispersion_fit))
-    # cds <- setOrderingFilter(cds, ordering_genes)
-    use_for_ordering <- NA
-    if (is.null(fData(cds)$use_for_ordering) == FALSE)
-      old_ordering_genes <- row.names(subset(fData(cds), use_for_ordering)) 
-    else
-      old_ordering_genes <- NULL
-    
-    if (is.null(clustering_genes) == FALSE) 
-      cds <- setOrderingFilter(cds, clustering_genes)
-    
-    cds <- reduceDimension(cds, 
-                           max_components=2, #
-                           residualModelFormulaStr=NULL,
-                           reduction_method = "DDRTree",
-                           verbose=verbose,
-                           param.gamma=100,
-                           ncenter=num_clusters, 
-                           ...)
-    pData(cds)$Cluster <- as.factor(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex)
-    
-    if (is.null(old_ordering_genes) == FALSE)
-      cds <- setOrderingFilter(cds, old_ordering_genes)
-    
-    if (is.null(cell_type_hierarchy) == FALSE)
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
-    
-    return(cds)
-   ################### DDRTREE END ###################
-  } else if(method == 'densityPeak'){ 
+  if(method == 'densityPeak'){ 
     ################### DENSITYPEAK START ###################
     set.seed(2017)
     tsne_data <- reducedDimA(cds)
+    if(nrow(tsne_data) == 0) {
+      message('ReduceDimension is not applied to this dataset. We are using the normalized reduced space obtained from preprocessCDS to cluster cells...')
+      tsne_data <- t(cds@normalized_data_projection)
+    }
+    
     if(ncol(tsne_data) != ncol(cds))
       stop("reduced dimension space doesn't match the dimension of the CellDataSet object")
     
@@ -245,18 +218,26 @@ clusterCells <- function(cds,
   ################### DENSITYPEAK END ###################
   }  else if(method == 'louvain'){
     data <- t(reducedDimA(cds))
-
+    if(nrow(data) == 0) {
+      message('ReduceDimension is not applied to this dataset. We are using the normalized reduced space obtained from preprocessCDS to cluster cells...')
+      data <- cds@normalized_data_projection
+    }
+    
     if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
       louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, verbose)
     } else {
       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
     }
 
-    cluster_graph_res <- cluster_graph(minSpanningTree(cds), louvain_res$g, louvain_res$optim_res, data, verbose)
-
+    cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, verbose = verbose, ...)
+    louvain_component <-  components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
+    names(louvain_component) <- V(louvain_res$g)$name
+    louvain_component <- as.factor(louvain_component)
+    pData(cds)$louvain_component <- louvain_component
+    
     pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
 
-    cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res, cluster_graph_res = cluster_graph_res)
+    cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res)
 
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")

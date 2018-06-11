@@ -3,9 +3,10 @@
 #' @description Finds a low dimensional embedding of the data that approximates an underlying manifold.
 #' This functions relies on the python implementation of UMAP (https://github.com/lmcinnes/umap). 
 #' The original publication of UMAP can be found here: 
-#' https://arxiv.org/abs/1802.03426 (McInnes, L, Healy, J, UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, ArXiv e-prints 1802.03426, 2018)
+#' https://arxiv.org/abs/1802.03426 (McInnes, L, Healy, J, UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, ArXiv e-prints 1802.03426, 2018).
+#' A useful notebook (written in python) to check for the effects of each parameter in UMAP can be found here: https://nbviewer.jupyter.org/github/CrakeNotSnowman/umapNotebooks/blob/master/UMAP%20Usage.ipynb.
 #' 
-#' @param X the CellDataSet upon which to perform this operation
+#' @param X the dataset upon which to perform umap dimension reduction
 #' @param python_home The python home directory where umap is installed
 #' @param log A logic argument to determine whether we need to calculate 
 #' log of the input data. Default to be true 
