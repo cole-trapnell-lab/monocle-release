@@ -1839,6 +1839,8 @@ plot_cell_clusters <- function(cds,
     tSNE_dim_coords <- t(cds@normalized_data_projection)
   }
   
+  tSNE_dim_coords <- t(cds@normalized_data_projection)
+  
   gene_short_name <- NULL
   sample_name <- NULL
   data_dim_1 <- NULL
