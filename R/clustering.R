@@ -558,7 +558,6 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # connect leaf cells based on overlapping between kNN 
   ########################################################################################################################################################################
   # add some statistics below: 
-  # data <- t(reducedDimK(cds))
   cluster_inner_edges <- rep(0, n_cluster)
   cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
   cnt_i <- 1

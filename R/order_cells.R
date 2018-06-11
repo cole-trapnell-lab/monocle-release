@@ -164,21 +164,12 @@ orderCells <- function(cds,
   
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
   
-  if (cds@dim_reduce_type %in%  c("L1graph", "DDRTree", "SimplePPT")){
-    cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-    closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
-    pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-    cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
-  } else if (cds@dim_reduce_type %in% c("UMAP", "UMAPSSE", "SSE")){
-    
-    ########################################################################################################################################################################
-    # downstream pseudotime and branch analysis 
-    ########################################################################################################################################################################
-    pc_g <- minSpanningTree(cds)
-    pData(cds)$Pseudotime <- as.vector(distances(pc_g, v = root_cell, to = as.character(1:igraph::vcount(pc_g))))
-    # identify branch
-    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
-  }
+
+  cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
+  closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
+  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  
 
   cds
 }
@@ -285,12 +276,12 @@ normalize_expr_data <- function(cds,
 #' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 #' low dimensional PCA space. projectPCA will be used to first project a CellDataSet object into a lower dimensional PCA space 
 #' before we apply clustering with community detection algorithm or other non-linear dimension reduction method, for example 
-#' UMAP, tSNE, DDRTree, SSE, L1-graph, SGL-tree, etc.  
+#' UMAP, tSNE, DDRTree, L1-graph, etc.  
 #' While tSNE is especially suitable for visualizing clustering result, comparing to UMAP, the global distance in tSNE space is 
 #' not meaningful. UMAP can either be used for visualizing clustering result or as a general non-linear dimension reduction method. 
-#' It can be used in conjunction with SSE to obtain smooth skeleton representation of the data. DDRTree and L1-graph are two complementary 
+#' DDRTree and L1-graph are two complementary 
 #' trajectory inference method where the first one is very great at learning a tree structure but the later is general and can 
-#' learn any arbitrary graph structure. Both methods can be applied to the UMAP space or the smoothed SSE space.   
+#' learn any arbitrary graph structure.   
 #'
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param num_dim the dimensionality of the reduced space
@@ -365,11 +356,11 @@ projectPCA <- function(cds, num_dim=50,
 #' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 #' low dimensional PCA space. preprocessCDS will be used to first project a CellDataSet object into a lower dimensional PCA space 
 #' before we apply clustering with community detection algorithm or other non-linear dimension reduction method, for example 
-#' UMAP, tSNE, DDRTree, SSE, L1-graph, SGL-tree, etc.  While tSNE is especially suitable for visualizing clustering results, comparing
+#' UMAP, tSNE, DDRTree, L1-graph, etc.  While tSNE is especially suitable for visualizing clustering results, comparing
 #' to UMAP, the global distance in tSNE space is not meaningful. UMAP can either be used for visualizing clustering result or as a general 
-#' non-linear dimension reduction method. It can be used in conjunction with SSE to obtain smooth skeleton representation of the data. 
+#' non-linear dimension reduction method. 
 #' SimplePPT, DDRTree and L1-graph are two complementary trajectory inference method where the first one is very great at learning a tree structure 
-#' but the later is general and can learn any arbitrary graph structure. Both methods can be applied to the UMAP space or the smoothed SSE space.   
+#' but the later is general and can learn any arbitrary graph structure. Both methods can be applied to the UMAP space.   
 #'
 #' @details 
 #' In Monocle 3, we overhauled the code from Monocle2 so that a standard Monocle 3 workingflow works as following: 
@@ -538,7 +529,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP"), # , "SSE", "SimplePPT", 'L1-graph', 'graphL1'
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP"),
                             auto_param_selection = TRUE,
                             scaling = TRUE,
                             verbose=FALSE,
@@ -684,191 +675,6 @@ reduceDimension <- function(cds,
   cds
 }
 
-#' This function tries to learn a smooth embedding from the noisy reduced dimension using different techniques 
-#' @description The function relies on smooth skeleton learning or force direct layout function to learn a smoothier
-#' representation of the data. It can be used to facilitate visualization of the data or downstream graph learning 
-#' 
-#' @param cds the CellDataSet upon which to perform this operation
-#' @param max_components the dimensionality of the smoothed reduced space
-#' @param smooth_method A character string specifying the algorithm to use for smoothing the embedding
-#' @param verbose Whether to emit verbose output during dimensionality reduction
-#' @param ... additional arguments to pass to the smoothEmbedding function
-#' @return an updated CellDataSet object
-smoothEmbedding <- function(cds,
-                            max_components = 2, 
-                            smooth_method = c('SSE', 'FDL'), #, 'FDL'
-                            verbose = FALSE, 
-                            ...){
-  extra_arguments <- list(...)
-  set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
-  
-  if (verbose)
-    message("Retrieving normalized and PCA (LSI) reduced data ...")
-  
-  FM <- cds@auxOrderingData$normalize_expr_data
-  irlba_pca_res <- cds@normalized_data_projection
-  
-  landmark_id <- NULL
-  
-  if(smooth_method == 'SSE') {
-    if(c("UMAP") %in% names(cds@auxOrderingData)) {
-      # if UMAP or L1graph has already done, use those information 
-      irlba_pca_res <- cds@normalized_data_projection
-      S <- t(cds@auxOrderingData$UMAP$umap_res)
-      umap_res <- cds@auxOrderingData$UMAP$umap_res
-      data <- umap_res
-      adj_mat <- cds@auxOrderingData$UMAP$adj_mat
-    } else {
-      irlba_pca_res <- cds@normalized_data_projection
-      data = irlba_pca_res
-      S <- t(irlba_pca_res)
-    }
-    
-    # if number of cells is larger than 20 k, peform landmark selection and do SSE, L1 on the landmarks. We will project others cells on the learn SSE space 
-    louvain_res_ori <- NULL
-    if(ncol(cds) > 5000) {
-      data_ori <- data 
-      adj_mat_ori <- adj_mat
-      FM_ori <- FM
-      
-      if("landmark_num" %in% names(extra_arguments)) {
-        landmark_num <- extra_arguments$landmark_num
-      } else {
-        landmark_num <- 2000
-      }
-      
-      centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
-      centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-      kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
-      landmark_id <- sort(unique(apply(as.matrix(proxy::dist(data_ori, kmean_res$centers)), 2, which.min))) # avoid duplicated points 
-
-      data <- data_ori[landmark_id, ]
-      FM <- FM_ori[, landmark_id]
-      
-      # run UMAP to get the adjacency graph for downstream SSE learning 
-      umap_args <- c(list(X = irlba_pca_res[landmark_id, ], log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
-                     extra_arguments[names(extra_arguments) %in% 
-                                       c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                         'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
-      tmp <- do.call(UMAP, umap_args)
-      adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
-                                      x = -as.numeric(tmp$graph$data), dims = c(length(landmark_id), length(landmark_id)), index1 = F, 
-                                      dimnames = list(colnames(cds)[landmark_id], colnames(cds)[landmark_id]))
-      
-      if(verbose)
-        message("Running louvain clustering algorithm (UMAP space) ...")
-      row.names(umap_res) <- colnames(FM_ori)
-      louvain_clustering_args <- c(list(data = umap_res, pd = pData(cds)[colnames(FM_ori), ], verbose = verbose),
-                                   extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-      louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-      
-      louvain_res_ori <- louvain_res 
-    }
-    
-    if (verbose)
-      message("Running Smooth Skeleton Embedding ...")
-    
-    # we are gonna ignore the method arugment here 
-    sse_args <- c(list(data=data, dist_mat = adj_mat, embeding_dim=max_components, d = max_components, verbose = verbose),
-                  extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
-    SSE_res <- do.call(SSE, sse_args)
-    
-    # "Y" "K" "W" "U" "V"
-    if(verbose)
-      message("Running louvain clustering algorithm ...")
-    
-    SSE_res$Y <- SSE_res$Y * 100 
-    K <- SSE_res$Y
-    row.names(K) <- paste('cell_', 1:nrow(K), sep = '')
-    S <- t(K)
-    
-    Y <- S
-    W <- as.matrix(t(SSE_res$W))
-    
-    # SSE_res$Y <- (SSE_res$Y - min(SSE_res$Y)) / max(SSE_res$Y) # normalize the SSE space to avoid space shrinking in L1graph step 
-    row.names(SSE_res$Y) <- colnames(FM)
-    louvain_clustering_args <- c(list(data = SSE_res$Y, pd = pData(cds)[colnames(FM), ], verbose = verbose),
-                                 extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-    louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-    
-    # now let us project other cells back to the landmark space 
-    projection_res <- NULL
-    if(ncol(cds) > 5000) {
-      projection_res <- matrix(0, nrow = max_components, ncol = ncol(cds))
-      
-      # get a graph with distance between cells as the weight 
-      relations <- louvain_res_ori$relations
-      relations$weight <- reshape2::melt(t(louvain_res_ori$distMatrix))[, 3]
-      g <- igraph::graph.data.frame(relations, directed = FALSE)
-      
-      # iterate each non-landmark cells and project it to the SSE space
-      if("cores" %in% names(extra_arguments)) {
-        cores <- extra_arguments$landmark_num
-      } else {
-        cores <- detectCores() 
-      }
-      
-      if(verbose) 
-        message('project other non-landmark cells to the landmark SSE space ...')
-      
-      # using matrix multiplication to accelerate the process (optimize it to handle millions of points)
-      block_size <- 50000
-      num_blocks = ceiling(nrow(data_ori) / block_size)
-      weight_mat <- NULL
-      for (i in 1:num_blocks){
-        if (i < num_blocks){
-          block = data_ori[((((i-1) * block_size)+1):(i*block_size)), ]
-        }else{
-          block = data_ori[((((i-1) * block_size)+1):(nrow(data_ori))),]
-        }
-        distances_Z_to_Y <- proxy::dist(block, data_ori[landmark_id, ])
-        
-        tmp <- as(t(apply(distances_Z_to_Y , 1, function(x) {
-          tmp <- sort(x)[6] 
-          x[x > tmp] <- 0; p <- rep(0, length(x))
-          bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
-          p[x > 0] <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
-          p / sum(p) 
-        })), 'sparseMatrix')
-        
-        weight_mat <- rBind(weight_mat, tmp)
-      }
-      
-      projection_res <- t(weight_mat %*% as(t(Y), 'sparseMatrix'))
-      
-      projection_res[, landmark_id] <- Y
-      Y <- as.matrix(projection_res)
-      
-      FM <- FM_ori
-    }
-    
-    colnames(Y) <- colnames(FM)
-    reducedDimA(cds) <- Y
-    # colnames(S) <- colnames(FM)
-    colnames(Y) <- colnames(FM)
-    reducedDimW(cds) <- W # update this !!! 
-    reducedDimS(cds) <- as.matrix(Y)
-    reducedDimK(cds) <- t(K)
-    
-    dimnames(SSE_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
-    gp <- graph_from_adjacency_matrix(SSE_res$W, weighted=TRUE, add.rownames="code")
-    minSpanningTree(cds) <- gp
-    
-    # pData(cds)$louvain_cluster <- as.character(igraph::membership(louvain_res$optim_res)) 
-    cds@auxOrderingData[[smooth_method]] <- list(SSE_res = SSE_res, projection_res = projection_res, 
-                                                 louvain_module = as.factor(igraph::membership(louvain_res$optim_res)), 
-                                                 louvain_res_ori = louvain_res_ori, louvain_res = louvain_res, adj_mat = adj_mat, landmark_id = landmark_id)
-    
-    cds@dim_reduce_type <- smooth_method
-  } else if(smooth_method == 'FDL') {
-    FDL_args <- c(list(cds=cds, verbose = verbose, cell_num_threshold = 0),
-                  extra_arguments[names(extra_arguments) %in% c("separate_group", "method", "merge_coords_method", "start.temp", "k", "cell_num_threshold")])
-    cds <- do.call(FDL, FDL_args)
-  }
-  
-  cds
-}
-
 #' Learn principal graph from the reduced space using reversed graph embedding 
 #' 
 #' @description Monocle aims to learn how cells transition through a biological program of 
@@ -961,27 +767,15 @@ learnGraph <- function(cds,
   if(partition_component && !(partition_group %in% colnames(pData(cds))))
     stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds ...')
   
-  #louvain_res <- cds@auxOrderingData[["SSE"]]$louvain_res
   louvain_module_length = length(unique(sort(louvain_res$optim_res$membership)))
   
   if(RGE_method == 'L1graph') { 
     # FIXME: This case is broken, because I didn't have time to update the landmark
     # stuff during the refactor.
-    if(cds@dim_reduce_type == "SSE") {
-
-      landmark_id <- cds@auxOrderingData[['SSE']]$landmark_id
-      if(is.null(landmark_id)) {
-        #reduced_dim_res = t(Y) 
-        #row.names(Y) <- colnames(FM)
-        landmark_id <- 1:ncol(cds)
-      } else {
-        #reduced_dim_res = t(Y)           
-        row.names(Y) <- colnames(FM[, landmark_id])
-      }
-    } else if(cds@dim_reduce_type == "UMAP") {
+    if(cds@dim_reduce_type == "UMAP") {
       
     } else {
-      stop('L1graph can be only applied to either the MAP or SSE reduced space, please first apply those dimension reduction techniques!')
+      stop('L1graph can be only applied to the UMAP space, please first call reduceDimension() using UMAP!')
     }
     
     if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
@@ -1578,9 +1372,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type == "ICA"){
-    reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
+  if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "UMAP") ){
     reduced_dim_coords <- reducedDimK(cds)
   } else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -1650,351 +1442,6 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   }
   ## return indices of selected points
   as.character(ica_space_df$sample_name[which(sel)])
-}
-
-
-
-
-#' Run improved force directed layout for cells in low dimensional space.
-#'
-#' @param cds CellDataSet for the experiment
-#' @param separate_group Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups    
-#' @param method The force directed layout method to use  
-#' @param merge_coords_method The method used to patch different disconnected component into a single graph  
-#' @param start.temp argument passed into layout_with_fr function 
-#' @param k Number of nearest neighbors used in calculating the force direct layout 
-#' @param cell_num_threshold The minimum number of cells to be ignore for each partition component  
-#' @param verbose Wheter to print all running details 
-#' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
-#' @return a ggplot2 plot object or a list of all computated information from this function 
-#' @import ggplot2
-#' @importFrom reshape2 melt
-#' @importFrom viridis scale_color_viridis
-#' @examples
-#' \dontrun{
-#' library(HSMMSingleCell)
-#' HSMM <- load_HSMM()
-#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
-#' HSMM <- smoothEmbedding(HSMM, smooth_method = 'FDL', verbose = T)
-#' }
-FDL <- function(cds, 
-                separate_group = TRUE, 
-                method = c('drl', 'fr', 'kk'), 
-                merge_coords_method = c('procrutes', 'dla'), 
-                start.temp = NULL, 
-                color_by,
-                markers = NULL,
-                cell_size = 1,
-                cell_link_size = 1,
-                k = 25, 
-                cell_num_threshold = 100, 
-                verbose = FALSE,
-                ...) {
-  extra_arguments <- list(...)
-  
-  # for each louvain cluster, identify equal number of representative cells in each cluster, up to 2000 cells in total 
-  if(separate_group == FALSE) {
-    data_ori <- t(cds@reducedDimS)
-    
-    if(ncol(cds) > 2000) {
-      cell_cluster <- cds@auxOrderingData$UMAP$louvain_res$optim_res$membership
-      cluster_ids <- unique(cell_cluster) 
-      landmark_ratio <- 2000 / length(cell_cluster) # determine number of representatives in each louvain cluster 
-      
-      landmark_id <- c()
-      for(current_cluster in cluster_ids) {
-        current_cell_ids <- which(cell_cluster == current_cluster)
-        data <- cds@auxOrderingData$UMAP$umap_res[current_cell_ids, ] 
-        
-        cell_num_in_cluster <- round(landmark_ratio * length(current_cell_ids))
-        centers <- data[seq(1, nrow(data), length.out=cell_num_in_cluster), ]
-        centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-        kmean_res <- kmeans(data, cell_num_in_cluster, centers=centers, iter.max = 100)
-        landmark_id_tmp <- unique(findNearestVertex(t(kmean_res$centers), t(data), process_targets_in_blocks=TRUE))
-        
-        landmark_id <- c(landmark_id, landmark_id_tmp)
-      }
-      
-      data <- data_ori[landmark_id, ]
-    } else {
-      data <- t(cds@reducedDimS)
-      landmark_id <- 1:ncol(cds)
-    }
-    
-    res <- project_to_representatives(data, 
-                                      data_ori, 
-                                      landmark_id, 
-                                      cds@auxOrderingData$UMAP$louvain_res, 
-                                      pd = pData(cds)[landmark_id, ], 
-                                      method, #(fr, kk) SSE or other methods? 
-                                      start.temp, 
-                                      verbose) 
-    
-    coord <- res$sub_coord_mat
-    g <- res$sub_g
-    row.names(coord) <- V(g)$name  
-    
-  } else {
-    if(is.null(pData(cds)$louvain_component))
-      stop('please first run UMAP or SSE and calculate assign louvain_component for each cell before running this FDL function')
-    
-    group_stat <- table(pData(cds)$louvain_component)
-    cell_num_threshold <- min(max(group_stat) / 2, cell_num_threshold)
-    
-    valid_groups <- which(group_stat > cell_num_threshold)
-    sub_cds_list <- vector('list', length = length(valid_groups))
-    sub_g_list <- vector('list', length = length(valid_groups))
-    sub_coord_mat_list <- vector('list', length = length(valid_groups))
-    
-    if(verbose)
-      message(paste("total number of valid components is", length(valid_groups)))
-    
-    for (i in 1:length(valid_groups)){
-      if(verbose)
-        message(paste("Processing subtrajectory", valid_groups[i]))
-      
-      t_cds <- cds[, pData(cds)$louvain_component == valid_groups[i]]
-      
-      if(verbose)
-        message(paste("t_cds has cell number:", ncol(t_cds)))
-      
-      irlba_pca_res <- cds@auxOrderingData$PCA$irlba_pca_res[pData(cds)$louvain_component == valid_groups[i], ]
-      umap_res <- cds@auxOrderingData$UMAP$umap_res[pData(cds)$louvain_component == valid_groups[i], ]
-      adj_mat <- cds@auxOrderingData$UMAP$adj_mat[pData(cds)$louvain_component == valid_groups[i], pData(cds)$louvain_component == valid_groups[i]]
-      
-      t_cds@auxOrderingData$PCA$irlba_pca_res <- irlba_pca_res
-      t_cds@auxOrderingData$UMAP$umap_res <- umap_res
-      t_cds@auxOrderingData$UMAP$adj_mat <- adj_mat
-      t_cds@reducedDimS <- t_cds@reducedDimS[, colnames(t_cds)]
-      
-      sub_cds_list[[i]] <- t_cds
-      
-      # let us downsample the data 
-      if(ncol(t_cds) > 2000) {
-        if("landmark_num" %in% names(extra_arguments)) {
-          landmark_num <- extra_arguments$landmark_num
-        } else {
-          landmark_num <- 2000
-        }
-        
-        data_ori <- t(t_cds@reducedDimS)
-        
-        centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
-        kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
-        landmark_id <- unique(findNearestVertex(t(kmean_res$centers), t(data_ori), process_targets_in_blocks=TRUE))
-        
-        data <- data_ori[landmark_id, ]
-        
-      } else {
-        data_ori <- t(t_cds@reducedDimS)
-        data <- data_ori
-        landmark_id <- 1:ncol(t_cds)
-      } 
-      
-      res <- project_to_representatives(data, 
-                                        data_ori, 
-                                        landmark_id, 
-                                        cds@auxOrderingData$UMAP$louvain_res, 
-                                        pd = pData(t_cds)[landmark_id, ], 
-                                        method, #(fr, kk) SSE or other methods? 
-                                        start.temp, 
-                                        verbose) 
-      
-      sub_coord_mat_list[[i]] <- res$sub_coord_mat
-      sub_g_list[[i]] <- res$sub_g 
-    }
-    
-    if(merge_coords_method == 'procrutes' & length(valid_groups) > 1) {
-      set.seed(2018)
-      
-      # get high and low dimension landmark data point 
-      landmark_num <- 5
-      landmark_res <- lapply(1:length(sub_cds_list), function(id) {
-        x <- sub_cds_list[[id]]
-        landmark_ids <- which(landmark_selection(x, landmark_num = landmark_num)$flag == 1)
-        cell_names <- colnames(x)[landmark_ids]
-        coords <- sub_coord_mat_list[[id]][landmark_ids, ]
-        
-        return(list(cell_names = cell_names, coords = coords))
-      })
-      
-      cell_names <- lapply(landmark_res, function(x) x$cell_names)
-      high_landmakrs_coord <- t(cds@reducedDimS[, unlist(cell_names)])
-      
-      # run SSE (MVU version)
-      SSE_res <- SSE(high_landmakrs_coord, embeding_dim = 2, C = Inf, knn = 3)
-      # SSE_res <- SSE(high_landmakrs_coord, embeding_dim = 2)
-      low_landmakrs_coord <- lapply(landmark_res, function(x) x$coords)
-      
-      mvu_res <- as.data.frame(SSE_res$Y) 
-      mvu_res$component <- rep(as.character(1:length(sub_cds_list)), each = landmark_num)
-      sd_df <- mvu_res %>% dplyr::group_by(component) %>% dplyr::summarize(sd_d1 = sd(V1), sd_d2 = sd(V2))
-      
-      # avoid any singular results from SSE 
-      if(any(sd_df[, 2:3] < 1e-5)) {
-        mvu_res[, 1:2] <- high_landmakrs_coord[, 1:2]
-      }
-      mean_df <- mvu_res %>% dplyr::group_by(component) %>% dplyr::summarize(mean_d1 = mean(V1), mean_d2 = mean(V2))
-      
-      # apply rotation, scaling and translation function to all other reduced data point 
-      transform_data_by_procrutes <- function(coord, procrutes_res) {
-        # ((coord %*% procrutes_res$rotation) * procrutes_res$scale) + matrix(rep(procrutes_res$translation, each = nrow(coord)), nrow = nrow(coord), byrow = F)
-        (coord %*% procrutes_res$rotation) + matrix(rep(procrutes_res$translation, each = nrow(coord)), nrow = nrow(coord), byrow = F)
-      }
-      
-      # increase the distance between centroids accordinly to avoid any overlapping 
-      centroid_dist <- as.vector(dist(mean_df[, 2:3]))
-      
-      radius_vec <- unlist(lapply(low_landmakrs_coord, function(x) {
-        sqrt((diff(range(x[, 1])) / 2)^2 + (diff(range(x[, 2])) / 2)^2)
-      })) 
-      
-      coord_scale <- min(1000, max(combn(radius_vec, 2, FUN = sum) / centroid_dist))
-      
-      # procrutes analysis on the landmark points 
-      coord_after_procrutes <- lapply(1:length(sub_cds_list), function(x, cd_scale = coord_scale) {
-        procrutes_res <- procrustes(subset(mvu_res, component == x)[, 1:2] * cd_scale * 1.1, low_landmakrs_coord[[x]])
-        transform_data_by_procrutes(sub_coord_mat_list[[x]], procrutes_res)
-      })
-      
-      coord <- do.call(rbind.data.frame, coord_after_procrutes)
-      
-    } else {
-      coord <- igraph::merge_coords(sub_g_list, sub_coord_mat_list)
-    }
-    g <- disjoint_union(sub_g_list)
-    row.names(coord) <- V(g)$name
-  }
-  
-  cds@reducedDimS <- t(coord)
-  cds@reducedDimK <- t(coord)
-  
-  minSpanningTree(cds) <- g
-  
-  return(cds)
-}
-
-#' apply force-directed layout on the kNN graph built from the downsampled representive cells and then project other 
-#' non-representative cells to the low dimensional space with five nearest (on original UMAP space) representive cells' coordinates 
-#'
-#' @param data (dowmsampled) data to perform Louvain clustering and kNN graph construction 
-#' @param data_ori All data points without downsampling. This data space will be used to find the nearest five points for projecting non-landmark points  
-#' @param landmark_id The index of cells   
-#' @param louvain_res The result of louvain clustering clustering from the original space 
-#' @param pd the data frame of phenotype information 
-#' @param method The force directed layout function to use  
-#' @param start.temp argument passed into layout_with_fr function 
-#' @param verbose Wheter to print all running details 
-#' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
-project_to_representatives <- function(data, 
-                                       data_ori, 
-                                       landmark_id, 
-                                       louvain_res, 
-                                       pd, 
-                                       method = 'drl', #(fr, kk) SSE or other methods? 
-                                       start.temp = NULL, 
-                                       verbose, 
-                                       ...) {
-  extra_arguments <- list(...)
-  
-  # build kNN graph 
-  if(verbose) 
-    message("Running louvain clustering algorithm ...")
-  
-  louvain_clustering_args <- c(list(data = data, pd = pd, verbose = verbose),
-                               extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")])
-  data_louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-  
-  # layout kNN with force direct layout 
-  if (method=="fr") coord <- layout_with_fr(data_louvain_res$g, dim=2, coords=data[, 1:2], start.temp=start.temp)
-  if (method=="drl") coord <- layout_with_drl(data_louvain_res$g, dim=2, options=list(edge.cut=0))
-  if (method=="kk") coord <- layout_with_kk(data_louvain_res$g, dim=2, coords=data[, 1:2])
-  
-  # this function can be integrated with SSE too? 
-  
-  sub_g <- igraph::induced_subgraph(louvain_res$g, row.names(data_ori))
-  
-  # project other cells to the current location 
-  if(nrow(data_ori) > 2000) {
-    block_size <- 50000
-    num_blocks = ceiling(nrow(data_ori) / block_size)
-    weight_mat <- NULL
-    
-    for (j in 1:num_blocks){
-      if (j < num_blocks){
-        block <- data_ori[((((j-1) * block_size)+1):(j*block_size)), ]
-      }else{
-        block <- data_ori[((((j-1) * block_size)+1):(nrow(data_ori))), ]
-      }
-      distances_Z_to_Y <- proxy::dist(block, data_ori[landmark_id, ])
-      
-      tmp <- as(t(apply(distances_Z_to_Y , 1, function(x) {
-        tmp <- sort(x)[6] 
-        x[x > tmp] <- 0; p <- rep(0, length(x))
-        bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
-        p[x > 0] <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
-        p / sum(p) 
-      })), 'sparseMatrix')
-      
-      weight_mat <- rBind(weight_mat, tmp)
-    }
-    
-    projection_res <- as.matrix(weight_mat %*% as(as.matrix(coord), 'sparseMatrix'))
-    projection_res[landmark_id, ] <- as.matrix(coord)
-    
-    coord <- as.matrix(projection_res)
-  }
-  
-  return(list(sub_coord_mat = coord, sub_g = sub_g))
-}
-
-# the following functioin is taken from vegan package for performing procrustes analysis 
-# Function procrustes rotates a configuration to maximum similarity with another configuration. Function protest tests the non-randomness (significance) between two configurations.
-#' @param X Target matrix
-#' @param Y Matrix to be rotated.
-#' @param scale Allow scaling of axes of Y.
-#' @param symmetric Use symmetric Procrustes statistic (the rotation will still be non-symmetric).
-procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE) 
-{
-  # X <- scores(X, display = scores, ...)
-  # Y <- scores(Y, display = scores, ...)
-  if (nrow(X) != nrow(Y)) 
-    stop(gettextf("matrices have different number of rows: %d and %d", 
-                  nrow(X), nrow(Y)))
-  if (ncol(X) < ncol(Y)) {
-    warning("X has fewer axes than Y: X adjusted to comform Y\n")
-    addcols <- ncol(Y) - ncol(X)
-    for (i in 1:addcols) X <- cbind(X, 0)
-  }
-  ctrace <- function(MAT) sum(MAT^2)
-  c <- 1
-  if (symmetric) {
-    X <- scale(X, scale = FALSE)
-    Y <- scale(Y, scale = FALSE)
-    X <- X/sqrt(ctrace(X))
-    Y <- Y/sqrt(ctrace(Y))
-  }
-  xmean <- apply(X, 2, mean)
-  ymean <- apply(Y, 2, mean)
-  if (!symmetric) {
-    X <- scale(X, scale = FALSE)
-    Y <- scale(Y, scale = FALSE)
-  }
-  XY <- crossprod(X, Y)
-  sol <- svd(XY)
-  A <- sol$v %*% t(sol$u)
-  if (scale) {
-    c <- sum(sol$d)/ctrace(Y)
-  }
-  Yrot <- c * Y %*% A
-  b <- xmean - c * ymean %*% A
-  R2 <- ctrace(X) + c * c * ctrace(Y) - 2 * c * sum(sol$d)
-  reslt <- list(Yrot = Yrot, X = X, ss = R2, rotation = A, 
-                translation = b, scale = c, xmean = xmean, symmetric = symmetric, 
-                call = match.call())
-  reslt$svd <- sol
-  class(reslt) <- "procrustes"
-  reslt
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 

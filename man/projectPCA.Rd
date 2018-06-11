@@ -34,10 +34,10 @@ an updated CellDataSet object
 For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 low dimensional PCA space. projectPCA will be used to first project a CellDataSet object into a lower dimensional PCA space 
 before we apply clustering with community detection algorithm or other non-linear dimension reduction method, for example 
-UMAP, tSNE, DDRTree, SSE, L1-graph, SGL-tree, etc.  
+UMAP, tSNE, DDRTree, L1-graph, etc.  
 While tSNE is especially suitable for visualizing clustering result, comparing to UMAP, the global distance in tSNE space is 
 not meaningful. UMAP can either be used for visualizing clustering result or as a general non-linear dimension reduction method. 
-It can be used in conjunction with SSE to obtain smooth skeleton representation of the data. DDRTree and L1-graph are two complementary 
+DDRTree and L1-graph are two complementary 
 trajectory inference method where the first one is very great at learning a tree structure but the later is general and can 
-learn any arbitrary graph structure. Both methods can be applied to the UMAP space or the smoothed SSE space.
+learn any arbitrary graph structure.
 }

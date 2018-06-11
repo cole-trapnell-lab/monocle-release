@@ -83,14 +83,9 @@ plot_cell_trajectory <- function(cds,
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type == "ICA"){
-    reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SSE", "UMAPSSE", "UMAP", 'L1graph') ){
-    reduced_dim_coords <- reducedDimK(cds)
-  } else {
-    stop("Error: unrecognized dimensionality reduction method.")
-  }
-  
+
+  reduced_dim_coords <- reducedDimK(cds)
+
   ica_space_df <- Matrix::t(reduced_dim_coords) %>%
     as.data.frame() %>%
     select_(prin_graph_dim_1 = x, prin_graph_dim_2 = y) %>%
@@ -2137,21 +2132,14 @@ plot_complex_cell_trajectory <- function(cds,
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type == "ICA"){
-    reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "SGL-tree") ){
-    reduced_dim_coords <- reducedDimK(cds)
-    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
-  }else {
-    stop("Error: unrecognized dimensionality reduction method.")
-  }
-  
+  reduced_dim_coords <- reducedDimK(cds)
+  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+
   if (is.null(reduced_dim_coords)){
     stop("You must first call reduceDimension() before using this function")
   }
   
   dp_mst <- minSpanningTree(cds)
-  
   
   if(is.null(root_states)) {
     if(is.null(lib_info_with_pseudo$Pseudotime)){
@@ -2889,52 +2877,6 @@ plot_cell_fdl <- function(cds,
     g + monocle_theme_opts()
 }
 
-#' Plots a graph of louvain cluster, layouted with layout_component function, which can be used to remove outlier clusters of cells
-#'
-#' @param cds CellDataSet for the experiment
-#' @param cluster_size The size of the point for each cluster
-#' @param cluster_link_size the maximal width of the link of edges (width of other edges are scaled correspondingly)
-#' @param cluster_name_size the size of cluster name labels
-#' @return a ggplot2 plot object
-#' @import ggplot2
-#' @importFrom reshape2 melt
-#' @importFrom viridis scale_color_viridis
-#' @export
-#' @examples
-#' \dontrun{
-#' library(HSMMSingleCell)
-#' HSMM <- load_HSMM()
-#' HSMM <- reduceDimension(HSMM, reduction_method = 'UMAP')
-#' HSMM <- clusterCells(HSMM, method = 'louvain')
-#' plot_cluster_graph(HSMM)
-#' }
-#' 
-plot_cluster_graph <- function(cds,
-                               cluster_link_size = 1,
-                               cluster_size = 2,
-                               cluster_name_size = 5) {
-  if(all(!(names(cds@auxOrderingData)) %in% c("UMAP", "UMAPSSE", "SSE")) & !("louvian" %in% names(cds@auxClusteringData))) {
-    stop('Please run UMAP, UMAPSSE or SSE and louvain clustering first before using this function ...')
-  }
-  
-  coord <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$cluster_coord 
-  edge_links <- cds@auxClusteringData[["louvian"]]$cluster_graph_res$edge_links 
-  
-  if(is.null(coord)) {
-    stop("coordinates doesn't exist, all clusters are separate?")
-  }
-
-  ggplot(data = edge_links) + 
-        geom_segment(aes(x = x_start, y = x_end, xend = y_start, yend = y_end, size = I(cluster_link_size * weight / max(weight))), color = 'grey') + 
-        xlab('FDL 1') + ylab('FDL 2') + 
-        geom_point(aes_string("x", "y", color = 'louvain_cluster'), data = as.data.frame(coord), size = I(cluster_size)) + 
-        monocle_theme_opts() + 
-        geom_text(aes_string(x="x", y="y", label="Cluster"), 
-              size=I(cluster_name_size), color="black", na.rm=TRUE, data=coord)
-  
-}
-
-
 #' Plot a dataset and trajectory in 3 dimensions
 #'
 #' @param cds CellDataSet for the experiment
@@ -2992,13 +2934,7 @@ plot_3d_cell_trajectory <- function(cds,
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type == "ICA"){
-    reduced_dim_coords <- reducedDimS(cds)
-  }else if (cds@dim_reduce_type %in% c("L1graph", "SimplePPT", "DDRTree", "UMAPDDRTree", "SSE", "UMAPSSE", "UMAP") ){
-    reduced_dim_coords <- reducedDimK(cds)
-  }else {
-    stop("Error: unrecognized dimensionality reduction method.")
-  }
+  reduced_dim_coords <- reducedDimK(cds)
   
   if(length(dim) != 3) 
     dim <- 1:3
