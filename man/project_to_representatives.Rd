@@ -6,7 +6,8 @@
 non-representative cells to the low dimensional space with five nearest (on original UMAP space) representive cells' coordinates}
 \usage{
 project_to_representatives(data, data_ori, landmark_id, louvain_res, pd,
-  method = "drl", start.temp = NULL, verbose, ...)
+  method = c("drl", "fr", "kk", "SSE", "PSL"), start.temp = NULL, verbose,
+  ...)
 }
 \arguments{
 \item{data}{(dowmsampled) data to perform Louvain clustering and kNN graph construction}

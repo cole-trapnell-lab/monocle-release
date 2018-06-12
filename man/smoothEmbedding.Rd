@@ -4,7 +4,7 @@
 \alias{smoothEmbedding}
 \title{This function tries to learn a smooth embedding from the noisy reduced dimension using different techniques}
 \usage{
-smoothEmbedding(cds, max_components = 2, smooth_method = c("SSE"),
+smoothEmbedding(cds, max_components = 2, smooth_method = c("SSE", "FDL"),
   verbose = FALSE, ...)
 }
 \arguments{
