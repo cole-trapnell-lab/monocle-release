@@ -226,11 +226,11 @@ differentialGeneTest <- function(cds,
 #' @importFrom stats p.adjust 
 #' @seealso \code{\link[spdep]{moran.test}}
 #' @export
-spatialDifferentialTest <- function(cds, 
-                                    relative_expr=TRUE,
-                                    k = 25, 
-                                    cores=1, 
-                                    verbose=FALSE) {
+principalGraphTest <- function(cds, 
+                               relative_expr=TRUE,
+                               k = 25, 
+                               cores=1, 
+                               verbose=FALSE) {
   
   
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells 
