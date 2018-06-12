@@ -105,7 +105,7 @@ clusterCells <- function(cds,
       warning('Number of cells in your data is larger than 50 k, clusterCells with densityPeak or DDRTree may crash. Please try to use the newly added Louvain clustering algorithm!')
     }
   }
-    
+  
   if(method == 'densityPeak'){ 
     ################### DENSITYPEAK START ###################
     set.seed(2017)
@@ -134,7 +134,7 @@ clusterCells <- function(cds,
       dataClust$peaks <- pData(cds)$peaks
       dataClust$clusters <- pData(cds)$clusters
       dataClust$halo <- pData(cds)$halo
-
+      
       # res <- list(rho=rho, delta=delta, distance=distance, dc=dc, threshold=c(rho=NA, delta=NA), peaks=NA, clusters=NA, halo=NA)
       dataClust <- dataClust[c('rho', 'delta', 'distance', 'dc', 'threshold', 'peaks', 'clusters', 'halo', 'nearest_higher_density_neighbor')]
       class(dataClust) <- 'densityCluster'
@@ -163,7 +163,7 @@ clusterCells <- function(cds,
         if(verbose) {
           message(paste('Select top ', num_clusters , 'samples with highest delta as the density peaks and for assigning clusters'))
         }
-
+        
         delta_rho_df <- data.frame("delta" = dataClust$delta, "rho" = dataClust$rho)
         rho_threshold <- 0 
         delta_threshold <- sort(delta_rho_df$delta, decreasing = T)[num_clusters] - .Machine$double.eps
@@ -181,7 +181,7 @@ clusterCells <- function(cds,
     }
     
     #automatically pick up the rho and delta values: 
-
+    
     if(inspect_rho_sigma == F) {
       dataClust <- densityClust::findClusters(dataClust, rho = rho_threshold, delta = delta_threshold, peaks=peaks)
     } else {
@@ -202,18 +202,11 @@ clusterCells <- function(cds,
     pData(cds)$rho <- dataClust$rho
     pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
-<<<<<<< HEAD
-    if (is.null(cell_type_hierarchy) == FALSE) {
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores)
-    }
-    
-=======
->>>>>>> 928a027bac9c39d17b84d3ee146d0ec75009e7fa
     cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
     
     return(cds)
     
-  ################### DENSITYPEAK END ###################
+    ################### DENSITYPEAK END ###################
   }  else if(method == 'louvain'){
     data <- t(reducedDimA(cds))
     if(nrow(data) == 0) {
@@ -226,7 +219,7 @@ clusterCells <- function(cds,
     } else {
       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
     }
-
+    
     cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, verbose = verbose, ...)
     louvain_component <-  components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
     names(louvain_component) <- V(louvain_res$g)$name
@@ -234,12 +227,8 @@ clusterCells <- function(cds,
     pData(cds)$louvain_component <- louvain_component
     
     pData(cds)$Cluster <- factor(igraph::membership(louvain_res$optim_res)) 
-
+    
     cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res)
-
-    if (is.null(cell_type_hierarchy) == FALSE) {
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores)
-    }
     
     return(cds)
   }
@@ -316,7 +305,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   cell_names <- row.names(pd)
   if(cell_names != row.names(pd))
     stop("phenotype and row name from the data doesn't match")
-
+  
   if (is.data.frame(data))
     data <- as.matrix(data)
   if (!is.matrix(data))
@@ -335,7 +324,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
     cat("  Finding nearest neighbors...")
   }
   t1 <- system.time(tmp <- RANN::nn2(data, data, k +
-                                            1, searchtype = "standard"))
+                                       1, searchtype = "standard"))
   neighborMatrix <- tmp[[1]][, -1]
   distMatrix <- tmp[[2]][, -1]
   if (verbose) {
@@ -349,7 +338,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   links <- links[links[, 1] > 0, ]
   relations <- as.data.frame(links)
   colnames(relations) <- c("from", "to", "weight")
-
+  
   relations$from <- cell_names[relations$from]
   relations$to <- cell_names[relations$to]
   t3 <- system.time(g <- igraph::graph.data.frame(relations, directed = FALSE))
@@ -384,7 +373,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
         modularity(optim_res), "\n")
     cat("  -Number of clusters:", length(unique(igraph::membership(optim_res))), "\n")
   }
-
+  
   if(igraph::vcount(g) < 3000) {
     # coord <- igraph::layout_components(g) 
     # coord <- as.data.frame(coord)
@@ -449,7 +438,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   
   cluster_g <- igraph::graph_from_adjacency_matrix(sig_links, weighted = T, mode = 'undirected')
   louvain_modules <- igraph::cluster_louvain(cluster_g)
-
+  
   # return also the layout coordinates and the edges link for the graph of clusters
   coord <- igraph::layout_components(cluster_g) 
   coord <- as.data.frame(coord)
@@ -457,7 +446,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   row.names(coord) <- 1:nrow(coord)
   coord$Cluster <- 1:nrow(coord)
   coord$louvain_cluster <- as.character(igraph::membership(louvain_modules))
-
+  
   edge <- get.data.frame(cluster_g)
   edge <- as.data.frame(edge)
   colnames(edge) <- c('start', 'end', 'weight')
@@ -465,7 +454,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edge_links <- as.data.frame(edge_links)
   colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
   edge_links$weight <- edge[, 3]
-
+  
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
 }
 
@@ -484,13 +473,13 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   cell_membership <- igraph::membership(optim_res)
   cell_names <- names(cell_membership)
   n_cluster <- length(unique(cell_membership))
-
+  
   cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
   overlapping_threshold <- 1e-5
-    
+  
   # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
   # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
-
+  
   for(i in sort(unique(as.vector(cell_membership)))) {
     if(verbose) {
       message('current cluster is ', i)
@@ -507,7 +496,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
                    current_cluster =  cell_membership[curr_cluster_cell[x]],
                    target_cluster = cell_membership[cell_outside])
       }
-      } ))
+    } ))
     
     # remove the insignificant inter-cluster edges from the kNN graph: 
     if(is.null(conn_cluster_res) == FALSE) {
@@ -520,17 +509,17 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         overlap_weight <- (all_ij - only_i - only_j) / all_ij
         cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
         if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
-            # if(verbose) {
-            #   message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
-            #           'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
-            #           'with weight ', overlap_weight)
-            # }
-            pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+          # if(verbose) {
+          #   message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+          #           'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+          #           'with weight ', overlap_weight)
+          # }
+          pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
         }
       }
     }
   }
-
+  
   ########################################################################################################################################################################
   # identify the all leaf cell 
   # identify the nearest leaf cells 
@@ -561,12 +550,12 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     }
     cnt_i <- cnt_i + 1
   }
-
+  
   ########################################################################################################################################################################
   # downstream pseudotime and branch analysis 
   ########################################################################################################################################################################
   # identify branch
-
+  
   # mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat_exist <- cluster_mat_exist
   # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat <- cluster_mat
@@ -603,7 +592,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     row.names(coord) <- 1:nrow(coord)
     coord$Cluster <- 1:nrow(coord)
     coord$louvain_cluster <- as.character(igraph::membership(optim_res))
-  
+    
     edge <- get.data.frame(cluster_g)
     edge <- as.data.frame(edge)
     colnames(edge) <- c('start', 'end', 'weight')
@@ -615,7 +604,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     coord <- NULL
     edge_links <- NULL
   }
-
+  
   list(cluster_mat_exist = cluster_mat_exist, cluster_mat = cluster_mat, cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
-
+  
 }
