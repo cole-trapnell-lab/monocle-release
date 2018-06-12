@@ -817,7 +817,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
-    cds@dim_reduce_type <- RGE_method
+    cds@dim_reduce_type <- RGE_method[1]
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -977,7 +977,7 @@ learnGraph <- function(cds,
     
   }
   
-  cds@dim_reduce_type <- RGE_method
+  cds@dim_reduce_type <- RGE_method[1]
   
   cds 
 }
