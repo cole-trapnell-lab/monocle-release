@@ -443,7 +443,7 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
-#' @import reshape2 melt
+#' @importFrom reshape2 melt
 #' @seealso \code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
 #' @export
 #' 
