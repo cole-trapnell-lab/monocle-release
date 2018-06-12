@@ -90,11 +90,6 @@ clusterCells <- function(cds,
                          delta_threshold = NULL, 
                          peaks = NULL,
                          gaussian = T, 
-                         cell_type_hierarchy=NULL,
-                         frequency_thresh=NULL,
-                         enrichment_thresh=NULL,
-                         rank_prob_ratio = 2, 
-                         min_observations=8,
                          clustering_genes=NULL,
                          k = 20, 
                          louvain_iter = 1, 
@@ -207,10 +202,13 @@ clusterCells <- function(cds,
     pData(cds)$rho <- dataClust$rho
     pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
+<<<<<<< HEAD
     if (is.null(cell_type_hierarchy) == FALSE) {
       cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores)
     }
     
+=======
+>>>>>>> 928a027bac9c39d17b84d3ee146d0ec75009e7fa
     cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
     
     return(cds)

@@ -659,7 +659,7 @@ partitionCells <- function(cds,
 #' @param RGE_method Determines how to transform expression values prior to reducing dimensionality
 #' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
-#' @param partition_component When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
+#' @param do_partition When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param verbose Whether to emit verbose output during dimensionality reduction
@@ -677,7 +677,7 @@ partitionCells <- function(cds,
 #' @export
 learnGraph <- function(cds,
                        max_components=2,
-                       RGE_method = c('L1graph', 'SimplePPT', 'DDRTree'), 
+                       RGE_method = c('SimplePPT', 'L1graph', 'DDRTree'), 
                        auto_param_selection = TRUE, 
                        partition_group = 'louvain_component', 
                        do_partition = TRUE, 
