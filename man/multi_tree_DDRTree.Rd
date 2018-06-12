@@ -6,7 +6,7 @@
 \usage{
 multi_tree_DDRTree(cds, scale = scale, RGE_method,
   partition_group = "louvain_component", irlba_pca_res, max_components,
-  extra_arguments, verbose)
+  extra_arguments, close_loop = FALSE, verbose = FALSE)
 }
 \description{
 the following functioin is used to learn trajectory on each disjointed components

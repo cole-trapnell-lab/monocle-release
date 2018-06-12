@@ -56,7 +56,8 @@ Imports:
     rgl,
     htmlwidgets,
     spdep,
-    glmnet
+    glmnet,
+    ggridges
 LinkingTo: Rcpp
 Suggests:
     destiny,

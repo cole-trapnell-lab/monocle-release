@@ -12,7 +12,7 @@ findNearestVertex(data_matrix, target_points, block_size = 50000,
 
 \item{target_points}{the target points}
 
-\item{block_size}{the number of input matrix rows to process per blocl}
+\item{block_size}{the number of input matrix rows to process per bloclk}
 
 \item{process_targets_in_blocks}{whether to process the targets points in blocks instead}
 }

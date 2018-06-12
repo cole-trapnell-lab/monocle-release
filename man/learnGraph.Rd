@@ -6,8 +6,8 @@
 \usage{
 learnGraph(cds, max_components = 2, RGE_method = c("L1graph", "SimplePPT",
   "DDRTree"), auto_param_selection = TRUE,
-  partition_group = "louvain_component", partition_component = TRUE,
-  scale = FALSE, verbose = FALSE, ...)
+  partition_group = "louvain_component", do_partition = TRUE,
+  scale = FALSE, close_loop = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -20,11 +20,13 @@ learnGraph(cds, max_components = 2, RGE_method = c("L1graph", "SimplePPT",
 
 \item{partition_group}{When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component.}
 
-\item{partition_component}{When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component.}
+\item{close_loop}{Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
+
+\item{partition_component}{When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component.}
 
 \item{scaling}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
 }
