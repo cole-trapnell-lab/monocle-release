@@ -208,7 +208,7 @@ clusterCells <- function(cds,
     pData(cds)$nearest_higher_density_neighbor <- dataClust$nearest_higher_density_neighbor
     
     if (is.null(cell_type_hierarchy) == FALSE) {
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
+      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores)
     }
     
     cds@auxClusteringData[["tSNE"]]$densityPeak <- dataClust[c("dc", "threshold")] #, "peaks"
@@ -240,7 +240,7 @@ clusterCells <- function(cds,
     cds@auxClusteringData[["louvian"]] <- list(louvain_res = louvain_res)
 
     if (is.null(cell_type_hierarchy) == FALSE) {
-      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores, "Cluster")
+      cds <- classifyCells(cds, cell_type_hierarchy, frequency_thresh, enrichment_thresh, rank_prob_ratio, min_observations, cores)
     }
     
     return(cds)
