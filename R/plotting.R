@@ -1830,15 +1830,16 @@ plot_cell_clusters <- function(cds,
                                cell_name_size=2, 
                                min_expr=0.1,
                                ...){
+  
   if (length(pData(cds)$Cluster) == 0){ 
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
-  } else if (nrow(cds@reducedDimA) == 0){ 
+  } else if (nrow(cds@reducedDimA) == 0) {
     message("reduceDimension is not performed yet. We are plotting the normalized reduced space obtained from preprocessCDS function.")
     tSNE_dim_coords <- t(cds@normalized_data_projection)
   } else {
-    tSNE_dim_coords <- reducedDimA(cds)
+    tSNE_dim_coords <- cds@reducedDimA
   }
-  
+
   gene_short_name <- NULL
   sample_name <- NULL
   data_dim_1 <- NULL
