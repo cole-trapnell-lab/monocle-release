@@ -52,7 +52,7 @@ dpFeature <- function(cds, num_cells_expressed = 5, num_dim = 5, rho_threshold =
 function to run louvain clustering algorithm}
 \usage{
 louvain_clustering(data, pd, k = 20, weight = F, louvain_iter = 1,
-  verbose = F)
+  resolution = 1e-04, verbose = F, ...)
 }
 \arguments{
 \item{data}{low dimensional space used to perform graph clustering}

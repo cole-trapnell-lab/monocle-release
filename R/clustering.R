@@ -64,9 +64,9 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50
-#' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. 
+#' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 5. 
 #' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
-#' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters.
+#' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`. 
 #' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
 #' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -375,7 +375,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
           Q <- do.call(louvain_R, louvain_args)  
           Qt <- max(Q$modularity)
           if(verbose) {
-            message('Current iteration is ', iter, '; current resolution is ', cur_resolution, '; Modularity is ', Qt)
+            message('Current iteration is ', iter, '; current resolution is ', cur_resolution, '; Modularity is ', Qt, '; Number of clusters are ', max(Q$membership))
           }
           if (Qt > Qp) {
             optim_res <- Q
