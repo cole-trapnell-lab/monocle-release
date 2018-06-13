@@ -262,10 +262,9 @@ spatialDifferentialTest <- function(cds,
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
-    cell2pp_map = cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
-    
-    cell_coords = cell_coords[row.names(cell2pp_map),]
-    
+    cell2pp_map <-  cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
+    cell2pp_map <- cell2pp_map[colnames(cds), ]
+
     # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
     
     if(verbose) {
@@ -443,7 +442,7 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
-#' @import reshape2 melt
+#' @importFrom reshape2 melt
 #' @seealso \code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
 #' @export
 #' 

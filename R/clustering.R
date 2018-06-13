@@ -366,22 +366,20 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
       cat("Running louvain iteration ", iter, "...\n")
     }
     if(!is.null(resolution)) {
-      if(length(resolution) > 1) { 
-        for(i in 1:length(resolution)) {
-          cur_resolution <- resolution[i]
-          louvain_args <- c(list(X = igraph::get.adjacency(g), res = as.numeric(cur_resolution), verbose = verbose),
-                            extra_arguments[names(extra_arguments) %in% 
-                                              c("python_home", "partition_method", "initial_membership", "weights", "node_sizes", 'return_all')])
-          Q <- do.call(louvain_R, louvain_args)  
-          Qt <- max(Q$modularity)
-          if(verbose) {
-            message('Current iteration is ', iter, '; current resolution is ', cur_resolution, '; Modularity is ', Qt, '; Number of clusters are ', max(Q$membership))
-          }
-          if (Qt > Qp) {
-            optim_res <- Q
-            Qp <- Qt
-            best_max_resolution <- cur_resolution
-          }
+      for(i in 1:length(resolution)) {
+        cur_resolution <- resolution[i]
+        louvain_args <- c(list(X = igraph::get.adjacency(g), res = as.numeric(cur_resolution), verbose = verbose),
+                          extra_arguments[names(extra_arguments) %in% 
+                                            c("python_home", "partition_method", "initial_membership", "weights", "node_sizes", 'return_all')])
+        Q <- do.call(louvain_R, louvain_args)  
+        Qt <- max(Q$modularity)
+        if(verbose) {
+          message('Current iteration is ', iter, '; current resolution is ', cur_resolution, '; Modularity is ', Qt, '; Number of clusters are ', max(Q$membership))
+        }
+        if (Qt > Qp) {
+          optim_res <- Q
+          Qp <- Qt
+          best_max_resolution <- cur_resolution
         }
       }
     } else {
