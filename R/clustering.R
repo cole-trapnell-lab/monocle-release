@@ -66,6 +66,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50
 #' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. 
 #' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
+#' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters.
 #' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
 #' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -97,8 +98,9 @@ clusterCells <- function(cds,
                          min_observations=8,
                          clustering_genes=NULL,
                          k = 20, 
-                         louvain_iter = 1, 
+                         louvain_iter = 5, 
                          weight = FALSE,
+                         res = seq(0, 1e-4, length.out = 5),
                          method = c('densityPeak', 'louvain'),
                          verbose = F, 
                          cores=1,
@@ -224,7 +226,7 @@ clusterCells <- function(cds,
     }
     
     if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
-      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, verbose)
+      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, verbose)
     } else {
       louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
     }
@@ -310,11 +312,8 @@ clusterCells <- function(cds,
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
 #' 
-louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, verbose = F) {
-  # k <- 20
-  # verbose = T
-  # library(RANN)
-  # library(igraph)
+louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = 1e-4, verbose = F, ...) {
+  extra_arguments <- list(...)
   cell_names <- row.names(pd)
   if(cell_names != row.names(pd))
     stop("phenotype and row name from the data doesn't match")
@@ -356,15 +355,37 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
   relations$to <- cell_names[relations$to]
   t3 <- system.time(g <- igraph::graph.data.frame(relations, directed = FALSE))
   if (verbose) {
-    cat("DONE ~", t3[3], "s\n", " Run louvain clustering on the graph ...")
+    cat("DONE ~", t3[3], "s\n", " Run louvain clustering on the graph ...\n")
   }
   t_start <- Sys.time()
   Qp <- -1
   optim_res <- NULL
+  best_max_resolution <- 'No resolution'
   for (iter in 1:louvain_iter) {
-    Q <- igraph::cluster_louvain(g)
     if (verbose) {
-      cat("Running louvain iteration ", iter, "...")
+      cat("Running louvain iteration ", iter, "...\n")
+    }
+    if(!is.null(resolution)) {
+      if(length(resolution) > 1) { 
+        for(i in 1:length(resolution)) {
+          cur_resolution <- resolution[i]
+          louvain_args <- c(list(X = igraph::get.adjacency(g), res = as.numeric(cur_resolution), verbose = verbose),
+                            extra_arguments[names(extra_arguments) %in% 
+                                              c("python_home", "partition_method", "initial_membership", "weights", "node_sizes", 'return_all')])
+          Q <- do.call(louvain_R, louvain_args)  
+          Qt <- max(Q$modularity)
+          if(verbose) {
+            message('Current iteration is ', iter, '; current resolution is ', cur_resolution, '; Modularity is ', Qt)
+          }
+          if (Qt > Qp) {
+            optim_res <- Q
+            Qp <- Qt
+            best_max_resolution <- cur_resolution
+          }
+        }
+      }
+    } else {
+      Q <- igraph::cluster_louvain(g)
     }
     if (is.null(optim_res)) {
       Qp <- max(Q$modularity)
@@ -378,12 +399,12 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, v
       }
     }
   }
+  if(verbose) 
+    message('Maximal modularity is ', Qp, '; corresponding resolution is ', best_max_resolution)
   t_end <- Sys.time()
   if (verbose) {
     message("\nRun kNN based graph clustering DONE, totally takes ", t_end -
               t_start, " s.")
-    cat("  Return a community class\n  -Modularity value:",
-        modularity(optim_res), "\n")
     cat("  -Number of clusters:", length(unique(igraph::membership(optim_res))), "\n")
   }
 

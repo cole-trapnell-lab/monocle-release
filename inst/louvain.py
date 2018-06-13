@@ -10,20 +10,20 @@ def louvain(i, j, val, dim, partition_method, initial_membership, weights, resol
   G = ig.Graph(vcount, edgelist)
   # G = ig.Graph.Adjacency(data.tolist())
   
-  if partition_method is 'ModularityVertexPartition':
+  if partition_method == 'ModularityVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights)
-  elif partition_method is 'RBConfigurationVertexPartition':
+  elif partition_method == 'RBConfigurationVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights, resolution_parameter = resolution)
-  elif partition_method is 'RBERVertexPartition':
+  elif partition_method == 'RBERVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights, node_sizes = node_sizes, resolution_parameter = resolution)
   elif partition_method == 'CPMVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights, node_sizes = node_sizes, resolution_parameter = resolution)
-  elif partition_method is 'SignificanceVertexPartition':
+  elif partition_method == 'SignificanceVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, node_sizes = node_sizes)
-  elif partition_method is 'SurpriseVertexPartition':
+  elif partition_method == 'SurpriseVertexPartition':
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights, node_sizes = node_sizes)
   else: 
-    raise ValueError('partition_method ' + partition_method + 'is supported.')
+    raise ValueError('partition_method ' + partition_method + ' is NOT supported.')
     
   optimiser = louvain.Optimiser()
   diff = optimiser.optimise_partition(partition)

@@ -120,6 +120,7 @@
 #' will be chosen automatically.
 #' @param verbose bool (optional, default False)
 #' Controls verbosity of logging.
+#' @param return_all Whether to return all slots after UMAP 
 #' @return Embedding of the training data in low-dimensional space if return_all is set to be FALSE, 
 #' otherwise the object returned from umap function, including the following elements: 
 #' a, fit_transform, metric, random_state, alpha, gamma, metric_kwds, set_op_mix_ratio, angular_rp_forest, 

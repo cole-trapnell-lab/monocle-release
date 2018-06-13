@@ -1835,7 +1835,7 @@ plot_cell_clusters <- function(cds,
     tSNE_dim_coords <- reducedDimA(cds)
   }
   
-  tSNE_dim_coords <- t(cds@reducedDimA)
+  tSNE_dim_coords <- cds@reducedDimA
 
   if (nrow(cds@reducedDimA) == 0){ 
     message("reduceDimension is not performed yet. We are plotting the normalized reduced space obtained from preprocessCDS function.")
