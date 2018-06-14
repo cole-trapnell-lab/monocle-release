@@ -321,13 +321,8 @@ get_correct_root_state <- function(cds, cell_phenotype, root_type){
 }
 {% endhighlight %}
 
-<<<<<<< HEAD
-          <p>In the above function, we are accessing <code>pr_graph_cell_proj_closest_vertex</code> which is just a list that stores for each cell, the ID of the principal graph node it's closest to. This is handy for computing statistics (e.g. with dplyr) about the principal graph nodes and which cells of what type map to them.
-
-=======
           <p>In the above function, we are accessing <code>pr_graph_cell_proj_closest_vertex</code> which is just a matrix with a single column that stores for each cell, the ID of the principal graph node it's closest to. This is handy for computing statistics (e.g. with dplyr) about the principal graph nodes and which cells of what type map to them.
-          
->>>>>>> b61f43a8ca0e42fa0c5bdb68ad8f8f076af68893
+
           <p>Now we can call this function to automatically find the node in the principal graph where our multipotent progenitors reside:</p>
 
 {% highlight R %}
