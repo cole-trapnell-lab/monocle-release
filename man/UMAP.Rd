@@ -109,6 +109,8 @@ will be chosen automatically.}
 \item{verbose}{bool (optional, default False)
 Controls verbosity of logging.}
 
+\item{return_all}{Whether to return all slots after UMAP}
+
 \item{n_components}{int (optional, default 2)
 The dimension of the space to embed into. This defaults to 2 to
 provide easy visualization, but can reasonably be set to any

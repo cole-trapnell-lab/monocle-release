@@ -1828,7 +1828,12 @@ plot_cell_clusters <- function(cds,
   
   if (length(pData(cds)$Cluster) == 0){ 
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
-  } else if (nrow(cds@reducedDimA) == 0) {
+    tSNE_dim_coords <- reducedDimA(cds)
+  }
+  
+  tSNE_dim_coords <- cds@reducedDimA
+
+  if (nrow(cds@reducedDimA) == 0){ 
     message("reduceDimension is not performed yet. We are plotting the normalized reduced space obtained from preprocessCDS function.")
     tSNE_dim_coords <- t(cds@normalized_data_projection)
   } else {
@@ -1885,14 +1890,26 @@ plot_cell_clusters <- function(cds,
       
     }
   }
+
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
 
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + facet_wrap(~feature_label) 
   }else{
+    text_df <- data_df %>% dplyr::group_by_(color_by) %>% summarize(text_x = median(x = data_dim_1),
+                                                                    text_y = median(x = data_dim_2))
+    if(color_by != "Cluster" & !is.numeric(data_df[, color_by])) {
+      text_df$label <- paste0(1:nrow(text_df))
+      text_df$process_label <- paste0(1:nrow(text_df), '_', as.character(as.matrix(text_df[, 1])))
+      process_label <- text_df$process_label
+      names(process_label) <- as.character(as.matrix(text_df[, 1]))
+      data_df[, color_by] <- process_label[as.character(data_df[, color_by])]
+    } else {
+      text_df$label <- text_df[, 1]
+    }
+    
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
-  
   
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
@@ -1906,6 +1923,7 @@ plot_cell_clusters <- function(cds,
     }
   }else {
     g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+    g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
   }
   
   g <- g + 

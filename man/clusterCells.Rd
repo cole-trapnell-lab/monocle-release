@@ -6,11 +6,9 @@
 \usage{
 clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
-  peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
-  frequency_thresh = NULL, enrichment_thresh = NULL, rank_prob_ratio = 2,
-  min_observations = 8, clustering_genes = NULL, k = 20,
-  louvain_iter = 1, weight = FALSE, method = c("densityPeak", "louvain"),
-  verbose = F, cores = 1, ...)
+  peaks = NULL, gaussian = T, clustering_genes = NULL, k = 20,
+  louvain_iter = 5, weight = FALSE, res = seq(0, 1e-04, length.out = 5),
+  method = c("densityPeak", "louvain"), verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -31,25 +29,27 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
-\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
-
-\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
-
-\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
-
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
 \item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50}
 
-\item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1.}
+\item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 5.}
 
 \item{weight}{A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.}
+
+\item{res}{Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`.}
 
 \item{method}{method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm.}
 
 \item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
+
+\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
+
+\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
+
+\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
