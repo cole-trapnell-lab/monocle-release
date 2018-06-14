@@ -551,6 +551,17 @@ load_HSMM_markers <- function(){
   HSMM[row.names(subset(fData(HSMM), gene_short_name %in% marker_names)),]
 }
 
+#' A helper function to identify the root principal points
+get_correct_root_state <- function(cds, cell_phenotype, root_type){
+  cell_ids <- which(pData(cds)[, cell_phenotype] == root_type)
+  
+  closest_vertex <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])  
+  root_pr_nodes <- V(cds@minSpanningTree)$name[as.numeric(names(which.max(table(closest_vertex[cell_ids,]))))]
+  
+  root_pr_nodes
+}
+
 #' Build a CellDataSet from the data stored in inst/extdata directory.
 #' @importFrom Biobase pData pData<- exprs fData
 #' @export
@@ -586,12 +597,11 @@ load_lung <- function(){
   lung <- setOrderingFilter(lung, ordering_genes)
   
   # DDRTree based ordering:
+  lung <- preprocessCDS(lung, num_dim = 5)
   lung <- reduceDimension(lung, norm_method="log", method = 'DDRTree', pseudo_expr = 1) #
-  lung <- orderCells(lung)
-  E14_state = as.numeric(pData(lung)['SRR1033936_0', 'State'])
-  if(E14_state != 1)
-    lung <- orderCells(lung, root_state=E14_state)
-
+  lung <- orderCells(lung, root_pr_nodes = get_correct_root_state(lung, 
+                                                           cell_phenotype = 'Time', 
+                                                           "E14.5"))
   lung
 }
 

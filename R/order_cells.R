@@ -345,7 +345,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
   } else {
     stop('unknown preprocessing method, stop!')
   }
-  
+  row.names(irlba_pca_res) <- colnames(cds)
   cds@normalized_data_projection <- irlba_pca_res
   
   cds
@@ -515,6 +515,7 @@ reduceDimension <- function(cds,
     else if (reduction_method %in% c("DDRTree")) {
       
       message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
+      cds@reducedDimS <- t(lung@normalized_data_projection)
       cds <- partitionCells(cds)
       cds <- learnGraph(cds, RGE_method = 'DDRTree', ...)
       
@@ -612,6 +613,13 @@ partitionCells <- function(cds,
                                     weight = weight , louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
   
+  if(length(unique(louvain_res$optim_res$membership)) == 1) {
+    pData(cds)$louvain_component <- 1
+    cds@auxClusteringData$partitionCells <- louvain_res
+    
+    return(cds)
+  }
+  
   cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
   louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
   names(louvain_component) = colnames(FM)
@@ -620,7 +628,7 @@ partitionCells <- function(cds,
   
   cds@auxClusteringData$partitionCells <- louvain_res
   
-  cds
+  return(cds)
 }
 
 #' Learn principal graph from the reduced space using reversed graph embedding 
