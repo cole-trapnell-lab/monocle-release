@@ -299,7 +299,7 @@ clusterCells <- function(cds,
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
 #' 
-louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = 1e-4, verbose = F, ...) {
+louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = NULL, verbose = F, ...) {
   extra_arguments <- list(...)
   cell_names <- row.names(pd)
   if(cell_names != row.names(pd))
