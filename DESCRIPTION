@@ -73,7 +73,7 @@ Suggests:
     magick
 Remotes:
     bioc::Biobase,
-    bioc::BiocGenerics,
+    bioc::3.7/BiocGenerics,
     bioc::biocViews,
     bioc::limma
 VignetteBuilder: knitr
