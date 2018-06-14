@@ -26,7 +26,7 @@ tags: [monocle, manual, vignette]
 
           <h2>What's new in Monocle 3</h2>
 
-          <p>Monocle 3 has been re-engineered to analyze large, complex single-cell datasets. The algorithms at the core of Monocle 3 can process millions of cells in minutes. Monocle 3 will add some powerful new features that enable the analysis of organism- or embryo-scale experiments:</p>
+          <p>Monocle 3 has been re-engineered to analyze large, complex single-cell datasets. The algorithms at the core of Monocle 3 are highly scalable abd can handle millions of cells. Monocle 3 will add some powerful new features that enable the analysis of organism- or embryo-scale experiments:</p>
 
             <ul>
                 <li>A better structured workflow to learn developmental trajectories.
@@ -40,7 +40,11 @@ tags: [monocle, manual, vignette]
 
             <p><strong>Monocle 3 is still under active development</strong>. This first early alpha release only includes some of the features listed above. We plan to release updates to Monocle 3 every few weeks that add the functionality you see mentioned here. Moreover, the above is only a partial list of the new features coming in Monocle 3, and more may be announced over the next few weeks and months. Note that some of Monocle 2's functions haven't yet been forward ported to Monocle 3. We welcome users' bug reports, comments and feedback. </p>
 
+            <p>The features discssed here will be described in more detail in upcoming manscripts.</p>
+
             <p>Below, you can find more details about some of the major new ideas and features in Monocle 3</p>
+
+<br>
 
             <h4>Uniform Manifold Approximation and Projection</h4>
 
@@ -49,6 +53,8 @@ tags: [monocle, manual, vignette]
             <p>McInnes, L, Healy, J, <a href="https://arxiv.org/abs/1802.03426">UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction</a>, ArXiv e-prints 1802.03426, 2018).</p>
             
             <p>In Monocle 3 we provide a standard alone function <code>UMAP</code> to run umap. UMAP is also seamlessly integrated into the <code>reduceDimension</code> function.</p>
+
+<br>
 
           <h2> Installing Monocle 3</h2>
 
@@ -106,13 +112,7 @@ devtools::install_github("cole-trapnell-lab/monocle-release", ref="monocle3_beta
 library(monocle)
 {% endhighlight %}
 
-          <p>Sometimes we add features that require you install certain additional packages.
-          You may see errors when you try the above command. You can install the packages
-          in the error message by typing (for example):
-
-{% highlight R %}
-biocLite(c("DDRTree", "pheatmap"))
-{% endhighlight %}
+<br>
 
           <h2> Getting help </h2>
 
@@ -123,6 +123,8 @@ biocLite(c("DDRTree", "pheatmap"))
           community. Please do not email technical questions to Monocle contributors
           directly.
 
+<br>
+
           <h2>The Monocle 3 workflow</h2>
 
           <div class= "text-center">
@@ -130,7 +132,7 @@ biocLite(c("DDRTree", "pheatmap"))
           </div>
 
           Before we get into the details of ordering cells along a trajectory, it's
-          important to understand what Monocle is doing. The ordering workflow has three
+          important to understand what Monocle is doing. The ordering workflow shown above has five
           main steps, each of which involve a significant machine learning task.
 
           <h4>Step 1: Normalizing and pre-processing the data </h4>
@@ -139,15 +141,19 @@ biocLite(c("DDRTree", "pheatmap"))
           <h4>Step 2: Reducing the dimensionality of the data </h4>
           <p>Next, to eliminate noise and make downstream computations more tractable, it projects each cell onto the top 50 (by default) principal components. Then, you as the user choose whether to reduce the dimensionality further using one of two non-linear methods for dimensionality reduction: t-SNE or UMAP. The former is an extremely popular and widely accepted technique for visualizing single-cell RNA-seq data. The latter is faster, and often better preserves the global structure of the data but is also newer and therefore less well tested by the single-cell community. Then, Monocle 3 will cluster your cells, organize them into trajectories, or both.</p>
 
-          <h4>Step 3: Partitioning the cells </h4>
+          <h4>Step 3: Clustering and partitioning the cells </h4>
           <p>Monocle 3 can learn multiple disconnected or "disjoint" trajectories. This is important because many experiments will capture a community of cells that are responding to a stimulus or undergoing differentiation, with each type of cell responding differently. Where Monocle 2 would incorrectly force them all into a single trajectory, Monocle 3 can detect that some cells are part of a different process than others in the dataset. Monocle 3 achieves this by "partitioning" the cells into "supergroups" using a method derived from <a href="https://www.biorxiv.org/content/early/2017/10/25/208819">"approximate graph abstraction"</a> (AGA) (Wolf et al, 2017). Cells from different supergroups cannot be part of the same trajectory.
 
           <h4>Step 4: Learning the principal graph </h4>
-          <p>Monocle 3 provides three different ways to organize cells into trajectories, all of which are based on the concept of "principal graph embedding". DDRTree is the method used in Monocle 2 to learn tree-like trajectories, and has received some important updates in Monocle 3. SimplePPT works similarly to DDRTree in that it learns a tree-like trajectory, but it does not attempt to further reduce the dimensionality of the data. L1Graph is an advanced optimization method that can learn trajectories that have loops in them (that is, trajectories that aren't trees).
+          <p>Monocle 3 provides three different ways to organize cells into trajectories, all of which are based on the concept of "reversed graph embedding". DDRTree is the method used in Monocle 2 to learn tree-like trajectories, and has received some important updates in Monocle 3. In particular, these updates have massively improved the throughout of DDRTree, which can now process millions of cells in minutes. SimplePPT works similarly to DDRTree in that it learns a tree-like trajectory, but it does not attempt to further reduce the dimensionality of the data. L1Graph is an advanced optimization method that can learn trajectories that have loops in them (that is, trajectories that aren't trees). 
+            
+          <p>Once Monocle 3 has learned a principal graph that fits within the data, each cell is projected onto the graph. Then, the user selects one or more positions on the graph that define the starting points of the trajetory. Monocle measures the distance from these start points to each cell, traveling along the graph as it does so. A cell's pseudotime is simply the distance from each cell to the closest starting point on the graph.</p>
 
-          <h4>Step 5: Visualize results </h4>
-          <p>Once this is complete, you can run tests for genes that are specific to each cluster, find genes that vary over the course of a trajectory, and plot your data in many different ways. Monocle 3 provides a suite of regression tests to find genes that differ between clusters and over trajectories. Monocle 3 also introduces a new test that uses the principal graph directly and can help find genes that vary in complex ways over a trajectory with loops and more intricate structures.
+          <h4>Step 5: Differential expression analysis and visualization </h4>
+          <p>Once this is complete, you can run tests for genes that are specific to each cluster, find genes that vary over the course of a trajectory, and plot your data in many different ways. Monocle 3 provides a suite of regression tests to find genes that differ between clusters and over trajectories. Monocle 3 also introduces a new test that uses the principal graph directly and can help find genes that vary in complex ways over a trajectory with loops and more intricate structures.</p>
 
+<br>
+<br>
         <h2>Tutorial 1: learning trajectories with Monocle 3</h2>
             <p> In this tutorial, we demonstrate how to use Monocle 3 (alpha release) to resolve multiple disjoint trajectories. We will mainly introduce:</p>
             <ul>
@@ -163,13 +169,16 @@ options(warn=-1) # Turn off warning message globally
 library(monocle) # Load Monocle
 {% endhighlight %}
 
-          <p>Let's load up the data from Paul et. al, which explored hematopoeisis at single-cell resolution. To save time, we'll just load a CellDataSet object. We'll also change the cluster IDs from the original study into easier to read names. Then we'll set up some colors for each of them that we'll use in some plots later. 
-              
-          <p>Monocle 3 makes some changes to the CellDataSet class, so we'll call a function to "upgrade" the old object to the new format. Finally, we'll adjust one of the factor levels to make the cell types easier to read.
-
+          <p>Let's load up the data from Paul et. al, which explored hematopoeisis at single-cell resolution. To save time, we'll just load a CellDataSet object. Monocle 3 makes some changes to the CellDataSet class, so we'll call a function to "upgrade" the old object to the new format. If you're starting from an expression matrix and building a new CellDataSet from scratch, you don't need to call <code>updateCDS()</code>.
+   
+          <p>We'll also change the cluster IDs from the original study into easier to read names. Then we'll set up some colors for each of them that we'll use in some plots later.</p>
 
 {% highlight R %}
 cds <- readRDS('data/valid_subset_GSE72857_cds2.RDS')
+
+# Update the old CDS object to be compatible with Monocle 3                    
+cds <- updateCDS(cds) 
+
 pData(cds)$cell_type2 <- plyr::revalue(as.character(pData(cds)$cluster), 
                                         c("1" = 'Erythrocyte', 
                                         "2" = 'Erythrocyte', 
@@ -201,18 +210,22 @@ cell_type_color <- c("Basophils" = "#E088B8",
                     "Megakaryocytes" = "#ACC436", 
                     "Neutrophils" = "#F5918A", 
                     'NA' = '#000080')
-
-# Update the old CDS object to be compatible with Monocle 3                    
-cds <- updateCDS(cds) 
 {% endhighlight %}
 
           <br>
 
           <h3 data-toc-text= "Step 1: Normalize and pre-process">Step 1: Noramlize and pre-process the data </h3>
 
-          <p>We then estimate size factors for each cell and dispersion function for the genes in the cds as usual. Monocle 3 now performs these operations using the DelayedArray packages so they work on datasets with millions of cells.
+          <p>We then estimate size factors for each cell and dispersion function for the genes in the cds as usual. Monocle 3 now performs these operations using the DelayedArray packages so they work on datasets with millions of cells. The dispersion calculation and several other operations rely on the <code>DelayedArray</code> package in Bioconductor, which splits the operation into blocks in order to avoid exhausting the computer's memory. You can control the block size and the verbosity of these operations as shown below:</p>
 
 {% highlight R %}
+
+# Pass TRUE if you want to see progress output on some of Monocle 3's operations
+DelayedArray:::set_verbose_block_processing(TRUE)
+
+# Passing a higher value will make some computations faster but use more memory. Adjust with caution!
+options(DelayedArray.block.size=1000e6)
+
 cds <- estimateSizeFactors(cds)
 cds <- estimateDispersions(cds)
 {% endhighlight %}
@@ -242,13 +255,15 @@ cds <- reduceDimension(cds, reduction_method = 'UMAP')
 
           <h3 data-toc-text= "Step 3: Partition cells">Step 3: Partition the cells into supergroups </h3>
           
-          <p>Rather than forcing all cells into a single developmental trajectory, Monocle 3 enables you to learn a set of trajectories that describe the biological process you're studying. For example, if you're looking at a community of immune cells responding to infection, each cell type will respond to antigen (and each other) in a different way, so they should be organized into distinct trajectories.</p>
+          <p>Rather than forcing all cells into a single developmental trajectory, Monocle 3 enables you to learn a set of trajectories that describe the biological process you're studying. For example, if you're looking at a community of immune cells responding to infection, each cell type will respond to antigen (and each other) in a different way, so they should be organized into distinct trajectories. This can also be helpful when you have small groups of outlier cells that for either technical or biological reasons are very dissimilar from the rest of the cells in your experiment. They can confuse a trajectory analysis. Monocle 3's partitioning strategy circumvents this issue because such groups often wind up in their own partition. In the Paul data, there is a small outgroup the authors classified as dendritic cells that Monocle automatically partitions away from the main trajectory.</p>
 
           <p>In Monocle 3, we recognize "disjoint" trajectories by drawing on ideas from Alex Wolf and colleagues, who recently introduced the concept of abstract graph participation. Monocle 3 implements the test for cell community connectedness from Wolf et al via the partitionCells() function, which divides the cells into "supergroups".</p>
 
 {% highlight R %}
 cds <- partitionCells(cds)
 {% endhighlight %}
+
+<br>
 
           <h3 data-toc-text= "Step 4: Learn graph">Step 4: Learn the principal graph </h3>
           
@@ -258,6 +273,10 @@ cds <- partitionCells(cds)
 {% highlight R %}
 cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
 {% endhighlight %}
+
+          <p>After you've learned the graph, it's time to assign each cell's pseudotime value with <code>orderCells()</code>. But before we get to that, let's see how to plot the trajectory so we know where the beginning of the trajectory should be.</p>
+
+<br>
 
 <h3 data-toc-text= "Step 5: Visualize trajectory">Step 5: Visualize the trajectory </h3>
 
@@ -272,6 +291,10 @@ plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values =
                 </div>
       
           <p>You can see that Monocle has learned two trajectories, one of which is tiny and essentially trivial. The other has one major branch. SimplePPT essentially is finding a principal graph that fits nicely within the cells as projected in the UMAP coordinate space.</p>
+
+<br>
+
+          <h3 data-toc-text= "Adjusting the start point">Adjusting the start of pseudotime with orderCells</h3>
 
           <p>In the trajectory above, you can see that the "Multipotent progenitor" cells are located roughly in the middle of the longer trajectory segment. We know from extensive past study of hematopoeisis that these are the "root" cell state that generates all the others in the primary trajectory. We need to tell Monocle that these cells are the "beginning" of the trajectory. In Monocle 2, this wouldn't be possible, because the software required that the root be one of the leaves of the tree. Monocle 3 allows you to specify an internal part of the tree as the root. There are two ways to do this:</p>
 
@@ -308,10 +331,15 @@ cds <- orderCells(cds, root_pr_nodes = MPP_node_ids)
 plot_cell_trajectory(cds) 
 {% endhighlight %}
 
+          <p>In the figure shown above, we can see that the dendritic cells have a pseudotime value of infinity (shown in gray) because they are not reachable through the graph from the root we selected.</p>
+
 
 <div class= "text-center">
         <img src= "{{site.baseurl}}/images/monocle3_vignette/paul_simpleppt_2d_color_by_pseudotime.png" width= 600>
         </div>
+
+<br>
+<br>
 
         <h3 data-toc-text= "3D trajectories">Learning and visualizing trajectories in 3D </h3>
 
@@ -329,6 +357,8 @@ cds <- reduceDimension(cds, max_components = 3,
                        reduction_method = 'UMAP',
                        metric="correlation", 
                        verbose = F)
+
+cds <- partitionCells(cds)
 
 cds <- learnGraph(cds, max_components = 3, RGE_method = 'SimplePPT', partition_component = T, 
                   verbose = F)
@@ -412,18 +442,13 @@ dplyr::add_rownames(pr_graph_test) %>%
     <th>OK</th>
     <th>0</th>
     <th>49.39775</th>
-    <th>0.7465939/th>
+    <th>0.7465939</th>
     <th>Ermap</th>
     <th>0</th>
     </tr>
 
 </tbody>
 </table>
-
-
-{% highlight R %}
-pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
-{% endhighlight %}
 
         <p>You can check out the test results for one or more genes like this:</p>
 
@@ -459,10 +484,10 @@ pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
           <p>The code below reports that overall, there are more than 2,300 DE genes over the whole trajectory:</p>
 
 {% highlight R %}
-pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
+nrow(subset(pr_graph_test, qval < 0.01))
 {% endhighlight %}
 
-<p>Once you've identified differentially expressed genes, you'll often want to visualize their expression levels on the trajectory. The plot bleow shows each cell with detectable levels of Hbb-b1 superimposed on the trajectory. Values are log-transformed and scaled into Z scores. Cells with no expression are not shown to avoid overplotting.</p>
+<p>Once you've identified differentially expressed genes, you'll often want to visualize their expression levels on the trajectory. The plot bleow shows each cell with detectable levels of Hbb-b1 superimposed on the trajectory. Hbb-b1 is a subunit of beta globin, a highly specific marker of erythroid cells. Indeed, it is largely restricted to the erythroid branch of the trajectory. Values are log-transformed and scaled into Z scores. Cells with no expression are not shown to avoid overplotting.</p>
 
 {% highlight R %}
 plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
@@ -473,8 +498,10 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
 
 {% include widget_scripts/beta_globin.html %}
 
+<br>
           <h2>Citation </h2>
 
+          Monocle 3 will be described in upcoming publications from the <a href="http://cole-trapnell-lab.github.io/">Trapnell lab</a>. Monocle 3 draws on ideas from others as we have noted in this page, but many of the features in Monocle 3 are novel work. In particular, the use of Moran's I for single-cell RNA-seq, learning a principal graph to fit within UMAP-reduced cells, and the combination of approximate graph abstraction and reversed graph embedding are all novel ideas to the best of our knowledge. We would be very grateful for an acknowledgement that these ideas first appeared in Monocle if you use similar approaches in your own work. 
 
           If you use Monocle to analyze your experiments, please cite:
 
