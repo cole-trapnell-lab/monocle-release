@@ -24,12 +24,33 @@ tags: [monocle, manual, vignette]
         <!-- main content area -->
         <div class= "col-sm-8">
 
+          <h2>What's new in Monocle 3</h2>
 
-          <h2>Abstract</h2>
+          <p>Monocle 3 has been re-engineered to analyze large, complex single-cell datasets. The algorithms at the core of Monocle 3 can process millions of cells in minutes. Monocle 3 will add some powerful new features that enable the analysis of organism- or embryo-scale experiments:</p>
 
-          <h2>Introduction</h2>
+            <ul>
+                <li>A better structured workflow to learn developmental trajectories.
+                <li>Support for the <a href="https://github.com/lmcinnes/umap">UMAP</a> algorithm to initialize trajectory inference.
+                <li>Support for trajectories with multiple roots.
+                <li>Ways to learn trajectories that have loops or points of convergence.
+                <li>Algorithms that automatically partition cells to learn disjoint or parallel trajectories using ideas from <a href="https://www.biorxiv.org/content/early/2017/10/25/208819">"approximate graph abstraction"</a>.
+                <li>A new statistical test for genes that have trajectory-dependent expression.
+                <li>A 3D interface to visualize trajectories and gene expression.
+            </ul>
 
-          <h2> Installing Monocle </h2>
+            <p><strong>Monocle 3 is still under active development</strong>. This first early alpha release only includes some of the features listed above. We plan to release updates to Monocle 3 every few weeks that add the functionality you see mentioned here. Moreover, the above is only a partial list of the new features coming in Monocle 3, and more may be announced over the next few weeks and months. Note that some of Monocle 2's functions haven't yet been forward ported to Monocle 3. We welcome users' bug reports, comments and feedback. </p>
+
+            <p>Below, you can find more details about some of the major new ideas and features in Monocle 3</p>
+
+            <h4>Uniform Manifold Approximation and Projection</h4>
+
+            <p>Recently, Leland McInnes and John Healy introduced UMAP, a powerful new manifold learning technique that we've found works extremely well on single-cell RNA-seq data. Monocle 3 uses UMAP to embed cells in a low dimensional space, and then uses our principal graph embedding algorithms to learn a trajectory that fits the cells' UMAP coordinates. This approach enables Monocle 3 to learn very complex, potentially disjoint trajectories without much parameter optimization. Monocle 3 currently relies on the python implementation of <a href="https://github.com/lmcinnes/umap">UMAP</a>. You can check out the preprint about UMAP here:</p>
+            
+            <p>McInnes, L, Healy, J, <a href="https://arxiv.org/abs/1802.03426">UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction</a>, ArXiv e-prints 1802.03426, 2018).</p>
+            
+            <p>In Monocle 3 we provide a standard alone function <code>UMAP</code> to run umap. UMAP is also seamlessly integrated into the <code>reduceDimension</code> function.</p>
+
+          <h2> Installing Monocle 3</h2>
 
           <h3> Required software </h3>
 
@@ -47,25 +68,34 @@ biocLite()
           of its required dependencies:
 
 {% highlight R %}
-> biocLite("monocle")
+biocLite("monocle")
 {% endhighlight %}
 
           <p> Install DDRTree (simple-ppt-like branch) from our GitHub repo:</p>
 
 {% highlight R %}
-> devtools::install_github("cole-trapnell-lab/DDRTree", ref="simple-ppt-like")
+devtools::install_github("cole-trapnell-lab/DDRTree", ref="simple-ppt-like")
 {% endhighlight %}
 
           <p> Install the latest version of L1-graph from our GitHub repo:</p>
 
 {% highlight R %}
-> devtools::install_github("cole-trapnell-lab/L1-graph")
+devtools::install_github("cole-trapnell-lab/L1-graph")
+{% endhighlight %}
+
+          <p> Install several python packages Monocle 3 depends on:</p>
+
+{% highlight R %}
+install.packages("reticulate")
+library(reticulate)
+py_install("umap-learn")
+py_install("louvain")
 {% endhighlight %}
 
           <p> Then pull the monocle3_beta_release branch of the Monocle GitHub repo:</p>
 
 {% highlight R %}
-> devtools::install_github("cole-trapnell-lab/monocle-release", ref="monocle3_beta_release")
+devtools::install_github("cole-trapnell-lab/monocle-release", ref="monocle3_beta_release")
 {% endhighlight %}
 
           <h3> Testing the installation </h3>
@@ -110,7 +140,7 @@ biocLite(c("DDRTree", "pheatmap"))
           <p>Next, to eliminate noise and make downstream computations more tractable, it projects each cell onto the top 50 (by default) principal components. Then, you as the user choose whether to reduce the dimensionality further using one of two non-linear methods for dimensionality reduction: t-SNE or UMAP. The former is an extremely popular and widely accepted technique for visualizing single-cell RNA-seq data. The latter is faster, and often better preserves the global structure of the data but is also newer and therefore less well tested by the single-cell community. Then, Monocle 3 will cluster your cells, organize them into trajectories, or both.</p>
 
           <h4>Step 3: Partitioning the cells </h4>
-          <p>Monocle 3 can learn multiple disconnected or "disjoint" trajectories. This is important because many experiments will capture a community of cells that are responding to a stimulus or undergoing differentiation, with each type of cell responding differently. Where Monocle 2 would incorrectly force them all into a single trajectory, Monocle 3 can detect that some cells are part of a different process than others in the dataset. Monocle 3 achieves this by "partitioning" the cells into "supergroups" using a method derived from "approximate graph abstraction" (AGA) (Wolf et al, 2017). Cells from different supergroups cannot be part of the same trajectory.
+          <p>Monocle 3 can learn multiple disconnected or "disjoint" trajectories. This is important because many experiments will capture a community of cells that are responding to a stimulus or undergoing differentiation, with each type of cell responding differently. Where Monocle 2 would incorrectly force them all into a single trajectory, Monocle 3 can detect that some cells are part of a different process than others in the dataset. Monocle 3 achieves this by "partitioning" the cells into "supergroups" using a method derived from <a href="https://www.biorxiv.org/content/early/2017/10/25/208819">"approximate graph abstraction"</a> (AGA) (Wolf et al, 2017). Cells from different supergroups cannot be part of the same trajectory.
 
           <h4>Step 4: Learning the principal graph </h4>
           <p>Monocle 3 provides three different ways to organize cells into trajectories, all of which are based on the concept of "principal graph embedding". DDRTree is the method used in Monocle 2 to learn tree-like trajectories, and has received some important updates in Monocle 3. SimplePPT works similarly to DDRTree in that it learns a tree-like trajectory, but it does not attempt to further reduce the dimensionality of the data. L1Graph is an advanced optimization method that can learn trajectories that have loops in them (that is, trajectories that aren't trees).
@@ -118,105 +148,7 @@ biocLite(c("DDRTree", "pheatmap"))
           <h4>Step 5: Visualize results </h4>
           <p>Once this is complete, you can run tests for genes that are specific to each cluster, find genes that vary over the course of a trajectory, and plot your data in many different ways. Monocle 3 provides a suite of regression tests to find genes that differ between clusters and over trajectories. Monocle 3 also introduces a new test that uses the principal graph directly and can help find genes that vary in complex ways over a trajectory with loops and more intricate structures.
 
-          <h3>Recommended analysis protocol</h3>
-          <p>Monocle is a powerful toolkit for analyzing single-cell RNA-seq.  You don't need
-          to use all of its features for every analysis, and there are more than one way
-          to do some steps. The workflow is broken up into broad steps. When there's more than
-          one way to do a certain step, we've labeled the options as follows:
-
-          <table class= "table">
-          <!-- <thead>
-          <tr>
-          <th>Family function</th>
-          <th>Data type</th>
-          <th>Notes</th>
-          </tr>
-          </thead> -->
-          <tbody>
-          <tr>
-          <td><span class= "label label-danger">Required</span></td>
-          <td>You need to do this.</td>
-          </tr>
-          <tr>
-          <td><span class= "label label-info">Recommended</span> </td>
-          <td>Of the ways you could do this, we recommend you try this one first.</td>
-          </tr>
-          <tr>
-          <td><span class= "label label-success">Alternative</span></td>
-          <td>Of the ways you could do this, this way might work better than the one we usually recommend.</td>
-          </tr>
-          </tbody>
-          </table>
-
-          <h3>Monocle 3 steps at a glance</h3>
-          <p>Below, you can see snippets of code that highlight the main steps of Monocle.
-          Click on the section headers to jump to the detailed sections describing each one. </p>
-
-          <h4><a href= "{{ site.baseurl }}/docs/#getting-started-with-monocle">Store Data in a <a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a> Object</a></h4>
-          The first step in working with Monocle is to load up your data into Monocle's
-          main class, <code><a href = "https://rdrr.io/bioc/monocle/man/CellDataSet.html">CellDataSet</a></code>:
-
-{% highlight R %}
-pd <- new("AnnotatedDataFrame", data = sample_sheet)
-fd <- new("AnnotatedDataFrame", data = gene_annotation)
-cds <- newCellDataSet(expr_matrix, phenoData = pd, featureData = fd)
-{% endhighlight %}
-
-          <h4><a href= "{{ site.baseurl }}/docs/#classifying-and-counting-cells">Classify cells with known marker genes</a></h4>
-          Next, leverage your knowledge of key marker genes to quickly and easily classify your cells by type:
-{% highlight R %}
-cth <- newCellTypeHierarchy()
-
-MYF5_id <- row.names(subset(fData(cds), gene_short_name == "MYF5"))
-ANPEP_id <- row.names(subset(fData(cds), gene_short_name == "ANPEP"))
-
-cth <- addCellType(cth, "Myoblast", classify_func =
-    function(x) { x[MYF5_id,] >= 1 })
-cth <- addCellType(cth, "Fibroblast", classify_func =
-    function(x) { x[MYF5_id,] < 1 & x[ANPEP_id,] > 1 } )
-
-cds <- classifyCells(cds, cth, 0.1)
-{% endhighlight %}
-
-          <h4><a href= "{{ site.baseurl }}/docs/#clustering-cells">Cluster your cells</a></h4>
-          You can easily cluster your cells to find new types:
-
-{% highlight R %}
-cds <- clusterCells(cds)
-{% endhighlight %}
-
-          <h4><a href= "{{ site.baseurl }}/docs/#constructing-single-cell-trajectories">Order cells in pseudotime along a trajectory</a></h4>
-          Now, put your cells in order by how much progress they've made through whatever process you're studying, such as differentiation,
-          reprogramming, or an immune response.
-
-{% highlight R %}
-disp_table <- dispersionTable(cds)
-ordering_genes <- subset(disp_table, mean_expression >= 0.1)
-cds <- setOrderingFilter(cds, ordering_genes)
-cds <- reduceDimension(cds)
-cds <- orderCells(cds)
-{% endhighlight %}
-
-          <h4><a href= "{{ site.baseurl }}/docs/#differential-expression-analysis">Perform differential expression analysis</a></h4>
-          Compare groups of cells in myriad ways to find differentially expressed genes,
-          controlling for batch effects and treatments as you like:
-
-{% highlight R %}
-diff_test_res <- differentialGeneTest(cds,
-    fullModelFormulaStr = "~Media")
-sig_genes <- subset(diff_test_res, qval < 0.1)
-{% endhighlight %}
-
-
-
-
-
-
-
-
-
-
-        <h2>Tutorial: learning trajectories with Monocle 3</h2>
+        <h2>Tutorial 1: learning trajectories with Monocle 3</h2>
             <p> In this tutorial, we demonstrate how to use Monocle 3 (alpha release) to resolve multiple disjoint trajectories. We will mainly introduce:</p>
             <ul>
             <li>How to learn tree-like trajectories with monocle 3 in two or three dimensions.</li>
@@ -224,15 +156,12 @@ sig_genes <- subset(diff_test_res, qval < 0.1)
             <li>How to visualize these trajectories in static 2D plots and interactive 3D plots.</li>
             </ul>
           
-            <h3 data-toc-text= "Step 1: Load Monocle">Trajectory step 1: Load Monocle </h3>
+            <h3 data-toc-text= "Load Monocle and data">Preliminaries: Load Monocle and the data </h3>
 {% highlight R %}
 rm(list = ls())  # Clear the environment 
 options(warn=-1) # Turn off warning message globally 
 library(monocle) # Load Monocle
 {% endhighlight %}
-
-
-          <h3 data-toc-text= "Step 2: Load data">Trajectory step 2: Load the data </h3>
 
           <p>Let's load up the data from Paul et. al, which explored hematopoeisis at single-cell resolution. To save time, we'll just load a CellDataSet object. We'll also change the cluster IDs from the original study into easier to read names. Then we'll set up some colors for each of them that we'll use in some plots later. 
               
@@ -279,7 +208,7 @@ cds <- updateCDS(cds)
 
           <br>
 
-          <h3 data-toc-text= "Step 3: Order cells">Trajectory step 3: Estimate size factors and dispersions </h3>
+          <h3 data-toc-text= "Step 1: Normalize and pre-process">Step 1: Noramlize and pre-process the data </h3>
 
           <p>We then estimate size factors for each cell and dispersion function for the genes in the cds as usual. Monocle 3 now performs these operations using the DelayedArray packages so they work on datasets with millions of cells.
 
@@ -289,9 +218,6 @@ cds <- estimateDispersions(cds)
 {% endhighlight %}
 
           <br>
-
-          <h3 data-toc-text= "Step 4: Preprocess data">Trajectory step 4: Pre-process the data </h3>
-
           <p> Next, run the <code>preprocessCDS()</code> function to project the data onto the top principal components: </p>
 
 {% highlight R %}
@@ -300,7 +226,7 @@ cds <- preprocessCDS(cds, num_dim = 20)
 
           <br>
 
-          <h3 data-toc-text= "Step 5: Reduce dimensionality">Trajectory step 5: Reduce the dimensionality of the data </h3>
+          <h3 data-toc-text= "Step 2: Reduce dimensionality">Step 2: Reduce the dimensionality of the data </h3>
 
           <p> Then, apply a further round of (nonlinear) dimensionality reduction using UMAP: </p>
          
@@ -314,7 +240,7 @@ cds <- reduceDimension(cds, reduction_method = 'UMAP')
 
           <br>
 
-          <h3 data-toc-text= "Step 6: Partition cells">Trajectory step 6: Partition the cells into supergroups </h3>
+          <h3 data-toc-text= "Step 3: Partition cells">Step 3: Partition the cells into supergroups </h3>
           
           <p>Rather than forcing all cells into a single developmental trajectory, Monocle 3 enables you to learn a set of trajectories that describe the biological process you're studying. For example, if you're looking at a community of immune cells responding to infection, each cell type will respond to antigen (and each other) in a different way, so they should be organized into distinct trajectories.</p>
 
@@ -324,13 +250,20 @@ cds <- reduceDimension(cds, reduction_method = 'UMAP')
 cds <- partitionCells(cds)
 {% endhighlight %}
 
-          <h3 data-toc-text= "Step 7: Learn graph">Trajectory step 7: Learn the principal graph </h3>
+          <h3 data-toc-text= "Step 4: Learn graph">Step 4: Learn the principal graph </h3>
           
           <p>Now that the cells are paritioned, we can organize each supergroup into a separate trajectory. The default method for doing this in Monocle 3 is SimplePPT, which assumes that each trajectory is a tree (albeit one that may have multiple roots). Learn these trees with the learnGraph function:</p>
 
 
 {% highlight R %}
 cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
+{% endhighlight %}
+
+<h3 data-toc-text= "Step 5: Visualize trajectory">Step 5: Visualize the trajectory </h3>
+
+          <p>Once the you've learned the trajectory, you can visualize the it and color the cells in different ways.</p>
+
+{% highlight R %}
 plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values = cell_type_color)
 {% endhighlight %}
 
@@ -339,9 +272,7 @@ plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values =
                 </div>
       
           <p>You can see that Monocle has learned two trajectories, one of which is tiny and essentially trivial. The other has one major branch. SimplePPT essentially is finding a principal graph that fits nicely within the cells as projected in the UMAP coordinate space.</p>
-          
-          <h3 data-toc-text= "Step 8: Define start points">Trajectory step 8: Define the starting point(s) for the trajectory </h3>
-          
+
           <p>In the trajectory above, you can see that the "Multipotent progenitor" cells are located roughly in the middle of the longer trajectory segment. We know from extensive past study of hematopoeisis that these are the "root" cell state that generates all the others in the primary trajectory. We need to tell Monocle that these cells are the "beginning" of the trajectory. In Monocle 2, this wouldn't be possible, because the software required that the root be one of the leaves of the tree. Monocle 3 allows you to specify an internal part of the tree as the root. There are two ways to do this:</p>
 
           <ol>
@@ -415,10 +346,133 @@ plot_3d_cell_trajectory(cds,
                         useNULL_GLdev=TRUE)
 {% endhighlight %}
 
+        <br>
 
-{% include widget_scripts/valid_subset_GSE72857_cds2.html %}
+<p>(You can left-click and drag your mouse to rotate the plot below. Scroll to zoom)</p>
 
+{% include widget_scripts/trajectory_3D.html %}
+
+          <h3 data-toc-text= "Differential expression">Identifying genes that vary in expression over a trajectory  </h3>
+
+          <p>We are often interested in finding genes that are differentially expressed across a single-cell trajectory. Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be *anti-correlated* (left). </p>
         
+
+        <div class= "text-center">
+        <img src= "{{site.baseurl}}/images/monocle3_vignette/moran_I.png" width= 600>
+        </div>
+
+     
+{% highlight R %}
+pr_graph_test <- principalGraphTest(cds, k=3, cores=1)
+{% endhighlight %}
+        
+          <p>We can easily view the top differentially expressed genes as follows:</p>
+
+{% highlight R %}
+dplyr::add_rownames(pr_graph_test) %>% 
+    dplyr::arrange(plyr::desc(morans_test_statistic), plyr::desc(-qval)) %>% head(3) 
+{% endhighlight %}
+
+
+<table class = "table" style="overflow:auto;">
+<thead>
+    <tr>
+    <th>rowname</th>
+    <th>status</th>
+    <th>pval</th>
+    <th>morans_test_statistic</th>
+    <th>morans_I</th>
+    <th>gene_short_name</th>
+    <th>qval</th>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+    <th>Gzmb</th>
+    <th>OK</th>
+    <th>0</th>
+    <th>60.91698</th>
+    <th>0.8583454</th>
+    <th>Gzmb</th>
+    <th>0</th>
+    </tr>
+
+    <tr>
+    <th>H2-Eb1</th>
+    <th>OK</th>
+    <th>0</th>
+    <th>53.66317</th>
+    <th>0.7959590</th>
+    <th>H2-Eb1</th>
+    <th>0</th>
+    </tr>
+
+    <tr>
+    <th>Ermap</th>
+    <th>OK</th>
+    <th>0</th>
+    <th>49.39775</th>
+    <th>0.7465939/th>
+    <th>Ermap</th>
+    <th>0</th>
+    </tr>
+
+</tbody>
+</table>
+
+
+{% highlight R %}
+pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
+{% endhighlight %}
+
+        <p>You can check out the test results for one or more genes like this:</p>
+
+{% highlight R %}
+pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
+{% endhighlight %}
+        
+<table class = "table" style="overflow:auto;">
+<thead>
+    <tr>
+    <th>rowname</th>
+    <th>status</th>
+    <th>pval</th>
+    <th>morans_test_statistic</th>
+    <th>morans_I</th>
+    <th>gene_short_name</th>
+    <th>qval</th>
+    </tr>
+</thead>
+<tbody>
+    <tr>
+    <th>Hbb-b1</th>
+    <th>OK</th>
+    <th>1.188097e-174</th>
+    <th>28.1503</th>
+    <th>0.424004</th>
+    <th>Hbb-b1</th>
+    <th>4.298622e-173</th>
+    </tr>
+</tbody>
+</table>
+
+          <p>The code below reports that overall, there are more than 2,300 DE genes over the whole trajectory:</p>
+
+{% highlight R %}
+pr_graph_test[fData(cds)$gene_short_name %in% c("Hbb-b1"),]
+{% endhighlight %}
+
+<p>Once you've identified differentially expressed genes, you'll often want to visualize their expression levels on the trajectory. The plot bleow shows each cell with detectable levels of Hbb-b1 superimposed on the trajectory. Values are log-transformed and scaled into Z scores. Cells with no expression are not shown to avoid overplotting.</p>
+
+{% highlight R %}
+plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
+                        webGL_filename=paste(getwd(), "/beta_globin.html", sep=""), 
+                        show_backbone=TRUE, 
+                        useNULL_GLdev=TRUE)
+{% endhighlight %}
+
+{% include widget_scripts/beta_globin.html %}
+
           <h2>Citation </h2>
 
 
@@ -453,35 +507,6 @@ citation("monocle")
           Monocle 2 was developed by Cole Trapnell's lab. Significant portions were written by Xiaojie Qiu. The work was supported by NIH grant 1DP2HD088158 as well as an Alfred P. Sloan Foundation Research Fellowship.
 
           This vignette was created from Wolfgang Huber's Bioconductor vignette style document, and patterned after the vignette for <em>DESeq</em>, by Simon Anders and Wolfgang Huber.
-
-          <h2>References </h2>
-
-
-          <p> [1] Cole Trapnell, Davide Cacchiarelli, Jonna Grimsby, Prapti Pokharel, Shuqiang Li, Michael Morse, Niall J. Lennon, Kenneth J. Livak, Tarjei S. Mikkelsen, and John L. Rinn. <a href = "http://www.nature.com/nbt/journal/v32/n4/abs/nbt.2859.html"> The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells</a>. Nature Biotechnology, 2014. </p>
-
-          <p> [2] Cole Trapnell, Adam Roberts, Loyal Goff, Geo Pertea, Daehwan Kim, David R Kelley, Harold Pimentel, Steven L Salzberg, John L Rinn, and Lior Pachter. <a href = "https://www.ncbi.nlm.nih.gov/pubmed/22383036"> Differential gene and transcript expression analysis of RNA-seq experiments with TopHat and Cufflinks</a>. Nature Protocols, 7(3):562–578, March 2012. </p>
-
-          <p> [3] Laurens van der Maaten and Geoffrey Hinton. <a href = "http://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf"> Visualizing data using t-SNE</a>. J. Mach. Learn. Res., 9(Nov):2579– 2605, 2008. </p>
-
-          <p> [4] Alex Rodriguez. Alessandro Laio. <a href = "http://science.sciencemag.org/content/344/6191/1492"> Clustering by fast search and find of density peaks</a>. Science, 344:1492–1496, 2014. </p>
-
-          <p> [5] Hadley Wickham. <a href = "http://www.springer.com/us/book/9780387981413"> ggplot2: Elegant Graphics for Data Analysis</a>. Springer-Verlag New York, 2009. </p>
-
-          <p> [6] Simon Anders and Wolfgang Huber. <a href = "https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-10-r106"> Differential expression analysis for sequence count data</a>. Genome Biol., 11(10):R106, 2010. </p>
-
-          <p> [7] Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. <a href= "http://dl.acm.org/citation.cfm?id= 2783309"> Dimensionality reduction via graph structure learning</a>. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015. </p>
-
-          <p> [8] X Qiu, A Hill, J Packer, D Lin, YA Ma, and C Trapnell. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/28114287"> Single-cell mrna quantification and differential analysis with census</a>. Nature methods, 2017. </p>
-
-          <p> [9] Rahul Satija, Jeffrey A Farrell, David Gennert, Alexander F Schier, and Aviv Regev. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/25867923"> Spatial reconstruction of single-cell gene expression data</a>. Nat. Biotechnol., 33(5):495–502, May 2015. </p>
-
-          <p> [10] Xiaojie Qiu, Qi Mao, Ying Tang, Li Wang, Raghav Chawla, Hannah Pliner, and Cole Trapnell. <a href= "http://www.biorxiv.org/content/early/2017/02/21/110668"> Reversed graph embedding resolves complex single-cell developmental trajectories</a>. 21 February 2017. </p>
-
-          <p> [11] Evan Z Macosko, Anindita Basu, Rahul Satija, James Nemesh, Karthik Shekhar, Melissa Goldman, Itay Tirosh, Allison R Bialas, Nolan Kamitaki, Emily M Martersteck, John J Trombetta, David A Weitz, Joshua R Sanes, Alex K Shalek, Aviv Regev, and Steven A McCarroll. <a href= "https://www.ncbi.nlm.nih.gov/pubmed/26000488">Highly parallel genome-wide expression profiling of individual cells using nanoliter droplets</a>. Cell, 161(5):1202–1214, 2015. </p>
-
-          <p> [12] Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. <a href= "http://ieeexplore.ieee.org/document/7769209/?reload=true">Principal graph and structure learning based on reversed graph embedding </a>. IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016. </p>
-
-          <p> [13] Cabili, Moran N. et al. <a href = "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3185964/">Integrative Annotation of Human Large Intergenic Noncoding RNAs Reveals Global Properties and Specific Subclasses</a>. Genes & Development 25.18 (2011): 1915–1927. PMC. Web. 21 June 2017. </p>
 
 
 </div>
