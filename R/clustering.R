@@ -95,7 +95,7 @@ clusterCells <- function(cds,
                          k = 20, 
                          louvain_iter = 5, 
                          weight = FALSE,
-                         res = seq(0, 1e-4, length.out = 5),
+                         res = NULL, #seq(0, 1e-4, length.out = 5)
                          method = c('densityPeak', 'louvain'),
                          verbose = F, 
                          cores=1,
