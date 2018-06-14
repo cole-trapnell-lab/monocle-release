@@ -27,7 +27,7 @@ Depends:
 Imports:
     parallel,
     igraph (>= 1.0.1),
-    BiocGenerics,
+    BiocGenerics (>= 0.26.0),
     HSMMSingleCell (>= 0.101.5),
     plyr,
     cluster,
@@ -73,7 +73,7 @@ Suggests:
     magick
 Remotes:
     bioc::Biobase,
-    bioc::3.7/BiocGenerics,
+    bioc::BiocGenerics,
     bioc::biocViews,
     bioc::limma
 VignetteBuilder: knitr
