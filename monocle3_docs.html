@@ -305,7 +305,7 @@ plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values =
 
           <p>Once you select one or more roots, <code>orderCells()</code> computes the shortest path from each cell's location on the princiapl graph to the nearest root node. That is, a cell's pseudotime value is the geodesic distance from it to the nearest root, traveling over the graph. Any cell that is not reachable from some root will be assigned a pseudotime value of infinity.</p>
 
-          <p>You may find it helpful to automatically pick the root according to any number of biologically-driven criteria. For example, you could find the nodes at which cells expressing a certain marker gene are concentrated. Or could select the node where cells from an early experimental timepoint land. Here, we provide one such helper function to show you how to do this kind of thing:</p>
+          <p>You may find it helpful to automatically pick the root according to any number of biologically-driven criteria. For example, you could find the nodes at which cells expressing a certain marker gene are concentrated. Or we could select the node where cells from an early experimental timepoint land. Here, we provide one such helper function to show you how to do this kind of thing:</p>
 
 
 {% highlight R %}
@@ -321,8 +321,13 @@ get_correct_root_state <- function(cds, cell_phenotype, root_type){
 }
 {% endhighlight %}
 
+<<<<<<< HEAD
           <p>In the above function, we are accessing <code>pr_graph_cell_proj_closest_vertex</code> which is just a list that stores for each cell, the ID of the principal graph node it's closest to. This is handy for computing statistics (e.g. with dplyr) about the principal graph nodes and which cells of what type map to them.
 
+=======
+          <p>In the above function, we are accessing <code>pr_graph_cell_proj_closest_vertex</code> which is just a matrix with a single column that stores for each cell, the ID of the principal graph node it's closest to. This is handy for computing statistics (e.g. with dplyr) about the principal graph nodes and which cells of what type map to them.
+          
+>>>>>>> b61f43a8ca0e42fa0c5bdb68ad8f8f076af68893
           <p>Now we can call this function to automatically find the node in the principal graph where our multipotent progenitors reside:</p>
 
 {% highlight R %}
@@ -331,7 +336,7 @@ cds <- orderCells(cds, root_pr_nodes = MPP_node_ids)
 plot_cell_trajectory(cds)
 {% endhighlight %}
 
-          <p>In the figure shown above, we can see that the dendritic cells have a pseudotime value of infinity (shown in gray) because they are not reachable through the graph from the root we selected.</p>
+          <p>In the figure shown below, we can see that the dendritic cells have a pseudotime value of infinity (shown in gray) because they are not reachable through the graph from the root we selected.</p>
 
 
 <div class= "text-center">
