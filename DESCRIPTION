@@ -57,7 +57,10 @@ Imports:
     htmlwidgets,
     spdep,
     glmnet,
-    ggridges
+    ggridges,
+    reticulate,
+    htmltools,
+    matrixStats
 LinkingTo: Rcpp
 Suggests:
     destiny,

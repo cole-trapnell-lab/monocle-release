@@ -6,9 +6,7 @@
 \usage{
 clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
-  peaks = NULL, gaussian = T, cell_type_hierarchy = NULL,
-  frequency_thresh = NULL, enrichment_thresh = NULL, rank_prob_ratio = 2,
-  min_observations = 8, clustering_genes = NULL, k = 20,
+  peaks = NULL, gaussian = T, clustering_genes = NULL, k = 20,
   louvain_iter = 1, weight = FALSE, method = c("densityPeak", "louvain"),
   verbose = F, cores = 1, ...)
 }
@@ -31,12 +29,6 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{gaussian}{A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density}
 
-\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
-
-\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
-
-\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
-
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
 \item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50}
@@ -50,6 +42,12 @@ will automatically calculated based on the top num_cluster product of rho and si
 \item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
+
+\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
+
+\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
+
+\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
