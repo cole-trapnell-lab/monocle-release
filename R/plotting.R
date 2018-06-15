@@ -2908,13 +2908,18 @@ plot_cell_fdl <- function(cds,
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param webGL_filename the name of a file to which you'd to write a webGL file containing the plot
-#' @param movie_filename the name of a file to which you'd to write an animated GIF containing the plot
-#' @param show_backbone whether to show the principal graph used to order the cells
+#' @param image_filename the name of a file to which you'd to write an animated GIF containing the plot
+# #' @param show_backbone whether to show the principal graph used to order the cells
 #' @param scale_expr whether to tranform the log expression values to z scores
 #' @param palette the color palette used for plotting
 #' @param width the width of the plot in pixels
 #' @param height the height of the plot in pixels
 #' @param useNULL_GLdev if TRUE, don't show the plot on the screen (to be used with webGL or movie output)
+#' @param show_group_labels Whether or not to show labels of groups
+#' @param cell_size size of cells, default value is 5
+#' @param backbone_segment_color color of backbone, value is a string containing a hex color value
+#' @param backbone_vertex_color
+#' @param cell_alpha
 #' @return a ggplot2 plot object
 #' @import rgl
 #' @import htmltools

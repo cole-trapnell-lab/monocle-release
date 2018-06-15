@@ -65,6 +65,8 @@ include:
   time care must be taken and dictionary elements must be ordered
   appropriately; this will hopefully be fixed in the future.}
 
+\item{n_epochs}{int The number of training epochs to use in optimization.}
+
 \item{negative_sample_rate}{int (optional, default 5)
 The number of negative edge/1-simplex samples to use per positive 
 edge/1-simplex sample in optimizing the low dimensional embedding.}

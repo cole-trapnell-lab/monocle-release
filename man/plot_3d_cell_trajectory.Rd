@@ -25,7 +25,15 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 
 \item{markers_linear}{a boolean used to indicate whether you want to scale the markers logarithimically or linearly}
 
+\item{cell_size}{size of cells, default value is 5}
+
+\item{backbone_segment_color}{color of backbone, value is a string containing a hex color value}
+
+\item{show_group_labels}{Whether or not to show labels of groups}
+
 \item{webGL_filename}{the name of a file to which you'd to write a webGL file containing the plot}
+
+\item{image_filename}{the name of a file to which you'd to write an animated GIF containing the plot}
 
 \item{scale_expr}{whether to tranform the log expression values to z scores}
 
@@ -34,10 +42,6 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 \item{height}{the height of the plot in pixels}
 
 \item{useNULL_GLdev}{if TRUE, don't show the plot on the screen (to be used with webGL or movie output)}
-
-\item{movie_filename}{the name of a file to which you'd to write an animated GIF containing the plot}
-
-\item{show_backbone}{whether to show the principal graph used to order the cells}
 }
 \value{
 a ggplot2 plot object

@@ -429,6 +429,7 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' It accepts a CellDataSet and two model formulae as input, which specify generalized
 #' lineage models as implemented by the \code{VGAM} package. 
 #' 
+#' @seealso \code{\link{principalGraphTest}} principalGraphTest
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param spatial_res the result returned from spatialDifferentialTest
 #' @param group_by a column in the pData specifying the groups for calculating the specifities. By default it is Cluster
@@ -442,7 +443,6 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
 #' @importFrom reshape2 melt
-#' @seealso \code{\link{principalGraphTest}}
 #' @export
 #' 
 find_cluster_markers <- function(cds, 

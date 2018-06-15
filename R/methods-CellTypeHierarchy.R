@@ -328,7 +328,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 
 
 #' @title classifyCellsHelperCellGlmNet
-#' @description Classify cells using glmnet ask Xiaojie
+#' @description 
 #' @param cds CellDataSet containing cells that will be clustered
 #' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
 #' @importFrom glmnet cv.glmnet
@@ -576,11 +576,11 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
 #' @title classifyCellsGlmNet
 #' @param cds CellDataSet containing cells that will be clustered
 #' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
-#' @param rank_prob_ratio ask Xiaojie
-#' @param min_observations ask Xiaojie 
-#' @param max_training_samples ask Xiaojie
+#' @param rank_prob_ratio 
+#' @param min_observations 
+#' @param max_training_samples 
 #' @param cores Number of cores computer should use to execute function
-#' @description Classify cells using glmnet ask Xiaojie
+#' @description 
 #' @export
 classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
   
@@ -651,8 +651,6 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
 #' @param cds The CelllDataSet you want to classify
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
-#' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
-#' @param frequency_thresh If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.  
 #' @importFrom dplyr select_ do group_by_ inner_join %>%
 #' @importFrom tibble rownames_to_column
 #' @importFrom Biobase pData pData<-

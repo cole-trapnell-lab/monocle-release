@@ -9,6 +9,16 @@ setValidity( "CellDataSet", function( object ) {
   TRUE
 } )
 
+#' @name [
+#' @aliases [, CellDataSet-method
+#' @param x
+#' @param i
+#' @param j
+#' @param ...
+#' @param drop
+#' @docType methods
+#' @rdname extract-methods
+#' 
 setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
   if (missing(drop))
     drop <- FALSE

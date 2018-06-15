@@ -25,10 +25,6 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}
 
 \item{...}{character strings that you wish to pass to dplyr's group_by_ routine}
-
-\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
-
-\item{frequency_thresh}{If at least this fraction of group of cells meet a cell types marker criteria, impute them all to be of that type.}
 }
 \value{
 \code{newCellTypeHierarchy} and \code{addCellType} both return an 

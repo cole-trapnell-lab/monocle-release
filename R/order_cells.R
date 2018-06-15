@@ -670,7 +670,7 @@ partitionCells <- function(cds,
 #' @param auto_param_selection when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param do_partition When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
-#' @param scaling When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
+#' @param scale When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
 #' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
@@ -1396,6 +1396,15 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
+#' @param cds CellDataSet
+#' @param scale
+#' @param RGE_method
+#' @param partition_group
+#' @param irlba_pca_res
+#' @param max_components
+#' @param extra_arguments
+#' @param close_loop
+#' @param verbose
 multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   

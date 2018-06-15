@@ -65,7 +65,11 @@ louvain_clustering(data, pd, k = 20, weight = F, louvain_iter = 1,
 
 \item{louvain_iter}{the number of iteraction for louvain clustering}
 
+\item{resolution}{resolution of clustering result}
+
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
+
+\item{...}{extra arguments used to run louvain_R}
 }
 \value{
 a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 

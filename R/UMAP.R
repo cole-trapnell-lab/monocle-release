@@ -52,6 +52,7 @@
 #'   can have arguments passed via the metric_kwds dictionary. At this
 #'   time care must be taken and dictionary elements must be ordered
 #'   appropriately; this will hopefully be fixed in the future.
+#' @param n_epochs int The number of training epochs to use in optimization.
 #' @param negative_sample_rate int (optional, default 5)
 #' The number of negative edge/1-simplex samples to use per positive 
 #' edge/1-simplex sample in optimizing the low dimensional embedding. 
