@@ -18,7 +18,7 @@ Depends:
     R (>= 3.5),
     methods,
     Matrix (>= 1.2-6),
-    DelayedArray,
+    DelayedArray (>= 0.6.0),
     Biobase,
     ggplot2 (>= 1.0.0),
     VGAM (>= 1.0-1),
@@ -73,7 +73,7 @@ Suggests:
     magick
 Remotes:
     bioc::Biobase,
-    bioc::BiocGenerics (>= 0.26.0),
+    bioc::BiocGenerics (>= 0.25.1),
     bioc::biocViews,
     bioc::limma
 VignetteBuilder: knitr
