@@ -441,7 +441,6 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
 #' @importFrom reshape2 melt
-#' @seealso \code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
 #' @export
 #' 
 find_cluster_markers <- function(cds, 
@@ -456,9 +455,6 @@ find_cluster_markers <- function(cds,
                                 ...) {
   if(!(group_by %in% colnames(pData(cds)))) {
     stop('Please ensure group_by is included in the pData')
-  }
-  if(identical(c("status", "pval", "morans_test_statistic", "morans_I", "gene_short_name", "qval"), colnames(spatial_res))) {
-    stop('Please make sure the spatial_res result you passed in comes from the spatialDifferentialTest')
   }
   
   gene_ids <- row.names(subset(spatial_res, qval < qval_threshold & morans_I > morans_I_threshold))

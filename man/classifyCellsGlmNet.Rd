@@ -2,8 +2,11 @@
 % Please edit documentation in R/methods-CellTypeHierarchy.R
 \name{classifyCellsGlmNet}
 \alias{classifyCellsGlmNet}
-\title{Classify cells using glmnet}
+\title{classifyCellsGlmNet}
 \usage{
 classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
   max_training_samples = 10000, cores = 1)
+}
+\description{
+Classify cells using glmnet
 }

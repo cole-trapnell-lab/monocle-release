@@ -2,8 +2,11 @@
 % Please edit documentation in R/methods-CellTypeHierarchy.R
 \name{classifyCellClusters}
 \alias{classifyCellClusters}
-\title{Impute cell type classifications using clustering results}
+\title{classifyCellClusters}
 \usage{
 classifyCellClusters(cds, cth, frequency_thresh = 0.8,
   grouping_var = "Cluster")
+}
+\description{
+Impute cell type classifications using clustering results
 }

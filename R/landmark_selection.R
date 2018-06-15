@@ -24,7 +24,7 @@ landmark_selection <- function(cds, landmark_num) {
 #' Downsample datasets with landmark algorithm to ensure full sampling of the entire data space
 #'
 #' @param cds a cell dataset after trajectory reconstruction
-#' @param landmark_num 
+#' @param landmark_num number of landmark cells to retrieve
 #' @return a new cds containing only the cells selected by the landmark selection algorithm 
 #' @export
 downsampleCDS <- function(cds, landmark_num) {

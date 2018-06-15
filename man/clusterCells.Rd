@@ -7,7 +7,7 @@
 clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
   inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
   peaks = NULL, gaussian = T, clustering_genes = NULL, k = 20,
-  louvain_iter = 5, weight = FALSE, res = seq(0, 1e-04, length.out = 5),
+  louvain_iter = 5, weight = FALSE, res = NULL,
   method = c("densityPeak", "louvain"), verbose = F, cores = 1, ...)
 }
 \arguments{

@@ -2,7 +2,10 @@
 % Please edit documentation in R/methods-CellTypeHierarchy.R
 \name{classifyCellsHelperCellGlmNet}
 \alias{classifyCellsHelperCellGlmNet}
-\title{Classify cells using glmnet}
+\title{classifyCellsHelperCellGlmNet}
 \usage{
 classifyCellsHelperCellGlmNet(cds, cth)
+}
+\description{
+Classify cells using glmnet
 }

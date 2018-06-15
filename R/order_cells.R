@@ -73,10 +73,10 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' will assign them increasingly large values of Pseudotime.
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param root_state The state to use as the root of the trajectory.
-#' You must already have called orderCells() once to use this argument.
-#' @param num_paths the number of end-point cell states to allow in the biological process.
-#' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' @param root_pr_nodes corresponding the starting principal point. 
+#' We learn a principal graph which pass the middle of data points and use it to represent the developmental process.
+#' @param root_cells These are the starting cells. 
+#' Each cell corresponds to a principal point and multiple cells can correspond to a single principal point.
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -579,7 +579,7 @@ reduceDimension <- function(cds,
 #' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
 #' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
 #' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
-#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ \times A \times X$$. Once $$M$$ is constructed, we can then follow 
+#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ multiplied by A multiplied by  X$$. Once $$M$$ is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 
@@ -592,6 +592,7 @@ reduceDimension <- function(cds,
 #' @param verbose Whether to emit verbose output during louvain clustering
 #' @param ... additional arguments to pass to the smoothEmbedding function
 #' @return an updated CellDataSet object
+#' @encoding UTF-8
 #' @export
 partitionCells <- function(cds,
                            k = 20, 
@@ -1188,12 +1189,12 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-# #' traverse from one cell to another cell
-# #'
-# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+#' traverse from one cell to another cell
+#'
+#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @importFrom igraph shortest.paths shortest_paths degree
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
@@ -1203,12 +1204,12 @@ traverseTree <- function(g, starting_cell, end_cells){
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-# #' Make a cds by traversing from one cell to another cell
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+#' Make a cds by traversing from one cell to another cell
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a new cds containing only the cells traversed from the intial cell to the end cell
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1223,17 +1224,18 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- unique(subset_cell)
   cds_subset <- SubSet_cds(cds, subset_cell)
 
-  root_state <- pData(cds_subset[, starting_cell])[, 'State']
-  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
+  # Check w/ webpage
+  root_cell <- pData(cds_subset[, starting_cell])
+  cds_subset <- orderCells(cds_subset, root_cells = root_cell)
 
   return(cds_subset)
 }
 
-# #' Subset a cds which only includes cells provided with the argument cells
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param cells a vector contains all the cells you want to subset
-# #' @return a new cds containing only the cells from the cells argument
+#' Subset a cds which only includes cells provided with the argument cells
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param cells a vector contains all the cells you want to subset
+#' @return a new cds containing only the cells from the cells argument
 #' @importFrom igraph graph.adjacency
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)

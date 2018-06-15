@@ -9,7 +9,7 @@ downsampleCDS(cds, landmark_num)
 \arguments{
 \item{cds}{a cell dataset after trajectory reconstruction}
 
-\item{landmark_num}{}
+\item{landmark_num}{number of landmark cells to retrieve}
 }
 \value{
 a new cds containing only the cells selected by the landmark selection algorithm

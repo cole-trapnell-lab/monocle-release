@@ -17,6 +17,7 @@
 #' @param return_all Whether to return all slots after louvain 
 #' Controls verbosity of logging.
 #' @return The cluster id if return_all set to be FALSE, otherwise all slots from the louvain function 
+#' @encoding UTF-8
 #' @import reticulate
 #' @export
 #' 
