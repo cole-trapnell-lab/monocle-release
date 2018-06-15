@@ -492,7 +492,7 @@ find_cluster_markers <- function(cds,
   }
   
   specificity_res <- ExpVal %>% group_by(Gene) %>% do({
-    tmp <- as_data_frame(.)
+    tmp <- dplyr::as_data_frame(.)
     tmp$specificity = FUN(tmp) 
     tmp 
   }) %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
