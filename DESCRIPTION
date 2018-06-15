@@ -71,11 +71,6 @@ Suggests:
     testthat, 
     reticulate,
     magick
-Remotes:
-    bioc::Biobase,
-    bioc::BiocGenerics,
-    bioc::biocViews,
-    bioc::limma
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true
