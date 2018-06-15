@@ -7,6 +7,15 @@
 classifyCellClusters(cds, cth, frequency_thresh = 0.8,
   grouping_var = "Cluster")
 }
+\arguments{
+\item{cds}{CellDataSet containing cells that will be clustered}
+
+\item{cth}{CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type}
+
+\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
+
+\item{grouping_var}{variable that controls how cells are grouped}
+}
 \description{
 Impute cell type classifications using clustering results
 }

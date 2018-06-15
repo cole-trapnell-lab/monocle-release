@@ -579,7 +579,7 @@ reduceDimension <- function(cds,
 #' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
 #' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
 #' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
-#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ multiplied by A multiplied by  X$$. Once $$M$$ is constructed, we can then follow 
+#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ × A × X$$. Once $$M$$ is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 

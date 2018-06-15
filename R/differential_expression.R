@@ -437,10 +437,12 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @param lower_threshold The lowest gene expression threshold for genes to be considered as expressed
 #' @param pseudocount Pseduo-count added to gene expression before calculating the log
 #' @param top_n_by_group Select top_n_by_group from each group based on the specificity 
-#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
+#' @param ... Additional arguments passed to function
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
 #' @importFrom reshape2 melt
+#' @seealso \code{\link{principalGraphTest}}
 #' @export
 #' 
 find_cluster_markers <- function(cds, 

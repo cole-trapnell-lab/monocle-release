@@ -328,7 +328,9 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 
 
 #' @title classifyCellsHelperCellGlmNet
-#' @description Classify cells using glmnet
+#' @description Classify cells using glmnet ask Xiaojie
+#' @param cds CellDataSet containing cells that will be clustered
+#' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
 #' @importFrom glmnet cv.glmnet
 #' @export
 classifyCellsHelperCellGlmNet <- function(cds, cth){
@@ -572,7 +574,13 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
 
 
 #' @title classifyCellsGlmNet
-#' @description Classify cells using glmnet
+#' @param cds CellDataSet containing cells that will be clustered
+#' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
+#' @param rank_prob_ratio ask Xiaojie
+#' @param min_observations ask Xiaojie 
+#' @param max_training_samples ask Xiaojie
+#' @param cores Number of cores computer should use to execute function
+#' @description Classify cells using glmnet ask Xiaojie
 #' @export
 classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
   
@@ -770,6 +778,10 @@ classifyClustersHelperCds <- function(cds_subset, cth, frequency_thresh){
 
 
 #' @title classifyCellClusters
+#' @param cds CellDataSet containing cells that will be clustered
+#' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
+#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
+#' @param grouping_var variable that controls how cells are grouped
 #' @description Impute cell type classifications using clustering results
 #' @export
 classifyCellClusters <- function(cds, cth, frequency_thresh=0.80, grouping_var = "Cluster") {

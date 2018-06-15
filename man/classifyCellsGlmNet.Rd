@@ -7,6 +7,19 @@
 classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
   max_training_samples = 10000, cores = 1)
 }
+\arguments{
+\item{cds}{CellDataSet containing cells that will be clustered}
+
+\item{cth}{CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type}
+
+\item{rank_prob_ratio}{ask Xiaojie}
+
+\item{min_observations}{ask Xiaojie}
+
+\item{max_training_samples}{ask Xiaojie}
+
+\item{cores}{Number of cores computer should use to execute function}
+}
 \description{
-Classify cells using glmnet
+Classify cells using glmnet ask Xiaojie
 }

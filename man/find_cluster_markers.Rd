@@ -26,6 +26,8 @@ find_cluster_markers(cds, spatial_res, group_by = "Cluster",
 \item{top_n_by_group}{Select top_n_by_group from each group based on the specificity}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
+
+\item{...}{Additional arguments passed to function}
 }
 \value{
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
@@ -38,5 +40,5 @@ It accepts a CellDataSet and two model formulae as input, which specify generali
 lineage models as implemented by the \code{VGAM} package.
 }
 \seealso{
-\code{\link[spatialDifferentialTest]{spatialDifferentialTest}}
+\code{\link{principalGraphTest}}
 }

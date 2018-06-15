@@ -6,6 +6,13 @@
 \usage{
 get_correct_root_state(cds, cell_phenotype, root_type)
 }
+\arguments{
+\item{cds}{CellDataSet}
+
+\item{cell_phenotype}{A column in the pData. This describes the characteristics of the cells in the cds}
+
+\item{root_type}{A value in from the cell_phenotype column that corresponds to the predicted starting cell}
+}
 \description{
 A helper function to identify the root principal points
 }

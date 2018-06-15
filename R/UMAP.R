@@ -16,11 +16,11 @@
 #' result in more global views of the manifold, while smaller
 #' values result in more local data being preserved. In general
 #' values should be in the range 2 to 100.
-#' @param n_components int (optional, default 2)
+#' @param n_component int (optional, default 2)
 #' The dimension of the space to embed into. This defaults to 2 to
 #' provide easy visualization, but can reasonably be set to any
 #' integer value in the range 2 to 100.
-#' @param metric: string or function (optional, default 'euclidean')
+#' @param metric string or function (optional, default 'euclidean')
 #' The metric to use to compute distances in high dimensional space.
 #' If a string is passed it must match a valid predefined metric. If
 #' a general metric is required a function that takes two 1d arrays and
@@ -52,7 +52,6 @@
 #'   can have arguments passed via the metric_kwds dictionary. At this
 #'   time care must be taken and dictionary elements must be ordered
 #'   appropriately; this will hopefully be fixed in the future.
-#' @param n_epochs: int The number of training epochs to use in optimization.
 #' @param negative_sample_rate int (optional, default 5)
 #' The number of negative edge/1-simplex samples to use per positive 
 #' edge/1-simplex sample in optimizing the low dimensional embedding. 

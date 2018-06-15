@@ -59,9 +59,6 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param peaks A numeric vector indicates the index of density peaks used for clustering. This vector should be retrieved from the decision plot with caution. No checking involved.  
 #' will automatically calculated based on the top num_cluster product of rho and sigma. 
 #' @param gaussian A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density
-#' @param cell_type_hierarchy A data structure used for organizing functions that can be used for organizing cells 
-#' @param frequency_thresh When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.
-#' @param enrichment_thresh fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50
 #' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 5. 
@@ -69,6 +66,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`. 
 #' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
 #' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
+#' @param cores number of cores computer should use to execute function
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @importFrom densityClust densityClust findClusters

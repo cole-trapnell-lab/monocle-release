@@ -43,13 +43,9 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
+\item{cores}{number of cores computer should use to execute function}
+
 \item{...}{Additional arguments passed to \code{\link{densityClust}()}}
-
-\item{cell_type_hierarchy}{A data structure used for organizing functions that can be used for organizing cells}
-
-\item{frequency_thresh}{When a CellTypeHierarchy is provided, cluster cells will impute cell types in clusters that are composed of at least this much of exactly one cell type.}
-
-\item{enrichment_thresh}{fraction to be multipled by each cell type percentage. Only used if frequency_thresh is NULL, both cannot be NULL}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for Cluster for each cell

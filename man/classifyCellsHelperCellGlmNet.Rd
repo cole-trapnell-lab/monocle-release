@@ -6,6 +6,11 @@
 \usage{
 classifyCellsHelperCellGlmNet(cds, cth)
 }
+\arguments{
+\item{cds}{CellDataSet containing cells that will be clustered}
+
+\item{cth}{CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type}
+}
 \description{
-Classify cells using glmnet
+Classify cells using glmnet ask Xiaojie
 }

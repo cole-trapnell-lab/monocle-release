@@ -27,6 +27,44 @@ result in more global views of the manifold, while smaller
 values result in more local data being preserved. In general
 values should be in the range 2 to 100.}
 
+\item{n_component}{int (optional, default 2)
+The dimension of the space to embed into. This defaults to 2 to
+provide easy visualization, but can reasonably be set to any
+integer value in the range 2 to 100.}
+
+\item{metric}{string or function (optional, default 'euclidean')
+The metric to use to compute distances in high dimensional space.
+If a string is passed it must match a valid predefined metric. If
+a general metric is required a function that takes two 1d arrays and
+returns a float can be provided. For performance purposes it is
+required that this be a numba jit'd function. Valid string metrics
+include:
+    * euclidean
+    * manhattan
+    * chebyshev
+    * minkowski
+    * canberra
+    * braycurtis
+    * mahalanobis
+    * wminkowski
+    * seuclidean
+    * cosine
+    * correlation
+    * haversine
+    * hamming
+    * jaccard
+    * dice
+    * russelrao
+    * kulsinski
+    * rogerstanimoto
+    * sokalmichener
+    * sokalsneath
+    * yule
+  Metrics that take arguments (such as minkowski, mahalanobis etc.)
+  can have arguments passed via the metric_kwds dictionary. At this
+  time care must be taken and dictionary elements must be ordered
+  appropriately; this will hopefully be fixed in the future.}
+
 \item{negative_sample_rate}{int (optional, default 5)
 The number of negative edge/1-simplex samples to use per positive 
 edge/1-simplex sample in optimizing the low dimensional embedding.}
@@ -110,46 +148,6 @@ will be chosen automatically.}
 Controls verbosity of logging.}
 
 \item{return_all}{Whether to return all slots after UMAP}
-
-\item{n_components}{int (optional, default 2)
-The dimension of the space to embed into. This defaults to 2 to
-provide easy visualization, but can reasonably be set to any
-integer value in the range 2 to 100.}
-
-\item{metric:}{string or function (optional, default 'euclidean')
-The metric to use to compute distances in high dimensional space.
-If a string is passed it must match a valid predefined metric. If
-a general metric is required a function that takes two 1d arrays and
-returns a float can be provided. For performance purposes it is
-required that this be a numba jit'd function. Valid string metrics
-include:
-    * euclidean
-    * manhattan
-    * chebyshev
-    * minkowski
-    * canberra
-    * braycurtis
-    * mahalanobis
-    * wminkowski
-    * seuclidean
-    * cosine
-    * correlation
-    * haversine
-    * hamming
-    * jaccard
-    * dice
-    * russelrao
-    * kulsinski
-    * rogerstanimoto
-    * sokalmichener
-    * sokalsneath
-    * yule
-  Metrics that take arguments (such as minkowski, mahalanobis etc.)
-  can have arguments passed via the metric_kwds dictionary. At this
-  time care must be taken and dictionary elements must be ordered
-  appropriately; this will hopefully be fixed in the future.}
-
-\item{n_epochs:}{int The number of training epochs to use in optimization.}
 }
 \value{
 Embedding of the training data in low-dimensional space if return_all is set to be FALSE, 
