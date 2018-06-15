@@ -371,7 +371,7 @@ cds <- orderCells(cds,
 plot_3d_cell_trajectory(cds,
                         color_by="cell_type2",
                         webGL_filename=paste(getwd(), "/trajectory_3D.html", sep=""),
-                        palette=detailed_cell_type_color,
+                        palette=cell_type_color,
                         show_backbone=TRUE,
                         useNULL_GLdev=TRUE)
 {% endhighlight %}
