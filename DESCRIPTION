@@ -13,7 +13,7 @@ Description: Monocle performs differential expression and time-series analysis
     performs differential expression analysis, clustering, visualization, and
     other useful tasks on single cell expression data.  It is designed to work
     with RNA-Seq and qPCR data, but could be used with other types as well.
-License: Artistic-2.0
+License: MIT
 Depends:
     R (>= 3.5),
     methods,
