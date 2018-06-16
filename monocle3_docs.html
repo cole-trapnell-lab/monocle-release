@@ -174,8 +174,8 @@ library(monocle) # Load Monocle
           <p>We'll also change the cluster IDs from the original study into easier to read names. Then we'll set up some colors for each of them that we'll use in some plots later.</p>
 
 {% highlight R %}
-cds <- readRDS('data/valid_subset_GSE72857_cds2.RDS')
-
+cds <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS")))
+ 
 # Update the old CDS object to be compatible with Monocle 3
 cds <- updateCDS(cds)
 
