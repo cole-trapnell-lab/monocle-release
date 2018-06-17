@@ -17169,7 +17169,7 @@ Loading required namespace: rmarkdown
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <h1 id="Identifying-genes-that-vary-over-a-trajectory">Identifying genes that vary over a trajectory<a class="anchor-link" href="#Identifying-genes-that-vary-over-a-trajectory">&#182;</a></h1><p>We are often interested in finding genes that are differentially expressed across a single-cell trajectory. Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby cells will have perfectly similar expression (as in the right panel below); 0 represents no correlation (center), and -1 means that neighboring cells will be <em>anti-correlated</em> (left).</p>
-<p><img src="./img/moran_I.png" alt="Moran_I"></p>
+<p><img src="../images/moran_I.png" alt="Moran_I"></p>
 <p>In Monocle 3, we implement Moran's I through the <code>principalGraphTest</code> function:</p>
 
 </div>
