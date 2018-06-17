@@ -11804,7 +11804,7 @@ div#notebook {
 </ol>
 <p>install.packages("reticulate")
 library(reticulate)
-py_install("umap-learn")
+py_install('umap-learn', pip = T, pip_ignore_installed = T) # ensure the umap-learn 2.4 version will be installed
 py_install("louvain")</p>
 <ol>
 <li>Then pull the monocle3_beta_release branch of the monocle-dev. Build it (use R CMD build) and install it (use R CMD install) </li>
@@ -11819,7 +11819,7 @@ py_install("louvain")</p>
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h1 id="The-Monocle-3-workflow">The Monocle 3 workflow<a class="anchor-link" href="#The-Monocle-3-workflow">&#182;</a></h1><p><img src="./img/workflow.png" alt="work"></p>
+<h1 id="The-Monocle-3-workflow">The Monocle 3 workflow<a class="anchor-link" href="#The-Monocle-3-workflow">&#182;</a></h1><p><img src="../images/workflow.png" alt="work"></p>
 
 </div>
 </div>
