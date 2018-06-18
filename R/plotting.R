@@ -1893,7 +1893,7 @@ plot_cell_clusters <- function(cds,
 
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-
+    data_df$value <- with(data_df, ifelse(value >= 0.01, value, NA))
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + facet_wrap(~feature_label) 
   }else{
     text_df <- data_df %>% dplyr::group_by_(color_by) %>% summarize(text_x = median(x = data_dim_1),
@@ -1915,14 +1915,18 @@ plot_cell_clusters <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-      g <- g + geom_point(aes(color=log10(value + min_expr)), size=I(cell_size), na.rm = TRUE) + 
-        scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+      g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
+            scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+            guides(alpha = FALSE) + facet_wrap(~feature_label)
+            # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+
     }else{
-      g <- g + geom_point(aes(color=value), size=I(cell_size), na.rm = TRUE) + 
-        scale_color_viridis(name = paste0("value"), ...)
+      g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
+        scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+        guides(alpha = FALSE) + facet_wrap(~feature_label)
     }
   }else {
-    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, ...)
     g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
   }
   
