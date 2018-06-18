@@ -175,7 +175,7 @@ library(monocle) # Load Monocle
 
 {% highlight R %}
 cds <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS")))
- 
+
 # Update the old CDS object to be compatible with Monocle 3
 cds <- updateCDS(cds)
 
@@ -355,7 +355,7 @@ plot_cell_trajectory(cds)
 {% highlight R %}
 cds <- reduceDimension(cds, max_components = 3,
                        reduction_method = 'UMAP',
-                       metric="correlation",
+                       metric="cosine",
                        verbose = F)
 
 cds <- partitionCells(cds)

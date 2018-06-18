@@ -8451,15 +8451,15 @@ label {
 }
 /* Flexible box model classes */
 /* Taken from Alex Russell http://infrequently.org/2009/08/css-3-progress/ */
-/* This file is a compatability layer.  It allows the usage of flexible box 
+/* This file is a compatability layer.  It allows the usage of flexible box
 model layouts accross multiple browsers, including older browsers.  The newest,
 universal implementation of the flexible box model is used when available (see
-`Modern browsers` comments below).  Browsers that are known to implement this 
+`Modern browsers` comments below).  Browsers that are known to implement this
 new spec completely include:
 
     Firefox 28.0+
     Chrome 29.0+
-    Internet Explorer 11+ 
+    Internet Explorer 11+
     Opera 17.0+
 
 Browsers not listed, including Safari, are supported via the styling under the
@@ -11233,7 +11233,7 @@ div#pager .ui-resizable-handle {
   background: #f7f7f7;
   border-top: 1px solid #cfcfcf;
   border-bottom: 1px solid #cfcfcf;
-  /* This injects handle bars (a short, wide = symbol) for 
+  /* This injects handle bars (a short, wide = symbol) for
         the resize handle. */
 }
 div#pager .ui-resizable-handle::after {
@@ -11676,7 +11676,7 @@ ul.typeahead-list > li > a {
 .highlight .il { color: #666666 } /* Literal.Number.Integer.Long */
     </style>
 <style type="text/css">
-    
+
 /* Temporary definitions which will become obsolete with Notebook release 5.0 */
 .ansi-black-fg { color: #3E424D; }
 .ansi-black-bg { background-color: #3E424D; }
@@ -11730,14 +11730,14 @@ div#notebook {
   div.cell {
     display: block;
     page-break-inside: avoid;
-  } 
-  div.output_wrapper { 
-    display: block;
-    page-break-inside: avoid; 
   }
-  div.output { 
+  div.output_wrapper {
     display: block;
-    page-break-inside: avoid; 
+    page-break-inside: avoid;
+  }
+  div.output {
+    display: block;
+    page-break-inside: avoid;
   }
 }
 </style>
@@ -11802,10 +11802,10 @@ div#notebook {
 <ol>
 <li>Install several python packages Monocle 3 depends on:</li>
 </ol>
-<p>install.packages("reticulate")
-library(reticulate)
-py_install('umap-learn', pip = T, pip_ignore_installed = T) # ensure the umap-learn 2.4 version will be installed
-py_install("louvain")</p>
+<p>install.packages("reticulate")</p>
+<p>library(reticulate)</p>
+<p>py_install('umap-learn', pip = T, pip_ignore_installed = T) # ensure the umap-learn 2.4 version will be installed</p>
+<p>py_install("louvain")</p>
 <ol>
 <li>Then pull the monocle3_beta_release branch of the monocle-dev. Build it (use R CMD build) and install it (use R CMD install) </li>
 </ol>
@@ -12006,25 +12006,25 @@ The following object is masked from ‘package:DDRTree’:
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span><span class="c1">#cds &lt;- readRDS(&#39;data/valid_subset_GSE72857_cds2.RDS&#39;)</span>
 cds <span class="o">&lt;-</span> <span class="kp">readRDS</span><span class="p">(</span><span class="kp">gzcon</span><span class="p">(</span><span class="kp">url</span><span class="p">(</span><span class="s">&quot;http://trapnell-lab.gs.washington.edu/public_share/valid_subset_GSE72857_cds2.RDS&quot;</span><span class="p">)))</span>
-pData<span class="p">(</span>cds<span class="p">)</span><span class="o">$</span>cell_type2 <span class="o">&lt;-</span> plyr<span class="o">::</span>revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>cds<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span> 
-                                                              <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;7&quot;</span> <span class="o">=</span> <span class="s">&#39;Multipotent progenitors&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;8&quot;</span> <span class="o">=</span> <span class="s">&#39;Megakaryocytes&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;9&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span> 
+pData<span class="p">(</span>cds<span class="p">)</span><span class="o">$</span>cell_type2 <span class="o">&lt;-</span> plyr<span class="o">::</span>revalue<span class="p">(</span><span class="kp">as.character</span><span class="p">(</span>pData<span class="p">(</span>cds<span class="p">)</span><span class="o">$</span>cluster<span class="p">),</span>
+                                                              <span class="kt">c</span><span class="p">(</span><span class="s">&quot;1&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;2&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;3&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;4&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;5&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;6&quot;</span> <span class="o">=</span> <span class="s">&#39;Erythrocyte&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;7&quot;</span> <span class="o">=</span> <span class="s">&#39;Multipotent progenitors&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;8&quot;</span> <span class="o">=</span> <span class="s">&#39;Megakaryocytes&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;9&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
                                                                 <span class="s">&quot;10&quot;</span> <span class="o">=</span> <span class="s">&#39;GMP&#39;</span><span class="p">,</span>
-                                                                <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;Dendritic cells&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;Basophils&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;Basophils&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;Monocytes&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;Monocytes&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;Neutrophils&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;Neutrophils&#39;</span><span class="p">,</span> 
-                                                                <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;Eosinophls&#39;</span><span class="p">,</span> 
+                                                                <span class="s">&quot;11&quot;</span> <span class="o">=</span> <span class="s">&#39;Dendritic cells&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;12&quot;</span> <span class="o">=</span> <span class="s">&#39;Basophils&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;13&quot;</span> <span class="o">=</span> <span class="s">&#39;Basophils&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;14&quot;</span> <span class="o">=</span> <span class="s">&#39;Monocytes&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;15&quot;</span> <span class="o">=</span> <span class="s">&#39;Monocytes&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;16&quot;</span> <span class="o">=</span> <span class="s">&#39;Neutrophils&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;17&quot;</span> <span class="o">=</span> <span class="s">&#39;Neutrophils&#39;</span><span class="p">,</span>
+                                                                <span class="s">&quot;18&quot;</span> <span class="o">=</span> <span class="s">&#39;Eosinophls&#39;</span><span class="p">,</span>
                                                                 <span class="s">&quot;19&quot;</span> <span class="o">=</span> <span class="s">&#39;lymphoid&#39;</span><span class="p">))</span>
 detailed_cell_type_color <span class="o">&lt;-</span> <span class="kt">c</span><span class="p">(</span><span class="s">&quot;Basophils&quot;</span> <span class="o">=</span> <span class="s">&quot;#E088B8&quot;</span><span class="p">,</span> <span class="s">&quot;Dendritic cells&quot;</span> <span class="o">=</span> <span class="s">&quot;#46C7EF&quot;</span><span class="p">,</span> <span class="s">&quot;Eosinophls&quot;</span> <span class="o">=</span> <span class="s">&quot;#EFAD1E&quot;</span><span class="p">,</span> <span class="s">&quot;Erythrocyte&quot;</span> <span class="o">=</span> <span class="s">&quot;#8CB3DF&quot;</span><span class="p">,</span> <span class="s">&quot;Monocytes&quot;</span> <span class="o">=</span> <span class="s">&quot;#53C0AD&quot;</span><span class="p">,</span> <span class="s">&quot;Multipotent progenitors&quot;</span> <span class="o">=</span> <span class="s">&quot;#4EB859&quot;</span><span class="p">,</span> <span class="s">&quot;GMP&quot;</span> <span class="o">=</span> <span class="s">&quot;#D097C4&quot;</span><span class="p">,</span> <span class="s">&quot;Megakaryocytes&quot;</span> <span class="o">=</span> <span class="s">&quot;#ACC436&quot;</span><span class="p">,</span> <span class="s">&quot;Neutrophils&quot;</span> <span class="o">=</span> <span class="s">&quot;#F5918A&quot;</span><span class="p">,</span> <span class="s">&#39;NA&#39;</span> <span class="o">=</span> <span class="s">&#39;#000080&#39;</span><span class="p">)</span>
 
@@ -14657,9 +14657,9 @@ get_correct_root_state <span class="o">&lt;-</span> <span class="kr">function</s
   cell_ids <span class="o">&lt;-</span> <span class="kp">which</span><span class="p">(</span>pData<span class="p">(</span>cds<span class="p">)[,</span> cell_phenotype<span class="p">]</span> <span class="o">==</span> root_type<span class="p">)</span>
 
   closest_vertex <span class="o">&lt;-</span> cds<span class="o">@</span>auxOrderingData<span class="p">[[</span>cds<span class="o">@</span>dim_reduce_type<span class="p">]]</span><span class="o">$</span>pr_graph_cell_proj_closest_vertex
-  closest_vertex <span class="o">&lt;-</span> <span class="kp">as.matrix</span><span class="p">(</span>closest_vertex<span class="p">[</span><span class="kp">colnames</span><span class="p">(</span>cds<span class="p">),</span> <span class="p">])</span>  
+  closest_vertex <span class="o">&lt;-</span> <span class="kp">as.matrix</span><span class="p">(</span>closest_vertex<span class="p">[</span><span class="kp">colnames</span><span class="p">(</span>cds<span class="p">),</span> <span class="p">])</span>
   root_pr_nodes <span class="o">&lt;-</span> V<span class="p">(</span>cds<span class="o">@</span>minSpanningTree<span class="p">)</span><span class="o">$</span>name<span class="p">[</span><span class="kp">as.numeric</span><span class="p">(</span><span class="kp">names</span><span class="p">(</span><span class="kp">which.max</span><span class="p">(</span><span class="kp">table</span><span class="p">(</span>closest_vertex<span class="p">[</span>cell_ids<span class="p">,]))))]</span>
-    
+
   root_pr_nodes
 <span class="p">}</span>
 </pre></div>
@@ -17087,26 +17087,26 @@ AAAAAElFTkSuQmCC"
 <div class="prompt input_prompt">In&nbsp;[10]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span>cds <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>cds<span class="p">,</span> max_components <span class="o">=</span> <span class="m">3</span><span class="p">,</span>   
+<div class=" highlight hl-r"><pre><span></span>cds <span class="o">&lt;-</span> reduceDimension<span class="p">(</span>cds<span class="p">,</span> max_components <span class="o">=</span> <span class="m">3</span><span class="p">,</span>
                        reduction_method <span class="o">=</span> <span class="s">&#39;UMAP&#39;</span><span class="p">,</span>
-                       metric<span class="o">=</span><span class="s">&quot;correlation&quot;</span><span class="p">,</span> 
+                       metric<span class="o">=</span><span class="s">&quot;correlation&quot;</span><span class="p">,</span>
                        verbose <span class="o">=</span> <span class="bp">F</span><span class="p">)</span>
 
 cds <span class="o">&lt;-</span> partitionCells<span class="p">(</span>cds<span class="p">)</span>
 
-cds <span class="o">&lt;-</span> learnGraph<span class="p">(</span>cds<span class="p">,</span> max_components <span class="o">=</span> <span class="m">3</span><span class="p">,</span> RGE_method <span class="o">=</span> <span class="s">&#39;SimplePPT&#39;</span><span class="p">,</span> partition_component <span class="o">=</span> <span class="bp">T</span><span class="p">,</span> 
+cds <span class="o">&lt;-</span> learnGraph<span class="p">(</span>cds<span class="p">,</span> max_components <span class="o">=</span> <span class="m">3</span><span class="p">,</span> RGE_method <span class="o">=</span> <span class="s">&#39;SimplePPT&#39;</span><span class="p">,</span> partition_component <span class="o">=</span> <span class="bp">T</span><span class="p">,</span>
                   verbose <span class="o">=</span> <span class="bp">F</span><span class="p">)</span>
 
-cds <span class="o">&lt;-</span> orderCells<span class="p">(</span>cds<span class="p">,</span> 
-                  root_pr_nodes <span class="o">=</span> get_correct_root_state<span class="p">(</span>cds<span class="p">,</span> 
-                                                         cell_phenotype <span class="o">=</span> <span class="s">&#39;cell_type2&#39;</span><span class="p">,</span> 
+cds <span class="o">&lt;-</span> orderCells<span class="p">(</span>cds<span class="p">,</span>
+                  root_pr_nodes <span class="o">=</span> get_correct_root_state<span class="p">(</span>cds<span class="p">,</span>
+                                                         cell_phenotype <span class="o">=</span> <span class="s">&#39;cell_type2&#39;</span><span class="p">,</span>
                                                          <span class="s">&quot;Multipotent progenitors&quot;</span><span class="p">))</span>
-                     
-plot_3d_cell_trajectory<span class="p">(</span>cds<span class="p">,</span> 
-                        color_by<span class="o">=</span><span class="s">&quot;cell_type2&quot;</span><span class="p">,</span> 
-                        webGL_filename<span class="o">=</span><span class="kp">paste</span><span class="p">(</span><span class="kp">getwd</span><span class="p">(),</span> <span class="s">&quot;/trajectory_3D.html&quot;</span><span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span> 
+
+plot_3d_cell_trajectory<span class="p">(</span>cds<span class="p">,</span>
+                        color_by<span class="o">=</span><span class="s">&quot;cell_type2&quot;</span><span class="p">,</span>
+                        webGL_filename<span class="o">=</span><span class="kp">paste</span><span class="p">(</span><span class="kp">getwd</span><span class="p">(),</span> <span class="s">&quot;/trajectory_3D.html&quot;</span><span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span>
                         palette<span class="o">=</span>detailed_cell_type_color<span class="p">,</span>
-                        show_backbone<span class="o">=</span><span class="kc">TRUE</span><span class="p">,</span> 
+                        show_backbone<span class="o">=</span><span class="kc">TRUE</span><span class="p">,</span>
                         useNULL_GLdev<span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
 </pre></div>
 
@@ -17202,7 +17202,7 @@ Loading required namespace: rmarkdown
 <div class="prompt input_prompt">In&nbsp;[12]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-r"><pre><span></span>dplyr<span class="o">::</span>add_rownames<span class="p">(</span>pr_graph_test<span class="p">)</span> <span class="o">%&gt;%</span> 
+<div class=" highlight hl-r"><pre><span></span>dplyr<span class="o">::</span>add_rownames<span class="p">(</span>pr_graph_test<span class="p">)</span> <span class="o">%&gt;%</span>
     dplyr<span class="o">::</span>arrange<span class="p">(</span>plyr<span class="o">::</span>desc<span class="p">(</span>morans_test_statistic<span class="p">),</span> plyr<span class="o">::</span>desc<span class="p">(</span><span class="o">-</span>qval<span class="p">))</span> <span class="o">%&gt;%</span> <span class="kp">head</span><span class="p">(</span><span class="m">3</span><span class="p">)</span>
 </pre></div>
 
@@ -17341,8 +17341,8 @@ Loading required namespace: rmarkdown
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-r"><pre><span></span>plot_3d_cell_trajectory<span class="p">(</span>cds<span class="p">,</span> markers <span class="o">=</span> <span class="kt">c</span><span class="p">(</span><span class="s">&#39;Hbb-b1&#39;</span><span class="p">),</span>
-                        webGL_filename<span class="o">=</span><span class="kp">paste</span><span class="p">(</span><span class="kp">getwd</span><span class="p">(),</span> <span class="s">&quot;beta_globin.html&quot;</span><span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span> 
-                        show_backbone<span class="o">=</span><span class="kc">TRUE</span><span class="p">,</span> 
+                        webGL_filename<span class="o">=</span><span class="kp">paste</span><span class="p">(</span><span class="kp">getwd</span><span class="p">(),</span> <span class="s">&quot;beta_globin.html&quot;</span><span class="p">,</span> sep<span class="o">=</span><span class="s">&quot;&quot;</span><span class="p">),</span>
+                        show_backbone<span class="o">=</span><span class="kc">TRUE</span><span class="p">,</span>
                         useNULL_GLdev<span class="o">=</span><span class="kc">TRUE</span><span class="p">)</span>
 </pre></div>
 
@@ -17434,47 +17434,47 @@ locale:
 [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
 
 attached base packages:
- [1] splines   parallel  stats4    stats     graphics  grDevices utils    
- [8] datasets  methods   base     
+ [1] splines   parallel  stats4    stats     graphics  grDevices utils
+ [8] datasets  methods   base
 
 other attached packages:
- [1] bindrcpp_0.2.2        monocle_2.99.0        L1Graph_0.1.0        
- [4] lpSolveAPI_5.5.2.0-17 igraph_1.2.1          DDRTree_0.1.5        
- [7] irlba_2.3.2           VGAM_1.0-5            ggplot2_2.2.1        
-[10] Biobase_2.40.0        DelayedArray_0.6.0    BiocParallel_1.14.1  
-[13] IRanges_2.14.10       S4Vectors_0.18.3      BiocGenerics_0.26.0  
-[16] matrixStats_0.53.1    Matrix_1.2-14        
+ [1] bindrcpp_0.2.2        monocle_2.99.0        L1Graph_0.1.0
+ [4] lpSolveAPI_5.5.2.0-17 igraph_1.2.1          DDRTree_0.1.5
+ [7] irlba_2.3.2           VGAM_1.0-5            ggplot2_2.2.1
+[10] Biobase_2.40.0        DelayedArray_0.6.0    BiocParallel_1.14.1
+[13] IRanges_2.14.10       S4Vectors_0.18.3      BiocGenerics_0.26.0
+[16] matrixStats_0.53.1    Matrix_1.2-14
 
 loaded via a namespace (and not attached):
- [1] nlme_3.1-137             gmodels_2.16.2           webshot_0.5.0           
- [4] RColorBrewer_1.1-2       repr_0.15.0              docopt_0.4.5            
- [7] tools_3.5.0              R6_2.2.2                 spData_0.2.8.3          
-[10] lazyeval_0.2.1           colorspace_1.3-2         manipulateWidget_0.10.0 
-[13] sp_1.3-1                 tidyselect_0.2.4         gridExtra_2.3           
-[16] compiler_3.5.0           glmnet_2.0-16            expm_0.999-2            
-[19] labeling_0.3             slam_0.1-43              scales_0.5.0            
-[22] ggridges_0.5.0           pbdZMQ_0.3-3             stringr_1.3.1           
-[25] digest_0.6.15            sparsesvd_0.1-4          base64enc_0.1-3         
-[28] pkgconfig_2.0.1          htmltools_0.3.6          limma_3.36.1            
+ [1] nlme_3.1-137             gmodels_2.16.2           webshot_0.5.0
+ [4] RColorBrewer_1.1-2       repr_0.15.0              docopt_0.4.5
+ [7] tools_3.5.0              R6_2.2.2                 spData_0.2.8.3
+[10] lazyeval_0.2.1           colorspace_1.3-2         manipulateWidget_0.10.0
+[13] sp_1.3-1                 tidyselect_0.2.4         gridExtra_2.3
+[16] compiler_3.5.0           glmnet_2.0-16            expm_0.999-2
+[19] labeling_0.3             slam_0.1-43              scales_0.5.0
+[22] ggridges_0.5.0           pbdZMQ_0.3-3             stringr_1.3.1
+[25] digest_0.6.15            sparsesvd_0.1-4          base64enc_0.1-3
+[28] pkgconfig_2.0.1          htmltools_0.3.6          limma_3.36.1
 [31] htmlwidgets_1.2          rlang_0.2.1              DelayedMatrixStats_1.2.0
-[34] FNN_1.1                  shiny_1.1.0              bindr_0.1.1             
-[37] jsonlite_1.5             gtools_3.5.0             crosstalk_1.0.0         
-[40] spdep_0.7-7              dplyr_0.7.5              magrittr_1.5            
-[43] Rcpp_0.12.17             IRkernel_0.8.12.9000     munsell_0.4.3           
-[46] viridis_0.5.1            reticulate_1.8           yaml_2.1.19             
-[49] stringi_1.2.2            MASS_7.3-49              Rtsne_0.13              
-[52] plyr_1.8.4               grid_3.5.0               gdata_2.18.0            
-[55] promises_1.0.1           ggrepel_0.8.0            crayon_1.3.4            
-[58] miniUI_0.1.1.1           deldir_0.1-15            lattice_0.20-35         
-[61] IRdisplay_0.5.0          knitr_1.20               pillar_1.2.3            
-[64] uuid_0.1-2               boot_1.3-20              reshape2_1.4.3          
-[67] codetools_0.2-15         LearnBayes_2.15.1        glue_1.2.0              
-[70] evaluate_0.10.1          httpuv_1.4.3             foreach_1.4.4           
-[73] gtable_0.2.0             RANN_2.5.1               purrr_0.2.5             
-[76] assertthat_0.2.0         mime_0.5                 xtable_1.8-2            
-[79] coda_0.19-1              later_0.7.3              viridisLite_0.3.0       
-[82] HSMMSingleCell_0.114.0   qlcMatrix_0.9.7          tibble_1.4.2            
-[85] pheatmap_1.0.10          iterators_1.0.9          cluster_2.0.7-1         
+[34] FNN_1.1                  shiny_1.1.0              bindr_0.1.1
+[37] jsonlite_1.5             gtools_3.5.0             crosstalk_1.0.0
+[40] spdep_0.7-7              dplyr_0.7.5              magrittr_1.5
+[43] Rcpp_0.12.17             IRkernel_0.8.12.9000     munsell_0.4.3
+[46] viridis_0.5.1            reticulate_1.8           yaml_2.1.19
+[49] stringi_1.2.2            MASS_7.3-49              Rtsne_0.13
+[52] plyr_1.8.4               grid_3.5.0               gdata_2.18.0
+[55] promises_1.0.1           ggrepel_0.8.0            crayon_1.3.4
+[58] miniUI_0.1.1.1           deldir_0.1-15            lattice_0.20-35
+[61] IRdisplay_0.5.0          knitr_1.20               pillar_1.2.3
+[64] uuid_0.1-2               boot_1.3-20              reshape2_1.4.3
+[67] codetools_0.2-15         LearnBayes_2.15.1        glue_1.2.0
+[70] evaluate_0.10.1          httpuv_1.4.3             foreach_1.4.4
+[73] gtable_0.2.0             RANN_2.5.1               purrr_0.2.5
+[76] assertthat_0.2.0         mime_0.5                 xtable_1.8-2
+[79] coda_0.19-1              later_0.7.3              viridisLite_0.3.0
+[82] HSMMSingleCell_0.114.0   qlcMatrix_0.9.7          tibble_1.4.2
+[85] pheatmap_1.0.10          iterators_1.0.9          cluster_2.0.7-1
 [88] fastICA_1.2-1            densityClust_0.3         rgl_0.99.16             </pre>
 </div>
 
@@ -17488,7 +17488,7 @@ loaded via a namespace (and not attached):
   </div>
 </body>
 
- 
+
 
 
 </html>
