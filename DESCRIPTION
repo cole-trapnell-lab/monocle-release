@@ -58,7 +58,6 @@ Imports:
     spdep,
     glmnet,
     ggridges,
-    reticulate,
     htmltools,
     matrixStats,
     doParallel,
