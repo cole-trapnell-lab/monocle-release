@@ -363,6 +363,7 @@ classifyCellsHelperCellGlmNet <- function(cds, cth){
 
 # Train a multinomial classifier at each internal node of a CellTypeHierarchy
 #' @importFrom igraph V
+#' @import doParallel
 cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2, min_observations = 8, max_training_samples = 10000, cores = 1) {
   message(paste("Classifying children of", V(cth@classificationTree)[curr_node]$name))
   child_cell_types = V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]$name
@@ -458,7 +459,6 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
   #registerDoMC(cores=4)
   predictions = tryCatch({
     if (cores > 1){
-      require(doParallel)
       registerDoParallel(cores=cores)
       cvfit = cv.glmnet(x, y, 
                         #weights=pData(cds_sub)$Size_Factor, 

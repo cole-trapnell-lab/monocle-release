@@ -2923,6 +2923,7 @@ plot_cell_fdl <- function(cds,
 #' @return a ggplot2 plot object
 #' @import rgl
 #' @import htmltools
+#' @import viridisLite
 #' @export
 #' @examples
 #' \dontrun{

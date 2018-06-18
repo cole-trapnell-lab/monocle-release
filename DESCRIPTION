@@ -60,7 +60,8 @@ Imports:
     ggridges,
     reticulate,
     htmltools,
-    matrixStats
+    matrixStats,
+    doParallel
 LinkingTo: Rcpp
 Suggests:
     destiny,
