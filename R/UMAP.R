@@ -20,7 +20,7 @@
 #' The dimension of the space to embed into. This defaults to 2 to
 #' provide easy visualization, but can reasonably be set to any
 #' integer value in the range 2 to 100.
-#' @param metric string or function (optional, default 'euclidean')
+#' @param metric string or function (optional, default 'cosine')
 #' The metric to use to compute distances in high dimensional space.
 #' If a string is passed it must match a valid predefined metric. If
 #' a general metric is required a function that takes two 1d arrays and
@@ -131,7 +131,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   log = TRUE, 
   n_neighbors = 15L, 
   n_component = 2L, 
-  metric = "euclidean", 
+  metric = "cosine", 
   n_epochs = NULL, 
   negative_sample_rate = 5L,
   alpha = 1.0,
