@@ -12,14 +12,11 @@ classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
 
 \item{cth}{CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type}
 
-\item{rank_prob_ratio}{ask Xiaojie}
+\item{rank_prob_ratio}{}
 
-\item{min_observations}{ask Xiaojie}
+\item{min_observations}{}
 
-\item{max_training_samples}{ask Xiaojie}
+\item{max_training_samples}{}
 
 \item{cores}{Number of cores computer should use to execute function}
-}
-\description{
-Classify cells using glmnet ask Xiaojie
 }

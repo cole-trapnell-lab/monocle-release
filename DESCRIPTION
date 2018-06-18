@@ -61,7 +61,8 @@ Imports:
     reticulate,
     htmltools,
     matrixStats,
-    doParallel
+    doParallel,
+    viridisLite
 LinkingTo: Rcpp
 Suggests:
     destiny,

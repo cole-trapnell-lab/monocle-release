@@ -681,7 +681,7 @@ load_lung <- function(){
 #' @import Matrix
 #' @importFrom stats rnorm prcomp sd var
 #' @importFrom methods slotNames slot
-#' @import DelayedArray
+#' @importFrom DelayedArray DelayedArray
 #' @export
 sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = FALSE, ...)
 {
