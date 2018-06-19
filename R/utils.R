@@ -754,6 +754,7 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
 }
 
 #' Select cells in an RGL scene
+#' @param cds CellDataSet that you'd like to select cells from
 #' @export
 select_cells <- function(cds){
   selector_func = select3d()

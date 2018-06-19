@@ -9,8 +9,8 @@ setValidity( "CellDataSet", function( object ) {
   TRUE
 } )
 
-#' @name [
-#' @aliases [, CellDataSet-method
+#' @rdname CellDataSet-methods
+#' @aliases CellDataSet,ANY,ANY,ANY-method
 #' @param x
 #' @param i
 #' @param j

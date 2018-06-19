@@ -1312,7 +1312,11 @@ cal_ncenter <- function(ncells, ncells_limit = 100){
 }
 
 #' Select the roots of the principal graph 
-#' 
+#' @param cds CellDataSet where roots will be selected from
+#' @param x
+#' @param y
+#' @param num_roots
+#' @param pch 
 #' 
 selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
 {

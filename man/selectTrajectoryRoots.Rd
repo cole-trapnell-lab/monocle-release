@@ -7,6 +7,11 @@
 selectTrajectoryRoots(cds, x = 1, y = 2, num_roots = NULL, pch = 19,
   ...)
 }
+\arguments{
+\item{cds}{CellDataSet where roots will be selected from}
+
+\item{pch}{}
+}
 \description{
 Select the roots of the principal graph
 }

@@ -1799,6 +1799,7 @@ plot_ordering_genes <- function(cds){
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
 #' @param cell_name_size the size of cell name labels
+#' @param min_expr
 #' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -2107,6 +2108,8 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param jitter_width
+#' @param jitter_height
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2

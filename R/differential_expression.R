@@ -216,7 +216,6 @@ differentialGeneTest <- function(cds,
 #' lineage models as implemented by the \code{VGAM} package. 
 #' 
 #' @param cds a CellDataSet object upon which to perform this operation
-#' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used) 
 #' @param relative_expr Whether to transform expression into relative values.
 #' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I test procedure
 #' @param cores the number of cores to be used while testing each gene for differential expression.
