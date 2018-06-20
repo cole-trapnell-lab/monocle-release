@@ -3306,3 +3306,146 @@ plot_ridge <- function(cds, x = 'Pseudotime', y = 'Cluster', markers = NULL) {
   
   g
 }
+
+#' Adapt Moran's I plot 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param log a logic value to determine whether or not we need to log the gene expression
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
+#' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+#' @export
+plot_moran <- function(cds, markers, 
+                       log = TRUE,
+                       color_by = 'Cluster', 
+                       quiet = NULL,
+                       labels = FALSE) {
+  zero.policy = TRUE
+  listw <- calculateLW(cds)
+  data_df <- pData(cds)
+  if (color_by %in% colnames(cds)) {
+    stop(paste0(color_by, " doesn't belong to the columns of the pData."))
+  }
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE) {
+    markers_fData <- subset(fData(cds), gene_short_name %in% 
+                              markers)
+    if (nrow(markers_fData) >= 1) {
+      markers_exprs <- reshape2::melt(as.matrix(cds@assayData$exprs[row.names(markers_fData), ]))
+      colnames(markers_exprs)[1:2] <- c("feature_id", "cell_id")
+      markers_exprs <- merge(markers_exprs, markers_fData, 
+                             by.x = "feature_id", by.y = "row.names")
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 
+      0) {
+    data_df <- merge(data_df, markers_exprs, by.x = "row.names", 
+                     by.y = "cell_id")
+    if(log)
+      data_df$value <- log(data_df$value + 0.1)
+  }
+  
+  if (!inherits(listw, "listw")) 
+    stop(paste(deparse(substitute(listw)), "is not a listw object"))
+  
+  data_df <- data_df %>% group_by(feature_label) %>% mutate(wx = lag.listw(listw, value, zero.policy = zero.policy))  %>% 
+    mutate(is.inf = apply(influence.measures(lm(wx ~ value))$is.inf, 1, function(x) any(is.finite(x)))) %>% mutate(n0 = wx == 0)
+  
+  g <- ggplot(data = data_df, aes(value, wx)) + geom_point(aes_string(color = color_by)) + 
+    geom_point(aes(x = value, y = wx), data = subset(data_df, n0 == T), color = 'gray', fill = "white", size = 5, stroke = 5)
+  
+  g <- g + geom_smooth(method = 'lm') + geom_hline(aes(yintercept = mean(wx)), linetype = 'longdash') + 
+    geom_vline(aes(xintercept = mean(value)), linetype = 'longdash')
+  
+  # is.inf <- data_df$is.inf
+  if(labels)
+    g <- g + geom_text(aes(x = value, y = wx, label = feature_id), data = subset(data_df, is.inf == T), nudge_x = 0.1, nudge_y = 0.1) 
+  
+  g <- g + facet_wrap(~feature_id) + monocle:::monocle_theme_opts() + xlab('Expression (log)') + ylab('Spatially lagged expression (log)')
+  
+  g
+}
+
+
+#' plot the local moran's I or the local g for the cells 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param method a character string specifying the method (the default 'local_G' or 'local_moran') for detecting local spatial statistics along the principal graph embedded in the low dimensional space.
+#' @param log a logic value to determine whether or not we need to log the gene expression
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
+#' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+#' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
+#' @export
+plot_local_spatial_statistics <- function(cds, markers, 
+                                          method = 'local_G', 
+                                          log = TRUE,
+                                          zero.policy = TRUE, 
+                                          return_all = FALSE, ...) {
+  listw <- calculateLW(cds)
+  data_df <- pData(cds)
+  if (color_by %in% colnames(cds)) {
+    stop(paste0(color_by, " doesn't belong to the columns of the pData."))
+  }
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE) {
+    markers_fData <- subset(fData(cds), gene_short_name %in% 
+                              markers)
+    if (nrow(markers_fData) >= 1) {
+      markers_exprs <- reshape2::melt(as.matrix(cds@assayData$exprs[row.names(markers_fData), ]))
+      colnames(markers_exprs)[1:2] <- c("feature_id", "cell_id")
+      markers_exprs <- merge(markers_exprs, markers_fData, 
+                             by.x = "feature_id", by.y = "row.names")
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 
+      0) {
+    data_df <- merge(data_df, markers_exprs, by.x = "row.names", 
+                     by.y = "cell_id")
+    if(log)
+      data_df$value <- log(data_df$value + 0.1)
+  }
+  
+  if (!inherits(listw, "listw")) 
+    stop(paste(deparse(substitute(listw)), "is not a listw object"))
+  
+  data_df <- data_df %>% group_by(feature_label) %>% mutate(wx = lag.listw(listw, value, zero.policy = zero.policy))  %>% 
+    mutate(localmoran = localmoran(value, listw = listw, zero.policy = zero.policy)[, 'Ii']) %>% 
+    mutate(localG = localG(value, listw))
+  
+  coords <- data.frame(t(cds@reducedDimS))
+  coords$sample_name <- colnames(cds)
+  data_df <- merge(coords, data_df, by.x = "sample_name", by.y = "Row.names")
+  
+  g <- ggplot(data = data_df, aes(x = X1, y = X2))
+  
+  if(method == 'local_moran')
+    g <- g + geom_point(aes(color = localmoran), size = I(cell_size), 
+                        na.rm = TRUE) + scale_color_viridis(name = paste0("local_moran"), 
+                                                            ...)
+  else if(method == 'local_G') {
+    g <- g + geom_point(aes(color = localG), size = I(cell_size), 
+                        na.rm = TRUE) + scale_color_viridis(name = paste0("local_G"), 
+                                                            ...)
+  } else {
+    stop(paste0(method, ' is not supported!'))
+  }
+  
+  g + facet_wrap(~feature_id) + monocle:::monocle_theme_opts() + xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) + theme(legend.position = "top", 
+                                        legend.key.height = grid::unit(0.35, "in")) + theme(legend.key = element_blank()) + 
+    theme(panel.background = element_rect(fill = "white")) + 
+    theme(text = element_text(size = 15))
+
+  if(return_all) {
+    return(list(g = g, res = data_df))
+  }
+}
