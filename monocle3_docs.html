@@ -499,7 +499,310 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
 {% include widget_scripts/beta_globin.html %}
 
 <br>
-          <h2>Citation </h2>
+
+<h2>Tutorial 2: MCA Dataset Analysis Clustering </h2>
+
+  <h3> Introduction </h3>
+
+    <p> In this tutorial, we demonstrate how to use Monocle 3 (beta version) to cluster cells for very large datasets.
+      We will mainly introduce 1) use <code>delayedArray</code> to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code> and <code>preprocessCDS</code>, etc for large datasets.
+      2) apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.
+      3) introduce a general differential test (<code>manifoldTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding. </p>
+
+    <p> UMAP is a recently proposed method based on Riemannian geometry and algebraic topology to perform dimension reduction and data visualization.
+      Its visualization quality is competitive with the popular t-SNE (t-stochastic neighbor embedding) method used widely in single-cell genomics field but has the advantage to preserve more global structure with strong theoretical foundation and the algorithm itself is much more efficient
+      (the algorithm complexity of UMAP is  $O(N)$ vs.  $O(Nlog(N))$ from tSNE). </p>
+
+    <p> In overview, UMAP first constructs a topological representation of the high dimensional data with local manifold approximations and patches together their local fuzzy simplicial set representations.
+      UMAP then optimizes the lower dimension embedding represented also by an equivalent topological representation by minimizing the cross-entropy between the high and lower topological representations (McInnes and Healy 2018). </p>
+
+    <p> The computational efficiency of UMAP is crucial for analyzing increasingly large cell atlas datasets. We found that UMAP finishes analyzing two million cells dataset in 3 hours while tSNE takes more than 10 hours with 10 cores (the multi-core bh-tSNE is used).
+      A few implementation details leads to the effectiveness of UMAP.
+      Two major steps are involved in both UMAP and tSNE algorithms: firstly, an intermediate structure from the high dimension space (normally the top PCA reduced space) is built and then a low dimensional embedding is found to represent the intermediate structure.
+      In the first step, while t-SNE constructs a matrix represents the joint probability distribution, UMAP builds a fuzzy graph.
+      Since UMAP uses topological data analysis techniques, UMAP requires far fewer nearest neighbors and also tolerates more error comparing to tSNE.
+      UMAP thus can use approximate nearest neighbor computations and far fewer nearest neighbors which makes it much more effective than tSNE.
+      For the second step, both methods used stochastic grid descent approach with differing loss functions to embed the data into low dimension space.
+      While t-SNE needs a loss function for global normalization, UMAP uses a different objective function that avoids that need.
+      This step essentially enables UMAP scales linear with the number of data samples. </p>
+
+    <p> A stable version of Monocle 3 will be released shortly </p>
+
+    {% highlight R %}
+
+rm(list = ls()) # clear the environment
+#load all the necessary libraries
+options(warn=-1) # turn off warning message globally
+suppressMessages(library(reticulate))
+suppressMessages(library(devtools))
+suppressMessages(load_all("/Users/xqiu/Dropbox (Personal)/Projects/tmp_monocle_dev/monocle-dev"))
+suppressMessages(library(flexclust))
+suppressMessages(library(mcclust))
+
+    {% endhighlight %}
+
+  <h3> Creaste a cds object for MCA dataset </h3>
+
+    {% highlight R %}
+MCA <- readRDS("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/MCA/MCA_merged_mat.rds")
+cell.meta.data <- read.csv("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/MCA/MCA_All-batch-removed-assignments.csv", row.names = 1)
+
+overlapping_cells <- intersect(row.names(cell.meta.data), colnames(MCA))
+gene_ann <- data.frame(gene_short_name = row.names(MCA), row.names = row.names(MCA))
+
+pd <- new("AnnotatedDataFrame",data=cell.meta.data[overlapping_cells, ])
+fd <- new("AnnotatedDataFrame",data=gene_ann)
+
+MCA_cds <- newCellDataSet(MCA[, overlapping_cells], phenoData = pd,featureData =fd,
+                          expressionFamily = negbinomial.size(),
+                          lowerDetectionLimit=1)
+    {% endhighlight %}
+
+  <h3> Estimate size factor or dispersion with delayed array </h3>
+
+    {% highlight R %}
+# MCA_cds <- MCA_cds[, Matrix::colSums(exprs(MCA_cds)) > 1000 & Matrix::colSums(exprs(MCA_cds) > 0) > 500]
+DelayedArray:::set_verbose_block_processing(TRUE)
+options(DelayedArray.block.size=1000e6)
+MCA_cds <- estimateSizeFactors(MCA_cds)
+MCA_cds <- estimateDispersions(MCA_cds)
+    {% endhighlight %}
+
+  <h3> Perform non-linear dimension reduction with <i>UMAP</i> on the PCA reduced space from normalized dataset</h3>
+
+    {% highlight R %}
+disp_table = dispersionTable(MCA_cds)
+disp_table = disp_table %>% mutate(excess_disp = (dispersion_empirical - dispersion_fit) / dispersion_fit) %>% arrange(plyr::desc(excess_disp))
+top_subset_genes = as.character(head(disp_table, 2500)$gene_id)
+
+MCA_cds = setOrderingFilter(MCA_cds, top_subset_genes)
+MCA_cds <- preprocessCDS(MCA_cds,  method = 'PCA',
+                         norm_method = 'log',
+                         num_dim = 50,
+                         verbose = T)
+MCA_cds <- reduceDimension(MCA_cds, max_components = 2,
+                       reduction_method = 'UMAP',
+                       metric="correlation",
+                       min_dist = 0.75,
+                       n_neighbors = 50,
+                       verbose = T)
+    {% endhighlight %}
+
+  <h3> Save cds and run clusterCells separately </h3>
+
+    {% highlight R %}
+cellDataSetPath <- "File/Path/Where/You/Want/To/Store/MCA_cds.rds"
+saveRDS(file = cellDataSetPath, MCA_cds)
+MCA_cds <- readRDS('/Users/xqiu/Downloads/cds_clustering.Rds')
+    {% endhighlight %}
+
+  <h3> Cluster cells using Louvain clustering algorithm </h3>
+
+  {% highlight R %}
+col_vector_origin <- c("#db83da",
+              "#53c35d",
+              "#a546bb",
+              "#83b837",
+              "#a469e6",
+              "#babb3d",
+              "#4f66dc",
+              "#e68821",
+              "#718fe8",
+              "#d6ac3e",
+              "#7957b4",
+              "#468e36",
+              "#d347ae",
+              "#5dbf8c",
+              "#e53e76",
+              "#42c9b8",
+              "#dd454a",
+              "#3bbac6",
+              "#d5542c",
+              "#59aadc",
+              "#cf8b36",
+              "#4a61b0",
+              "#8b8927",
+              "#a24e99",
+              "#9cb36a",
+              "#ca3e87",
+              "#36815b",
+              "#b23c4e",
+              "#5c702c",
+              "#b79add",
+              "#a55620",
+              "#5076af",
+              "#e38f67",
+              "#85609c",
+              "#caa569",
+              "#9b466c",
+              "#88692c",
+              "#dd81a9",
+              "#a35545",
+              "#e08083",
+              "#17becf",
+              "#9edae5")
+col_vector <- col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Tissue)))]
+names(col_vector) <- unique(as.character(pData(MCA_cds)$Tissue))
+options(repr.plot.width = 8)
+options(repr.plot.height = 11)
+plot_cell_clusters(MCA_cds, color_by = 'Tissue')  + theme(legend.text=element_text(size=6))
+  {% endhighlight %}
+
+  ## Figure 1 ##
+
+  {% highlight R %}
+options(repr.plot.width = 6)
+options(repr.plot.height = 9)
+cluster_col_vector <- col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Cluster)))]
+names(cluster_col_vector) <- unique(as.character(pData(MCA_cds)$Cluster))
+plot_cell_clusters(MCA_cds, color_by = 'Cluster') + scale_color_manual(values = cluster_col_vector) + theme(legend.text=element_text(size=7))
+  {% endhighlight %}
+
+  ## Figure 2 ##
+
+  <h3> Fraction of cell cluster to each tissue type </h3>
+  <p> We can check the percentage of cells in each cluster distributed into each tissue type. This can help us to figure out the identity of each cell cluster. </p>
+
+  {% highlight R %}
+Cluster_tissue_stat <- table(pData(MCA_cds)[, c('Cluster', 'Tissue')])
+
+Cluster_tissue_stat <- apply(Cluster_tissue_stat, 1, function(x) x / sum(x))
+
+Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
+
+options(repr.plot.width=10, repr.plot.height=7)
+pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10)) # annotation_row = annotation_row, annotation_colors = annotation_colors
+  {% endhighlight %}
+
+  ## Figure 3 ##
+
+  <h3> Fraction of tissue types to each cluster </h3>
+  <p> In order to check the distribution of tissue types to each cluster, we calculate the fraction of each tissue to all cell types. This can help us to figure out how many functional cell types in each tissue and thus the level of heterogeneity for each tissue type. </p>
+
+  {% highlight R %}
+Cluster_tissue_stat <- table(pData(MCA_cds)[, c('Cluster', 'Tissue')])
+
+Cluster_tissue_stat <- apply(Cluster_tissue_stat, 2, function(x) x / sum(x))
+
+Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
+
+options(repr.plot.width=10, repr.plot.height=7)
+pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10)) # annotation_row = annotation_row, annotation_colors = annotation_colors
+
+  {% endhighlight %}
+
+  ## Figure 4 ##
+
+  <h3> Calculate the adjusted Rand index between cell clusters and the tissue labels </h3>
+  <p> We can see that the tissue types and the cell clusters match up with each other well. </p>
+
+  {% highlight R %}
+calClusteringMetrics <- function(cl1, cl2){
+  tab_1 <- table(cl1, cl2)
+  randi <- flexclust::randIndex(tab_1)
+
+  vi <- mcclust::vi.dist(cl1, cl2, parts = FALSE, base = 2)
+
+  #arandi
+  arandi <- mcclust::arandi(cl1, cl2, adjust = TRUE)
+
+  #add all result into a data frame
+  randIndex_df <- data.frame(randIndex = c(randi, vi, arandi),
+                              Type = c("rand index", "variation of information", "adjusted rand index"))
+
+  return(randIndex_df)
+}
+
+calClusteringMetrics(pData(MCA_cds)$Cluster, pData(MCA_cds)$Tissue)
+  {% endhighlight %}
+
+<h3>Identify genes spatially correlated on the low-dimensional embedding</h3>
+<p> We are interested in identifying genes spatially correlated on the principal graph (that is, gene expression has co-variation along the principal graph where cells in proximal locations appear to have correlated gene expression, either positively or negatively.) which is learnt from the low-dimensional UMAP embedding with the <code>DDRTree</code>, <code>SimplePPT</code>, <code>L1Graph</code> algorithm (or the fuzzy graph learnt with <code>UMAP</code>). However, analyzing the spatial dependency is challenging because spatial autocorrelation violates the assumption from standard statistical techniques that gene expression observations are independent among different samples. We thus adapted a powerful technique in spatial correlation analysis, the Moran’s I test, to identify manifold correlated genes. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation and thus especially applicable to for finding correlated gene expression patterns in complicated manifold. Although both correlation and Moran’s I ranges from -1 to 1, due to its more complex and spatial calculation, the interpretation of Moran’s I is slightly different: -1 represents perfect dispersion (clustering of dissimilar values); 0 represents full random distribution of the gene expression and 1 represents perfect clustering of similar gene expression values (for correlation, -1 represents perfect anticorrelation; 0 represents no correlation while 1 represents perfect positive correlation). Moran's I is inversely related to Geary's C, however, while Moran's I measures global spatial autocorrelation, Geary's C measures local spatial autocorrelation. </p>
+
+<p> Moran’s I test (Moran 1950) is defined as,
+
+  \begin{equation}
+  I = \frac{N}{W}  \frac{\sum_{i} \sum_{j} w_{ij}(x_{i} - \bar{x})(x_{j} - \bar{x})}{\sum_{i}(x_{i} - \bar{x})^2}
+  \end{equation}
+
+  where $N$ is the number of cells indexed by $i$ and $j$; $x$ is the expression alue of gene of interest; $\bar{x_{i}}$ $(\bar{x_{j}})$
+  is the mean of the gene expression for cell $i$'s (or $j$'s) nearest neighbors; $w_{ij}$ is a matrix of weights defined by the nearest neighbor graph with zero on the diagonal
+  (i.e., $w_{ii}$ = 0) and $w_{ij}$ = 1/$k_{i}$ where $k_{i}$ is the number of nearest neighbors; and $W$ is the sum of a ll $w_{ij}$.
+  To identify the nearest neighbors used for creating the weight matrix $W$, we first build a k (default to be 25) nearest neighbor graph (kNN) for all cells on the reduced UMAP space, followed by projecting all cells to the points (nodes) on the principal graph learnt from the graph learning algorithm (or simply UMAP). Then we remove all edges from the kNN graph that connects cells which correspond to two disconnected principal points and keep edges connects cells corresponds to the same principal point or two connected principal points on the principal graph. This operations enables us to identify genes spatially correlated on the principal graph structure. </p>
+
+<p> In Monocle 3, we implemented the <code>manifoldTest</code> function to identify manifold correlated genes which relies on the <code>spdep</code> package for performing the Moran’s I test. Manifold test is a general differential gene expression test method. It can be either applied to the datasets with clustering patterning to identify spatially correlated genes between clusters (as used here) or applied to the datasets with clear developmental trajectory to detect braching genes, behaving like the <code>BEAM</code> test as in Monocle 2. We note that this very same method can be also used to identify spatially correlated genes for real spatial resolved single-cell measurements, including but not limitted to scRNA-fish, MERFISH.
+</p>
+
+{% highlight R %}
+start <- Sys.time()
+spatial_res <- principalGraphTest(MCA_cds, relative_expr = TRUE, k = 25, cores = detectCores() - 2, verbose = FALSE)
+end <- Sys.time()
+end - start
+{% endhighlight %}
+
+<h3>Cluster Markers</h3>
+
+{% highlight R %}
+spatial_res <- readRDS('/Users/xqiu/Downloads/MCA_cds_spatial_res.Rds')
+cluster_marker_res <- find_cluster_markers(MCA_cds, spatial_res, group_by = 'Cluster', morans_I_threshold = 0.25)
+{% endhighlight %}
+
+{% highlight R %}
+genes <- (cluster_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+options(repr.plot.width=22, repr.plot.height=12)
+plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', ordering_type = 'maximal_on_diag')
+{% endhighlight %}
+
+## Figure 5 ##
+
+<h3> Tissue Markers </h3>
+
+{% highlight R %}
+tissue_marker_res <- find_cluster_markers(MCA_cds, spatial_res, group_by = 'Tissue', morans_I_threshold = 0.25)
+
+genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+
+options(repr.plot.width=22, repr.plot.height=12)
+plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Tissue', ordering_type = 'maximal_on_diag')
+{% endhighlight %}
+
+## Figure 6 ##
+
+<h3>Visualize expression for the top spatially correlated genes in the UMAP embedding</h3>
+{% highlight R %}
+plot_cell_clusters(MCA_cds, markers = c(), show_group_id = FALSE)
+{% endhighlight %}
+
+<h3>Visualize the UMAP embedding in 3 dimensions</h3>
+<p> In Monocle 3, we provide the <code>plot_3d_cell_trajectory</code> function to plot a dataset in 3 dimensions.
+  By default, this method is used to visualize the trajectory and low dimensional space after running <code>learnGraph</code>.
+  However, it can be also used to visualize the result from <code>UMAP</code> where the trajectory corresponds to the fuzzy simplicial set (or fuzzy graph) learnt from umap.
+</p>
+
+{% highlight R %}
+trajectory_i_dir <- "/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/Result/"
+plot_3d_cell_trajectory(MCA_cds,
+                        color_by="Tissue",
+                        webGL_filename=paste(trajectory_i_dir, "MCA_cds.html", sep=""),
+                        palette=col_vector,
+                        show_backbone=TRUE,
+                        useNULL_GLdev=TRUE)
+{% endhighlight %}
+<h3>Show sessionInfo </h3>
+{% highlight R %}
+sessionInfo()
+{% endhighlight %}
+
+<h3> Other analysis or visualization </h3>
+<p> In another tutorial for the Mouse Cell Atlas (MCA) dataset analysis, we showed analysis to identify spatially correlated genes in the low dimensional embedding. In addition, we also showed how to visualize the developmental trajectory as well as the significantl spatially correlated gene expression patterns in three dimensions. Since the workflow will be the same as that in MCA dataset analysis, in the following we will only provide a concise introduction of those analysis and visualizations. </p>
+
+<h3>Save data for future usage</h3>
+{% highlight R %}
+save.image('/Users/xqiu/Dropbox (Personal)/Projects/Monocle2_revision/RData/MCA_monocle3.RData')
+{% endhighlight %}
+
+<h2>Citation </h2>
 
           Monocle 3 will be described in upcoming publications from the <a href="http://cole-trapnell-lab.github.io/">Trapnell lab</a>. Monocle 3 draws on ideas from others as we have noted in this page, but many of the features in Monocle 3 are novel work. In particular, the use of Moran's I for single-cell RNA-seq, learning a principal graph to fit within UMAP-reduced cells, and the combination of approximate graph abstraction and reversed graph embedding are all novel ideas to the best of our knowledge. We would be very grateful for an acknowledgement that these ideas first appeared in Monocle if you use similar approaches in your own work.
 
