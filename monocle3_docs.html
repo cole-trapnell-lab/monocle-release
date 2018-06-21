@@ -529,7 +529,6 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
     <p> A stable version of Monocle 3 will be released shortly </p>
 
     {% highlight R %}
-
 rm(list = ls()) # clear the environment
 #load all the necessary libraries
 options(warn=-1) # turn off warning message globally
@@ -538,14 +537,15 @@ suppressMessages(library(devtools))
 suppressMessages(load_all("/Users/xqiu/Dropbox (Personal)/Projects/tmp_monocle_dev/monocle-dev"))
 suppressMessages(library(flexclust))
 suppressMessages(library(mcclust))
-
     {% endhighlight %}
 
   <h3> Creaste a cds object for MCA dataset </h3>
 
     {% highlight R %}
-MCA <- readRDS("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/MCA/MCA_merged_mat.rds")
-cell.meta.data <- read.csv("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/MCA/MCA_All-batch-removed-assignments.csv", row.names = 1)
+MCA <- readRDS("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/
+    MCA/MCA_merged_mat.rds")
+cell.meta.data <- read.csv("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/
+    cell_atlas_dataset/MCA/MCA_All-batch-removed-assignments.csv", row.names = 1)
 
 overlapping_cells <- intersect(row.names(cell.meta.data), colnames(MCA))
 gene_ann <- data.frame(gene_short_name = row.names(MCA), row.names = row.names(MCA))
@@ -641,11 +641,13 @@ col_vector_origin <- c("#db83da",
               "#e08083",
               "#17becf",
               "#9edae5")
-col_vector <- col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Tissue)))]
+col_vector <-
+  col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Tissue)))]
 names(col_vector) <- unique(as.character(pData(MCA_cds)$Tissue))
 options(repr.plot.width = 8)
 options(repr.plot.height = 11)
-plot_cell_clusters(MCA_cds, color_by = 'Tissue')  + theme(legend.text=element_text(size=6))
+plot_cell_clusters(MCA_cds, color_by = 'Tissue')
+  + theme(legend.text=element_text(size=6))
   {% endhighlight %}
 
   ## Figure 1 ##
@@ -653,9 +655,12 @@ plot_cell_clusters(MCA_cds, color_by = 'Tissue')  + theme(legend.text=element_te
   {% highlight R %}
 options(repr.plot.width = 6)
 options(repr.plot.height = 9)
-cluster_col_vector <- col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Cluster)))]
+cluster_col_vector <-
+  col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Cluster)))]
 names(cluster_col_vector) <- unique(as.character(pData(MCA_cds)$Cluster))
-plot_cell_clusters(MCA_cds, color_by = 'Cluster') + scale_color_manual(values = cluster_col_vector) + theme(legend.text=element_text(size=7))
+plot_cell_clusters(MCA_cds, color_by = 'Cluster')
+  + scale_color_manual(values = cluster_col_vector)
+  + theme(legend.text=element_text(size=7))
   {% endhighlight %}
 
   ## Figure 2 ##
@@ -671,7 +676,7 @@ Cluster_tissue_stat <- apply(Cluster_tissue_stat, 1, function(x) x / sum(x))
 Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
 
 options(repr.plot.width=10, repr.plot.height=7)
-pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10)) # annotation_row = annotation_row, annotation_colors = annotation_colors
+pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
   {% endhighlight %}
 
   ## Figure 3 ##
