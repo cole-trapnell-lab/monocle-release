@@ -534,7 +534,8 @@ rm(list = ls()) # clear the environment
 options(warn=-1) # turn off warning message globally
 suppressMessages(library(reticulate))
 suppressMessages(library(devtools))
-suppressMessages(load_all("/Users/xqiu/Dropbox (Personal)/Projects/tmp_monocle_dev/monocle-dev"))
+suppressMessages(load_all
+  ("/Users/xqiu/Dropbox (Personal)/Projects/tmp_monocle_dev/monocle-dev"))
 suppressMessages(library(flexclust))
 suppressMessages(library(mcclust))
     {% endhighlight %}
@@ -542,8 +543,8 @@ suppressMessages(library(mcclust))
   <h3> Creaste a cds object for MCA dataset </h3>
 
     {% highlight R %}
-MCA <- readRDS("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/cell_atlas_dataset/
-    MCA/MCA_merged_mat.rds")
+MCA <-readRDS("/Users/xqiu/Dropbox (Personal)/Projects/
+  Monocle3/cell_atlas_dataset/MCA/MCA_merged_mat.rds")
 cell.meta.data <- read.csv("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/
     cell_atlas_dataset/MCA/MCA_All-batch-removed-assignments.csv", row.names = 1)
 
@@ -561,7 +562,8 @@ MCA_cds <- newCellDataSet(MCA[, overlapping_cells], phenoData = pd,featureData =
   <h3> Estimate size factor or dispersion with delayed array </h3>
 
     {% highlight R %}
-# MCA_cds <- MCA_cds[, Matrix::colSums(exprs(MCA_cds)) > 1000 & Matrix::colSums(exprs(MCA_cds) > 0) > 500]
+# MCA_cds <- MCA_cds[, Matrix::colSums(exprs(MCA_cds)) > 1000
+    & Matrix::colSums(exprs(MCA_cds) > 0) > 500]
 DelayedArray:::set_verbose_block_processing(TRUE)
 options(DelayedArray.block.size=1000e6)
 MCA_cds <- estimateSizeFactors(MCA_cds)
@@ -572,7 +574,8 @@ MCA_cds <- estimateDispersions(MCA_cds)
 
     {% highlight R %}
 disp_table = dispersionTable(MCA_cds)
-disp_table = disp_table %>% mutate(excess_disp = (dispersion_empirical - dispersion_fit) / dispersion_fit) %>% arrange(plyr::desc(excess_disp))
+disp_table = disp_table %>% mutate(excess_disp =
+  (dispersion_empirical - dispersion_fit) / dispersion_fit) %>% arrange(plyr::desc(excess_disp))
 top_subset_genes = as.character(head(disp_table, 2500)$gene_id)
 
 MCA_cds = setOrderingFilter(MCA_cds, top_subset_genes)
@@ -676,7 +679,8 @@ Cluster_tissue_stat <- apply(Cluster_tissue_stat, 1, function(x) x / sum(x))
 Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
 
 options(repr.plot.width=10, repr.plot.height=7)
-pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
+pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F,
+  color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
   {% endhighlight %}
 
   ## Figure 3 ##
@@ -692,7 +696,8 @@ Cluster_tissue_stat <- apply(Cluster_tissue_stat, 2, function(x) x / sum(x))
 Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
 
 options(repr.plot.width=10, repr.plot.height=7)
-pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F, color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10)) # annotation_row = annotation_row, annotation_colors = annotation_colors
+pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F,
+color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
 
   {% endhighlight %}
 
@@ -712,8 +717,9 @@ calClusteringMetrics <- function(cl1, cl2){
   arandi <- mcclust::arandi(cl1, cl2, adjust = TRUE)
 
   #add all result into a data frame
-  randIndex_df <- data.frame(randIndex = c(randi, vi, arandi),
-                              Type = c("rand index", "variation of information", "adjusted rand index"))
+  randIndex_df <-
+    data.frame(randIndex = c(randi, vi, arandi),
+      Type = c("rand index", "variation of information", "adjusted rand index"))
 
   return(randIndex_df)
 }
@@ -740,7 +746,8 @@ calClusteringMetrics(pData(MCA_cds)$Cluster, pData(MCA_cds)$Tissue)
 
 {% highlight R %}
 start <- Sys.time()
-spatial_res <- principalGraphTest(MCA_cds, relative_expr = TRUE, k = 25, cores = detectCores() - 2, verbose = FALSE)
+spatial_res <- principalGraphTest(MCA_cds, relative_expr = TRUE, k = 25,
+               cores = detectCores() - 2, verbose = FALSE)
 end <- Sys.time()
 end - start
 {% endhighlight %}
@@ -749,14 +756,18 @@ end - start
 
 {% highlight R %}
 spatial_res <- readRDS('/Users/xqiu/Downloads/MCA_cds_spatial_res.Rds')
-cluster_marker_res <- find_cluster_markers(MCA_cds, spatial_res, group_by = 'Cluster', morans_I_threshold = 0.25)
+cluster_marker_res <-
+  find_cluster_markers(MCA_cds, spatial_res, group_by = 'Cluster', morans_I_threshold = 0.25)
 {% endhighlight %}
 
 {% highlight R %}
-genes <- (cluster_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
-genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+genes <- (cluster_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
+  dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
+  dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
 options(repr.plot.width=22, repr.plot.height=12)
-plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', ordering_type = 'maximal_on_diag')
+plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster',
+  ordering_type = 'maximal_on_diag')
 {% endhighlight %}
 
 ## Figure 5 ##
@@ -764,12 +775,15 @@ plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', orde
 <h3> Tissue Markers </h3>
 
 {% highlight R %}
-tissue_marker_res <- find_cluster_markers(MCA_cds, spatial_res, group_by = 'Tissue', morans_I_threshold = 0.25)
+tissue_marker_res <- find_cluster_markers(MCA_cds, spatial_res,
+    group_by = 'Tissue', morans_I_threshold = 0.25)
 
-genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>% dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
+    dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
 
 options(repr.plot.width=22, repr.plot.height=12)
-plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Tissue', ordering_type = 'maximal_on_diag')
+plot_markers_by_group(MCA_cds, genes$gene_short_name,
+    group_by = 'Tissue', ordering_type = 'maximal_on_diag')
 {% endhighlight %}
 
 ## Figure 6 ##
@@ -789,7 +803,8 @@ plot_cell_clusters(MCA_cds, markers = c(), show_group_id = FALSE)
 trajectory_i_dir <- "/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/Result/"
 plot_3d_cell_trajectory(MCA_cds,
                         color_by="Tissue",
-                        webGL_filename=paste(trajectory_i_dir, "MCA_cds.html", sep=""),
+                        webGL_filename=
+                          paste(trajectory_i_dir, "MCA_cds.html", sep=""),
                         palette=col_vector,
                         show_backbone=TRUE,
                         useNULL_GLdev=TRUE)
@@ -804,7 +819,8 @@ sessionInfo()
 
 <h3>Save data for future usage</h3>
 {% highlight R %}
-save.image('/Users/xqiu/Dropbox (Personal)/Projects/Monocle2_revision/RData/MCA_monocle3.RData')
+save.image('/Users/xqiu/Dropbox (Personal)/Projects/Monocle2_revision/RData/
+  MCA_monocle3.RData')
 {% endhighlight %}
 
 <h2>Citation </h2>
