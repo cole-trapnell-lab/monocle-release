@@ -164,8 +164,10 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   
   if (is.null(required_packages) == FALSE){
     clusterCall(cl, function(pkgs) {
+      pb1 <- txtProgressBar(max = length(pkgs), file = stderr(), style = 3, min = 0)
       for (req in pkgs) {
         library(req, character.only=TRUE)
+        setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
       }
     }, required_packages)
   }

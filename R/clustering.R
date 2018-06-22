@@ -262,6 +262,8 @@ clusterCells <- function(cds,
 #' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @import pbapply
 #' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
@@ -320,6 +322,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
     random_seed <- NULL
   }
 
+  pb1 <- txtProgressBar(min = 0, max = length(louvain_iter), style = 3, file = stderr())
   for (iter in 1:louvain_iter) {
     if(verbose) {
       cat("Running louvain iteration ", iter, "...\n")
@@ -340,6 +343,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
           Qp <- Qt
           best_max_resolution <- cur_resolution
         }
+        setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
       }
     } else {
       Q <- igraph::cluster_louvain(g)
@@ -405,6 +409,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edges_per_module = rowSums(num_links)
   total_edges = sum(num_links)
   
+  pb2 <- txtProgressBar(min = 0, max = length(louvain_modules), style = 3, file = stderr())
   for(i in 1:length(louvain_modules)){
     for(j in 1:length(louvain_modules)){
       
@@ -421,6 +426,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       cluster_mat[i,j] = p_val_i_j
       enrichment_mat[i,j] = num_links_i_j
     }
+    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
   #cluster_mat[cluster_mat > qval_thresh] = 0
@@ -449,5 +455,162 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edge_links$weight <- edge[, 3]
   
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
+}
+
+# Function to retrieve a graph of cell clusters 
+cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
+  # V(pc_g)$name <- as.character(as.integer(V(pc_g)))
+  # V(g)$name <- as.character(as.integer(V(g)))
+  
+  ########################################################################################################################################################################
+  # identify edges which pass through two clusters 
+  # remove edges pass through two clusters that has low overlapping 
+  ########################################################################################################################################################################
+  # pc_g <- minSpanningTree(cds)
+  # g <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g
+  # optim_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$optim_res
+  cell_membership <- igraph::membership(optim_res)
+  cell_names <- names(cell_membership)
+  n_cluster <- length(unique(cell_membership))
+  
+  cluster_mat_exist <- matrix(0, nrow = n_cluster, ncol = n_cluster) # a matrix storing the overlapping clusters between louvain clusters which is based on the spanning tree
+  overlapping_threshold <- 1e-5
+  
+  # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
+  # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
+  
+  pb3 <- utils::txtProgressBar(min = 0, max = length(sort(unique(as.vector(cell_membership)))), style = 3, file = stderr())
+  for(i in sort(unique(as.vector(cell_membership)))) {
+    if(verbose) {
+      message('current cluster is ', i)
+    }
+    curr_cluster_cell <- cell_names[which(cell_membership == i)]
+    
+    neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
+    # identify connected cells outside a Louvain group
+    conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
+      cell_outside <- setdiff(neigh_list[[x]]$name, curr_cluster_cell)
+      if(length(cell_outside)) {
+        data.frame(current_cell = curr_cluster_cell[x], 
+                   cell_outside = cell_outside,
+                   current_cluster =  cell_membership[curr_cluster_cell[x]],
+                   target_cluster = cell_membership[cell_outside])
+      }
+    } ))
+    
+    # remove the insignificant inter-cluster edges from the kNN graph: 
+    if(is.null(conn_cluster_res) == FALSE) {
+      for(j in 1:nrow(conn_cluster_res)) {
+        overlapping_clusters <- cell_names[which(cell_membership == conn_cluster_res[j, 'target_cluster'])]
+        all_ij <- igraph::ecount(igraph::subgraph(g, c(curr_cluster_cell, overlapping_clusters))) # edges in all cells from two Louvain landmark groups
+        only_i <- igraph::ecount(igraph::subgraph(g, curr_cluster_cell)) # edges from the first Louvain landmark groups
+        only_j <- igraph::ecount(igraph::subgraph(g, overlapping_clusters)) # edges from the second Louvain landmark groups
+        
+        overlap_weight <- (all_ij - only_i - only_j) / all_ij
+        cluster_mat_exist[conn_cluster_res[j, 'current_cluster'], conn_cluster_res[j, 'target_cluster']] <- overlap_weight
+        if(overlap_weight < overlapping_threshold) { # edges overlapping between landmark groups
+          # if(verbose) {
+          #   message('delete edge ', paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']), 
+          #           'from current cluster ', conn_cluster_res[j, 'current_cluster'], ' and target cluster ', conn_cluster_res[j, 'target_cluster'],
+          #           'with weight ', overlap_weight)
+          # }
+          pc_g <- pc_g %>% igraph::delete_edges(paste0(conn_cluster_res[j, 'current_cell'], "|", conn_cluster_res[j, 'cell_outside']))
+        }
+      }
+    }
+    utils::setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
+  }
+  
+  ########################################################################################################################################################################
+  # identify the all leaf cell 
+  # identify the nearest leaf cells 
+  # connect leaf cells based on overlapping between kNN 
+  ########################################################################################################################################################################
+  # add some statistics below: 
+  cluster_inner_edges <- rep(0, n_cluster)
+  cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
+  cnt_i <- 1
+  pb4 <- utils::txtProgressBar(min = 0, max = length(unique(cell_membership)), style = 3, file = stderr())
+  for(i in unique(cell_membership)) {
+    cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, cell_names[which(cell_membership == i)])) # most are zero
+    cnt_j <- 1
+    for(j in setdiff(unique(cell_membership), i)) {
+      cell_i <- cell_names[which(cell_membership %in% c(i))]
+      cell_j <- cell_names[which(cell_membership %in% c(j))]
+      
+      all_ij <- igraph::ecount(igraph::subgraph(g, c(cell_i, cell_j))) # edges in all cells from two landmark groups
+      only_i <- igraph::ecount(igraph::subgraph(g, cell_i)) # edges from the first landmark groups
+      only_j <- igraph::ecount(igraph::subgraph(g, cell_j)) # edges from the second landmark groups
+      cluster_mat[i, j] <- (all_ij - only_i - only_j) / all_ij # edges overlapping between landmark groups
+      if(cluster_mat[i, j] > 0 & cluster_mat_exist[i, j] == 0) {
+        tmp <- as.matrix(dist(data[c(cell_i, cell_j), ]))
+        dist_mat <- tmp[1:length(cell_i), (length(cell_i) + 1):(length(cell_j) + length(cell_i))] # connection between cells from one group and that to another group 
+        ind_vec <- which(dist_mat == min(dist_mat), arr.ind = T)
+        pc_g %>% igraph::add_edges(c(c(cell_i, cell_j)[ind_vec[1]], c(cell_i, cell_j)[ind_vec[2]]))
+      }
+      cnt_j <- cnt_j + 1
+    }
+    cnt_i <- cnt_i + 1
+    utils::setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
+  }
+  
+  ########################################################################################################################################################################
+  # downstream pseudotime and branch analysis 
+  ########################################################################################################################################################################
+  # identify branch
+  
+  # mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat_exist <- cluster_mat_exist
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_mat <- cluster_mat
+  cluster_mat[is.na(cluster_mat)] <- 0
+  cluster_g <- igraph::graph_from_adjacency_matrix(cluster_mat, weighted = T, mode = 'undirected')
+  Qp <- -1
+  optim_res <- NULL
+  
+  louvain_iter <- 1
+  utils::pb5 <- txtProgressBar(max = length(louvain_iter), style = 3, file = stderr(), min = 0)
+  for (iter in 1:louvain_iter) {
+    Q <- igraph::cluster_louvain(cluster_g)
+    
+    if (is.null(optim_res)) {
+      Qp <- max(Q$modularity)
+      optim_res <- Q
+    }
+    else {
+      Qt <- max(Q$modularity)
+      if (Qt > Qp) {
+        optim_res <- Q
+        Qp <- Qt
+      }
+    }
+    utils::setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
+  }
+  
+  if(verbose) {
+    message('clusters in the cluster graph is ', length(unique(igraph::membership(optim_res))))
+  }
+  # cds@auxOrderingData[[cds@dim_reduce_type]]$cluster_graph <- list(g = cluster_g, optim_res = optim_res)
+  if(length(igraph::E(cluster_g)) > 0) {
+    coord <- igraph::layout_components(cluster_g) 
+    coord <- as.data.frame(coord)
+    colnames(coord) <- c('x', 'y')
+    row.names(coord) <- 1:nrow(coord)
+    coord$Cluster <- 1:nrow(coord)
+    coord$louvain_cluster <- as.character(igraph::membership(optim_res))
+    
+    edge <- get.data.frame(cluster_g)
+    edge <- as.data.frame(edge)
+    colnames(edge) <- c('start', 'end', 'weight')
+    edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+    edge_links <- as.data.frame(edge_links)
+    colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+    edge_links$weight <- edge[, 3]
+  } else {
+    coord <- NULL
+    edge_links <- NULL
+  }
+  
+  list(cluster_mat_exist = cluster_mat_exist, cluster_mat = cluster_mat, cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
+  
 }
 

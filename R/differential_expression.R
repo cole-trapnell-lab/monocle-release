@@ -129,6 +129,7 @@ compareModels <- function(full_models, reduced_models){
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom Biobase fData
 #' @importFrom stats p.adjust
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @seealso \code{\link[VGAM]{vglm}}
 #' @export
 differentialGeneTest <- function(cds,
@@ -147,12 +148,14 @@ differentialGeneTest <- function(cds,
   all_vars <- c(all.vars(formula(fullModelFormulaStr)), all.vars(formula(reducedModelFormulaStr)))
 
   pd <- pData(cds)
-
+  
+  pb1 <- txtProgressBar(max = length(all_vars), style = 3, file = stderr(), min = 0)
   for(i in all_vars) {
     x <- pd[, i]
     if(any((c(Inf, NaN, NA) %in% x))){
       stop("Error: Inf, NaN, or NA values were located in pData of cds in columns mentioned in model terms")
     }
+    setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
   }
 
 
@@ -564,6 +567,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' (by default, the Moran's I test), together with the information from pData. 
 #' @importFrom dplyr group_by summarize desc arrange top_n do select everything 
 #' @importFrom reshape2 melt
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @export
 #'
 find_cluster_markers <- function(cds,
@@ -617,6 +621,7 @@ find_cluster_markers <- function(cds,
         }
       }
       specificity
+
     }
 
     tmp <- ExpVal %>% group_by(Gene) %>% do({

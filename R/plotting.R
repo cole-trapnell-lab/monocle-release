@@ -2227,6 +2227,7 @@ plot_complex_cell_trajectory <- function(cds,
     order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
     
     modified_vec <- c()
+    pb1 <- txtProgressBar(max = length(order_path_len), file = stderr(), style = 3, min = 0)
     for(order_i in order_path_len) {
       curr_vertex <- from_root_to_branch_points[[order_i]]$name
       curr_vertex <- setdiff(curr_vertex, modified_vec)
@@ -2242,6 +2243,7 @@ plot_complex_cell_trajectory <- function(cds,
       }
       
       modified_vec <- c(modified_vec, curr_vertex)
+      setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
     }
   }
   # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
@@ -2436,6 +2438,7 @@ plot_multiple_branches_heatmap <- function(cds,
   g <- cds@minSpanningTree
   m <- NULL
   # branche_cell_num <- c()
+  pb2 <- txtProgressBar(max = length(branches), file = stderr(), style = 3, min = 0)
   for(branch_in in branches) {
     branches_cells <- row.names(subset(pData(cds), State == branch_in))
     root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
@@ -2466,6 +2469,7 @@ plot_multiple_branches_heatmap <- function(cds,
       m <- tmp
     else
       m <- cbind(m, tmp)
+    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
   
   #remove genes with no expression in any condition
@@ -2651,6 +2655,7 @@ plot_multiple_branches_pseudotime <- function(cds,
     m <- NULL
     cds_exprs <- NULL 
     # branche_cell_num <- c()
+    pb3 <- txtProgressBar(max = length(branches), file = stderr(), style = 3, min = 0)
     for(branch_in in branches) {
         branches_cells <- row.names(subset(pData(cds), State == branch_in))
         root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
@@ -2704,7 +2709,8 @@ plot_multiple_branches_pseudotime <- function(cds,
             m <- tmp
         else
             m <- cbind(m, tmp)
-    }
+        setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
+      }
     
     #remove genes with no expression in any condition
     m=m[!apply(m,1,sum)==0,]
@@ -3234,10 +3240,11 @@ plot_markers_by_group <- function(cds,
     
     order_mat <- t(apply(res, major_axis, order))
     max_ind_vec <- c()
-    
+    pb4 <- txtProgressBar(max = length(nrow(order_mat)), file = stderr(), style = 3, min = 0)
     for(i in 1:nrow(order_mat)) {
       tmp <- max(which(!(order_mat[i, ] %in% max_ind_vec)))
       max_ind_vec <- c(max_ind_vec, order_mat[i, tmp])
+      setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
     }
     max_ind_vec <- max_ind_vec[!is.na(max_ind_vec)]
     
