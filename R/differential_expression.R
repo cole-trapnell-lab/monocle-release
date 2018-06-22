@@ -208,7 +208,7 @@ differentialGeneTest <- function(cds,
 }
 
 #' Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object
-calculateLW <- function(cds, verbose = FALSE, k = 25) {
+calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
@@ -232,6 +232,19 @@ calculateLW <- function(cds, verbose = FALSE, k = 25) {
   cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
   
   if(is.null(cell2pp_map)) {
+    links <- monocle:::jaccard_coeff(knn_res[, -1], F)
+    links <- links[links[, 1] > 0, ]
+    relations <- as.data.frame(links)
+    colnames(relations) <- c("from", "to", "weight")
+    knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    if(return_sparse_matrix) {
+      tmp <- get.adjacency(knn_res_graph)
+      dimnames(tmp) <- list(colnames(cds), colnames(cds))
+      
+      return(tmp)
+    }
+    
     knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
@@ -269,6 +282,11 @@ calculateLW <- function(cds, verbose = FALSE, k = 25) {
     
     # remove edges across cells belong to two disconnected principal points
     tmp <- get.adjacency(knn_res_graph) * feasible_space
+    
+    if(return_sparse_matrix) {
+      dimnames(tmp) <- list(colnames(cds), colnames(cds))
+      return(tmp)
+    }
     
     knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(tmp), function(x) {
       res <- which(as.numeric(x) > 0)

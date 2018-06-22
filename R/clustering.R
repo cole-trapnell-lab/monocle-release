@@ -212,14 +212,14 @@ clusterCells <- function(cds,
     if(nrow(data) == 0) {
       message('ReduceDimension is not applied to this dataset. We are using the normalized reduced space obtained from preprocessCDS to cluster cells...')
       data <- cds@normalized_data_projection
-    }
-    
-    if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
       louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, verbose)
     } else {
-      louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
+      if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
+        louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, verbose)
+      } else {
+        louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
+      }
     }
-    
     cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, verbose = verbose, ...)
     louvain_component <-  components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
     names(louvain_component) <- V(louvain_res$g)$name
