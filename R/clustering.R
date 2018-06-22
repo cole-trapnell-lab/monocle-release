@@ -295,6 +295,8 @@ clusterCells <- function(cds,
 #' @param resolution resolution of clustering result
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @import pbapply
 #' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
@@ -348,6 +350,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   Qp <- -1
   optim_res <- NULL
   best_max_resolution <- 'No resolution'
+  pb1 <- txtProgressBar(min = 0, max = length(louvain_iter), style = 3, file = stderr())
   for (iter in 1:louvain_iter) {
     if (verbose) {
       cat("Running louvain iteration ", iter, "...\n")
@@ -368,6 +371,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
           Qp <- Qt
           best_max_resolution <- cur_resolution
         }
+        setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
       }
     } else {
       Q <- igraph::cluster_louvain(g)
@@ -431,6 +435,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edges_per_module = rowSums(num_links)
   total_edges = sum(num_links)
   
+  pb2 <- txtProgressBar(min = 0, max = length(louvain_modules), style = 3, file = stderr())
   for(i in 1:length(louvain_modules)){
     for(j in 1:length(louvain_modules)){
       
@@ -447,6 +452,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       cluster_mat[i,j] = p_val_i_j
       enrichment_mat[i,j] = num_links_i_j
     }
+    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
   #cluster_mat[cluster_mat > qval_thresh] = 0
@@ -499,6 +505,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
   # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
   
+  pb3 <- utils::txtProgressBar(min = 0, max = length(sort(unique(as.vector(cell_membership)))), style = 3, file = stderr())
   for(i in sort(unique(as.vector(cell_membership)))) {
     if(verbose) {
       message('current cluster is ', i)
@@ -537,6 +544,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         }
       }
     }
+    utils::setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
   }
   
   ########################################################################################################################################################################
@@ -548,6 +556,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   cluster_inner_edges <- rep(0, n_cluster)
   cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
   cnt_i <- 1
+  pb4 <- utils::txtProgressBar(min = 0, max = length(unique(cell_membership)), style = 3, file = stderr())
   for(i in unique(cell_membership)) {
     cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, cell_names[which(cell_membership == i)])) # most are zero
     cnt_j <- 1
@@ -568,6 +577,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
       cnt_j <- cnt_j + 1
     }
     cnt_i <- cnt_i + 1
+    utils::setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
   }
   
   ########################################################################################################################################################################
@@ -584,6 +594,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   optim_res <- NULL
   
   louvain_iter <- 1
+  utils::pb5 <- txtProgressBar(max = length(louvain_iter), style = 3, file = stderr(), min = 0)
   for (iter in 1:louvain_iter) {
     Q <- igraph::cluster_louvain(cluster_g)
     
@@ -598,6 +609,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         Qp <- Qt
       }
     }
+    utils::setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
   }
   
   if(verbose) {

@@ -128,6 +128,7 @@ compareModels <- function(full_models, reduced_models){
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom Biobase fData
 #' @importFrom stats p.adjust
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @seealso \code{\link[VGAM]{vglm}}
 #' @export
 differentialGeneTest <- function(cds, 
@@ -147,11 +148,13 @@ differentialGeneTest <- function(cds,
    
   pd <- pData(cds)
   
+  pb1 <- txtProgressBar(max = length(all_vars), style = 3, file = stderr(), min = 0)
   for(i in all_vars) {
     x <- pd[, i]
     if(any((c(Inf, NaN, NA) %in% x))){
       stop("Error: Inf, NaN, or NA values were located in pData of cds in columns mentioned in model terms")
     }
+    setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
   }
   
   
@@ -442,6 +445,7 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
 #' @importFrom reshape2 melt
+#' @importFrom utils setTxtProgressBar txtProgressBar
 #' @export
 #' 
 find_cluster_markers <- function(cds, 
@@ -475,6 +479,7 @@ find_cluster_markers <- function(cds,
     class_df <- data.frame(Group = df$Group, percentage = df$percentage)
     uniq_group <- unique(df$Group)
     specificity <- rep(0, length(uniq_group))
+    pb2 <- txtProgressBar(max = length(uniq_group), style = 3, file = stderr(), min = 0)
     for(cell_type_i in 1:length(uniq_group)) {
       perfect_specificity <- rep(0.0, nrow(class_df))
       perfect_specificity[cell_type_i] <- 1.0
@@ -484,6 +489,7 @@ find_cluster_markers <- function(cds,
       } else {
         specificity[cell_type_i] <- 0
       }
+      setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
     }
     specificity 
   }
