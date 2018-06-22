@@ -1018,6 +1018,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
     num_blocks = ceiling(ncol(data_matrix) / block_size)
+    pb5 <- txtProgressBar(max = length(num_blocks), file = stderr(), style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = data_matrix[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1027,11 +1028,13 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
       closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
     }
   }else{
     num_blocks = ceiling(ncol(target_points) / block_size)
     dist_to_closest_vertex = rep(Inf, length(ncol(data_matrix)))
     closest_vertex = rep(NA, length(ncol(data_matrix)))
+    pb6 <- txtProgressBar(max = length(num_blocks), file = stderr(), style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1045,6 +1048,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       closest_vertex[updated_nearest_idx] = closest_vertex_for_block[updated_nearest_idx] + (i-1) * block_size
       dist_to_closest_vertex[updated_nearest_idx] = new_block_distances[updated_nearest_idx]
       #closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      setTxtProgressBar(pb = pb6, value = pb6$getVal() + 1)
     }
   }
   stopifnot(length(closest_vertex) == ncol(data_matrix))
@@ -1096,6 +1100,7 @@ project2MST <- function(cds, Projection_Method){
   }
   else{
     P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
+    pb1 <- txtProgressBar(max = length(closest_vertex), file = stderr(), style = 3, min = 0)
     for(i in 1:length(closest_vertex)) {
       neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ])
       projection <- NULL
@@ -1115,6 +1120,7 @@ project2MST <- function(cds, Projection_Method){
       if(class(projection) != 'matrix')
         projection <- as.matrix(projection)
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
+      setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
     }
   }
     # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
@@ -1230,12 +1236,13 @@ traverseTree <- function(g, starting_cell, end_cells){
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
-
+  pb2 <- txtProgressBar(max = length(end_cells), file = stderr(), style = 3, min = 0)
   for(end_cell in end_cells) {
     traverse_res <- traverseTree(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
 
     subset_cell <- c(subset_cell, path_cells)
+    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
 
   subset_cell <- unique(subset_cell)
@@ -1434,8 +1441,9 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
   dp_mst <- NULL 
   pr_graph_cell_proj_closest_vertex <- NULL 
   cell_name_vec <- NULL
-  
+  pb3 <- txtProgressBar(max = length(unique(louvain_component)), style = 3, file = stderr(), min = 0)
   for(cur_comp in unique(louvain_component)) {
+    setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
     X_subset <- X[, louvain_component == cur_comp]
     
     #add other parameters...
@@ -1504,6 +1512,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
     dp_mst <- graph.union(dp_mst, cur_dp_mst)
     reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
     
+    
   }
   
   row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
@@ -1560,7 +1569,7 @@ connectTips <- function(pd,
   mst_g <- mst_g_old
   diameter_dis <- diameter(mst_g_old)
   reducedDimK_df <- reducedDimK_old
-  
+  pb4 <- txtProgressBar(max = length(nrow(valid_connection)), file = stderr(), style = 3, min = 0)
   for(i in 1:nrow(valid_connection)) {
     edge_vec <- unique(louvain_res$optim_res$membership)[valid_connection[i, ]]
     
@@ -1581,6 +1590,7 @@ connectTips <- function(pd,
       mst_g <- add_vertices(mst_g, nrow(kmeans_res), name = row.names(kmeans_res)) %>% add_edges(as.vector(t(get.edgelist(dp_mst))), weight = E(dp_mst)$weight) 
       reducedDimK_df <- cbind(reducedDimK_df, t(kmeans_res))  
     }
+    setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
   }
   
   list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)

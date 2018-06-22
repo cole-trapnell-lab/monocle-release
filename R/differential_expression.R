@@ -17,14 +17,14 @@ diff_test_helper <- function(x,
                              weights,
                              disp_func=NULL,
                              verbose=FALSE
-                             ){
-
+){
+  
   reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
   fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
-
+  
   x_orig <- x
   disp_guess <- 0
-
+  
   if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (relative_expr == TRUE)
     {
@@ -50,7 +50,7 @@ diff_test_helper <- function(x,
   }else{
     f_expression <- log10(x)
   }
-
+  
   test_res <- tryCatch({
     if (expressionFamily@vfamily %in% c("binomialff")){
       if (verbose){
@@ -69,7 +69,7 @@ diff_test_helper <- function(x,
         reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))
       }
     }
-
+    
     #print(full_model_fit)
     #print(coef(reduced_model_fit))
     compareModels(list(full_model_fit), list(reduced_model_fit))
@@ -78,7 +78,7 @@ diff_test_helper <- function(x,
   error = function(e) {
     if(verbose)
       print (e);
-      data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
+    data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
     #data.frame(status = "FAIL", pval=1.0)
   }
   )
@@ -105,7 +105,7 @@ compareModels <- function(full_models, reduced_models){
       data.frame(status = "OK", family=family, pval=pval)
     } else { data.frame(status = "FAIL", family=NA, pval=1.0) }
   } , full_models, reduced_models, SIMPLIFY=FALSE, USE.NAMES=TRUE)
-
+  
   test_res <- do.call(rbind.data.frame, test_res)
   test_res$qval <- p.adjust(test_res$pval, method="BH")
   test_res
@@ -136,31 +136,31 @@ differentialGeneTest <- function(cds,
                                  relative_expr=TRUE,
                                  cores=1,
                                  verbose=FALSE
-                                 ){
+){
   status <- NA
-
+  
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
   }
-
+  
   all_vars <- c(all.vars(formula(fullModelFormulaStr)), all.vars(formula(reducedModelFormulaStr)))
-
+  
   pd <- pData(cds)
-
+  
   for(i in all_vars) {
     x <- pd[, i]
     if(any((c(Inf, NaN, NA) %in% x))){
       stop("Error: Inf, NaN, or NA values were located in pData of cds in columns mentioned in model terms")
     }
   }
-
-
+  
+  
   if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
     if (is.null(sizeFactors(cds)) || sum(is.na(sizeFactors(cds)))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }
   }
-
+  
   if (cores > 1){
     diff_test_res<-mcesApply(cds, 1, diff_test_helper,
                              c("BiocGenerics", "VGAM", "Matrix"),
@@ -171,11 +171,11 @@ differentialGeneTest <- function(cds,
                              relative_expr=relative_expr,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                              verbose=verbose
-                       #       ,
-                       # backup_method = backup_method,
-                       # use_epislon = use_epislon,
-                       # stepsize = stepsize
-                             )
+                             #       ,
+                             # backup_method = backup_method,
+                             # use_epislon = use_epislon,
+                             # stepsize = stepsize
+    )
     diff_test_res
   }else{
     diff_test_res<-smartEsApply(cds,1,diff_test_helper,
@@ -186,24 +186,24 @@ differentialGeneTest <- function(cds,
                                 relative_expr=relative_expr,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
                                 verbose=verbose
-                       #          ,
-                       # backup_method = backup_method,
-                       # use_epislon = use_epislon,
-                       # stepsize = stepsize
-
-                                )
+                                #          ,
+                                # backup_method = backup_method,
+                                # use_epislon = use_epislon,
+                                # stepsize = stepsize
+                                
+    )
     diff_test_res
   }
-
+  
   diff_test_res <- do.call(rbind.data.frame, diff_test_res)
-
+  
   diff_test_res$qval <- 1
   diff_test_res$qval[which(diff_test_res$status == 'OK')] <- p.adjust(subset(diff_test_res, status == 'OK')[, 'pval'], method="BH")
-
+  
   diff_test_res <- merge(diff_test_res, fData(cds), by="row.names")
   row.names(diff_test_res) <- diff_test_res[, 1] #remove the first column and set the row names to the first column
   diff_test_res[, 1] <- NULL
-
+  
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
@@ -212,11 +212,11 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-
+  
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
-
+  
   if(cds@dim_reduce_type == 'L1graph') {
     cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
     principal_g <- cds@auxOrderingData[["L1graph"]]$W
@@ -227,67 +227,67 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     cell_coords <- t(reducedDimS(cds))
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
   }
-
+  
   exprs_mat <- exprs(cds)
   cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
-
+  
   if(is.null(cell2pp_map)) {
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
     links <- links[links[, 1] > 0, ]
     relations <- as.data.frame(links)
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
-
+    
     if(return_sparse_matrix) {
       tmp <- get.adjacency(knn_res_graph)
       dimnames(tmp) <- list(colnames(cds), colnames(cds))
-
+      
       return(tmp)
     }
-
+    
     knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
     cell2pp_map <-  cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
     cell2pp_map <- cell2pp_map[colnames(cds), ]
-
+    
     # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP
-
+    
     if(verbose) {
       message("Identify connecting principal point pairs ...")
     }
-
+    
     # an alternative approach to make the kNN graph based on the principal graph
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
     # kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
-
+    
     principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
     diag(principal_g_tmp) <- 1 # so set diagnol as 1
-
+    
     cell_membership <- as.factor(cell2pp_map)
     uniq_member <- sort(unique(cell_membership))
-
+    
     membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
     colnames(membership_matrix) <- levels(uniq_member)
-
+    
     # sparse matrix multiplication for calculating the feasible space
     feasible_space <- membership_matrix %*% tcrossprod(principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))], membership_matrix)
-
+    
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
     links <- links[links[, 1] > 0, ]
     relations <- as.data.frame(links)
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
-
+    
     # remove edges across cells belong to two disconnected principal points
     tmp <- get.adjacency(knn_res_graph) * feasible_space
-
+    
     if(return_sparse_matrix) {
       dimnames(tmp) <- list(colnames(cds), colnames(cds))
       return(tmp)
     }
-
+    
     knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(tmp), function(x) {
       res <- which(as.numeric(x) > 0)
       if(length(res) == 0)
@@ -301,7 +301,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
   attr(knn_list, "call") <- match.call()
   # attr(knn_list, "type") <- "queen"
   lw <- nb2listw(knn_list, zero.policy = TRUE)
-
+  
   lw
 }
 
@@ -334,16 +334,16 @@ principalGraphTest <- function(cds,
                                cores=1,
                                verbose=FALSE) {
   lw <- calculateLW(cds, verbose = verbose, k = k)
-
+  
   if(verbose) {
     message("Performing Moran's test: ...")
   }
   exprs_mat <- exprs(cds)
-
+  
   wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
   test_res <- mclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
     exprs_val <- exprs_mat[x, ]
-
+    
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
       exprs_val <- exprs_val
     }else{
@@ -353,7 +353,7 @@ principalGraphTest <- function(cds,
         exprs_val <- log10(exprs_val + 0.1)
       }
     }
-
+    
     test_res <- tryCatch({
       if(method == "Moran_I") {
         mt <- my.moran.test(exprs_val, lw, wc, alternative = alternative)
@@ -367,20 +367,20 @@ principalGraphTest <- function(cds,
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
   }, alternative = alternative, method = method, mc.cores = cores)
-
+  
   if(verbose) {
     message("returning results: ...")
   }
-
+  
   test_res <- do.call(rbind.data.frame, test_res)
   row.names(test_res) <- row.names(cds)
-
+  
   test_res <- merge(test_res, fData(cds), by="row.names")
   row.names(test_res) <- test_res[, 1] #remove the first column and set the row names to the first column
   test_res[, 1] <- NULL
   test_res$qval <- 1
   test_res$qval[which(test_res$status == 'OK')] <- p.adjust(subset(test_res, status == 'OK')[, 'pval'], method="BH")
-
+  
   test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
@@ -402,13 +402,13 @@ my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation 
   n <- length(listw$neighbours)
   if (n != length(x))
     stop("objects of different length")
-
+  
   S02 <- wc$S0 * wc$S0
   res <- spdep::moran(x, listw, wc$n, wc$S0, zero.policy = zero.policy,
-               NAOK = NAOK)
+                      NAOK = NAOK)
   I <- res$I
   K <- res$K
-
+  
   EI <- (-1)/wc$n1
   if (randomisation) {
     VI <- wc$n * (wc$S1 * (wc$nn - 3 * wc$n + 3) - wc$n *
@@ -445,7 +445,7 @@ my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation 
   names(vec) <- c("Moran I statistic", "Expectation", "Variance")
   method <- paste("Moran I test under", ifelse(randomisation,
                                                "randomisation", "normality"))
-
+  
   res <- list(statistic = statistic, p.value = PrI, estimate = vec)
   if (!is.null(na.act))
     attr(res, "na.action") <- na.act
@@ -458,7 +458,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
   zero.policy = TRUE
   adjust.n = TRUE
   spChk = NULL
-
+  
   alternative <- match.arg(alternative, c("less", "greater",
                                           "two.sided"))
   if (!inherits(listw, "listw"))
@@ -474,7 +474,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
     spChk <- get.spChkOption()
   if (spChk && !chkIDs(x, listw))
     stop("Check of data and weights ID integrity failed")
-
+  
   S02 <- wc$S0 * wc$S0
   res <- spdep::geary(x, listw, wc$n, wc$n1, wc$S0, zero.policy)
   C <- res$C
@@ -546,23 +546,23 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @export
 #'
 find_cluster_markers <- function(cds,
-                                spatial_res,
-                                group_by = 'Cluster',
-                                qval_threshold = 0.05,
-                                morans_I_threshold = 0.25,
-                                lower_threshold = 0,
-                                pseudocount = 1,
-                                top_n_by_group = NULL,
-                                block_size = 100,
-                                verbose = FALSE,
-                                ...) {
+                                 spatial_res,
+                                 group_by = 'Cluster',
+                                 qval_threshold = 0.05,
+                                 morans_I_threshold = 0.25,
+                                 lower_threshold = 0,
+                                 pseudocount = 1,
+                                 top_n_by_group = NULL,
+                                 block_size = 100,
+                                 verbose = FALSE,
+                                 ...) {
   if(!(group_by %in% colnames(pData(cds)))) {
     stop('Please ensure group_by is included in the pData')
   }
-
+  
   gene_ids <- row.names(subset(spatial_res, qval < qval_threshold & morans_I > morans_I_threshold))
   num_blocks = ceiling(length(gene_ids) / block_size)
-
+  
   specificity_res <- NULL
   for(i in 1:num_blocks) {
     if (i < num_blocks){
@@ -570,17 +570,17 @@ find_cluster_markers <- function(cds,
     }else{
       exprs_mat = as.matrix(cds@assayData$exprs[gene_ids[((((i-1) * block_size)+1):(length(gene_ids)))], ])
     }
-
+    
     exprs_mat <- melt(exprs_mat)
     colnames(exprs_mat) <- c('Gene', 'Cell', 'Expression')
     exprs_mat$Gene <- as.character(exprs_mat$Gene)
     exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
-
+    
     ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
-
+    
     ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
     ExpVal$Group <- ExpVal$Group
-
+    
     FUN <- function(df) {
       class_df <- data.frame(Group = df$Group, percentage = df$percentage)
       uniq_group <- unique(df$Group)
@@ -588,7 +588,7 @@ find_cluster_markers <- function(cds,
       for(cell_type_i in 1:length(uniq_group)) {
         perfect_specificity <- rep(0.0, nrow(class_df))
         perfect_specificity[cell_type_i] <- 1.0
-
+        
         if(sum(class_df$percentage) > 0) {
           specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$percentage), perfect_specificity)
         } else {
@@ -597,16 +597,16 @@ find_cluster_markers <- function(cds,
       }
       specificity
     }
-
+    
     tmp <- ExpVal %>% group_by(Gene) %>% do({
       tmp <- dplyr::as_data_frame(.)
       tmp$specificity = FUN(tmp)
       tmp
     })
-
+    
     specificity_res <- rbind(tmp, specificity_res)
   }
-
+  
   specificity_res <- specificity_res %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
   if(!is.null(top_n_by_group)) {
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
