@@ -67,12 +67,12 @@ setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
            },
            list = {
              if (missing(i))                     # j must be present
-               lapply(orig, function(obj) obj[, j, ..., drop = drop])
+               pblapply(orig, function(obj) obj[, j, ..., drop = drop])
              else {                              # j may or may not be present
                if (missing(j))
-                 lapply(orig, function(obj) obj[i,, ..., drop = drop])
+                 pblapply(orig, function(obj) obj[i,, ..., drop = drop])
                else
-                 lapply(orig, function(obj) obj[i, j, ..., drop = drop])
+                 pblapply(orig, function(obj) obj[i, j, ..., drop = drop])
              }
            })
   x@auxOrderingData = as.environment(as.list(x@auxOrderingData, all.names=TRUE))

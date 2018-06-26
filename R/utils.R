@@ -194,7 +194,7 @@ smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   if (isSparseMatrix(exprs(X))){
     res <- sparseApply(exprs(X), MARGIN, FUN, convert_to_dense, ...)
   }else{
-    res <- apply(exprs(X), MARGIN, FUN, ...)
+    res <- pbapply(exprs(X), MARGIN, FUN, ...)
   }
   
   if (MARGIN == 1)
@@ -244,7 +244,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
     FM <- Matrix::t(Matrix::t(FM)/colSums(FM))
   }
   
-  negentropy_exp <- apply(FM,1,function(x) { 
+  negentropy_exp <- pbapply(FM,1,function(x) { 
     
     expression <- x[x > expression_lower_thresh]
     expression <- log2(x); 
@@ -261,7 +261,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   )
   
   
-  means <- apply(FM,1,function(x) { 
+  means <- pbapply(FM,1,function(x) { 
     expression <- x[x > expression_lower_thresh]
     expression <- log2(x); 
     expression[is.finite(expression) == FALSE] <- NA; 
@@ -437,16 +437,16 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
   if (round_exprs)
     CM <- round(CM)
   if (method == "weighted-median"){
-    log_medians <- apply(CM, 1, function(cell_expr) { 
+    log_medians <- pbapply(CM, 1, function(cell_expr) { 
       log(locfunc(cell_expr))
     })
     
-    weights <- apply(CM, 1, function(cell_expr) {
+    weights <- pbapply(CM, 1, function(cell_expr) {
       num_pos <- sum(cell_expr > 0)
       num_pos / length(cell_expr)
     })
     
-    sfs <- apply( CM, 2, function(cnts) {
+    sfs <- pbapply( CM, 2, function(cnts) {
       norm_cnts <-  weights * (log(cnts) -  log_medians)
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
@@ -456,7 +456,7 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
   }else if (method == "median-geometric-mean"){
     log_geo_means <- rowMeans(log(CM))
     
-    sfs <- apply( CM, 2, function(cnts) {
+    sfs <- pbapply( CM, 2, function(cnts) {
       norm_cnts <- log(cnts) -  log_geo_means
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
@@ -464,15 +464,15 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
       exp( locfunc( norm_cnts ))
     })
   }else if(method == "median"){
-    row_median <- apply(CM, 1, median)
-    sfs <- apply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
+    row_median <- pbapply(CM, 1, median)
+    sfs <- pbapply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
   }else if(method == 'mode'){
     sfs <- estimate_t(CM)
   }else if(method == 'geometric-mean-total') {
-    cell_total <- apply(CM, 2, sum)
+    cell_total <- pbapply(CM, 2, sum)
     sfs <- log(cell_total) / mean(log(cell_total))
   }else if(method == 'mean-geometric-mean-total') {
-    cell_total <- apply(CM, 2, sum)
+    cell_total <- pbapply(CM, 2, sum)
     sfs <- cell_total / exp(mean(log(cell_total)))
   } 
   

@@ -27,7 +27,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   pr_graph_node_distances = distances(pr_graph, v=root_cell)
   if (length(root_cell) > 1){
     node_names = colnames(pr_graph_node_distances)
-    pseudotimes = apply(pr_graph_node_distances, 2, min)
+    pseudotimes = pbapply(pr_graph_node_distances, 2, min)
   }else{
     node_names = names(pr_graph_node_distances)
     pseudotimes = pr_graph_node_distances
@@ -886,7 +886,7 @@ learnGraph <- function(cds,
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        tmp <- matrix(pbapply(cds@auxOrderingData$DDRTree$R, 1, which.max))
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["SimplePPT"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
@@ -971,7 +971,7 @@ learnGraph <- function(cds,
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        tmp <- matrix(pbapply(cds@auxOrderingData$DDRTree$R, 1, which.max))
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
@@ -1009,7 +1009,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
         block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
       }
       distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
-      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex_for_block <- pbapply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       closest_vertex = append(closest_vertex, closest_vertex_for_block)
       setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
     }
@@ -1025,7 +1025,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
         block = target_points[,((((i-1) * block_size)+1):(ncol(target_points)))]
       }
       distances_Z_to_Y <- proxy::dist(t(data_matrix), t(block))
-      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex_for_block <- pbapply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       new_block_distances = distances_Z_to_Y[cbind(1:nrow(distances_Z_to_Y), closest_vertex_for_block)]
       updated_nearest_idx = which(new_block_distances < dist_to_closest_vertex)
       closest_vertex[updated_nearest_idx] = closest_vertex_for_block[updated_nearest_idx] + (i-1) * block_size
@@ -1298,11 +1298,11 @@ reverseEmbeddingCDS <- function(cds) {
   cds_subset <- cds[row.names(FM), ]
   
   #make every value larger than 1: 
-  reverse_embedding_data <- t(apply(reverse_embedding_data, 1, function(x) x + abs(min(x))))
+  reverse_embedding_data <- t(pbapply(reverse_embedding_data, 1, function(x) x + abs(min(x))))
   
   #rescale to the original scale: 
   raw_data <- as.matrix(exprs(cds)[row.names(FM), ]) 
-  reverse_embedding_data <- reverse_embedding_data * (apply(raw_data, 1, function(x) quantile(x, 0.99)) ) / apply(reverse_embedding_data, 1, max)
+  reverse_embedding_data <- reverse_embedding_data * (pbapply(raw_data, 1, function(x) quantile(x, 0.99)) ) / pbapply(reverse_embedding_data, 1, max)
 
   Biobase::exprs(cds_subset) <- reverse_embedding_data
   
@@ -1443,11 +1443,11 @@ multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group =
     
     if(is.null(reducedDimK_coord)) {
       curr_cell_names <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- matrix(apply(ddrtree_res$R, 1, which.max))
+      pr_graph_cell_proj_closest_vertex <- matrix(pbapply(ddrtree_res$R, 1, which.max))
       cell_name_vec <- colnames(X_subset)
     } else {
       curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
+      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(pbapply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
       cell_name_vec <- c(cell_name_vec, colnames(X_subset))
     }
     
@@ -1458,7 +1458,7 @@ multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group =
     
     cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
     
-    tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
+    tmp <- matrix(pbapply(ddrtree_res$R, 1, which.max))
     
     if(length(close_loop) == length(unique(louvain_component)))
       curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
@@ -1528,7 +1528,7 @@ connectTips <- function(pd,
                         kmean_num = 5, 
                         verbose = FALSE,
                         ...) {
-  tmp <- matrix(apply(R, 1, which.max))
+  tmp <- matrix(pbapply(R, 1, which.max))
   
   row.names(tmp) <- colnames(reducedDimS_old)
   
