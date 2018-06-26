@@ -504,29 +504,13 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
 
   <h3> Introduction </h3>
 
-    <p> In this tutorial, we demonstrate how to use Monocle 3 (beta version) to cluster cells for very large datasets.
-      We will mainly introduce 1) use <code>delayedArray</code> to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code> and <code>preprocessCDS</code>, etc for large datasets.
+    <p> In this tutorial, we demonstrate how to use Monocle 3 (alpha version) to perform clustering for very large datasets and then identify marker genes specific for each cluster.
+      We will mainly introduce 1) use delayedarray to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code>, and <code>preprocessCDS</code>, etc for large datasets.
       2) apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.
-      3) introduce a general differential test (<code>manifoldTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding. </p>
-
-    <p> UMAP is a recently proposed method based on Riemannian geometry and algebraic topology to perform dimension reduction and data visualization.
-      Its visualization quality is competitive with the popular t-SNE (t-stochastic neighbor embedding) method used widely in single-cell genomics field but has the advantage to preserve more global structure with strong theoretical foundation and the algorithm itself is much more efficient
-      (the algorithm complexity of UMAP is  $O(N)$ vs.  $O(Nlog(N))$ from tSNE). </p>
-
-    <p> In overview, UMAP first constructs a topological representation of the high dimensional data with local manifold approximations and patches together their local fuzzy simplicial set representations.
-      UMAP then optimizes the lower dimension embedding represented also by an equivalent topological representation by minimizing the cross-entropy between the high and lower topological representations (McInnes and Healy 2018). </p>
-
-    <p> The computational efficiency of UMAP is crucial for analyzing increasingly large cell atlas datasets. We found that UMAP finishes analyzing two million cells dataset in 3 hours while tSNE takes more than 10 hours with 10 cores (the multi-core bh-tSNE is used).
-      A few implementation details leads to the effectiveness of UMAP.
-      Two major steps are involved in both UMAP and tSNE algorithms: firstly, an intermediate structure from the high dimension space (normally the top PCA reduced space) is built and then a low dimensional embedding is found to represent the intermediate structure.
-      In the first step, while t-SNE constructs a matrix represents the joint probability distribution, UMAP builds a fuzzy graph.
-      Since UMAP uses topological data analysis techniques, UMAP requires far fewer nearest neighbors and also tolerates more error comparing to tSNE.
-      UMAP thus can use approximate nearest neighbor computations and far fewer nearest neighbors which makes it much more effective than tSNE.
-      For the second step, both methods used stochastic grid descent approach with differing loss functions to embed the data into low dimension space.
-      While t-SNE needs a loss function for global normalization, UMAP uses a different objective function that avoids that need.
-      This step essentially enables UMAP scales linear with the number of data samples. </p>
-
-    <p> A stable version of Monocle 3 will be released shortly </p>
+      3) introduce a general differential test (<code>principalGraphTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding.
+      4) the <code>find_cluster_markers</code> function to identify cluster specific genes.
+      5) various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.
+      Note that this dataset has been used by Seurat from Rahul's group as a tutoril also but our analysis here is complimentary to theirs.</p>
 
     {% highlight R %}
 rm(list = ls()) # clear the environment
