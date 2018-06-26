@@ -136,7 +136,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
         type_res <- gate_res[parents]
         if (length(type_res) > 1){
           mat <- do.call("cBind",type_res)
-          type_res = apply(mat, 1, function(x) { prod(x) })
+          type_res = pbapply(mat, 1, function(x) { prod(x) })
         }else{
           type_res = type_res[[1]]
         }
@@ -888,10 +888,10 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
   class_df <- class_df[,-1]
   class_df <- t(as.matrix(class_df))
   
-  marker_specificities <- lapply(1:ncol(class_df), function(cell_type_i){
+  marker_specificities <- pblapply(1:ncol(class_df), function(cell_type_i){
     perfect_specificity <- rep(0.0, ncol(class_df))
     perfect_specificity[cell_type_i] <- 1.0
-    apply(class_df, 1, function(x) { 
+    pbapply(class_df, 1, function(x) { 
       if (sum(x) > 0) 1 - JSdistVec(makeprobsvec(x), perfect_specificity)
       else 0
     })

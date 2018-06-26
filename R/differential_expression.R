@@ -245,7 +245,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
       return(tmp)
     }
     
-    knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+    knn_list <- pblapply(1:nrow(knn_res), function(x) knn_res[x, -1])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
