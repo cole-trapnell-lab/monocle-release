@@ -605,6 +605,5 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   }
   
   list(cluster_mat_exist = cluster_mat_exist, cluster_mat = cluster_mat, cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
-  
 }
 

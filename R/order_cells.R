@@ -926,11 +926,7 @@ learnGraph <- function(cds,
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-<<<<<<< fdcf004b0ca673bd6653dab5b12548bf931b948f
         tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
-=======
-        tmp <- matrix(pbapply(cds@auxOrderingData$DDRTree$R, 1, which.max))
->>>>>>> added progress bars to non-parallel apply functions
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["SimplePPT"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
