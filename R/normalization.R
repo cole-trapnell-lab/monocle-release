@@ -7,7 +7,7 @@ makeprobsvec<-function(p){
 
 # Calculate the probability matrix for a relative abundance matrix
 makeprobs<-function(a){
-  colSums<-apply(a,2,sum)
+  colSums<-pbapply(a,2,sum)
   b<-Matrix::t(Matrix::t(a)/colSums)
   b[is.na(b)] = 0
   b
@@ -128,7 +128,7 @@ dmode <- function(x, breaks="Sturges") {
 
 estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   #apply each column
-  unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))))) #avoid multiple output
+  unlist(pbapply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))))) #avoid multiple output
 }
 
 #' Calibrate_per_cell_total_proposal 
@@ -140,7 +140,7 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate, method = c('num_genes', 'tpm_fraction') ){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
 
-  proposed_totals <- unlist(lapply(1:length(split_relative_exprs), function(ind) {
+  proposed_totals <- unlist(pblapply(1:length(split_relative_exprs), function(ind) {
     x <- split_relative_exprs[[ind]]; 
     x <- x[x > 0.1]; 
     if(method == 'num_genes') {
@@ -235,7 +235,7 @@ relative2abs <- function(relative_cds,
                          detection_threshold)
     if (verbose) 
       message("Performing robust linear regression for each cell based on the spikein data...")
-    molModels <- apply(ERCC_controls, 2, function(cell_exprs, 
+    molModels <- pbapply(ERCC_controls, 2, function(cell_exprs, 
                                                   input.ERCC.annotation, valid_ids) {
       spike_df <- input.ERCC.annotation
       spike_df <- cbind(spike_df, cell_exprs[row.names(spike_df)])
@@ -274,10 +274,10 @@ relative2abs <- function(relative_cds,
       })
     }, split(as.matrix(relative_expr_matrix), rep(1:ncol(relative_expr_matrix), 
                                                   each = nrow(relative_expr_matrix))), molModels, mc.cores = cores)
-    k_b_solution <- data.frame(b = unlist(lapply(molModels, 
+    k_b_solution <- data.frame(b = unlist(pblapply(molModels, 
                                                  FUN = function(x) {
                                                    intercept = x$coefficients[1]
-                                                 })), k = unlist(lapply(molModels, FUN = function(x) {
+                                                 })), k = unlist(pblapply(molModels, FUN = function(x) {
                                                    slope = x$coefficients[2]
                                                  })))
     kb_model <- MASS::rlm(b ~ k, data = k_b_solution)

@@ -1154,7 +1154,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   
 
   #remove genes with no expression in any condition
-  m=m[!apply(m,1,sum)==0,]
+  m=m[!pbapply(m,1,sum)==0,]
   
   norm_method <- match.arg(norm_method)
   
@@ -1414,12 +1414,12 @@ plot_genes_branched_pseudotime <- function (cds,
                                             relative_expr = T, new_data = new_data)
   colnames(full_model_expectation) <- colnames(cds_subset)
   
-  cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
+  cds_exprs$full_model_expectation <- pbapply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
   if(!is.null(reducedModelFormulaStr)){
     reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
                                                  relative_expr = T, new_data = new_data)
     colnames(reduced_model_expectation) <- colnames(cds_subset)
-    cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
+    cds_exprs$reduced_model_expectation <- pbapply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
   }
   
   # FIXME: If you want to show the bifurcation time for each gene, this function
@@ -2221,10 +2221,15 @@ plot_complex_cell_trajectory <- function(cds,
     layout_coord_ori <- layout_coord 
     row.names(layout_coord) <- V(dp_mst)$name
     
+<<<<<<< fdcf004b0ca673bd6653dab5b12548bf931b948f
     branch_points_cells <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
+=======
+    branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    terminal_cells <- setdiff(V(dp_mst)[which(unlist(pblapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
+>>>>>>> added progress bars to non-parallel apply functions
     from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
-    order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
+    order_path_len <- order(unlist(pblapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
     
     modified_vec <- c()
     pb1 <- txtProgressBar(max = length(order_path_len), file = stderr(), style = 3, min = 0)
@@ -3238,7 +3243,7 @@ plot_markers_by_group <- function(cds,
     
   } else if(ordering_type == 'maximal_on_diag'){
     
-    order_mat <- t(apply(res, major_axis, order))
+    order_mat <- t(pbapply(res, major_axis, order))
     max_ind_vec <- c()
     pb4 <- txtProgressBar(max = length(nrow(order_mat)), file = stderr(), style = 3, min = 0)
     for(i in 1:nrow(order_mat)) {

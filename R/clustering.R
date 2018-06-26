@@ -488,7 +488,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     
     neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
     # identify connected cells outside a Louvain group
-    conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
+    conn_cluster_res <- do.call(rbind, pblapply(1:length(curr_cluster_cell), function(x) {
       cell_outside <- setdiff(neigh_list[[x]]$name, curr_cluster_cell)
       if(length(cell_outside)) {
         data.frame(current_cell = curr_cluster_cell[x], 

@@ -162,7 +162,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
       }
     }, mc.cores = cores)
 
-    res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE],
+    res_list_lengths <- pblapply(res_list[is.na(res_list) == FALSE],
         length)
     stopifnot(length(unique(res_list_lengths)) == 1)
     num_na_fits <- length(res_list[is.na(res_list)])
@@ -170,7 +170,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
         na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
             num_na_fits), nrow = num_na_fits)
         row.names(na_matrix) <- names(res_list[is.na(res_list)])
-        non_na_matrix <- Matrix::t(do.call(cbind, lapply(res_list[is.na(res_list) ==
+        non_na_matrix <- Matrix::t(do.call(cbind, pblapply(res_list[is.na(res_list) ==
             FALSE], unlist)))
         row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
@@ -178,7 +178,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
         res_matrix <- res_matrix[names(res_list), ]
     }
     else {
-        res_matrix <- Matrix::t(do.call(cbind, lapply(res_list, unlist)))
+        res_matrix <- Matrix::t(do.call(cbind, pblapply(res_list, unlist)))
         row.names(res_matrix) <- names(res_list[is.na(res_list) ==
             FALSE])
     }
@@ -200,7 +200,7 @@ residualMatrix <- function(models,  residual_type="response", cores = 1) {
     }
   }, mc.cores = cores)
 
-  res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE],
+  res_list_lengths <- pblapply(res_list[is.na(res_list) == FALSE],
                              length)
   stopifnot(length(unique(res_list_lengths)) == 1)
   num_na_fits <- length(res_list[is.na(res_list)])
@@ -208,7 +208,7 @@ residualMatrix <- function(models,  residual_type="response", cores = 1) {
     na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
                             num_na_fits), nrow = num_na_fits)
     row.names(na_matrix) <- names(res_list[is.na(res_list)])
-    non_na_matrix <- Matrix::t(do.call(cbind, lapply(res_list[is.na(res_list) ==
+    non_na_matrix <- Matrix::t(do.call(cbind, pblapply(res_list[is.na(res_list) ==
                                                                 FALSE], unlist)))
     row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
                                                  FALSE])
@@ -216,7 +216,7 @@ residualMatrix <- function(models,  residual_type="response", cores = 1) {
     res_matrix <- res_matrix[names(res_list), ]
   }
   else {
-    res_matrix <- Matrix::t(do.call(cbind, lapply(res_list, unlist)))
+    res_matrix <- Matrix::t(do.call(cbind, pblapply(res_list, unlist)))
     row.names(res_matrix) <- names(res_list[is.na(res_list) ==
                                               FALSE])
   }
@@ -537,7 +537,7 @@ estimateDispersionsForCellDataSet <- function(cds, modelFormulaStr, relative_exp
   }
 
   mu <- NA
-  model_terms <- unlist(lapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
+  model_terms <- unlist(pblapply(str_split(modelFormulaStr, "~|\\+|\\*"), str_trim))
   model_terms <- model_terms[model_terms != ""]
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = T)
