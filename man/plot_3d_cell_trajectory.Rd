@@ -27,7 +27,11 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 
 \item{cell_size}{size of cells, default value is 5}
 
+\item{cell_alpha}{Alpha value for the vertex in the 3D plot}
+
 \item{backbone_segment_color}{color of backbone, value is a string containing a hex color value}
+
+\item{backbone_vertex_color}{Color for the vertex on the principal graph backbone}
 
 \item{show_group_labels}{Whether or not to show labels of groups}
 

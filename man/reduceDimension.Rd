@@ -2,7 +2,7 @@
 % Please edit documentation in R/order_cells.R
 \name{reduceDimension}
 \alias{reduceDimension}
-\title{Compute a projection of a CellDataSet object into a lower dimensional space}
+\title{Compute a projection of a CellDataSet object into a lower dimensional space with non-linear dimension reduction methods}
 \usage{
 reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
   "ICA", "tSNE", "UMAP"), auto_param_selection = TRUE, scaling = TRUE,

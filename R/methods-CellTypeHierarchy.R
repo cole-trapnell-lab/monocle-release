@@ -328,7 +328,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 
 
 #' @title classifyCellsHelperCellGlmNet
-#' @description 
+#' @description Description of classifyCellsHelperCellGlmNet -- to be added 
 #' @param cds CellDataSet containing cells that will be clustered
 #' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
 #' @importFrom glmnet cv.glmnet
@@ -574,13 +574,15 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
 
 
 #' @title classifyCellsGlmNet
+#' @description 
+#' Description of classifyCellsGlmNet function -- To be added 
+#' 
 #' @param cds CellDataSet containing cells that will be clustered
 #' @param cth CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type
-#' @param rank_prob_ratio 
-#' @param min_observations 
-#' @param max_training_samples 
+#' @param rank_prob_ratio The probability ratio of the rank 
+#' @param min_observations Minimun of the observation 
+#' @param max_training_samples Maximum training samples 
 #' @param cores Number of cores computer should use to execute function
-#' @description 
 #' @export
 classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
   

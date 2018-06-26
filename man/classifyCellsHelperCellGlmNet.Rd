@@ -11,3 +11,6 @@ classifyCellsHelperCellGlmNet(cds, cth)
 
 \item{cth}{CellTypeHierarchy that dictates cell types present and requirements of cell to be considered  a certain cell type}
 }
+\description{
+Description of classifyCellsHelperCellGlmNet -- to be added
+}

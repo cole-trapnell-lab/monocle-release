@@ -235,7 +235,7 @@ normalize_expr_data <- function(cds,
   return (FM)
 }
 
-#' project a CellDataSet object into a lower dimensional PCA space after normalize the data 
+#' project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data 
 #'
 #' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 #' low dimensional PCA space. preprocessCDS will be used to first project a CellDataSet object into a lower dimensional PCA space 
@@ -254,7 +254,9 @@ normalize_expr_data <- function(cds,
 #' dimension reduction techniques, including tSNE, UMAP. 
 #' 3. run \code{smoothEmbedding} (optional) to smooth noisy embedding from 2 to facilitate visualization and learning 
 #' of the graph structure.
-#' 4. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
+#' 4. run \code{partitionCells} to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues. 
+#' We then reconstruct the trajectory in each partition with the \code{learnGraph} function. 
+#' 5. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
 #' the capability to learn multiple disjointed trajectory with either tree or loop structure, etc. 
 #'
 #' Prior to reducing the dimensionality of the data, it usually helps
@@ -270,7 +272,9 @@ normalize_expr_data <- function(cds,
 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param method the initial dimension method to use, current either PCA or LSI. For LSI (latent semantic indexing), 
-#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency) matrix and then performs a 
+#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency 
+#' which increases proportionally to the gene expression value appears in the cell and is offset by the frequency of 
+#' the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 #' SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules 
 #  and cell clusters at the same time. It removes noise in the data and thus makes the UMAP result even better. 
 #' @param use_tf_idf a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA 
@@ -365,7 +369,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF
   cds
 }
 
-#' Compute a projection of a CellDataSet object into a lower dimensional space
+#' Compute a projection of a CellDataSet object into a lower dimensional space with non-linear dimension reduction methods 
 #' 
 #' @description Monocle aims to learn how cells transition through a biological program of 
 #' gene expression changes in an experiment. Each cell can be viewed as a point 
@@ -529,7 +533,7 @@ reduceDimension <- function(cds,
     else if (reduction_method %in% c("DDRTree")) {
       
       message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
-      cds@reducedDimS <- t(lung@normalized_data_projection)
+      cds@reducedDimS <- t(cds@normalized_data_projection)
       cds <- partitionCells(cds)
       cds <- learnGraph(cds, RGE_method = 'DDRTree', ...)
       
@@ -593,7 +597,7 @@ reduceDimension <- function(cds,
 #' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
 #' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
 #' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
-#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ \times A \times X$$. Once $$M$$ is constructed, we can then follow 
+#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ x A x X$$. Once $$M$$ is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 
@@ -1325,10 +1329,10 @@ cal_ncenter <- function(ncells, ncells_limit = 100){
 
 #' Select the roots of the principal graph 
 #' @param cds CellDataSet where roots will be selected from
-#' @param x
-#' @param y
-#' @param num_roots
-#' @param pch 
+#' @param x The first dimension to plot 
+#' @param y The number of dimension to plot 
+#' @param num_roots Number of roots for the trajectory 
+#' @param pch Size of the principal graph node
 #' 
 selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
 {
@@ -1412,16 +1416,16 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
-#' @param cds CellDataSet
-#' @param scale
-#' @param RGE_method
-#' @param partition_group
-#' @param irlba_pca_res
-#' @param max_components
-#' @param extra_arguments
-#' @param close_loop
-#' @param verbose
-multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
+#' @param cds CellDataSet  The CellDataSet upon which to perform this operation
+#' @param scale A logical argument to determine whether or not we should scale the data before constructing trajectory (default to be FALSE)
+#' @param RGE_method The method for reversed graph embedding  
+#' @param partition_group The column name in the pData used to partition cells 
+#' @param irlba_pca_res The matrix for PCA top components (retrieved with irlba by default)
+#' @param max_components Number of maximum component 
+#' @param extra_arguments Extra arguments passed into learnGraph (which calls this function) 
+#' @param close_loop A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)
+#' @param verbose Whether to emit verbose output when running this function 
+multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
   X <- t(irlba_pca_res)

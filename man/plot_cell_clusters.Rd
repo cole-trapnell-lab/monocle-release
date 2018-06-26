@@ -6,7 +6,7 @@
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_name_size = 2, min_expr = 0.1, ...)
+  cell_name_size = 2, min_expr = 0.1, show_group_id = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -24,6 +24,8 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 \item{cell_size}{The size of the point for each cell}
 
 \item{cell_name_size}{the size of cell name labels}
+
+\item{min_expr}{the minimum (untransformed) expression level to use in plotted the genes.}
 
 \item{...}{additional arguments passed into the scale_color_viridis function}
 }

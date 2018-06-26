@@ -21,5 +21,5 @@ def umap(i, j, val, dim, n, n_c, metric, n_epochs, negative_sample_rate, alpha, 
 				  	random_state = random_state,
 				  	metric_kwds = metric_kwds, 
 				  	angular_rp_forest = angular_rp_forest,
-				  	verbose = verbose).fit(data.toarray())
+				  	verbose = verbose).fit(data) 
   return res

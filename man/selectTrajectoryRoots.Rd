@@ -10,7 +10,13 @@ selectTrajectoryRoots(cds, x = 1, y = 2, num_roots = NULL, pch = 19,
 \arguments{
 \item{cds}{CellDataSet where roots will be selected from}
 
-\item{pch}{}
+\item{x}{The first dimension to plot}
+
+\item{y}{The number of dimension to plot}
+
+\item{num_roots}{Number of roots for the trajectory}
+
+\item{pch}{Size of the principal graph node}
 }
 \description{
 Select the roots of the principal graph

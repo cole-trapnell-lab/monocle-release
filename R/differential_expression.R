@@ -207,33 +207,10 @@ differentialGeneTest <- function(cds,
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-#' Test genes for differential expression based on the low dimensional embedding and the principal graph 
-#' 
-#' Tests each gene for differential expression as a function of pseudotime 
-#' or according to other covariates as specified. \code{differentialGeneTest} is
-#' Monocle's main differential analysis routine. 
-#' It accepts a CellDataSet and two model formulae as input, which specify generalized
-#' lineage models as implemented by the \code{VGAM} package. 
-#' 
-#' @param cds a CellDataSet object upon which to perform this operation
-#' @param relative_expr Whether to transform expression into relative values.
-#' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I test procedure
-#' @param cores the number of cores to be used while testing each gene for differential expression.
-#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
-#' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
-#' @importFrom spdep knn2nb nb2listw moran spweights.constants
-#' @importFrom stats p.adjust 
-#' @seealso \code{\link[spdep]{moran.test}}
-#' @export
-principalGraphTest <- function(cds, 
-                               relative_expr=TRUE,
-                               k = 25, 
-                               cores=1, 
-                               verbose=FALSE) {
-  
-  
-  # first retrieve the association from each cell to any principal points, then build kNN graph for all cells 
-  # remove edges that connected between groups that disconnected in the corresponding principal graph and 
+#' Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object
+calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
+  # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
+  # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
   
   if(verbose) {
@@ -241,8 +218,8 @@ principalGraphTest <- function(cds,
   }
   
   if(cds@dim_reduce_type == 'L1graph') {
-    cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional 
-    principal_g <- cds@auxOrderingData[["L1graph"]]$W 
+    cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
+    principal_g <- cds@auxOrderingData[["L1graph"]]$W
   } else if(cds@dim_reduce_type %in% c('DDRTree', 'SimplePPT')) {
     cell_coords <- t(reducedDimS(cds))
     principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
@@ -252,28 +229,41 @@ principalGraphTest <- function(cds,
   }
   
   exprs_mat <- exprs(cds)
-  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points 
+  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
   
   if(is.null(cell2pp_map)) {
+    links <- monocle:::jaccard_coeff(knn_res[, -1], F)
+    links <- links[links[, 1] > 0, ]
+    relations <- as.data.frame(links)
+    colnames(relations) <- c("from", "to", "weight")
+    knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    if(return_sparse_matrix) {
+      tmp <- get.adjacency(knn_res_graph)
+      dimnames(tmp) <- list(colnames(cds), colnames(cds))
+      
+      return(tmp)
+    }
+    
     knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
     cell2pp_map <-  cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
     cell2pp_map <- cell2pp_map[colnames(cds), ]
-
-    # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP 
+    
+    # cds@auxOrderingData[["L1graph"]]$adj_mat # graph from UMAP
     
     if(verbose) {
       message("Identify connecting principal point pairs ...")
     }
     
-    # an alternative approach to make the kNN graph based on the principal graph 
+    # an alternative approach to make the kNN graph based on the principal graph
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
     # kNN_res_pp_map <- matrix(cell2pp_map[knn_res], ncol = k + 1, byrow = F) # convert the matrix of knn graph from the cell IDs into a matrix of principal points IDs
     
     principal_g_tmp <- principal_g # kNN can be built within group of cells corresponding to each principal points
-    diag(principal_g_tmp) <- 1 # so set diagnol as 1 
+    diag(principal_g_tmp) <- 1 # so set diagnol as 1
     
     cell_membership <- as.factor(cell2pp_map)
     uniq_member <- sort(unique(cell_membership))
@@ -281,7 +271,7 @@ principalGraphTest <- function(cds,
     membership_matrix <- sparse.model.matrix( ~ cell_membership + 0)
     colnames(membership_matrix) <- levels(uniq_member)
     
-    # sparse matrix multiplication for calculating the feasible space 
+    # sparse matrix multiplication for calculating the feasible space
     feasible_space <- membership_matrix %*% tcrossprod(principal_g_tmp[as.numeric(levels(uniq_member)), as.numeric(levels(uniq_member))], membership_matrix)
     
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
@@ -290,29 +280,68 @@ principalGraphTest <- function(cds,
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
     
-    # remove edges across cells belong to two disconnected principal points 
-    tmp <- get.adjacency(knn_res_graph) * feasible_space 
+    # remove edges across cells belong to two disconnected principal points
+    tmp <- get.adjacency(knn_res_graph) * feasible_space
+    
+    if(return_sparse_matrix) {
+      dimnames(tmp) <- list(colnames(cds), colnames(cds))
+      return(tmp)
+    }
     
     knn_list <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(tmp), function(x) {
       res <- which(as.numeric(x) > 0)
-      if(length(res) == 0) 
+      if(length(res) == 0)
         res <- 0L
       res
     })
   }
-  # create the lw list for moran.test  
+  # create the lw list for moran.test
   class(knn_list) <- "nb"
-  attr(knn_list, "region.id") <- row.names(cds)
+  attr(knn_list, "region.id") <- colnames(cds)
   attr(knn_list, "call") <- match.call()
   # attr(knn_list, "type") <- "queen"
   lw <- nb2listw(knn_list, zero.policy = TRUE)
   
+  lw
+}
+
+#' Test genes for differential expression based on the low dimensional embedding and the principal graph 
+#' 
+#' Tests each gene for differential expression as a function of pseudotime 
+#' or according to other covariates as specified. \code{differentialGeneTest} is
+#' Monocle's main differential analysis routine. 
+#' It accepts a CellDataSet and two model formulae as input, which specify generalized
+#' lineage models as implemented by the \code{VGAM} package. 
+#' 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used) 
+#' @param relative_expr Whether to transform expression into relative values.
+#' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I (Geary's C) test procedure.
+#' @param method a character string specifying the method (the default 'Moran_I' or 'Geary_C') for detecting significant genes showing correlated genes along the principal graph embedded in the low dimensional space.
+#' @param alternative a character string specifying the alternative hypothesis, must be one of greater (default), less or two.sided.
+#' @param cores the number of cores to be used while testing each gene for differential expression.
+#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
+#' @importFrom spdep knn2nb nb2listw moran spweights.constants
+#' @importFrom stats p.adjust 
+#' @seealso \code{\link[spdep]{moran.test}}
+#' @export
+principalGraphTest <- function(cds, 
+                               relative_expr=TRUE,
+                               k = 25,
+                               method = c('Moran_I'),
+                               alternative = 'greater', 
+                               cores=1, 
+                               verbose=FALSE) { 
+  lw <- calculateLW(cds, verbose = verbose, k = k)
+  
   if(verbose) {
     message("Performing Moran's test: ...")
   }
+  exprs_mat <- exprs(cds)
   
   wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
-  moran_test_res <- mclapply(row.names(exprs_mat), FUN = function(x) {
+  test_res <- mclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
     exprs_val <- exprs_mat[x, ]
     
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
@@ -326,35 +355,39 @@ principalGraphTest <- function(cds,
     }
     
     test_res <- tryCatch({
-      mt <- my.moran.test(exprs_val, lw, wc)
-      data.frame(status = 'OK', pval = mt$p.value, morans_test_statistic = mt$statistic, morans_I = mt$estimate[["Moran I statistic"]])
+      if(method == "Moran_I") {
+        mt <- my.moran.test(exprs_val, lw, wc, alternative = alternative)
+        data.frame(status = 'OK', pval = mt$p.value, morans_test_statistic = mt$statistic, morans_I = mt$estimate[["Moran I statistic"]])
+      } else if(method == 'Geary_C') {
+        gt <- my.geary.test(exprs_val, lw, wc, alternative = alternative)
+        data.frame(status = 'OK', pval = gt$p.value, geary_test_statistic = gt$statistic, geary_C = gt$estimate[["Geary C statistic"]])
+      }
     }, 
     error = function(e) {
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
-  }, mc.cores = cores)
+  }, alternative = alternative, method = method, mc.cores = cores)
   
   if(verbose) {
     message("returning results: ...")
   }
   
-  moran_test_res <- do.call(rbind.data.frame, moran_test_res)
-  row.names(moran_test_res) <- row.names(cds)
+  test_res <- do.call(rbind.data.frame, test_res)
+  row.names(test_res) <- row.names(cds)
   
-  moran_test_res <- merge(moran_test_res, fData(cds), by="row.names")
-  row.names(moran_test_res) <- moran_test_res[, 1] #remove the first column and set the row names to the first column
-  moran_test_res[, 1] <- NULL 
-  moran_test_res$qval <- 1
-  moran_test_res$qval[which(moran_test_res$status == 'OK')] <- p.adjust(subset(moran_test_res, status == 'OK')[, 'pval'], method="BH")
+  test_res <- merge(test_res, fData(cds), by="row.names")
+  row.names(test_res) <- test_res[, 1] #remove the first column and set the row names to the first column
+  test_res[, 1] <- NULL 
+  test_res$qval <- 1
+  test_res$qval[which(test_res$status == 'OK')] <- p.adjust(subset(test_res, status == 'OK')[, 'pval'], method="BH")
   
-  moran_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
+  test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-my.moran.test <- function (x, listw, wc, randomisation = TRUE) 
+my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation = TRUE) 
 {
   zero.policy = TRUE
   adjust.n = TRUE
-  alternative = "greater"
   na.action = na.fail
   drop.EI2 = FALSE
   xname <- deparse(substitute(x))
@@ -416,6 +449,73 @@ my.moran.test <- function (x, listw, wc, randomisation = TRUE)
   res <- list(statistic = statistic, p.value = PrI, estimate = vec)
   if (!is.null(na.act)) 
     attr(res, "na.action") <- na.act
+  class(res) <- "htest"
+  res
+}
+
+my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "greater") 
+{
+  zero.policy = TRUE
+  adjust.n = TRUE
+  spChk = NULL
+  
+  alternative <- match.arg(alternative, c("less", "greater", 
+                                          "two.sided"))
+  if (!inherits(listw, "listw")) 
+    stop(paste(deparse(substitute(listw)), "is not a listw object"))
+  if (!is.numeric(x)) 
+    stop(paste(deparse(substitute(x)), "is not a numeric vector"))
+  if (any(is.na(x))) 
+    stop("NA in X")
+  n <- length(listw$neighbours)
+  if (n != length(x)) 
+    stop("objects of different length")
+  if (is.null(spChk)) 
+    spChk <- get.spChkOption()
+  if (spChk && !chkIDs(x, listw)) 
+    stop("Check of data and weights ID integrity failed")
+
+  S02 <- wc$S0 * wc$S0
+  res <- spdep::geary(x, listw, wc$n, wc$n1, wc$S0, zero.policy)
+  C <- res$C
+  if (is.na(C)) 
+    stop("NAs generated in geary - check zero.policy")
+  K <- res$K
+  EC <- 1
+  if (randomisation) {
+    VC <- (wc$n1 * wc$S1 * (wc$nn - 3 * n + 3 - K * wc$n1))
+    VC <- VC - ((1/4) * (wc$n1 * wc$S2 * (wc$nn + 3 * n - 
+                                            6 - K * (wc$nn - n + 2))))
+    VC <- VC + (S02 * (wc$nn - 3 - K * (wc$n1^2)))
+    VC <- VC/(n * wc$n2 * wc$n3 * S02)
+  }
+  else {
+    VC <- ((2 * wc$S1 + wc$S2) * wc$n1 - 4 * S02)/(2 * (n + 
+                                                          1) * S02)
+  }
+  ZC <- (EC - C)/sqrt(VC)
+  statistic <- ZC
+  names(statistic) <- "Geary C statistic standard deviate"
+  PrC <- NA
+  if (is.finite(ZC)) {
+    if (alternative == "two.sided") 
+      PrC <- 2 * pnorm(abs(ZC), lower.tail = FALSE)
+    else if (alternative == "greater") 
+      PrC <- pnorm(ZC, lower.tail = FALSE)
+    else PrC <- pnorm(ZC)
+    if (!is.finite(PrC) || PrC < 0 || PrC > 1) 
+      warning("Out-of-range p-value: reconsider test arguments")
+  }
+  vec <- c(C, EC, VC)
+  names(vec) <- c("Geary C statistic", "Expectation", "Variance")
+  method <- paste("Geary C test under", ifelse(randomisation, 
+                                               "randomisation", "normality"))
+  data.name <- paste(deparse(substitute(x)), "\nweights:", 
+                     deparse(substitute(listw)), "\n")
+  res <- list(statistic = statistic, p.value = PrC, estimate = vec, 
+              alternative = ifelse(alternative == "two.sided", alternative, 
+                                   paste("Expectation", alternative, "than statistic")), 
+              method = method, data.name = data.name)
   class(res) <- "htest"
   res
 }

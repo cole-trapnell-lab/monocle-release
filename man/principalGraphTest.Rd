@@ -4,7 +4,8 @@
 \alias{principalGraphTest}
 \title{Test genes for differential expression based on the low dimensional embedding and the principal graph}
 \usage{
-principalGraphTest(cds, relative_expr = TRUE, k = 25, cores = 1,
+principalGraphTest(cds, relative_expr = TRUE, k = 25,
+  method = c("Moran_I"), alternative = "greater", cores = 1,
   verbose = FALSE)
 }
 \arguments{
@@ -12,11 +13,17 @@ principalGraphTest(cds, relative_expr = TRUE, k = 25, cores = 1,
 
 \item{relative_expr}{Whether to transform expression into relative values.}
 
-\item{k}{Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I test procedure}
+\item{k}{Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I (Geary's C) test procedure.}
+
+\item{method}{a character string specifying the method (the default 'Moran_I' or 'Geary_C') for detecting significant genes showing correlated genes along the principal graph embedded in the low dimensional space.}
+
+\item{alternative}{a character string specifying the alternative hypothesis, must be one of greater (default), less or two.sided.}
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
+
+\item{landmark_num}{Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)}
 }
 \value{
 a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.

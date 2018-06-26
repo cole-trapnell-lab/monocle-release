@@ -11,11 +11,11 @@ setValidity( "CellDataSet", function( object ) {
 
 #' @rdname CellDataSet-methods
 #' @aliases CellDataSet,ANY,ANY,ANY-method
-#' @param x
-#' @param i
-#' @param j
-#' @param ...
-#' @param drop
+#' @param x the CellDataset object 
+#' @param i index (or name) to extract or replace
+#' @param j index (or name) to extract or replace
+#' @param ... extra argument passed to the method 
+#' @param drop If TRUE the result is coerced to the lowest possible dimension (see the examples). This only works for extracting elements, not for the replacement.
 #' @docType methods
 #' @rdname extract-methods
 #' 
