@@ -519,6 +519,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
   class(res) <- "htest"
   res
 }
+
 #' Find marker genes for each group of cells 
 #' 
 #' Tests each gene for differential expression as a function of pseudotime 

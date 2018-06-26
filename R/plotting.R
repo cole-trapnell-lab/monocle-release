@@ -3650,7 +3650,7 @@ plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...)
 }
 
 
-#' Heatmap for markers across cells 
+#' Heatmap for markers across cell clusters 
 #' @param cds CellDataSet for the experiment
 #' @param markers Markers used to create the heatmap. Which is normally ordered for each cluster based on specificity (using dplyr, for example). 
 #' @param sample_cell_num Number of cells to sample. As the single cell RNA-seq datasets get bigger, we cannot visualize all cells. 
@@ -3685,7 +3685,7 @@ plot_markers_cluster <- function(cds,
   markers <- rev(as.character(markers)) #Ensure to show the first marker on the top of the heatmap
   
   if(!is.null(minimal_cluster_fraction)) {
-    cluster_cell_num <- pData(cds) %>% mutate(index = 1:ncol(cds)) %>% group_by_(group_by) %>% summarise(n = n())
+    cluster_cell_num <- pData(cds) %>% dplyr::mutate(index = 1:ncol(cds)) %>% dplyr::group_by_(group_by) %>% dplyr::summarise(n = n())
     valid_clusters <- as.numeric(as.matrix(cluster_cell_num[which(cluster_cell_num$n / max(cluster_cell_num$n) > minimal_cluster_fraction), 1]))
 
     cds <- cds[, pData(cds)[, group_by] %in% valid_clusters]
@@ -3753,7 +3753,7 @@ plot_markers_cluster <- function(cds,
   colnames(mlt_norm_mat) <- c('Gene', 'Cell', 'Expression')
   mlt_norm_mat$Cluster <- pData(cds)[as.character(mlt_norm_mat$Cell), group_by]
 
-  mlt_norm_mat %>% mutate(Cell = factor(Cell, levels = colnames(norm_mat)))
+  mlt_norm_mat %>% dplyr::mutate(Cell = factor(Cell, levels = colnames(norm_mat)))
                 
   g <- ggplot(data = mlt_norm_mat, mapping = aes(x = Cell,y = Gene, fill = Expression)) + geom_tile() + 
   scale_fill_gradient2(low = 'cyan', mid = 'black', high = 'red') +

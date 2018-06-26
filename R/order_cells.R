@@ -235,7 +235,7 @@ normalize_expr_data <- function(cds,
   return (FM)
 }
 
-#' project a CellDataSet object into a lower dimensional PCA space after normalize the data 
+#' project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data 
 #'
 #' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 #' low dimensional PCA space. preprocessCDS will be used to first project a CellDataSet object into a lower dimensional PCA space 
@@ -254,7 +254,9 @@ normalize_expr_data <- function(cds,
 #' dimension reduction techniques, including tSNE, UMAP. 
 #' 3. run \code{smoothEmbedding} (optional) to smooth noisy embedding from 2 to facilitate visualization and learning 
 #' of the graph structure.
-#' 4. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
+#' 4. run \code{partitionCells} to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues. 
+#' We then reconstruct the trajectory in each partition with the \code{learnGraph} function. 
+#' 5. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
 #' the capability to learn multiple disjointed trajectory with either tree or loop structure, etc. 
 #'
 #' Prior to reducing the dimensionality of the data, it usually helps
@@ -270,7 +272,9 @@ normalize_expr_data <- function(cds,
 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param method the initial dimension method to use, current either PCA or LSI. For LSI (latent semantic indexing), 
-#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency) matrix and then performs a 
+#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency 
+#' which increases proportionally to the gene expression value appears in the cell and is offset by the frequency of 
+#' the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 #' SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules 
 #  and cell clusters at the same time. It removes noise in the data and thus makes the UMAP result even better. 
 #' @param use_tf_idf a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA 
@@ -365,7 +369,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF
   cds
 }
 
-#' Compute a projection of a CellDataSet object into a lower dimensional space
+#' Compute a projection of a CellDataSet object into a lower dimensional space with non-linear dimension reduction methods 
 #' 
 #' @description Monocle aims to learn how cells transition through a biological program of 
 #' gene expression changes in an experiment. Each cell can be viewed as a point 

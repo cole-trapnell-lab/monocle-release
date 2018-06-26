@@ -1,10 +1,15 @@
-#' Uniform Manifold Approximation and Projection
+#' Cluster cells based on louvain community detection algorithm. 
 #' 
-#' @description Finds a low dimensional embedding of the data that approximates an underlying manifold.
-#' This functions relies on the python implementation of UMAP (https://github.com/lmcinnes/umap). 
-#' The original publication of UMAP can be found here: 
-#' https://arxiv.org/abs/1802.03426 (McInnes, L, Healy, J, UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, ArXiv e-prints 1802.03426, 2018).
-#' A useful notebook (written in python) to check for the effects of each parameter in UMAP can be found here: https://nbviewer.jupyter.org/github/CrakeNotSnowman/umapNotebooks/blob/master/UMAP%20Usage.ipynb.
+#' @description This function is a wrapper of the louvain function from the python package (louvain-igraph, https://github.com/vtraag/louvain-igraph) 
+#' The following description is from the original package "This package implements the louvain algorithm in C++ and exposes it to python. It relies on (python-)igraph for it to function. 
+#' Besides the relative flexibility of the implementation, it also scales well, and can be run on graphs of millions of nodes (as long as they 
+#' can fit in memory). The core function is find_partition which finds the optimal partition using the louvain algorithm [1] for a number of 
+#' different methods. The methods currently implemented are (1) modularity [2], (2) Reichardt and Bornholdt's model using the configuration null
+#' model and the Erdös-Rényi null model [3], (3) the constant Potts model (CPM) [4], (4) Significance [5], and finally (5) Surprise [6]. In 
+#' addition, it supports multiplex partition optimisation allowing community detection on for example negative links [7] or multiple time slices 
+#' [8]. It also provides some support for community detection on bipartite graphs. See the documentation for more information." Please see the github 
+#' above for the citations. Right now we only support CPMVertexPartition, RBConfigurationVertexPartition, RBERVertexPartition, ModularityVertexPartition
+#' SignificanceVertexPartition and SurpriseVertexPartition partition methods. 
 #' 
 #' @param X the dataset upon which to perform umap dimension reduction
 #' @param python_home The python home directory where umap is installed
@@ -15,7 +20,6 @@
 #' @param node_sizes  (list of int, or vertex attribute) – Sizes of nodes are necessary to know the size of communities in aggregate graphs. Usually this is set to 1 for all nodes, but in specific cases this could be changed.
 #' @param verbose bool (optional, default False)
 #' @param return_all Whether to return all slots after louvain 
-#' Controls verbosity of logging.
 #' @return The cluster id if return_all set to be FALSE, otherwise all slots from the louvain function 
 #' @encoding UTF-8
 #' @import reticulate
