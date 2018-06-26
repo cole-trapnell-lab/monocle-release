@@ -6,6 +6,9 @@
 \usage{
 updateCDS(cds)
 }
+\arguments{
+\item{cds}{CellDataSet you'd like to update}
+}
 \description{
 Functions to update a old CDS to the current version
 }

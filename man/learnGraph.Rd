@@ -22,13 +22,13 @@ learnGraph(cds, max_components = 2, RGE_method = c("SimplePPT", "L1graph",
 
 \item{do_partition}{When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component.}
 
+\item{scale}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
+
 \item{close_loop}{Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
 \item{...}{additional arguments to pass to the dimensionality reduction function}
-
-\item{scaling}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
 }
 \value{
 an updated CellDataSet object

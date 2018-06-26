@@ -8,6 +8,9 @@ multi_tree_DDRTree(cds, scale = scale, RGE_method,
   partition_group = "louvain_component", irlba_pca_res, max_components,
   extra_arguments, close_loop = FALSE, verbose = FALSE)
 }
+\arguments{
+\item{cds}{CellDataSet}
+}
 \description{
 the following functioin is used to learn trajectory on each disjointed components
 }

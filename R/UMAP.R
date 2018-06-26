@@ -20,7 +20,7 @@
 #' The dimension of the space to embed into. This defaults to 2 to
 #' provide easy visualization, but can reasonably be set to any
 #' integer value in the range 2 to 100.
-#' @param metric string or function (optional, default 'euclidean')
+#' @param metric string or function (optional, default 'correlation')
 #' The metric to use to compute distances in high dimensional space.
 #' If a string is passed it must match a valid predefined metric. If
 #' a general metric is required a function that takes two 1d arrays and
@@ -52,6 +52,7 @@
 #'   can have arguments passed via the metric_kwds dictionary. At this
 #'   time care must be taken and dictionary elements must be ordered
 #'   appropriately; this will hopefully be fixed in the future.
+#' @param n_epochs int The number of training epochs to use in optimization.
 #' @param negative_sample_rate int (optional, default 5)
 #' The number of negative edge/1-simplex samples to use per positive 
 #' edge/1-simplex sample in optimizing the low dimensional embedding. 
@@ -125,13 +126,12 @@
 #' a, fit_transform, metric, random_state, alpha, gamma, metric_kwds, set_op_mix_ratio, angular_rp_forest, 
 #' get_params, min_dist, set_params, b, graph, n_components, spread, bandwidth, init, n_epochs, verbose, 
 #' embedding_, initial_alpha, n_neighbors, fit, local_connectivity, negative_sample_rate 
-#' @import reticulate
 #' @export
 UMAP <- function(X, python_home = system('which python', intern = TRUE), 
   log = TRUE, 
   n_neighbors = 15L, 
   n_component = 2L, 
-  metric = "euclidean", 
+  metric = "correlation", 
   n_epochs = NULL, 
   negative_sample_rate = 5L,
   alpha = 1.0,

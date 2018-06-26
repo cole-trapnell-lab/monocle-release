@@ -40,5 +40,5 @@ It accepts a CellDataSet and two model formulae as input, which specify generali
 lineage models as implemented by the \code{VGAM} package.
 }
 \seealso{
-\code{\link{principalGraphTest}}
+\code{\link{principalGraphTest}} principalGraphTest
 }

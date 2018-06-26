@@ -6,6 +6,9 @@
 \usage{
 select_cells(cds)
 }
+\arguments{
+\item{cds}{CellDataSet that you'd like to select cells from}
+}
 \description{
 Select cells in an RGL scene
 }

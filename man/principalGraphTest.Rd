@@ -17,8 +17,6 @@ principalGraphTest(cds, relative_expr = TRUE, k = 25, cores = 1,
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
-
-\item{landmark_num}{Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)}
 }
 \value{
 a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
