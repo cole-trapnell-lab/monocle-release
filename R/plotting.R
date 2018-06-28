@@ -1167,7 +1167,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
   
   # Row-center the data.
-  m=m[!apply(m,1,sd)==0,]
+  m=m[!pbapply(m,1,sd)==0,]
   m=Matrix::t(scale(Matrix::t(m),center=TRUE))
   m=m[is.na(row.names(m)) == FALSE,]
   m[is.nan(m)] = 0
@@ -1643,7 +1643,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   heatmap_matrix <- cbind(BranchA_exprs[, (col_gap_ind - 1):1], BranchB_exprs)
   
-  heatmap_matrix=heatmap_matrix[!apply(heatmap_matrix, 1, sd)==0,]
+  heatmap_matrix=heatmap_matrix[!pbapply(heatmap_matrix, 1, sd)==0,]
   heatmap_matrix=Matrix::t(scale(Matrix::t(heatmap_matrix),center=TRUE))
   heatmap_matrix=heatmap_matrix[is.na(row.names(heatmap_matrix)) == FALSE,]
   heatmap_matrix[is.nan(heatmap_matrix)] = 0
