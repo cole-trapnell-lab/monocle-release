@@ -70,22 +70,22 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
   if (convert_to_dense){
     if (MARGIN == 1){
       Sp_X <- Matrix::t(Sp_X)
-      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(as.matrix(Sp_X[,i]), ...) 
       }, FUN, ...)
     }else{
-      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(as.matrix(Sp_X[,i]), ...) 
       }, FUN, ...)
     }
   }else{
     if (MARGIN == 1){
       Sp_X <- Matrix::t(Sp_X)
-      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(Sp_X[,i], ...) 
       }, FUN, ...)
     }else{
-      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(Sp_X[,i], ...) 
       }, FUN, ...)
     }
@@ -97,12 +97,12 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
 
 #' @importFrom parallel splitIndices
 splitRows <- function (x, ncl) {
-  lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
+  pblapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
 #' @importFrom parallel splitIndices
 splitCols <- function (x, ncl) {
-  lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
+  pblapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
 #' @importFrom BiocGenerics clusterApply
