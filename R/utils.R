@@ -755,17 +755,38 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
 
 #' Select cells in an RGL scene
 #' @param cds CellDataSet that you'd like to select cells from
+#' @param show_pp_only whether to show only the principal points. You should always turn this on for large datasets to avoid computational overloading.
+#' @param return_index whether to return the index or return the cds. Default to be TRUE
 #' @export
-select_cells <- function(cds){
-  S_matrix <- 
-    reducedDimS(cds)
-  if(nrow(S_matrix) == 3) {
-      selector_func = select3d()
-  } else if(nrow(S_matrix) == 2){
-      selector_func = select()
+select_cells <- function(cds, show_pp_only = FALSE, return_index = T) {
+  if(show_pp_only) {
+    data_matrix <- reducedDimK(cds)
   }
-  data_df <- data.frame(t(S_matrix[1:3,]))
-  pData(cds)$Marked = selector_func(data_df[,1], data_df[,2], data_df[,3])
+  else {
+    data_matrix <- reducedDimS(cds)
+  }
+  
+  if(nrow(data_matrix) >= 3) {
+    data_df <- data.frame(t(data_matrix[1:3,]))
+  } else if(nrow(data_matrix) == 2) {
+    data_df <- data.frame(cbind(t(data_matrix[1:2,]), 0))
+  }
+  
+  radius <- min(diff(apply(data_matrix, 1, range))) * 0.05
+  ids <- plot3d(data_df)
+  id <- selectpoints3d(ids["data"], value = FALSE,
+                       multiple = function(ids) {
+                         spheres3d(data_df[ids[, "index"], , drop = FALSE], color = "red", 
+                                   alpha = 0.3, radius = radius)
+                         TRUE
+                       })
+  if(return_index) {
+    return(id[, 'index'])
+  } else { 
+    pData(cds)$Marked <- FALSE
+    pData(cds)$Marked[id[, 'index']] <- TRUE      
+  }
   return(cds)
 }
+
 

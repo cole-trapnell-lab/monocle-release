@@ -208,7 +208,7 @@ differentialGeneTest <- function(cds,
 }
 
 #' Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object
-calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
+calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE, interactive = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
@@ -237,6 +237,16 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     relations <- as.data.frame(links)
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    if(interactive) {
+      cat("Left click or drag multiple points to select a group of cells\n")
+      cat("Press <Esc> to exit \n")
+      points_selected <- select_cells(cds)
+      knn_list <- lapply(points_selected, function(x) intersect(knn_res[x, -1], points_selected))
+      knn_res_graph <- knn_res_graph[points_selected, points_selected]
+    } else {
+      knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+    }
     
     if(return_sparse_matrix) {
       tmp <- get.adjacency(knn_res_graph)
@@ -283,6 +293,13 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     # remove edges across cells belong to two disconnected principal points
     tmp <- get.adjacency(knn_res_graph) * feasible_space
     
+    if(interactive) {
+      cat("Left click or drog multiple points to select a group of cells\n")
+      cat("Press <Esc> to exit \n")
+      points_selected <- select_cells(cds)
+      tmp <- tmp[points_selected, points_selected]
+    }
+
     if(return_sparse_matrix) {
       dimnames(tmp) <- list(colnames(cds), colnames(cds))
       return(tmp)
@@ -332,8 +349,9 @@ principalGraphTest <- function(cds,
                                method = c('Moran_I'),
                                alternative = 'greater', 
                                cores=1, 
+                               interactive = FALSE, 
                                verbose=FALSE) { 
-  lw <- calculateLW(cds, verbose = verbose, k = k)
+  lw <- calculateLW(cds, verbose = verbose, k = k, interactive = interactive)
   
   if(verbose) {
     message("Performing Moran's test: ...")
