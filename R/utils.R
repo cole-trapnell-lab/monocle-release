@@ -757,9 +757,13 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
 #' @param cds CellDataSet that you'd like to select cells from
 #' @export
 select_cells <- function(cds){
-  selector_func = select3d()
   S_matrix <- 
     reducedDimS(cds)
+  if(nrow(S_matrix) == 3) {
+      selector_func = select3d()
+  } else if(nrow(S_matrix) == 2){
+      selector_func = select()
+  }
   data_df <- data.frame(t(S_matrix[1:3,]))
   pData(cds)$Marked = selector_func(data_df[,1], data_df[,2], data_df[,3])
   return(cds)
