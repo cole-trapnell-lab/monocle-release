@@ -352,11 +352,14 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 
 #' Test genes for differential expression based on the low dimensional embedding and the principal graph 
 #' 
-#' Tests each gene for differential expression as a function of pseudotime 
-#' or according to other covariates as specified. \code{differentialGeneTest} is
-#' Monocle's main differential analysis routine. 
-#' It accepts a CellDataSet and two model formulae as input, which specify generalized
-#' lineage models as implemented by the \code{VGAM} package. 
+#' We are often interested in finding genes that are differentially expressed across a single-cell trajectory. 
+#' Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial 
+#' correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional
+#' spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have 
+#' similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and 
+#' Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby 
+#' cells will have perfectly similar expression; 0 represents no correlation, 
+#' and -1 means that neighboring cells will be *anti-correlated*.
 #' 
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used) 
@@ -365,11 +368,12 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 #' @param method a character string specifying the method (the default 'Moran_I' or 'Geary_C') for detecting significant genes showing correlated genes along the principal graph embedded in the low dimensional space.
 #' @param alternative a character string specifying the alternative hypothesis, must be one of greater (default), less or two.sided.
 #' @param cores the number of cores to be used while testing each gene for differential expression.
-#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1. 
+#' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
+#' @param verbose Whether to show spatial test (Moran's I or Gearys' C test) errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
 #' @importFrom spdep knn2nb nb2listw moran spweights.constants
 #' @importFrom stats p.adjust 
-#' @seealso \code{\link[spdep]{moran.test}}
+#' @seealso \code{\link[spdep]{moran.test}} \code{\link[spdep]{geary.test}}
 #' @export
 principalGraphTest <- function(cds, 
                                relative_expr=TRUE,
@@ -431,7 +435,7 @@ principalGraphTest <- function(cds,
   test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation = TRUE) 
+my.moran.test <- function(x, listw, wc, alternative = "greater", randomisation = TRUE) 
 {
   zero.policy = TRUE
   adjust.n = TRUE
@@ -569,13 +573,18 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 
 #' Find marker genes for each group of cells 
 #' 
-#' Tests each gene for differential expression as a function of pseudotime 
-#' or according to other covariates as specified. \code{differentialGeneTest} is
-#' Monocle's main differential analysis routine. 
-#' It accepts a CellDataSet and two model formulae as input, which specify generalized
-#' lineage models as implemented by the \code{VGAM} package. 
+#' The common practice to identify cluster specific genes only involves testing differentially expressed genes across one cluster of cells
+#' with another cluster of cells (or alternatively all other cells). This often involves a lot gene filtering step (either filter based on 
+#' number of cells expresed in a cluster, difference of gene expression) and heavy computation. Moreover, it may ignore that fact that some 
+#' genes show certain gradient of gene expression and may span multiple clusters. With the Moran's I test, we can avoid those limitations 
+#' and identify all genes significantly spatially correlated all in once very efficient. To categorize genes into cluster specific genes, 
+#' we simply calculate the specificity of each gene to each cell cluster.
+#' In Monocle 3, we incoporated the find_cluster_markers to find marker genes for each group of cells. In order to calculate the specificity 
+#' of each gene to each cluster, we first create a perfect specific distribution ( Q ) of each gene by assigning probability 1 to one particular 
+#' cluster while all 0 to any other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage 
+#' to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate the specificity score 
+#' as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
 #' 
-#' @seealso \code{\link{principalGraphTest}} principalGraphTest
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param spatial_res the result returned from spatialDifferentialTest
 #' @param group_by a column in the pData specifying the groups for calculating the specifities. By default it is Cluster
@@ -589,6 +598,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom dplyr group_by summarize desc arrange top_n do
 #' @importFrom reshape2 melt
+#' @seealso \code{\link[monocle]{principalGraphTest}}
 #' @export
 #' 
 find_cluster_markers <- function(cds, 

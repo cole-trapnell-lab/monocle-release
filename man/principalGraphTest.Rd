@@ -6,7 +6,7 @@
 \usage{
 principalGraphTest(cds, relative_expr = TRUE, k = 25,
   method = c("Moran_I"), alternative = "greater", cores = 1,
-  verbose = FALSE)
+  interactive = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -21,7 +21,9 @@ principalGraphTest(cds, relative_expr = TRUE, k = 25,
 
 \item{cores}{the number of cores to be used while testing each gene for differential expression.}
 
-\item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
+\item{interactive}{Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells.}
+
+\item{verbose}{Whether to show spatial test (Moran's I or Gearys' C test) errors and warnings. Only valid for cores = 1.}
 
 \item{landmark_num}{Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)}
 }
@@ -29,12 +31,15 @@ principalGraphTest(cds, relative_expr = TRUE, k = 25,
 a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime 
-or according to other covariates as specified. \code{differentialGeneTest} is
-Monocle's main differential analysis routine. 
-It accepts a CellDataSet and two model formulae as input, which specify generalized
-lineage models as implemented by the \code{VGAM} package.
+We are often interested in finding genes that are differentially expressed across a single-cell trajectory. 
+Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial 
+correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional
+spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have 
+similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and 
+Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby 
+cells will have perfectly similar expression; 0 represents no correlation, 
+and -1 means that neighboring cells will be *anti-correlated*.
 }
 \seealso{
-\code{\link[spdep]{moran.test}}
+\code{\link[spdep]{moran.test}} \code{\link[spdep]{geary.test}}
 }

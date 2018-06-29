@@ -917,6 +917,8 @@ learnGraph <- function(cds,
     
     #cds@dim_reduce_type <- "SimplePPT"
     
+  } else if(RGE_method == 'L1_SimplePPT') {
+
   } else if(RGE_method == 'DDRTree') {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
@@ -1585,3 +1587,4 @@ connectTips <- function(pd,
   
   list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)
 }
+

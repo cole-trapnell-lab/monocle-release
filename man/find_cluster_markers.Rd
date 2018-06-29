@@ -33,12 +33,18 @@ find_cluster_markers(cds, spatial_res, group_by = "Cluster",
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime 
-or according to other covariates as specified. \code{differentialGeneTest} is
-Monocle's main differential analysis routine. 
-It accepts a CellDataSet and two model formulae as input, which specify generalized
-lineage models as implemented by the \code{VGAM} package.
+The common practice to identify cluster specific genes only involves testing differentially expressed genes across one cluster of cells
+with another cluster of cells (or alternatively all other cells). This often involves a lot gene filtering step (either filter based on 
+number of cells expresed in a cluster, difference of gene expression) and heavy computation. Moreover, it may ignore that fact that some 
+genes show certain gradient of gene expression and may span multiple clusters. With the Moran's I test, we can avoid those limitations 
+and identify all genes significantly spatially correlated all in once very efficient. To categorize genes into cluster specific genes, 
+we simply calculate the specificity of each gene to each cell cluster.
+In Monocle 3, we incoporated the find_cluster_markers to find marker genes for each group of cells. In order to calculate the specificity 
+of each gene to each cluster, we first create a perfect specific distribution ( Q ) of each gene by assigning probability 1 to one particular 
+cluster while all 0 to any other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage 
+to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate the specificity score 
+as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
 }
 \seealso{
-\code{\link{principalGraphTest}} principalGraphTest
+\code{\link[monocle]{principalGraphTest}}
 }

@@ -4,11 +4,15 @@
 \alias{select_cells}
 \title{Select cells in an RGL scene}
 \usage{
-select_cells(cds)
+select_cells(cds, show_pp_only = FALSE, return_index = FALSE)
 }
 \arguments{
 \item{cds}{CellDataSet that you'd like to select cells from}
+
+\item{show_pp_only}{whether to show only the principal points. You should always turn this on for large datasets to avoid computational overloading.}
+
+\item{return_index}{whether to return the index or return the cds. Default to be FALSE}
 }
 \description{
-Select cells in an RGL scene
+This function provides an interactive session to allow the users to select multiple cells or region for downsampling analysis
 }
