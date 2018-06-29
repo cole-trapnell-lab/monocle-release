@@ -212,7 +212,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  
+  interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
@@ -239,9 +239,13 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
     
     if(interactive) {
-      cat("Left click or drag multiple points to select a group of cells\n")
-      cat("Press <Esc> in the rgl screen to exit \n")
-      points_selected <- sort(select_cells(cds))
+      if('Marked' %in% names(pData(cds))) {
+        points_selected <- which(pData(cds)$Marked)
+      } else {
+        cat("Left click or drag multiple points to select a group of cells\n")
+        cat("Press <Esc> in the rgl screen to exit \n")
+        points_selected <- sort(select_cells(cds))
+      }
       knn_list <- lapply(points_selected, function(x) intersect(knn_res[x, -1], points_selected))
       knn_res_graph <- knn_res_graph[points_selected, points_selected]
       region_id_names <- colnames(cds)[points_selected]
@@ -304,9 +308,13 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     tmp <- get.adjacency(knn_res_graph) * feasible_space
     
     if(interactive) {
-      cat("Left click or drog multiple points to select a group of cells\n")
-      cat("Press <Esc> in the rgl screen to exit \n")
-      points_selected <- sort(select_cells(cds))
+      if('Marked' %in% names(pData(cds))) {
+        points_selected <- which(pData(cds)$Marked)
+      } else {
+        cat("Left click or drog multiple points to select a group of cells\n")
+        cat("Press <Esc> in the rgl screen to exit \n")
+        points_selected <- sort(select_cells(cds))
+      }
       tmp <- tmp[points_selected, points_selected]
       region_id_names <- colnames(cds)[points_selected]
       
