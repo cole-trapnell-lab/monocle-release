@@ -240,12 +240,22 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     
     if(interactive) {
       cat("Left click or drag multiple points to select a group of cells\n")
-      cat("Press <Esc> to exit \n")
-      points_selected <- select_cells(cds)
+      cat("Press <Esc> in the rgl screen to exit \n")
+      points_selected <- sort(select_cells(cds))
       knn_list <- lapply(points_selected, function(x) intersect(knn_res[x, -1], points_selected))
       knn_res_graph <- knn_res_graph[points_selected, points_selected]
+      region_id_names <- colnames(cds)[points_selected]
+      
+      id_map <- 1:length(points_selected)
+      names(id_map) <- points_selected
     } else {
       knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+      region_id_names <- colnames(cds)
+      
+      id_map <- 1:ncol(cds)
+      names(id_map) <- id_map
+      
+      points_selected <- 1:nrow(knn_res)
     }
     
     if(return_sparse_matrix) {
@@ -255,7 +265,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
       return(tmp)
     }
     
-    knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+    knn_list <- lapply(points_selected, function(x) id_map[as.character(knn_res[x, -1])])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
@@ -295,9 +305,18 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     
     if(interactive) {
       cat("Left click or drog multiple points to select a group of cells\n")
-      cat("Press <Esc> to exit \n")
-      points_selected <- select_cells(cds)
+      cat("Press <Esc> in the rgl screen to exit \n")
+      points_selected <- sort(select_cells(cds))
       tmp <- tmp[points_selected, points_selected]
+      region_id_names <- colnames(cds)[points_selected]
+      
+      id_map <- 1:length(points_selected)
+      names(id_map) <- points_selected
+    } else {
+      region_id_names <- colnames(cds)
+      
+      id_map <- 1:ncol(cds)
+      names(id_map) <- id_map
     }
 
     if(return_sparse_matrix) {
@@ -313,8 +332,9 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     })
   }
   # create the lw list for moran.test
+  names(knn_list) <- id_map[names(knn_list)]
   class(knn_list) <- "nb"
-  attr(knn_list, "region.id") <- colnames(cds)
+  attr(knn_list, "region.id") <- region_id_names 
   attr(knn_list, "call") <- match.call()
   # attr(knn_list, "type") <- "queen"
   lw <- nb2listw(knn_list, zero.policy = TRUE)
@@ -356,17 +376,18 @@ principalGraphTest <- function(cds,
   if(verbose) {
     message("Performing Moran's test: ...")
   }
-  exprs_mat <- exprs(cds)
+  exprs_mat <- exprs(cds)[, attr(lw, "region.id")]
+  sz <- sizeFactors(cds)[attr(lw, "region.id")]
   
   wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
-  test_res <- mclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
+  test_res <- mclapply(row.names(exprs_mat), FUN = function(x, sz, alternative, method) {
     exprs_val <- exprs_mat[x, ]
     
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
       exprs_val <- exprs_val 
     }else{
       if(relative_expr) {
-        exprs_val <- log10(exprs_val / sizeFactors(cds) + 0.1)
+        exprs_val <- log10(exprs_val / sz + 0.1)
       } else {
         exprs_val <- log10(exprs_val + 0.1)
       }
@@ -384,7 +405,7 @@ principalGraphTest <- function(cds,
     error = function(e) {
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
-  }, alternative = alternative, method = method, mc.cores = cores)
+  }, sz = sz, alternative = alternative, method = method, mc.cores = cores)
   
   if(verbose) {
     message("returning results: ...")
