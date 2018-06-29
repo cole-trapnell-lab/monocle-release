@@ -359,7 +359,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF
     irlba_pca_res <- cds_dfm_lsa$features
     
   } else if(method == 'none') {
-    irlba_pca_res <- FM
+    irlba_pca_res <- t(FM)
   } else {
     stop('unknown preprocessing method, stop!')
   }
@@ -627,6 +627,9 @@ partitionCells <- function(cds,
   if(verbose)
     message("Running louvain clustering algorithm ...")
   #row.names(umap_res) <- colnames(FM)
+  if(nrow(Y) == 0) {
+    reduced_dim_res <- t(irlba_pca_res)
+  }
   louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
                                     weight = weight , louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
@@ -853,7 +856,7 @@ learnGraph <- function(cds,
     
     #louvain_component <- pData(cds)[, partition_group]
     if(do_partition && length(louvain_component) == ncol(cds)) {
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -940,7 +943,7 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      multi_tree_DDRTree_res <- multi_tree_DDRTree(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1515,6 +1518,141 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
   ddrtree_res_Y <- reducedDimK_coord
   
   cds@auxOrderingData[[RGE_method]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
+  
+  colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
+  
+  return(list(cds = cds, 
+              ddrtree_res_W = ddrtree_res_W, 
+              ddrtree_res_Z = ddrtree_res_Z, 
+              ddrtree_res_Y = ddrtree_res_Y, 
+              dp_mst = dp_mst))
+}
+
+multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
+  louvain_component <- pData(cds)[, partition_group]
+  
+  X <- t(irlba_pca_res)
+  
+  reducedDimK_coord <- NULL  
+  dp_mst <- NULL 
+  pr_graph_cell_proj_closest_vertex <- NULL 
+  cell_name_vec <- NULL
+  
+  for(cur_comp in unique(louvain_component)) {
+    X_subset <- X[, louvain_component == cur_comp]
+    
+    #add other parameters...
+    if(scale) 
+      X_subset <- t(as.matrix(scale(t(X_subset))))
+    
+    ncenter <- monocle:::cal_ncenter(ncol(X_subset))
+    if(is.null(ncenter)) {
+      ncenter <- round(ncol(X_subset) / 2)
+    }
+    if(RGE_method == 'DDRTree') {
+      ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
+                    extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
+      #browser()
+      rge_res <- do.call(DDRTree, ddr_args)
+      medioids <- rge_res$Y
+      stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+    } else if(RGE_method == 'SimplePPT') {
+      centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter),]
+      centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
+      
+      kmean_res <- kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
+      if (kmean_res$ifault != 0){
+        message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
+      }
+      nearest_center <- monocle:::findNearestVertex(t(kmean_res$centers), X_subset, process_targets_in_blocks=TRUE)
+      medioids <- X_subset[, unique(nearest_center)]
+      reduced_dim_res <- t(medioids)
+      
+      l1graph_args <- c(list(X = X_subset, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      
+      rge_res <- do.call(principal_graph, l1graph_args)
+      
+      names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+      stree <- rge_res$W
+    }
+    
+    if(close_loop) {
+      # tmp <- principal_graph(X = X, C0 = X_ori, G = G$G, gstruct = 'span-tree', maxiter = 10)
+      G <- get_knn(medioids, K = min(10, nrow(medioids)))
+
+      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      
+      rge_res <- do.call(principal_graph, l1graph_args)
+      names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+    }
+    
+    if(is.null(reducedDimK_coord)) {
+      curr_cell_names <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
+      pr_graph_cell_proj_closest_vertex <- matrix(apply(rge_res$R, 1, which.max))
+      cell_name_vec <- colnames(X_subset)
+    } else {
+      curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(rge_res$Y), sep = "")
+      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(rge_res$R, 1, which.max) + ncol(reducedDimK_coord)))
+      cell_name_vec <- c(cell_name_vec, colnames(X_subset))
+    }
+    
+    curr_reducedDimK_coord <- rge_res$Y
+    
+    dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #rge_res$stree[1:ncol(rge_res$Y), 1:ncol(rge_res$Y)]
+    dimnames(dp) <- list(curr_cell_names, curr_cell_names)
+    
+    cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
+    
+    # tmp <- matrix(apply(rge_res$R, 1, which.max))
+    
+    # if(length(close_loop) == length(unique(louvain_component)))
+    #   curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
+    # else 
+    #   curr_close_loop <- close_loop[1]
+    
+    # if(curr_close_loop == TRUE) {
+    #   colnames(curr_reducedDimK_coord) <- curr_cell_names
+    #   connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], rge_res$R, cur_dp_mst, 
+    #                                  curr_reducedDimK_coord, cds@reducedDimS[, louvain_component == cur_comp])
+    
+    #   curr_reducedDimK_coord <- connectTips_res$reducedDimK_df
+    #   cur_dp_mst <- connectTips_res$mst_g
+    
+    #   current_W <- as.matrix(get.adjacency(cur_dp_mst))
+    #   message('current_W dim is ', nrow(current_W), ncol(current_W))
+    #   l1graph_args <- c(list(X = curr_reducedDimK_coord, C0 = curr_reducedDimK_coord, G = current_W, gstruct = 'l1-graph', verbose = verbose),
+    #                     extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+    
+    #   l1_graph_res <- do.call(principal_graph, l1graph_args)
+    
+    #   W <- l1_graph_res$W
+    #   message('W dim is ', nrow(W), ncol(W))
+    #   message('nrow(rge_res$R) is ', nrow(rge_res$R))
+    #   start_id <- min(nrow(rge_res$R), nrow(current_W))
+    
+    #   dimnames(W) <- list(V(cur_dp_mst)$name, V(cur_dp_mst)$name)
+    #   current_W[, start_id:nrow(current_W)] <- W[, start_id:nrow(current_W)]
+    #   current_W[start_id:nrow(current_W), ] <- W[start_id:nrow(current_W), ]
+    
+    #   # W[W < 1e-5] <- 0
+    #   cur_dp_mst <- graph.adjacency(current_W, mode = "undirected", weighted = TRUE)
+    # }
+    
+    dp_mst <- graph.union(dp_mst, cur_dp_mst)
+    reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
+    
+  }
+  
+  row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
+  
+  ddrtree_res_W <- as.matrix(rge_res$W)
+  ddrtree_res_Z <- cds@reducedDimS
+  ddrtree_res_Y <- reducedDimK_coord
+  
+  cds@auxOrderingData[[RGE_method]] <- rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
   cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
   
   colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
