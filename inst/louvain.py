@@ -8,6 +8,7 @@ def louvain(i, j, val, dim, partition_method, initial_membership, weights, resol
   sources, targets = data.nonzero()
   edgelist = zip(sources.tolist(), targets.tolist())
   G = ig.Graph(edges = list(edgelist))
+  
   # G = ig.Graph.Adjacency(data.tolist())
   
   if partition_method == 'ModularityVertexPartition':
