@@ -256,7 +256,8 @@ clusterCells <- function(cds,
 #' @param k number of nearest neighbors used for Louvain clustering 
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph 
 #' @param louvain_iter the number of iteraction for louvain clustering 
-#' @param resolution resolution of clustering result, specifiying the granularity of clusters
+#' @param resolution resolution of clustering result, specifiying the granularity of clusters.
+#' Default to not use resolution and the standard igraph louvain clustering algorithm will be used. 
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
 #' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 

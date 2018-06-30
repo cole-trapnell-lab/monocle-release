@@ -606,6 +606,8 @@ reduceDimension <- function(cds,
 #' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
 #' @param louvain_iter the number of iteraction for louvain clustering (pass to louvain_clustering function)
+#' @param resolution resolution of clustering result, specifiying the granularity of clusters. 
+#' Default to not use resolution and the standard igraph louvain clustering algorithm will be used. 
 #' @param louvain_qval The q-val threshold used to determine the partition of cells (pass to compute_louvain_connected_components)
 #' @param verbose Whether to emit verbose output during louvain clustering
 #' @param ... additional arguments to pass to the smoothEmbedding function
@@ -615,6 +617,7 @@ partitionCells <- function(cds,
                            k = 20, 
                            weight = F, 
                            louvain_iter = 1, 
+                           resolution = NULL,
                            louvain_qval = 0.05, 
                            verbose = FALSE, ...){
   extra_arguments <- list(...)
@@ -631,7 +634,7 @@ partitionCells <- function(cds,
     reduced_dim_res <- t(irlba_pca_res)
   }
   louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
-                                    weight = weight , louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
+                                    resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
   
   if(length(unique(louvain_res$optim_res$membership)) == 1) {
@@ -1548,7 +1551,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     
     ncenter <- monocle:::cal_ncenter(ncol(X_subset))
     if(is.null(ncenter)) {
-      ncenter <- round(ncol(X_subset) / 2)
+      ncenter <- 95 #round(ncol(X_subset) / 2)
     }
     if(RGE_method == 'DDRTree') {
       ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
@@ -1580,7 +1583,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     
     if(close_loop) {
       # tmp <- principal_graph(X = X, C0 = X_ori, G = G$G, gstruct = 'span-tree', maxiter = 10)
-      G <- get_knn(medioids, K = min(10, nrow(medioids)))
+      G <- get_knn(medioids, K = min(25, nrow(medioids)))
 
       l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
