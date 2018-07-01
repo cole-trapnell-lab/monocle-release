@@ -1582,15 +1582,13 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     }
     
     if(close_loop) {
-      # tmp <- principal_graph(X = X, C0 = X_ori, G = G$G, gstruct = 'span-tree', maxiter = 10)
-      G <- get_knn(medioids, K = min(25, nrow(medioids)))
+      G <- get_knn(medioids, K = min(5, ncol(medioids)))
 
-      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
-                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', maxiter = 100, verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
-
       stree <- rge_res$W
     }
     
@@ -1606,12 +1604,8 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     
     curr_reducedDimK_coord <- rge_res$Y
     
-    # dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #rge_res$stree[1:ncol(rge_res$Y), 1:ncol(rge_res$Y)]
-    # dimnames(dp) <- list(curr_cell_names, curr_cell_names)
-    
     dimnames(stree) <- list(curr_cell_names, curr_cell_names)
-    cur_dp_mst <- mst(graph.adjacency(stree, mode = "undirected", weighted = TRUE))
-    # cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
+    cur_dp_mst <- graph.adjacency(stree, mode = "undirected", weighted = TRUE)
     
     # tmp <- matrix(apply(rge_res$R, 1, which.max))
     
