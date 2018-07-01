@@ -1590,6 +1590,8 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+
+      stree <- rge_res$W
     }
     
     if(is.null(reducedDimK_coord)) {
@@ -1604,10 +1606,12 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     
     curr_reducedDimK_coord <- rge_res$Y
     
-    dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #rge_res$stree[1:ncol(rge_res$Y), 1:ncol(rge_res$Y)]
-    dimnames(dp) <- list(curr_cell_names, curr_cell_names)
+    # dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #rge_res$stree[1:ncol(rge_res$Y), 1:ncol(rge_res$Y)]
+    # dimnames(dp) <- list(curr_cell_names, curr_cell_names)
     
-    cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
+    dimnames(stree) <- list(curr_cell_names, curr_cell_names)
+    cur_dp_mst <- mst(graph.adjacency(stree, mode = "undirected", weighted = TRUE))
+    # cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
     
     # tmp <- matrix(apply(rge_res$R, 1, which.max))
     
