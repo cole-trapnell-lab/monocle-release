@@ -515,7 +515,7 @@ reduceDimension <- function(cds,
     else if (reduction_method %in% c("DDRTree")) {
       
       message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
-      cds@reducedDimS <- t(lung@normalized_data_projection)
+      cds@reducedDimS <- t(cds@normalized_data_projection)
       cds <- partitionCells(cds)
       cds <- learnGraph(cds, RGE_method = 'DDRTree', ...)
       
