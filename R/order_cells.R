@@ -827,7 +827,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
-    cds@dim_reduce_type <- RGE_method[1]
+    #cds@dim_reduce_type <- RGE_method[1]
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -987,7 +987,8 @@ learnGraph <- function(cds,
     
   }
   
-  cds@dim_reduce_type <- RGE_method[1]
+  cds@rge_method = RGE_method
+  #cds@dim_reduce_type <- RGE_method[1]
   
   cds 
 }
@@ -1373,7 +1374,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
