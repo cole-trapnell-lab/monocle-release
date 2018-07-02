@@ -262,8 +262,6 @@ clusterCells <- function(cds,
 #' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
-#' @importFrom utils txtProgressBar setTxtProgressBar
-#' @import pbapply
 #' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
@@ -317,7 +315,6 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   Qp <- -1
   optim_res <- NULL
   best_max_resolution <- 'No resolution'
-    
   if(louvain_iter >= 2) {
     random_seed <- NULL
   }
@@ -343,7 +340,6 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
           Qp <- Qt
           best_max_resolution <- cur_resolution
         }
-        setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
       }
     } else {
       Q <- igraph::cluster_louvain(g)
@@ -409,7 +405,6 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edges_per_module = rowSums(num_links)
   total_edges = sum(num_links)
   
-  pb2 <- txtProgressBar(min = 0, max = length(louvain_modules), style = 3, file = stderr())
   for(i in 1:length(louvain_modules)){
     for(j in 1:length(louvain_modules)){
       
@@ -426,7 +421,6 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       cluster_mat[i,j] = p_val_i_j
       enrichment_mat[i,j] = num_links_i_j
     }
-    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
   #cluster_mat[cluster_mat > qval_thresh] = 0
