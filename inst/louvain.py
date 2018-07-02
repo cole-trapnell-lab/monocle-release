@@ -1,4 +1,4 @@
-def louvain(i, j, val, dim, partition_method, initial_membership, weights, resolution, node_sizes, verbose):
+def louvain(i, j, val, dim, partition_method, initial_membership, weights, resolution, node_sizes, seed, verbose):
   import louvain
   import igraph as ig
   import numpy
@@ -24,6 +24,9 @@ def louvain(i, j, val, dim, partition_method, initial_membership, weights, resol
     partition = louvain.CPMVertexPartition(G, initial_membership = initial_membership, weights = weights, node_sizes = node_sizes)
   else: 
     raise ValueError('partition_method ' + partition_method + ' is NOT supported.')
+  
+  if seed != None: 
+    louvain.set_rng_seed(seed)
     
   optimiser = louvain.Optimiser()
   diff = optimiser.optimise_partition(partition)

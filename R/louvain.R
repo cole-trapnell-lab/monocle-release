@@ -18,6 +18,7 @@
 #' @param weights (list of double, or edge attribute) – Weights of edges. Can be either an iterable or an edge attribute.
 #' @param res (double) – Resolution parameter.
 #' @param node_sizes  (list of int, or vertex attribute) – Sizes of nodes are necessary to know the size of communities in aggregate graphs. Usually this is set to 1 for all nodes, but in specific cases this could be changed.
+#' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose bool (optional, default False)
 #' @param return_all Whether to return all slots after louvain 
 #' @return The cluster id if return_all set to be FALSE, otherwise all slots from the louvain function 
@@ -30,6 +31,7 @@ louvain_R <- function(X, python_home = system('which python', intern = TRUE),
                  weights = NULL, 
                  res = 0.6, 
                  node_sizes = NULL, 
+                 random_seed = 0L, 
                  verbose = FALSE,
                  return_all = FALSE) {
   
@@ -61,6 +63,9 @@ louvain_R <- function(X, python_home = system('which python', intern = TRUE),
   if(is.null(partition_method) == F) {
     partition_method <- as.character(partition_method)
   }
+  if(!is.null(random_seed)) {
+    random_seed <- as.integer(random_seed)
+  }
   # if(is.null(initial_membership) == F) { #initial_membership (list of int) 
   #   a <- as.numeric(a)
   # }
@@ -80,6 +85,7 @@ louvain_R <- function(X, python_home = system('which python', intern = TRUE),
                    weights, 
                    as.numeric(res),
                    node_sizes,
+                   random_seed, 
                    as.logical(verbose))
   
   if(return_all) {

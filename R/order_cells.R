@@ -431,7 +431,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP"),
+                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", 'none'),
                             auto_param_selection = TRUE,
                             scaling = TRUE,
                             verbose=FALSE,
@@ -530,14 +530,14 @@ reduceDimension <- function(cds,
       pData(cds)$tsne_1 = reducedDimA(cds)[1,]
       pData(cds)$tsne_2 = reducedDimA(cds)[2,]
     }
-    else if (reduction_method %in% c("DDRTree")) {
+    else if (reduction_method == c("DDRTree")) {
       
       message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
       cds@reducedDimS <- t(cds@normalized_data_projection)
       cds <- partitionCells(cds)
       cds <- learnGraph(cds, RGE_method = 'DDRTree', ...)
       
-    }else if (reduction_method %in% c("UMAP") ) {  
+    }else if (reduction_method == c("UMAP") ) {  
       if (verbose)
         message("Running Uniform Manifold Approximation and Projection")
       
@@ -572,7 +572,12 @@ reduceDimension <- function(cds,
       
       #cds@auxOrderingData$UMAP <- list(umap_res = umap_res, adj_mat = adj_mat)
       cds@dim_reduce_type <- reduction_method
-    } else {
+    } else if(reduction_method == 'none') {
+      irlba_pca_res <- t(irlba_pca_res)
+      colnames(irlba_pca_res) <- colnames(FM)
+      reducedDimS(cds) <- irlba_pca_res
+      reducedDimK(cds) <- irlba_pca_res
+    }else {
       stop("Error: unrecognized dimensionality reduction method")
     }
   }
@@ -1548,10 +1553,14 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     #add other parameters...
     if(scale) 
       X_subset <- t(as.matrix(scale(t(X_subset))))
-    
-    ncenter <- monocle:::cal_ncenter(ncol(X_subset))
-    if(is.null(ncenter)) {
-      ncenter <- 95 #round(ncol(X_subset) / 2)
+
+    if(!("ncenter" %in% names(extra_arguments))) {
+      ncenter <- monocle:::cal_ncenter(ncol(X_subset))
+      if(is.null(ncenter)) {
+        ncenter <- ncol(X_subset) - 1
+      }
+    } else {
+      ncenter <- min(ncol(X_subset) - 1, extra_arguments$ncenter)
     }
     if(RGE_method == 'DDRTree') {
       ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
@@ -1584,8 +1593,8 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     if(close_loop) {
       G <- get_knn(medioids, K = min(5, ncol(medioids)))
 
-      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', maxiter = 100, verbose = verbose),
-                        extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
+      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
       
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
