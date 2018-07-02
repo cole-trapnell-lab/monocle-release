@@ -439,9 +439,8 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edge_links$weight <- edge[, 3]
   
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
-<<<<<<< 6063e8653ceafd3b027929e527e6324ed7c28879
-=======
 }
+
 
 # Function to retrieve a graph of cell clusters 
 cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
@@ -598,5 +597,6 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   
   list(cluster_mat_exist = cluster_mat_exist, cluster_mat = cluster_mat, cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
   
->>>>>>> added progress bars to non-parallel apply functions
+
 }
+
