@@ -5,7 +5,7 @@
 \title{This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues}
 \usage{
 partitionCells(cds, k = 20, weight = F, louvain_iter = 1,
-  louvain_qval = 0.05, verbose = FALSE, ...)
+  resolution = NULL, louvain_qval = 0.05, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -15,6 +15,9 @@ partitionCells(cds, k = 20, weight = F, louvain_iter = 1,
 \item{weight}{whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)}
 
 \item{louvain_iter}{the number of iteraction for louvain clustering (pass to louvain_clustering function)}
+
+\item{resolution}{resolution of clustering result, specifiying the granularity of clusters. 
+Default to not use resolution and the standard igraph louvain clustering algorithm will be used.}
 
 \item{louvain_qval}{The q-val threshold used to determine the partition of cells (pass to compute_louvain_connected_components)}
 

@@ -7,9 +7,9 @@
 clusterCells(cds, use_pca = FALSE, skip_rho_sigma = F,
   num_clusters = NULL, inspect_rho_sigma = F, rho_threshold = NULL,
   delta_threshold = NULL, peaks = NULL, gaussian = T,
-  clustering_genes = NULL, k = 20, louvain_iter = 5, weight = FALSE,
-  res = NULL, method = c("densityPeak", "louvain"), verbose = F,
-  cores = 1, ...)
+  clustering_genes = NULL, k = 20, louvain_iter = 1, weight = FALSE,
+  res = NULL, method = c("densityPeak", "louvain"), random_seed = 0L,
+  verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -34,15 +34,17 @@ will automatically calculated based on the top num_cluster product of rho and si
 
 \item{clustering_genes}{a vector of feature ids (from the CellDataSet's featureData) used for ordering cells}
 
-\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50}
+\item{k}{number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 20}
 
-\item{louvain_iter}{number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 5.}
+\item{louvain_iter}{Integer number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. Note that if louvain_iter is large than 1, the `seed` argument will be ignored.}
 
 \item{weight}{A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.}
 
 \item{res}{Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`.}
 
 \item{method}{method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm.}
+
+\item{random_seed}{the seed used by the random number generator in louvain-igraph package. This argument will be ignored if louvain_iter is larger than 1.}
 
 \item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 

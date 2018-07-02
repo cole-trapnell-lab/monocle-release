@@ -5,7 +5,7 @@
 \title{function to run louvain clustering algorithm}
 \usage{
 louvain_clustering(data, pd, k = 20, weight = F, louvain_iter = 1,
-  resolution = NULL, verbose = F, ...)
+  resolution = NULL, random_seed = 0L, verbose = F, ...)
 }
 \arguments{
 \item{data}{low dimensional space used to perform graph clustering}
@@ -18,7 +18,10 @@ louvain_clustering(data, pd, k = 20, weight = F, louvain_iter = 1,
 
 \item{louvain_iter}{the number of iteraction for louvain clustering}
 
-\item{resolution}{resolution of clustering result, specifiying the granularity of clusters}
+\item{resolution}{resolution of clustering result, specifiying the granularity of clusters.
+Default to not use resolution and the standard igraph louvain clustering algorithm will be used.}
+
+\item{random_seed}{the seed used by the random number generator in louvain-igraph package}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
