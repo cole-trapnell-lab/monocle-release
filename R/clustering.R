@@ -451,6 +451,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
 }
 
+
 # Function to retrieve a graph of cell clusters 
 cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # V(pc_g)$name <- as.character(as.integer(V(pc_g)))
