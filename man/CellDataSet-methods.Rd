@@ -3,6 +3,8 @@
 \docType{methods}
 \name{CellDataSet-methods}
 \alias{CellDataSet-methods}
+\alias{[,CellDataSet,ANY,ANY,ANY-method}
+\alias{CellDataSet,ANY,ANY,ANY-method}
 \alias{sizeFactors,CellDataSet-method}
 \alias{CellDataSet,ANY,ANY-method}
 \alias{sizeFactors<-,CellDataSet,numeric-method}
@@ -13,6 +15,8 @@
 \alias{CellDataSet,ANY,ANY-method}
 \title{Methods for the CellDataSet class}
 \usage{
+\S4method{[}{CellDataSet,ANY,ANY,ANY}(x, i, j, ..., drop = FALSE)
+
 \S4method{sizeFactors}{CellDataSet}(object)
 
 \S4method{sizeFactors}{CellDataSet,numeric}(object) <- value
@@ -24,13 +28,21 @@
   cores = 1, ...)
 }
 \arguments{
+\item{x}{the CellDataset object}
+
+\item{i}{index (or name) to extract or replace}
+
+\item{j}{index (or name) to extract or replace}
+
+\item{...}{extra argument passed to the method}
+
+\item{drop}{If TRUE the result is coerced to the lowest possible dimension (see the examples). This only works for extracting elements, not for the replacement.}
+
 \item{object}{The CellDataSet object}
 
 \item{value}{A vector of size factors, with length equal to the cells in object}
 
 \item{locfunc}{A function applied to the geometric-mean-scaled expression values to derive the size factor.}
-
-\item{...}{Additional arguments to be passed to estimateSizeFactorsForMatrix}
 
 \item{modelFormulaStr}{A model formula, passed as a string, specifying how to group the cells prior to estimated dispersion. 
 The default groups all cells together.}
@@ -42,6 +54,8 @@ The default groups all cells together.}
 \item{remove_outliers}{Whether to remove outliers (using Cook's distance) when estimating dispersions}
 
 \item{cores}{The number of cores to use for computing dispersions}
+
+\item{...}{Additional arguments to be passed to estimateSizeFactorsForMatrix}
 }
 \description{
 Methods for the CellDataSet class

@@ -1799,6 +1799,7 @@ plot_ordering_genes <- function(cds){
 #' @param show_cell_names draw the name of each cell in the plot
 #' @param cell_size The size of the point for each cell
 #' @param cell_name_size the size of cell name labels
+#' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
 #' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -1824,6 +1825,7 @@ plot_cell_clusters <- function(cds,
                                cell_size=1.5,
                                cell_name_size=2, 
                                min_expr=0.1,
+                               show_group_id = FALSE, 
                                ...){
   
   if (length(pData(cds)$Cluster) == 0){ 
@@ -1893,7 +1895,7 @@ plot_cell_clusters <- function(cds,
 
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-
+    data_df$value <- with(data_df, ifelse(value >= 0.01, value, NA))
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + facet_wrap(~feature_label) 
   }else{
     text_df <- data_df %>% dplyr::group_by_(color_by) %>% summarize(text_x = median(x = data_dim_1),
@@ -1905,7 +1907,7 @@ plot_cell_clusters <- function(cds,
       names(process_label) <- as.character(as.matrix(text_df[, 1]))
       data_df[, color_by] <- process_label[as.character(data_df[, color_by])]
     } else {
-      text_df$label <- text_df[, 1]
+      text_df$label <- as.character(as.matrix(text_df[, 1]))
     }
     
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
@@ -1915,15 +1917,22 @@ plot_cell_clusters <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-      g <- g + geom_point(aes(color=log10(value + min_expr)), size=I(cell_size), na.rm = TRUE) + 
-        scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+      g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
+            scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+            guides(alpha = FALSE) + facet_wrap(~feature_label)
+            # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+
     }else{
-      g <- g + geom_point(aes(color=value), size=I(cell_size), na.rm = TRUE) + 
-        scale_color_viridis(name = paste0("value"), ...)
+      g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
+        scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+        guides(alpha = FALSE) + facet_wrap(~feature_label)
     }
   }else {
-    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
-    g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
+    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, ...)
+    
+    if(show_group_id) {
+      g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
+    }
   }
   
   g <- g + 
@@ -2107,6 +2116,8 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param jitter_width Amount of horizontal jitter passed to geom_jitter function from ggplot. 
+#' @param jitter_height Amount of horizontal jitter passed to geom_jitter function from ggplot. 
 #' @param ... Additional arguments passed to the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -2918,8 +2929,8 @@ plot_cell_fdl <- function(cds,
 #' @param show_group_labels Whether or not to show labels of groups
 #' @param cell_size size of cells, default value is 5
 #' @param backbone_segment_color color of backbone, value is a string containing a hex color value
-#' @param backbone_vertex_color
-#' @param cell_alpha
+#' @param backbone_vertex_color Color for the vertex on the principal graph backbone 
+#' @param cell_alpha Alpha value for the vertex in the 3D plot 
 #' @return a ggplot2 plot object
 #' @import rgl
 #' @import htmltools
@@ -3307,4 +3318,472 @@ plot_ridge <- function(cds, x = 'Pseudotime', y = 'Cluster', markers = NULL) {
   }
   
   g
+}
+
+#' Adapt Moran's I plot 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param log a logic value to determine whether or not we need to log the gene expression
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
+#' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+#' @export
+plot_genes_spatial_lags <- function(cds, markers, 
+                       log = TRUE,
+                       color_by = 'Cluster', 
+                       quiet = NULL,
+                       labels = FALSE) {
+  zero.policy = TRUE
+  listw <- calculateLW(cds)
+  data_df <- pData(cds)
+  if (color_by %in% colnames(cds)) {
+    stop(paste0(color_by, " doesn't belong to the columns of the pData."))
+  }
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE) {
+    markers_fData <- subset(fData(cds), gene_short_name %in% 
+                              markers)
+    if (nrow(markers_fData) >= 1) {
+      markers_exprs <- reshape2::melt(as.matrix(cds@assayData$exprs[row.names(markers_fData), ]))
+      colnames(markers_exprs)[1:2] <- c("feature_id", "cell_id")
+      markers_exprs <- merge(markers_exprs, markers_fData, 
+                             by.x = "feature_id", by.y = "row.names")
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 
+      0) {
+    data_df <- merge(data_df, markers_exprs, by.x = "row.names", 
+                     by.y = "cell_id")
+    if(log)
+      data_df$value <- log(data_df$value + 0.1)
+  }
+  
+  if (!inherits(listw, "listw")) 
+    stop(paste(deparse(substitute(listw)), "is not a listw object"))
+
+  data_df <- data_df %>% group_by(feature_label) %>% mutate(wx = lag.listw(listw, value, zero.policy = zero.policy))  %>% 
+    mutate(is.inf = apply(influence.measures(lm(wx ~ value))$is.inf, 1, function(x) any(is.finite(x)))) %>% mutate(n0 = wx == 0)
+
+  g <- ggplot(data = data_df, aes(value, wx)) + geom_point(aes_string(color = color_by)) + 
+    geom_point(aes(x = value, y = wx), data = subset(data_df, n0 == T), color = 'gray', fill = "white", size = 5, stroke = 5)
+  
+  g <- g + geom_smooth(method = 'lm') + geom_hline(aes(yintercept = mean(wx)), linetype = 'longdash') + 
+    geom_vline(aes(xintercept = mean(value)), linetype = 'longdash')
+  
+  # is.inf <- data_df$is.inf
+  if(labels)
+    g <- g + geom_text(aes(x = value, y = wx, label = feature_id), data = subset(data_df, is.inf == T), nudge_x = 0.1, nudge_y = 0.1) 
+  
+  g <- g + facet_wrap(~feature_id) + monocle:::monocle_theme_opts() + xlab('Expression (log)') + ylab('Spatially lagged expression (log)')
+  
+  g
+}
+
+
+#' plot the local moran's I or the local g for the cells 
+#' @param cds a CellDataSet object upon which to perform this operation
+#' @param markers a gene name or gene id to use for setting the size of each cell in the plot
+#' @param method a character string specifying the method (the default 'local_G' or 'local_moran') for detecting local spatial statistics along the principal graph embedded in the low dimensional space.
+#' @param log a logic value to determine whether or not we need to log the gene expression
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
+#' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+#' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
+#' @export
+plot_local_spatial_statistics <- function(cds, markers, 
+                                          method = 'local_G', 
+                                          log = TRUE,
+                                          tabulate = TRUE, 
+                                          zero.policy = TRUE, 
+                                          return_all = FALSE, ...) {
+  listw <- calculateLW(cds)
+  data_df <- pData(cds)
+  if (color_by %in% colnames(cds)) {
+    stop(paste0(color_by, " doesn't belong to the columns of the pData."))
+  }
+  
+  markers_exprs <- NULL
+  if (is.null(markers) == FALSE) {
+    markers_fData <- subset(fData(cds), gene_short_name %in% 
+                              markers)
+    if (nrow(markers_fData) >= 1) {
+      markers_exprs <- reshape2::melt(as.matrix(cds@assayData$exprs[row.names(markers_fData), ]))
+      colnames(markers_exprs)[1:2] <- c("feature_id", "cell_id")
+      markers_exprs <- merge(markers_exprs, markers_fData, 
+                             by.x = "feature_id", by.y = "row.names")
+      markers_exprs$feature_label <- as.character(markers_exprs$gene_short_name)
+      markers_exprs$feature_label[is.na(markers_exprs$feature_label)] <- markers_exprs$Var1
+    }
+  }
+  
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 
+      0) {
+    data_df <- merge(data_df, markers_exprs, by.x = "row.names", 
+                     by.y = "cell_id")
+    if(log)
+      data_df$value <- log(data_df$value + 0.1)
+  }
+  
+  if (!inherits(listw, "listw")) 
+    stop(paste(deparse(substitute(listw)), "is not a listw object"))
+  
+  if(tabulate) {
+    data_df <- data_df %>% group_by(feature_label) %>% mutate(wx = lag.listw(listw, value, zero.policy = zero.policy))  %>% 
+      mutate(localmoran = localmoran(value, listw = listw, zero.policy = zero.policy)[, 'Ii']) %>% 
+      mutate(localmoran_p = localmoran(value, listw = listw, zero.policy = zero.policy)[, 'Pr(z > 0)']) %>% 
+      mutate(localG = localG(value, listw)) %>% 
+      mutate(mean_val = value - mean(value), mean_moran = localmoran - mean(localmoran), mean_G = localG - mean(localG)) %>%
+      mutate(quadrant = case_when(mean_val > 0 & mean_moran > 0 ~ 'high-high', 
+                       mean_val < 0 & mean_moran < 0 ~ 'low-low', 
+                       mean_val < 0 & mean_moran > 0 ~ 'low-high',
+                       mean_val > 0 & mean_moran < 0 ~ 'high-low')) %>% 
+      mutate(quadrant = ifelse(localmoran_p < 0.1, 'insignificant', quadrant))
+      data_df$quadrant <- factor(data_df$quadrant, levels = c('insignificant', 'low-low', 'low-high', 'high-low', 'high-high'))
+  } else {
+    data_df <- data_df %>% group_by(feature_label) %>% mutate(wx = lag.listw(listw, value, zero.policy = zero.policy))  %>% 
+      mutate(localmoran = localmoran(value, listw = listw, zero.policy = zero.policy)[, 'Ii']) %>% 
+      mutate(localG = localG(value, listw))
+  }
+
+  coords <- data.frame(t(cds@reducedDimS))
+  coords$sample_name <- colnames(cds)
+  data_df <- merge(coords, data_df, by.x = "sample_name", by.y = "Row.names")
+  
+  g <- ggplot(data = data_df, aes(x = X1, y = X2))
+  
+  if(method == 'local_moran') {
+    if(tabulate) {
+      g <- g + geom_point(aes(color = quadrant), size = I(cell_size), na.rm = TRUE) + 
+        scale_color_manual(values = c("high-high" = "#FD0C1C", "high-low" = "#FF979B",
+          "low-high" =  "#959FFA","low-low" =  "#061FF2", "insignificant" = "#FFFFFF"), 
+          name = paste0("quadrant (local_moran)"))      
+    } else {
+      g <- g + geom_point(aes(color = localmoran), size = I(cell_size), na.rm = TRUE) + 
+      scale_color_viridis(name = paste0("local_moran"), ...)
+    }
+
+  }
+  else if(method == 'local_G') {
+    g <- g + geom_point(aes(color = localG), size = I(cell_size), 
+                        na.rm = TRUE) + scale_color_viridis(name = paste0("local_G"), 
+                                                            ...)
+  } else {
+    stop(paste0(method, ' is not supported!'))
+  }
+  
+  g <- g + facet_wrap(~feature_id) + monocle_theme_opts() + xlab(paste("Component", x)) + 
+    ylab(paste("Component", y)) + theme(legend.position = "top", 
+                                        legend.key.height = grid::unit(0.35, "in")) + theme(legend.key = element_blank()) + 
+    theme(panel.background = element_rect(fill = "white")) + 
+    theme(text = element_text(size = 15))
+
+  if(return_all) {
+    return(list(g = g, res = data_df))
+  }
+
+  g 
+}
+
+#' Show the gene pair expression correlation across low dimensional embedding 
+plot_gene_pair_spatial_correlation <- function(cds, x, y, log = T) {
+  # Variables to use in the correlation: 
+  x_id <- row.names(subset(fData(cds), gene_short_name == x))
+  y_id <- row.names(subset(fData(cds), gene_short_name == x))
+  x <- as.numeric(cds@assayData$exprs[x_id, ])
+  y <- as.numeric(cds@assayData$exprs[y_id, ])
+  
+  #======================================================
+  # Programming some functions
+  
+  # Bivariate Moran's I
+  moran_I <- function(x, y = NULL, W){
+    if(is.null(y)) y = x
+    
+    xp <- (x - mean(x, na.rm=T))/sd(x, na.rm=T)
+    yp <- (y - mean(y, na.rm=T))/sd(y, na.rm=T)
+    W[is.na(W)] <- 0
+    n <- nrow(W)
+    
+    global <- (xp%*%W%*%yp)/(n - 1)
+    local  <- (xp*W%*%yp)
+    
+    list(global = global, local  = as.numeric(local))
+  }
+  
+  
+  # Permutations for the Bivariate Moran's I
+  simula_moran <- function(x, y = NULL, W, nsims = 1000){
+    
+    if(is.null(y)) y = x
+    
+    n   = nrow(W)
+    IDs = 1:n
+    
+    xp <- (x - mean(x, na.rm=T))/sd(x, na.rm=T)
+    W[is.na(W)] <- 0
+    
+    global_sims = NULL
+    local_sims  = matrix(NA, nrow = n, ncol=nsims)
+    
+    ID_sample = sample(IDs, size = n*nsims, replace = T)
+    
+    y_s = y[ID_sample]
+    y_s = matrix(y_s, nrow = n, ncol = nsims)
+    y_s <- (y_s - apply(y_s, 1, mean))/apply(y_s, 1, sd)
+    
+    global_sims  <- as.numeric( (xp%*%W%*%y_s)/(n - 1) )
+    local_sims  <- (xp*W%*%y_s)
+    
+    list(global_sims = global_sims,
+         local_sims  = local_sims)
+  }
+  
+  
+  #======================================================
+  # Adjacency Matrix (Queen)
+  
+  lw <- calculateLW(cds, return_sparse_matrix = T)
+  W  <- as(lw, "sparseMatrix")
+  W  <- W/Matrix::rowSums(W)
+  W[is.na(W)] <- 0
+  
+  #======================================================
+  # Calculating the index and its simulated distribution
+  # for global and local values
+  
+  m   <- moran_I(x, y, W)
+  m[[1]] # global value
+  
+  m_i <- m[[2]]  # local values
+  
+  local_sims <- simula_moran(x, y, W)$local_sims
+  
+  # Identifying the significant values 
+  alpha <- .05  # for a 95% confidence interval
+  probs <- c(alpha/2, 1-alpha/2)
+  intervals <- t( apply(local_sims, 1, function(x) quantile(x, probs=probs)))
+  sig        <- ( m_i < intervals[,1] )  | ( m_i > intervals[,2] )
+  
+  #======================================================
+  # Preparing for plotting
+  
+  pd     <- pData(cds)
+  pd$sig <- sig
+  
+  
+  # Identifying the LISA patterns
+  xp <- (x-mean(x))/sd(x)
+  yp <- (y-mean(y))/sd(y)
+  
+  patterns <- as.character( interaction(xp > 0, as.matrix(W%*%yp) > 0) ) 
+  patterns <- patterns %>% 
+    str_replace_all("TRUE","High") %>% 
+    str_replace_all("FALSE","Low")
+  patterns[pd$sig==0] <- "Not significant"
+  pd$patterns <- patterns
+  
+  pd$x <- cds@reducedDimS[1, ]
+  pd$y <- cds@reducedDimS[2, ]
+  
+  # Plotting
+  ggplot(data = pd) + geom_point(aes(x, y, color=patterns)) +
+    scale_color_manual(values = c('High.High' = "red", 'High.Low' = "pink", 'Low.High' = "light blue", 'Low.Low' = "dark blue", 'Not significant' = "grey95")) + 
+    monocle_theme_opts()
+}
+
+#' A function to show the average expression pattern for gene clusters on low dimensional embedding 
+#'
+#' @param cds CellDataSet for the experiment
+#' @param markers A vector specifying the significant genes you want to cluster 
+#' @param return_all A logic flag to determine whether or not we should also return the clustered gene expression 
+#' @param ... additional arguments passed into the function. Not used 
+#' @return a ggplot2 plot object or a list with the plot object and a "cellDataset" storing the average expression for each cluster of genes across cells 
+#' @import ggplot2
+#' @importFrom reshape2 melt dcast
+#' @importFrom viridis scale_color_viridis
+#' @export
+plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...) {
+  gene_ids <- row.names(subset(fData(cds), gene_short_name %in% markers))
+
+  if(length(gene_ids) < 1) {
+    stop('Please make sure markers you passed in belong to the gene_short_name column in the pData of the CDS!')
+  }
+
+  cds_subset <- cds[gene_ids, ]
+  cds_subset <- setOrderingFilter(cds_subset, row.names(cds_subset))
+  mat <- t(normalize_expr_data(cds_subset))
+
+  pd <- new("AnnotatedDataFrame",data=fData(cds)[colnames(mat), ])
+  fd <- new("AnnotatedDataFrame",data=pData(cds_subset)[row.names(mat), ])
+
+  cell_by_gene <- newCellDataSet(mat, phenoData = pd, featureData =fd,
+                               expressionFamily = gaussianff(),
+                               lowerDetectionLimit = 0)
+
+  cell_by_gene <- preprocessCDS(cell_by_gene, norm_method = 'none', pseudo_expr = 0)
+  # cell_by_gene <- reduceDimension(cell_by_gene, reduction_method = 'UMAP', metric = 'cosine')
+  cell_by_gene <- clusterCells(cell_by_gene, method = 'louvain')
+
+  mlt_exprs <- melt(as.matrix(cell_by_gene@assayData$exprs)) 
+  mlt_exprs$Cluster <- pData(cell_by_gene)[mlt_exprs[, 2], 'Cluster']
+
+  avg_gene_cluster_exprs <- mlt_exprs %>% group_by(Cluster, Var1) %>% summarise(mean = mean(value)) 
+
+  attach_to_pd <- dcast(avg_gene_cluster_exprs, Var1 ~ Cluster)
+  row.names(attach_to_pd) <- attach_to_pd[, 1]
+  attach_to_pd <- attach_to_pd[, -1]
+  colnames(attach_to_pd) <- paste0('Cluster_', colnames(attach_to_pd))
+
+  pd <- new("AnnotatedDataFrame",data=pData(cds))
+  fd <- new("AnnotatedDataFrame",data=data.frame(gene_short_name = colnames(attach_to_pd), 
+            row.names = colnames(attach_to_pd)))
+
+  meta_gene_cds <- newCellDataSet(t(attach_to_pd), phenoData = pd,featureData = fd,
+                               expressionFamily = gaussianff(),
+                               lowerDetectionLimit = 0)
+
+  meta_gene_cds@reducedDimA <- cds@reducedDimA
+
+  g <- plot_cell_clusters(meta_gene_cds, markers = row.names(meta_gene_cds), ...)
+
+  if(return_all) {
+    return(list(cell_by_gene = cell_by_gene, attach_to_pd = attach_to_pd, meta_gene_cds = meta_gene_cds, g = g))
+  }
+
+  g
+}
+
+
+#' Heatmap for markers across cell clusters 
+#' @param cds CellDataSet for the experiment
+#' @param markers Markers used to create the heatmap. Which is normally ordered for each cluster based on specificity (using dplyr, for example). 
+#' @param sample_cell_num Number of cells to sample. As the single cell RNA-seq datasets get bigger, we cannot visualize all cells. 
+#' This argument helps the users to visualize large scale dataset with an uniform downsampling scheme for cells. By default, if the cell number is larger 
+#' than 50000, we downsample 1000 cells. 
+#' @param group_by The name of the pData column corresponding to the markers. 
+#' @param show_rownames A logic flag to determine whether or not we should show the gene short name 
+#' @param gene_name_size The font size of the gene name
+#' @param scale_max The maximum value (in standard deviations) to show in the heatmap. Values larger than this are set to the max.
+#' @param scale_min The minimum value (in standard deviations) to show in the heatmap. Values smaller than this are set to the min.
+#' @param minimal_cluster_fraction The minimum fraction of cell number for a cluster to the largest cluster to maintain in the heatmap. 
+#' @param verbose Whether or not to show detailed running information 
+#' @param return_heatmap A logic flag to determine whether or not we should also return the data frame used to create the heatmap. 
+#' @param ... additional arguments passed into the function. Not used. 
+#' @return a ggplot2 plot object or a list with the plot object and a "cellDataset" storing the average expression for each cluster of genes across cells 
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @export
+plot_markers_cluster <- function(cds, 
+                                 markers, 
+                                 sample_cell_num = NULL, 
+                                 group_by = 'Cluster', 
+                                 show_rownames = TRUE, 
+                                 gene_name_size = 8, 
+                                 scale_max=3, 
+                                 scale_min=-3, 
+                                 minimal_cluster_fraction = NULL, 
+                                 return_heatmap=FALSE,
+                                 verbose = FALSE,
+                                 ...) {
+  markers <- rev(as.character(markers)) #Ensure to show the first marker on the top of the heatmap
+  
+  if(!is.null(minimal_cluster_fraction)) {
+    cluster_cell_num <- pData(cds) %>% dplyr::mutate(index = 1:ncol(cds)) %>% dplyr::group_by_(group_by) %>% dplyr::summarise(n = n())
+    valid_clusters <- as.numeric(as.matrix(cluster_cell_num[which(cluster_cell_num$n / max(cluster_cell_num$n) > minimal_cluster_fraction), 1]))
+
+    cds <- cds[, pData(cds)[, group_by] %in% valid_clusters]
+  }
+
+  if(!is.null(sample_cell_num)) {
+    if(verbose) {
+      message(paste0('Downsampling ', sample_cell_num, ' for plotting efficiency ...'))
+    }
+    cds <- cds[, sample(1:ncol(cds), sample_cell_num)]
+  }
+  if(ncol(cds) > 50000 & is.null(sample_cell_num)) {
+    if(verbose) {
+      message(paste0('Cell number is larger 50000. Downsampling 1000 cells for plotting efficiency ...'))
+    }
+    sample_cell_num <- 1000
+    cds <- cds[, sample(1:ncol(cds), sample_cell_num)]    
+  }
+
+  gene_ids <- as.character(fData(cds)$gene_short_name[match(markers, fData(cds)$gene_short_name)])
+  cds <- setOrderingFilter(cds, gene_ids)
+  norm_mat <- normalize_expr_data(cds, norm_method = 'log', pseudo_expr = 1)
+  norm_mat <- norm_mat[gene_ids, ]
+  
+  norm_mat <- Matrix::t(scale(Matrix::t(norm_mat),center=TRUE))
+  norm_mat <- norm_mat[is.na(row.names(norm_mat)) == FALSE,]
+  norm_mat[is.nan(norm_mat)] = 0
+  norm_mat[norm_mat>scale_max] <- scale_max
+  norm_mat[norm_mat<scale_min] <- scale_min
+  
+  pData(cds) %>% dplyr::mutate(index = 1:ncol(cds)) %>% dplyr::arrange(Cluster) -> cell_index
+  norm_mat <- norm_mat[, cell_index$index]
+  # exp_rng <- range(norm_mat) #bks is based on the expression range
+  # bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, by=0.1)
+  # if(is.null(hmcols)) {
+  #   hmcols <- blue2green2red(length(bks) - 1)
+  # }
+  
+  # col_gap_ind <- pData(cds) %>% mutate(index = 1:ncol(cds)) %>% group_by(Cluster) %>% summarise(n = n())  # index to create a break between clusters 
+  
+  # # prin  t(hmcols)
+  # ph <- pheatmap::pheatmap(norm_mat, 
+  #                useRaster = T,
+  #                cluster_cols=FALSE, 
+  #                cluster_rows=F, 
+  #                show_rownames=F, 
+  #                show_colnames=F, 
+  #                gaps_col = cumsum(col_gap_ind$n[-length(col_gap_ind$n)]) + 1,
+  #                # clustering_distance_rows=row_dist,
+  #                # clustering_method = hclust_method,
+  #                # cutree_rows=num_clusters,
+  #                # annotation_row=annotation_row,
+  #                # annotation_col=annotation_col,
+  #                # annotation_colors=annotation_colors,
+  #                # silent=TRUE,
+  #                filename=NA,
+  #                breaks=bks,
+  #                color=hmcols
+  # )
+  # 
+  # grid::grid.rect(gp=grid::gpar("fill", col=NA))
+  # grid::grid.draw(ph$gtable)
+
+  mlt_norm_mat <- melt(norm_mat)
+  colnames(mlt_norm_mat) <- c('Gene', 'Cell', 'Expression')
+  mlt_norm_mat$Cluster <- pData(cds)[as.character(mlt_norm_mat$Cell), group_by]
+
+  mlt_norm_mat %>% dplyr::mutate(Cell = factor(Cell, levels = colnames(norm_mat)))
+                
+  g <- ggplot(data = mlt_norm_mat, mapping = aes(x = Cell,y = Gene, fill = Expression)) + geom_tile() + 
+  scale_fill_gradient2(low = 'cyan', mid = 'black', high = 'red') +
+    theme(axis.title.x = element_blank(), 
+          axis.title.y = element_blank(), 
+          axis.text.x = element_blank(), 
+          axis.text.y = element_text(size = gene_name_size),
+          axis.ticks.x = element_blank(),
+          axis.line = element_blank(), 
+          axis.ticks.y = element_blank())
+  g <- g + facet_grid(facets = ~Cluster, drop = TRUE, space = "free", scales = "free") + 
+        scale_x_discrete(expand = c(0, 0), drop = TRUE)
+  g <- g + theme(strip.background = element_blank(), panel.spacing = unit(x = 0.1, units = "lines")) + 
+        scale_y_discrete(position = "right")
+  
+  if(!show_rownames) {
+    g <- g + theme(axis.text.y = element_blank())
+  }
+
+  if (return_heatmap){
+    return(list(norm_mat = norm_mat, g = g))
+  } else {
+    return(g)
+  }
+    
 }

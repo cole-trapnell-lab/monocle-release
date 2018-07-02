@@ -47,7 +47,8 @@ setClass( "CellDataSet",
                                       versions = c( classVersion("ExpressionSet"), CellDataSet = "1.2.0" ) ))
 )
 
-#' Functions to update a old CDS to the current version  
+#' Functions to update a old CDS to the current version
+#' @param cds CellDataSet you'd like to update  
 #' @export
 updateCDS <- function(cds) {
   cds_update <- tryCatch({

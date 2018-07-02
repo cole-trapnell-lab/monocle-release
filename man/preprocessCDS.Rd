@@ -2,9 +2,9 @@
 % Please edit documentation in R/order_cells.R
 \name{preprocessCDS}
 \alias{preprocessCDS}
-\title{project a CellDataSet object into a lower dimensional PCA space after normalize the data}
+\title{project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data}
 \usage{
-preprocessCDS(cds, method = c("PCA", "none"), use_tf_idf = FALSE,
+preprocessCDS(cds, method = c("PCA", "LSI", "none"), use_tf_idf = FALSE,
   num_dim = 50, norm_method = c("log", "vstExprs", "none"),
   residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
   scaling = TRUE, verbose = FALSE, ...)
@@ -13,7 +13,9 @@ preprocessCDS(cds, method = c("PCA", "none"), use_tf_idf = FALSE,
 \item{cds}{the CellDataSet upon which to perform this operation}
 
 \item{method}{the initial dimension method to use, current either PCA or LSI. For LSI (latent semantic indexing), 
-it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency) matrix and then performs a 
+it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency 
+which increases proportionally to the gene expression value appears in the cell and is offset by the frequency of 
+the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules}
 
 \item{use_tf_idf}{a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA}
@@ -55,7 +57,9 @@ normalize the data
 dimension reduction techniques, including tSNE, UMAP. 
 3. run \code{smoothEmbedding} (optional) to smooth noisy embedding from 2 to facilitate visualization and learning 
 of the graph structure.
-4. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
+4. run \code{partitionCells} to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues. 
+We then reconstruct the trajectory in each partition with the \code{learnGraph} function. 
+5. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
 the capability to learn multiple disjointed trajectory with either tree or loop structure, etc. 
 
 Prior to reducing the dimensionality of the data, it usually helps

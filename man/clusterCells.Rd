@@ -4,14 +4,17 @@
 \alias{clusterCells}
 \title{Cluster cells into a specified number of groups based on .}
 \usage{
-clusterCells(cds, skip_rho_sigma = F, num_clusters = NULL,
-  inspect_rho_sigma = F, rho_threshold = NULL, delta_threshold = NULL,
-  peaks = NULL, gaussian = T, clustering_genes = NULL, k = 20,
-  louvain_iter = 5, weight = FALSE, res = NULL,
-  method = c("densityPeak", "louvain"), verbose = F, cores = 1, ...)
+clusterCells(cds, use_pca = FALSE, skip_rho_sigma = F,
+  num_clusters = NULL, inspect_rho_sigma = F, rho_threshold = NULL,
+  delta_threshold = NULL, peaks = NULL, gaussian = T,
+  clustering_genes = NULL, k = 20, louvain_iter = 5, weight = FALSE,
+  res = NULL, method = c("densityPeak", "louvain"), verbose = F,
+  cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
+
+\item{use_pca}{Whether or not to cluster cells based on top PCA component. Default to be FALSE.}
 
 \item{skip_rho_sigma}{A logic flag to determine whether or not you want to skip the calculation of rho / sigma}
 
@@ -63,9 +66,11 @@ the rho and delta to determine the number of clusters to cluster. When the datas
 is big, for example > 50 k, we recommend the user to use the Louvain clustering 
 algorithm which is inspired from phenograph paper. Note Louvain doesn't support the 
 num_cluster argument but the k (number of k-nearest neighbors) is relevant to the final 
-clustering number. The implementation of Louvain clustering is based on the Rphenograph
-package but updated based on our requirement (for example, changed the jaccard_coeff 
-function as well as adding louvain_iter argument, etc.)
+clustering number. The deafult implementation of Louvain clustering (when res is set to be NULL)
+is based on the Rphenograph package but updated based on our requirement (for example,
+changed the jaccard_coeff function as well as adding louvain_iter argument, etc.). We also 
+support setting resolutioin parameter when performing louvain clustering using the louvain package 
+from python. With different res values, the users can obtain different granularity of the data.
 }
 \references{
 Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072

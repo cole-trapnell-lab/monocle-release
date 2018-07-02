@@ -4,10 +4,11 @@ def louvain(i, j, val, dim, partition_method, initial_membership, weights, resol
   import numpy
   from scipy.sparse import csc_matrix
   data = csc_matrix((val, (i, j)), shape = dim)
-  vcount = max(data.shape)
+  # vcount = max(data.shape)
   sources, targets = data.nonzero()
   edgelist = zip(sources.tolist(), targets.tolist())
-  G = ig.Graph(vcount, edgelist)
+  G = ig.Graph(edges = list(edgelist))
+  
   # G = ig.Graph.Adjacency(data.tolist())
   
   if partition_method == 'ModularityVertexPartition':

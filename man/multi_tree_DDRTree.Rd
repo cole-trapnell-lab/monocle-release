@@ -4,12 +4,28 @@
 \alias{multi_tree_DDRTree}
 \title{the following functioin is used to learn trajectory on each disjointed components}
 \usage{
-multi_tree_DDRTree(cds, scale = scale, RGE_method,
+multi_tree_DDRTree(cds, scale = FALSE, RGE_method,
   partition_group = "louvain_component", irlba_pca_res, max_components,
   extra_arguments, close_loop = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{cds}{CellDataSet}
+\item{cds}{CellDataSet  The CellDataSet upon which to perform this operation}
+
+\item{scale}{A logical argument to determine whether or not we should scale the data before constructing trajectory (default to be FALSE)}
+
+\item{RGE_method}{The method for reversed graph embedding}
+
+\item{partition_group}{The column name in the pData used to partition cells}
+
+\item{irlba_pca_res}{The matrix for PCA top components (retrieved with irlba by default)}
+
+\item{max_components}{Number of maximum component}
+
+\item{extra_arguments}{Extra arguments passed into learnGraph (which calls this function)}
+
+\item{close_loop}{A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)}
+
+\item{verbose}{Whether to emit verbose output when running this function}
 }
 \description{
 the following functioin is used to learn trajectory on each disjointed components

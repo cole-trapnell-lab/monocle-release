@@ -73,10 +73,10 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' will assign them increasingly large values of Pseudotime.
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param root_pr_nodes corresponding the starting principal point. 
-#' We learn a principal graph which pass the middle of data points and use it to represent the developmental process.
-#' @param root_cells These are the starting cells. 
-#' Each cell corresponds to a principal point and multiple cells can correspond to a single principal point.
+#' @param root_state The state to use as the root of the trajectory.
+#' You must already have called orderCells() once to use this argument.
+#' @param num_paths the number of end-point cell states to allow in the biological process.
+#' @param reverse whether to reverse the beginning and end points of the learned biological process.
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -235,7 +235,7 @@ normalize_expr_data <- function(cds,
   return (FM)
 }
 
-#' project a CellDataSet object into a lower dimensional PCA space after normalize the data 
+#' project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data 
 #'
 #' @description For most analysis (including trajectory inference, clustering) in Monocle 3, it requires us to to start from a 
 #' low dimensional PCA space. preprocessCDS will be used to first project a CellDataSet object into a lower dimensional PCA space 
@@ -254,7 +254,9 @@ normalize_expr_data <- function(cds,
 #' dimension reduction techniques, including tSNE, UMAP. 
 #' 3. run \code{smoothEmbedding} (optional) to smooth noisy embedding from 2 to facilitate visualization and learning 
 #' of the graph structure.
-#' 4. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
+#' 4. run \code{partitionCells} to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues. 
+#' We then reconstruct the trajectory in each partition with the \code{learnGraph} function. 
+#' 5. run \code{learnGraph} to reconstruct developmental trajectory with reversed graph embedding algorithms. In monocle 3, we enabled the 
 #' the capability to learn multiple disjointed trajectory with either tree or loop structure, etc. 
 #'
 #' Prior to reducing the dimensionality of the data, it usually helps
@@ -270,7 +272,9 @@ normalize_expr_data <- function(cds,
 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param method the initial dimension method to use, current either PCA or LSI. For LSI (latent semantic indexing), 
-#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency) matrix and then performs a 
+#' it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse document frequency 
+#' which increases proportionally to the gene expression value appears in the cell and is offset by the frequency of 
+#' the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 #' SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules 
 #  and cell clusters at the same time. It removes noise in the data and thus makes the UMAP result even better. 
 #' @param use_tf_idf a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA 
@@ -290,7 +294,7 @@ normalize_expr_data <- function(cds,
 #' @import irlba
 #' @importFrom stats dist prcomp
 #' @export
-preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
+preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF'
                           use_tf_idf = FALSE, 
                           num_dim=50,
                           norm_method = c("log", "vstExprs", "none"),
@@ -335,11 +339,25 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
   if(method == 'PCA') {
     if (verbose)
       message("Remove noise by PCA ...")
-
+    
+    if(use_tf_idf == TRUE) {
+      FM <- as(FM, "dgCMatrix")
+      cds_dfm <- new("dfmSparse", FM)
+      cds_dfm <- dfm_tfidf(cds_dfm)
+      FM <- sparseMatrix(i = cds_dfm@i, p = cds_dfm@p, x = cds_dfm@x, dimnames = cds_dfm@Dimnames, dims = cds_dfm@Dim, index1 = F)
+    }
+    
     irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                      center = scaling, scale. = scaling)
     irlba_pca_res <- irlba_res$x
     # reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
+  } else if(method == 'LSI') {
+    FM <- as(FM, "dgCMatrix")
+    cds_dfm <- new("dfmSparse", FM)
+    cds_dfm <- dfm_tfidf(cds_dfm)
+    cds_dfm_lsa <- textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
+    irlba_pca_res <- cds_dfm_lsa$features
+    
   } else if(method == 'none') {
     irlba_pca_res <- FM
   } else {
@@ -351,7 +369,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
   cds
 }
 
-#' Compute a projection of a CellDataSet object into a lower dimensional space
+#' Compute a projection of a CellDataSet object into a lower dimensional space with non-linear dimension reduction methods 
 #' 
 #' @description Monocle aims to learn how cells transition through a biological program of 
 #' gene expression changes in an experiment. Each cell can be viewed as a point 
@@ -579,7 +597,7 @@ reduceDimension <- function(cds,
 #' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
 #' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
 #' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
-#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ × A × X$$. Once $$M$$ is constructed, we can then follow 
+#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ x A x X$$. Once $$M$$ is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 
@@ -592,7 +610,6 @@ reduceDimension <- function(cds,
 #' @param verbose Whether to emit verbose output during louvain clustering
 #' @param ... additional arguments to pass to the smoothEmbedding function
 #' @return an updated CellDataSet object
-#' @encoding UTF-8
 #' @export
 partitionCells <- function(cds,
                            k = 20, 
@@ -1190,12 +1207,12 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-#' traverse from one cell to another cell
-#'
-#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+# #' traverse from one cell to another cell
+# #'
+# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @importFrom igraph shortest.paths shortest_paths degree
 traverseTree <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
@@ -1205,12 +1222,12 @@ traverseTree <- function(g, starting_cell, end_cells){
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-#' Make a cds by traversing from one cell to another cell
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param starting_cell the initial vertex for traversing on the graph
-#' @param end_cells the terminal vertex for traversing on the graph
-#' @return a new cds containing only the cells traversed from the intial cell to the end cell
+# #' Make a cds by traversing from one cell to another cell
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param starting_cell the initial vertex for traversing on the graph
+# #' @param end_cells the terminal vertex for traversing on the graph
+# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1225,18 +1242,17 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- unique(subset_cell)
   cds_subset <- SubSet_cds(cds, subset_cell)
 
-  # Check w/ webpage
-  root_cell <- pData(cds_subset[, starting_cell])
-  cds_subset <- orderCells(cds_subset, root_cells = root_cell)
+  root_state <- pData(cds_subset[, starting_cell])[, 'State']
+  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
 
   return(cds_subset)
 }
 
-#' Subset a cds which only includes cells provided with the argument cells
-#'
-#' @param cds a cell dataset after trajectory reconstruction
-#' @param cells a vector contains all the cells you want to subset
-#' @return a new cds containing only the cells from the cells argument
+# #' Subset a cds which only includes cells provided with the argument cells
+# #'
+# #' @param cds a cell dataset after trajectory reconstruction
+# #' @param cells a vector contains all the cells you want to subset
+# #' @return a new cds containing only the cells from the cells argument
 #' @importFrom igraph graph.adjacency
 SubSet_cds <- function(cds, cells){
   cells <- unique(cells)
@@ -1313,7 +1329,11 @@ cal_ncenter <- function(ncells, ncells_limit = 100){
 }
 
 #' Select the roots of the principal graph 
-#' 
+#' @param cds CellDataSet where roots will be selected from
+#' @param x The first dimension to plot 
+#' @param y The number of dimension to plot 
+#' @param num_roots Number of roots for the trajectory 
+#' @param pch Size of the principal graph node
 #' 
 selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
 {
@@ -1397,16 +1417,16 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 }
 
 #' the following functioin is used to learn trajectory on each disjointed components 
-#' @param cds CellDataSet
-#' @param scale
-#' @param RGE_method
-#' @param partition_group
-#' @param irlba_pca_res
-#' @param max_components
-#' @param extra_arguments
-#' @param close_loop
-#' @param verbose
-multi_tree_DDRTree <- function(cds, scale = scale, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
+#' @param cds CellDataSet  The CellDataSet upon which to perform this operation
+#' @param scale A logical argument to determine whether or not we should scale the data before constructing trajectory (default to be FALSE)
+#' @param RGE_method The method for reversed graph embedding  
+#' @param partition_group The column name in the pData used to partition cells 
+#' @param irlba_pca_res The matrix for PCA top components (retrieved with irlba by default)
+#' @param max_components Number of maximum component 
+#' @param extra_arguments Extra arguments passed into learnGraph (which calls this function) 
+#' @param close_loop A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)
+#' @param verbose Whether to emit verbose output when running this function 
+multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
   X <- t(irlba_pca_res)

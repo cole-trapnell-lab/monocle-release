@@ -43,6 +43,10 @@ ensure the layout function you passed in return a matrix with dimension N x 2 wh
 
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
+\item{jitter_width}{Amount of horizontal jitter passed to geom_jitter function from ggplot.}
+
+\item{jitter_height}{Amount of horizontal jitter passed to geom_jitter function from ggplot.}
+
 \item{...}{Additional arguments passed to the scale_color_viridis function}
 }
 \value{
