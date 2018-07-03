@@ -1266,36 +1266,70 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
 # #' @param cells a vector contains all the cells you want to subset
 # #' @return a new cds containing only the cells from the cells argument
 #' @importFrom igraph graph.adjacency
-SubSet_cds <- function(cds, cells){
-  cells <- unique(cells)
-  if(ncol(reducedDimK(cds)) != ncol(cds))
-    stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
-
-  exprs_mat <- as(as.matrix(exprs(cds[, cells])), "sparseMatrix")
+subset_cds <- function(cds, cells){
+  cells <- unique(intersect(cells, colnames(cds)))
+  if(length(cells) == 0) {
+    stop("Cannot find any cell from the cds matches with the cell name from the cells argument! Please make sure the cell name you input is correct.")
+  }
+  
+  exprs_mat <- exprs(cds[, cells])
   cds_subset <- newCellDataSet(exprs_mat,
-                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]),
+                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[cells, ]),
                                  featureData = new("AnnotatedDataFrame", data = fData(cds)),
-                                 expressionFamily=negbinomial.size(),
-                                 lowerDetectionLimit=1)
-  sizeFactors(cds_subset) <- sizeFactors(cds[, cells])
+                                 lowerDetectionLimit=cds@lowerDetectionLimit, 
+                                 expressionFamily=cds@expressionFamily)
+  
   cds_subset@dispFitInfo <- cds@dispFitInfo
+  
+  if(ncol(cds@reducedDimS) == ncol(cds)) {
+    cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+  } else {
+    cds_subset@reducedDimS <- cds@reducedDimS
+  }
+  if(ncol(cds@reducedDimW) == ncol(cds)) {
+    cds_subset@reducedDimW <- cds@reducedDimW[, cells]
+  } else {
+    cds_subset@reducedDimW <- cds@reducedDimW
+  }
+  if(ncol(cds@reducedDimA) == ncol(cds)) {
+    cds_subset@reducedDimA <- cds@reducedDimA[, cells]
+  } else {
+    cds_subset@reducedDimA <- cds@reducedDimA
+  }
 
-  cds_subset@reducedDimW <- cds@reducedDimW
-  cds_subset@reducedDimS <- cds@reducedDimS[, cells]
-  cds_subset@reducedDimK <- cds@reducedDimK[, cells]
-
-  cds_subset@cellPairwiseDistances <- cds@cellPairwiseDistances[cells, cells]
-
-  adjusted_K <- Matrix::t(reducedDimK(cds_subset))
-  dp <- as.matrix(dist(adjusted_K))
-  cellPairwiseDistances(cds_subset) <- dp
-  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds_subset) <- dp_mst
-  cds_subset@dim_reduce_type <- "DDRTree"
-  cds_subset <- findNearestPointOnMST(cds_subset)
-
-  cds_subset <- orderCells(cds_subset)
+  if(nrow(cds@normalized_data_projection) == ncol(cds)) {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection[cells, ]
+  } else {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection
+  }
+  
+  # we may also subset results from any RGE methods 
+  if('DDRTree' %in% names(cds@auxOrderingData)) {
+    cell_ids <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$DDRTree$stree <- cds@auxOrderingData$DDRTree$stree[cell_ids, cell_ids]
+    cds_subset@auxOrderingData$DDRTree$R <- cds@auxOrderingData$DDRTree$R[cells, cell_ids]
+    cds_subset@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('SimplePPT' %in% names(cds@auxOrderingData)) {
+    cell_ids <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$SimplePPT$stree <- cds@auxOrderingData$SimplePPT$stree[cell_ids, cell_ids]
+    cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[cells, cell_ids]
+    cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('L1Graph' %in% names(cds@auxOrderingData)) {
+    cell_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[cell_ids, cell_ids]
+    cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, cell_ids]
+    cds_subset@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  
+  # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
+  principal_graph_points <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[cells, 1]
+  cds_subset@minSpanningTree <- induced_subgraph(cds@minSpanningTree, paste0('Y_', principal_graph_points))
+  
+  cds_subset@reducedDimK <- cds@reducedDimK[, principal_graph_points]
+  cds_subset@dim_reduce_type <- cds@dim_reduce_type
+  cds_subset 
 }
 
 # #' Reverse embedding latent graph coordinates back to the high dimension
@@ -1547,6 +1581,8 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
   pr_graph_cell_proj_closest_vertex <- NULL 
   cell_name_vec <- NULL
   
+  merge_rge_res <- NULL
+  max_ncenter <- 0
   for(cur_comp in unique(louvain_component)) {
     X_subset <- X[, louvain_component == cur_comp]
     
@@ -1562,6 +1598,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     } else {
       ncenter <- min(ncol(X_subset) - 1, extra_arguments$ncenter)
     }
+    
     if(RGE_method == 'DDRTree') {
       ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
@@ -1569,6 +1606,30 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       rge_res <- do.call(DDRTree, ddr_args)
       medioids <- rge_res$Y
       stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+      
+      if(!close_loop) {
+        if(is.null(merge_rge_res)) {
+          merge_rge_res <- rge_res
+          colnames(merge_rge_res$X) <- colnames(X_subset)
+          colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+          colnames(merge_rge_res$Z) <- colnames(X_subset)
+          colnames(merge_rge_res$Q) <- colnames(X_subset)
+          row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+          merge_rge_res$stree <- stree
+        } else {
+          colnames(rge_res$X) <- colnames(X_subset)
+          # assign R column names first
+          row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
+          colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+          merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
+          colnames(rge_res$Z) <- colnames(X_subset)
+          merge_rge_res$R <- list(unlist(merge_rge_res$R), rge_res$R)
+          colnames(rge_res$Q) <- colnames(X_subset)
+          rge_res$Q <- cbind(merge_rge_res$Q, rge_res$Q) 
+          merge_rge_res$stree <- list(unlist(merge_rge_res$stree), stree)
+          merge_rge_res$objective_vals <- list(unlist(merge_rge_res$objective_vals), rge_res$objective_vals)   
+        }
+      }
     } else if(RGE_method == 'SimplePPT') {
       centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter),]
       centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
@@ -1588,6 +1649,29 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
       stree <- rge_res$W
+      
+      if(!close_loop) {
+        if(is.null(merge_rge_res)) {
+          merge_rge_res <- rge_res
+          colnames(merge_rge_res$X) <- colnames(X_subset)
+          colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+          # colnames(merge_rge_res$Z) <- colnames(X_subset)
+          # colnames(merge_rge_res$Q) <- colnames(X_subset) # no Q for principal_graph
+          row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+          merge_rge_res$stree <- stree
+        } else {
+          colnames(rge_res$X) <- colnames(X_subset)
+          row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
+          colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+          merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
+          # colnames(rge_res$Z) <- colnames(X_subset)
+          merge_rge_res$R <- list(unlist(merge_rge_res$R), rge_res$R)
+          # colnames(rge_res$Q) <- colnames(X_subset)
+          # rge_res$Q <- cbind(merge_rge_res$Q, rge_res$Q) 
+          merge_rge_res$stree <- list(unlist(merge_rge_res$stree), stree)
+          merge_rge_res$objective_vals <- list(unlist(merge_rge_res$objective_vals), rge_res$objective_vals)  
+        }
+      }
     }
     
     if(close_loop) {
@@ -1599,6 +1683,27 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
       stree <- rge_res$W
+
+      if(is.null(merge_rge_res)) {
+        merge_rge_res <- rge_res
+        colnames(merge_rge_res$X) <- colnames(X_subset)
+        colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+        # colnames(merge_rge_res$Z) <- colnames(X_subset)
+        # colnames(merge_rge_res$Q) <- colnames(X_subset) # no Q for principal_graph
+        row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
+        merge_rge_res$stree <- stree
+      } else {
+        colnames(rge_res$X) <- colnames(X_subset)
+        row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
+        colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+        merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
+        # colnames(rge_res$Z) <- colnames(X_subset)
+        merge_rge_res$R <- list(unlist(merge_rge_res$R), rge_res$R)
+        # colnames(rge_res$Q) <- colnames(X_subset)
+        # rge_res$Q <- cbind(merge_rge_res$Q, rge_res$Q) 
+        merge_rge_res$stree <- list(unlist(merge_rge_res$stree), stree)
+        merge_rge_res$objective_vals <- list(unlist(merge_rge_res$objective_vals), rge_res$objective_vals)  
+      }
     }
     
     if(is.null(reducedDimK_coord)) {
@@ -1662,8 +1767,30 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
   ddrtree_res_Z <- cds@reducedDimS
   ddrtree_res_Y <- reducedDimK_coord
   
-  cds@auxOrderingData[[RGE_method]] <- rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
+  # correctly set up R, stree -- the mapping from each cell to the principal graph points 
+  R <- sparseMatrix(i = 1, j = 1, x = 0, dims = c(ncol(cds), ncol(merge_rge_res$Y))) # use sparse matrix for large datasets 
+  stree <- sparseMatrix(i = 1, j = 1, x = 0, dims = c(ncol(merge_rge_res$Y), ncol(merge_rge_res$Y)))
+  curr_row_id <- 1
+  curr_col_id <- 1
+  R_row_names <- NULL 
+  for(i in 1:length(merge_rge_res$R)) {
+    current_R <- merge_rge_res$R[[i]]
+    R[curr_row_id:(curr_row_id + nrow(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- current_R
+    
+    stree[curr_col_id:(curr_col_id + ncol(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- merge_rge_res$stree[[i]]
+
+    curr_row_id <- curr_row_id + nrow(current_R)
+    curr_col_id <- curr_col_id + ncol(current_R)
+    R_row_names <- c(R_row_names, row.names(current_R))
+  }
+  row.names(R) <- R_row_names
+  R <- R[colnames(cds), ] # reorder the colnames 
+  pr_graph_cell_proj_closest_vertex <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(R), function(x) {
+    which.max(x)
+  })
+
+  cds@auxOrderingData[[RGE_method]] <- list(stree = stree, Q = merge_rge_res$Q, R = R, objective_vals = merge_rge_res$objective_vals, history = merge_rge_res$history) # rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')] # 
+  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- as.data.frame(pr_graph_cell_proj_closest_vertex)
   
   colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
   
