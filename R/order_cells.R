@@ -535,7 +535,7 @@ reduceDimension <- function(cds,
       message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
       cds@reducedDimS <- t(cds@normalized_data_projection)
       cds <- partitionCells(cds)
-      cds <- learnGraph(cds, RGE_method = 'DDRTree', ...)
+      cds <- learnGraph(cds, RGE_method = 'DDRTree', do_partition = F, ...)
       
     }else if (reduction_method == c("UMAP") ) {  
       if (verbose)
@@ -734,6 +734,9 @@ learnGraph <- function(cds,
   if(do_partition && !(partition_group %in% colnames(pData(cds))))
     stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds!')
   
+  if(length(unique(pData(cds)[, partition_group])) <= 1) {
+    do_partition <- FALSE 
+  }
   louvain_res <- cds@auxClusteringData$partitionCells
   
   if(is.null(louvain_res))
@@ -871,7 +874,7 @@ learnGraph <- function(cds,
       ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
       cds <- multi_tree_DDRTree_res$cds
       dp_mst <- multi_tree_DDRTree_res$dp_mst
-    } else {  
+    } else {  ## need to change the following to SimplePPT soon! 
       ncenter <- NULL
       if(auto_param_selection & ncol(cds) >= 100) {
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
@@ -881,10 +884,12 @@ learnGraph <- function(cds,
         
       } 
       
-      if(scale) 
+      if(scale) {
         X <- as.matrix(scale(t(irlba_pca_res)))
-      else 
+      }
+      else {
         X <- t(irlba_pca_res)
+      }
       
       ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
@@ -909,12 +914,16 @@ learnGraph <- function(cds,
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
       dp_mst <- minimum.spanning.tree(gp)
       
+      ddrtree_res$stree <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
+      dimnames(ddrtree_res$stree) <- list(paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""), paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""))
+      row.names(ddrtree_res$R) <- colnames(cds); colnames(ddrtree_res$R) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      colnames(ddrtree_res$Q) <- colnames(cds)
       cds@auxOrderingData[["SimplePPT"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
       
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["SimplePPT"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
@@ -996,6 +1005,11 @@ learnGraph <- function(cds,
       gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
       dp_mst <- minimum.spanning.tree(gp)
       
+      ddrtree_res$stree <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
+      dimnames(ddrtree_res$stree) <- list(paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""), paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""))
+      row.names(ddrtree_res$R) <- colnames(cds); colnames(ddrtree_res$R) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      colnames(ddrtree_res$Q) <- colnames(cds)
+
       cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
       
       if(ncol(cds) < 100) { 
@@ -1252,7 +1266,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   }
 
   subset_cell <- unique(subset_cell)
-  cds_subset <- SubSet_cds(cds, subset_cell)
+  cds_subset <- subset_cds(cds, subset_cell)
 
   root_state <- pData(cds_subset[, starting_cell])[, 'State']
   cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
@@ -1260,12 +1274,19 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   return(cds_subset)
 }
 
-# #' Subset a cds which only includes cells provided with the argument cells
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param cells a vector contains all the cells you want to subset
-# #' @return a new cds containing only the cells from the cells argument
+#' Subset a cds which only includes cells provided with the argument cells
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param cells a vector contains all the cells you want to subset
+#' @return a new cds containing only the cells from the cells argument
 #' @importFrom igraph graph.adjacency
+#' @export
+#' @examples 
+#' \dontrun{
+#' lung <- load_lung()
+#' tmp <- subset_cds(lung, cells = row.names(subset(pData(lung), State == 1)))
+#' plot_cell_trajectory(tmp)
+#' }
 subset_cds <- function(cds, cells){
   cells <- unique(intersect(cells, colnames(cds)))
   if(length(cells) == 0) {
