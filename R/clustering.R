@@ -419,6 +419,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       p_val_i_j = pnorm(num_links_i_j, 0, sqrt(var_null_num_links_i_j), lower.tail = FALSE)
       cluster_mat[i,j] = p_val_i_j
       enrichment_mat[i,j] = num_links_i_j
+      num_links[i, j] <- num_links[i,j]/total_edges
     }
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
@@ -447,6 +448,6 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
   edge_links$weight <- edge[, 3]
   
-  list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
+  list(cluster_g = cluster_g, cluster_optim_res = optim_res, num_links = num_links, cluster_mat = cluster_mat, enrichment_mat = enrichment_mat, cluster_coord = coord, edge_links = edge_links)
 }
 

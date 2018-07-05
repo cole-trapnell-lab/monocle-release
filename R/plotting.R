@@ -20,7 +20,6 @@ monocle_theme_opts <- function()
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
@@ -54,7 +53,6 @@ plot_cell_trajectory <- function(cds,
                                  x=1, 
                                  y=2, 
                                  color_by="Pseudotime", 
-                                 show_tree=TRUE, 
                                  show_backbone=TRUE, 
                                  backbone_color="black", 
                                  markers=NULL, 
@@ -156,7 +154,7 @@ plot_cell_trajectory <- function(cds,
   } else {
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
-  if (show_tree){
+  if (show_backbone){
     g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=cell_link_size, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
@@ -220,7 +218,6 @@ plot_cell_trajectory <- function(cds,
 #' @param x the column of reducedDimS(cds) to plot on the horizontal axis
 #' @param y the column of reducedDimS(cds) to plot on the vertical axis
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
@@ -246,7 +243,6 @@ plot_spanning_tree <- function(cds,
                                  x=1, 
                                  y=2, 
                                  color_by="Pseudotime", 
-                                 show_tree=TRUE, 
                                  show_backbone=TRUE, 
                                  backbone_color="black", 
                                  markers=NULL, 
@@ -260,7 +256,6 @@ plot_spanning_tree <- function(cds,
                        x=x, 
                        y=y, 
                        color_by=color_by, 
-                       show_tree=show_tree, 
                        show_backbone=show_backbone, 
                        backbone_color=backbone_color, 
                        markers=markers, 
@@ -2107,7 +2102,6 @@ traverseTree <- function(g, starting_cell, end_cells){
 #' @param layout a function to re-layout the principal tree into two dimension. Please 
 #' ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param show_tree whether to show the links between cells connected in the minimum spanning tree
 #' @param show_backbone whether to show the diameter path of the MST used to order the cells
 #' @param backbone_color the color used to render the backbone.
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
@@ -2139,7 +2133,6 @@ plot_complex_cell_trajectory <- function(cds,
                                          root_states = NULL,
                                          layout = NULL, 
                                          color_by="State", 
-                                         show_tree=TRUE, 
                                          show_backbone=TRUE, 
                                          backbone_color="black", 
                                          markers=NULL, 
@@ -2305,7 +2298,7 @@ plot_complex_cell_trajectory <- function(cds,
   }else{
     g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) 
   }
-  if (show_tree){
+  if (show_backbone){
     g <- g + geom_segment(aes_string(x="source_prin_graph_dim_1", y="source_prin_graph_dim_2", xend="target_prin_graph_dim_1", yend="target_prin_graph_dim_2"), size=cell_link_size, linetype="solid", na.rm=TRUE, data=edge_df)
   }
   
