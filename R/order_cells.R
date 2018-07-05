@@ -592,7 +592,7 @@ reduceDimension <- function(cds,
 #' representation of the data. It can be used to facilitate visualization of the data or downstream graph learning 
 #' 
 #' @param cds CellDataSet for the experiment
-#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups    
+#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.     
 #' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param method The embedding smoothing technique to use, including force directed layout (which includes drl, fr, kk three methods), our new method PSL and SSE  
 #' @param merge_coords_method The method used to patch different smoothed embedding from disconnected component into a coordinate system
@@ -611,12 +611,12 @@ reduceDimension <- function(cds,
 #' @seealso \code{\link[monocle]{patchEmbedding}}
 #' @export 
 smoothEmbedding <- function(cds,
-                           do_partition = TRUE, 
+                           do_partition = FALSE, 
                            use_pca = FALSE, 
                            method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
                            merge_coords_method = c('dla', 'procrutes'), 
                            start.temp = NULL, 
-                           k = 25, 
+                           k = 20, 
                            landmark_num = 2000, 
                            cell_num_threshold = 0, 
                            verbose = FALSE,
@@ -784,6 +784,7 @@ learnGraph <- function(cds,
                        close_loop = FALSE, 
                        verbose = FALSE, 
                        ...){
+  RGE_method <- RGE_method[1]
   extra_arguments <- list(...)
   FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
@@ -919,7 +920,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
-    cds@dim_reduce_type <- RGE_method[1]
+    cds@dim_reduce_type <- RGE_method
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -1092,7 +1093,7 @@ learnGraph <- function(cds,
     
   }
   
-  cds@dim_reduce_type <- RGE_method[1]
+  cds@dim_reduce_type <- RGE_method
   
   cds 
 }
@@ -1653,7 +1654,15 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
               dp_mst = dp_mst))
 }
 
-multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
+multi_component_RGE <- function(cds, 
+                                scale = FALSE, 
+                                RGE_method, 
+                                partition_group = 'louvain_component', 
+                                irlba_pca_res, 
+                                max_components, 
+                                extra_arguments, 
+                                close_loop = FALSE, 
+                                verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
   X <- t(irlba_pca_res)
@@ -1669,11 +1678,12 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     X_subset <- X[, louvain_component == cur_comp]
     
     #add other parameters...
-    if(scale) 
+    if(scale) {
       X_subset <- t(as.matrix(scale(t(X_subset))))
+    }
 
     if(!("ncenter" %in% names(extra_arguments))) {
-      ncenter <- monocle:::cal_ncenter(ncol(X_subset))
+      ncenter <- cal_ncenter(ncol(X_subset))
       if(is.null(ncenter)) {
         ncenter <- ncol(X_subset) - 1
       }
@@ -1691,9 +1701,9 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
+          colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
           merge_rge_res <- rge_res
           colnames(merge_rge_res$X) <- colnames(X_subset)
-          colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
           colnames(merge_rge_res$Z) <- colnames(X_subset)
           colnames(merge_rge_res$Q) <- colnames(X_subset)
           row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
@@ -1704,7 +1714,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
           colnames(rge_res$X) <- colnames(X_subset)
           # assign R column names first
           row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
-          colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+          colnames(rge_res$Y) <- paste("Y_", (ncol(merge_rge_res$Y) + 1):(ncol(rge_res$Y)), sep = "")
           merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
           colnames(rge_res$Z) <- colnames(X_subset)
           merge_rge_res$R <- c(merge_rge_res$R, list(rge_res$R))
@@ -1715,14 +1725,14 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
         }
       }
     } else if(RGE_method == 'SimplePPT') {
-      centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter),]
+      centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter), ]
       centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
       
       kmean_res <- kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
       if (kmean_res$ifault != 0){
         message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
       }
-      nearest_center <- monocle:::findNearestVertex(t(kmean_res$centers), X_subset, process_targets_in_blocks=TRUE)
+      nearest_center <- findNearestVertex(t(kmean_res$centers), X_subset, process_targets_in_blocks=TRUE)
       medioids <- X_subset[, unique(nearest_center)]
       reduced_dim_res <- t(medioids)
       
@@ -1736,9 +1746,9 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
+          colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
           merge_rge_res <- rge_res
           colnames(merge_rge_res$X) <- colnames(X_subset)
-          colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
           # colnames(merge_rge_res$Z) <- colnames(X_subset)
           # colnames(merge_rge_res$Q) <- colnames(X_subset) # no Q for principal_graph
           row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
@@ -1771,9 +1781,9 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       stree <- rge_res$W
 
       if(is.null(merge_rge_res)) {
+        colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
         merge_rge_res <- rge_res
         colnames(merge_rge_res$X) <- colnames(X_subset)
-        colnames(merge_rge_res$Y) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
         # colnames(merge_rge_res$Z) <- colnames(X_subset)
         # colnames(merge_rge_res$Q) <- colnames(X_subset) # no Q for principal_graph
         row.names(merge_rge_res$R) <- colnames(X_subset); colnames(merge_rge_res$R) <- paste0('Y_', 1:ncol(merge_rge_res$Y))
@@ -1799,7 +1809,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
       pr_graph_cell_proj_closest_vertex <- matrix(apply(rge_res$R, 1, which.max))
       cell_name_vec <- colnames(X_subset)
     } else {
-      curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(rge_res$Y), sep = "")
+      curr_cell_names <- paste("Y_", (ncol(reducedDimK_coord) + 1):(ncol(reducedDimK_coord) + ncol(rge_res$Y)), sep = "")
       pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(rge_res$R, 1, which.max) + ncol(reducedDimK_coord)))
       cell_name_vec <- c(cell_name_vec, colnames(X_subset))
     }
@@ -1853,7 +1863,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
   
   ddrtree_res_W <- as.matrix(rge_res$W)
   ddrtree_res_Z <- cds@reducedDimS
-  ddrtree_res_Y <- reducedDimK_coord
+  ddrtree_res_Y <- reducedDimK_coord # ensure the order of column names matches that of the original name ids 
   # correctly set up R, stree -- the mapping from each cell to the principal graph points 
   R <- sparseMatrix(i = 1, j = 1, x = 0, dims = c(ncol(cds), ncol(merge_rge_res$Y))) # use sparse matrix for large datasets 
   stree <- sparseMatrix(i = 1, j = 1, x = 0, dims = c(ncol(merge_rge_res$Y), ncol(merge_rge_res$Y)))
@@ -1870,6 +1880,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
     curr_col_id <- curr_col_id + ncol(current_R)
     R_row_names <- c(R_row_names, row.names(current_R))
   }
+
   row.names(R) <- R_row_names
   R <- R[colnames(cds), ] # reorder the colnames 
   pr_graph_cell_proj_closest_vertex <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(R), function(x) {
@@ -1877,7 +1888,7 @@ multi_component_RGE <- function(cds, scale = FALSE, RGE_method, partition_group 
   })
 
   cds@auxOrderingData[[RGE_method]] <- list(stree = stree, Q = merge_rge_res$Q, R = R, objective_vals = merge_rge_res$objective_vals, history = merge_rge_res$history) # rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')] # 
-  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- as.data.frame(pr_graph_cell_proj_closest_vertex)
+  cds@auxOrderingData[[RGE_method]]$pr_graph_cell_proj_closest_vertex <- as.data.frame(pr_graph_cell_proj_closest_vertex)[colnames(cds), , drop = F] # Ensure the row order matches up that of the column order of the cds 
   
   colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
   
@@ -1973,18 +1984,22 @@ connectTips <- function(pd,
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
 #' @export
 patchEmbedding <- function(cds, 
-                           do_partition = TRUE, 
+                           do_partition = FALSE, 
                            use_pca = FALSE, 
                            method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
                            merge_coords_method = c('dla', 'procrutes'), 
                            start.temp = NULL, 
-                           k = 25, 
+                           k = 20, 
                            landmark_num = 2000, 
                            cell_num_threshold = 0, 
                            verbose = FALSE,
                            ...) {
   extra_arguments <- list(...)
   
+  if(method == 'SSE' & do_partition == FALSE) {
+    message('Note that if your data includes separate groups, you should set do_partition to be TRUE when using SSE method!')
+  }
+
   if(any(nrow(cds@normalized_data_projection) == 0 | nrow(cds@reducedDimS) == 0 | is.null(pData(cds)$louvain_component))) {
     stop('Please first run preprocessCDS, reduceDimension, partitionCells (in order) before running this function!')
   }
@@ -1999,7 +2014,7 @@ patchEmbedding <- function(cds,
     if(ncol(cds) > landmark_num) {
       cell_cluster <- cds$louvain_component
       cluster_ids <- unique(cell_cluster) 
-      landmark_ratio <- landmark_num / length(cell_cluster) # determine number of representatives in each louvain cluster 
+      landmark_ratio <- landmark_num / ncol(cds) # determine number of representatives in each louvain cluster 
       
       landmark_id <- c()
       for(current_cluster in cluster_ids) {
@@ -2012,12 +2027,12 @@ patchEmbedding <- function(cds,
         kmean_res <- kmeans(data, cell_num_in_cluster, centers=centers, iter.max = 100)
         landmark_id_tmp <- unique(findNearestVertex(t(kmean_res$centers), t(data), process_targets_in_blocks=TRUE))
         
-        landmark_id <- c(landmark_id, landmark_id_tmp)
+        landmark_id <- c(landmark_id, current_cell_ids[landmark_id_tmp]) # landmark index from the original data 
       }
       
       data <- data_ori[landmark_id, ]
     } else {
-      data <- t(cds@reducedDimS)
+      data <- data_ori
       landmark_id <- 1:ncol(cds)
     }
     
@@ -2029,7 +2044,8 @@ patchEmbedding <- function(cds,
                                       method, 
                                       start.temp, 
                                       k, 
-                                      verbose) 
+                                      verbose,
+                                      ...) 
     
     coord <- res$sub_coord_mat
     g <- res$sub_g   
@@ -2068,9 +2084,12 @@ patchEmbedding <- function(cds,
       sub_cds_list[[i]] <- t_cds
       
       # let us downsample the data 
+      if(use_pca) {
+        data_ori <- cds@normalized_data_projection[pData(cds)$louvain_component == valid_groups[i], ]
+      } else {
+        data_ori <- t(cds@reducedDimS[, pData(cds)$louvain_component == valid_groups[i]])
+      }
       if(ncol(t_cds) > landmark_num) {      
-        data_ori <- t(t_cds@reducedDimS)
-        
         centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
         kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
         landmark_id <- unique(findNearestVertex(t(kmean_res$centers), t(data_ori), process_targets_in_blocks=TRUE))
@@ -2078,7 +2097,6 @@ patchEmbedding <- function(cds,
         data <- data_ori[landmark_id, ]
         
       } else {
-        data_ori <- t(t_cds@reducedDimS)
         data <- data_ori
         landmark_id <- 1:ncol(t_cds)
       } 
@@ -2091,7 +2109,8 @@ patchEmbedding <- function(cds,
                                         method, 
                                         start.temp, 
                                         k, 
-                                        verbose) 
+                                        verbose,
+                                        ...) 
       
       sub_coord_mat_list[[i]] <- res$sub_coord_mat
       sub_g_list[[i]] <- res$sub_g 
@@ -2161,8 +2180,8 @@ patchEmbedding <- function(cds,
     # row.names(coord) <- V(g)$name
   }
   
-  cds@reducedDimS <- t(coord)
-  cds@reducedDimK <- t(coord)
+  cds@reducedDimS <- t(coord[colnames(cds), ])
+  cds@reducedDimK <- t(coord[colnames(cds), ])
   
   minSpanningTree(cds) <- g
   
@@ -2189,14 +2208,15 @@ project_to_representatives <- function(data,
                                        pd, 
                                        method = c('PSL', 'drl', 'fr', 'kk', 'SSE'),  
                                        start.temp = NULL, 
-                                       k = 25,
+                                       k = 20,
                                        verbose, 
                                        ...) {
   extra_arguments <- list(...)
   
   # build kNN graph 
-  if(verbose) 
+  if(verbose) {
     message("Running louvain clustering algorithm ...")
+  }
   
   louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
                                extra_arguments[names(extra_arguments) %in% c("weight", "louvain_iter")])
@@ -2211,10 +2231,11 @@ project_to_representatives <- function(data,
     if (method=="kk") coord <- layout_with_kk(data_louvain_res$g, dim=2, coords=data[, 1:2])  
     
     row.names(coord) <- V(data_louvain_res$g)$name
-    sub_g <- igraph::induced_subgraph(louvain_res$g, row.names(data_ori))
+    sub_g <- igraph::induced_subgraph(louvain_res$g, row.names(data))
   } else if(method == 'SSE') {
-    sse_args <- c(list(data=data, dist_mat = adj_mat, verbose = verbose),
-                  extra_arguments[names(extra_arguments) %in% c('embeding_dim', 'd', "method", "para.gamma", "knn", "C", "maxiter", "beta")])
+    d <- 2 # d can only be 2 for dla coordinates merging method 
+    sse_args <- c(list(data=data, dist_mat = adj_mat, verbose = verbose, embeding_dim = d),
+                  extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
     SSE_res <- do.call(SSE, sse_args)    
 
     colnames(SSE_res$Y) <- colnames(data)
@@ -2224,7 +2245,6 @@ project_to_representatives <- function(data,
     coord <- SSE_res$Y 
     sub_g <- graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
   } else if(method == 'PSL') {
-    adj_mat <- NULL #get.adjacency(louvain_res$g)[landmark_id, landmark_id] 
     d <- 2 # d can only be 2 for dla coordinates merging method 
     PSL_args <- c(list(Y = data, d = d, dist = adj_mat), # add verbose ncol(data)
                   extra_arguments[names(extra_arguments) %in% c('K', 'C', 'param.gamma', 'maxIter')])
@@ -2256,7 +2276,7 @@ project_to_representatives <- function(data,
       distances_Z_to_Y <- proxy::dist(block, data_ori[landmark_id, ])
       
       tmp <- as(t(apply(distances_Z_to_Y , 1, function(x) {
-        tmp <- sort(x)[6] 
+        tmp <- sort(x)[6] # choose 5 nearest neighbors for projection 
         x[x > tmp] <- 0; p <- rep(0, length(x))
         bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
         p[x > 0] <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 

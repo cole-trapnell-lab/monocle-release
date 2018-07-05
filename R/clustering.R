@@ -280,7 +280,8 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   if (k < 1) {
     stop("k must be a positive integer!")
   } else if (k > nrow(data) - 2) {
-    stop("RANN counts the point itself, k must be smaller than\nthe total number of points - 1 (all other points) - 1 (itself)!")
+    k <- nrow(data) - 2
+    warning("RANN counts the point itself, k must be smaller than\nthe total number of points - 1 (all other points) - 1 (itself)!")
   }
   if (verbose) {
     message("Run kNN based graph clustering starts:", "\n", "  -Input data of ",
