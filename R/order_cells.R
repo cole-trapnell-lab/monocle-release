@@ -73,10 +73,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' will assign them increasingly large values of Pseudotime.
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param root_state The state to use as the root of the trajectory.
-#' You must already have called orderCells() once to use this argument.
-#' @param num_paths the number of end-point cell states to allow in the biological process.
-#' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' @param root_pr_nodes The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process. 
+#' @param root_cells The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -1221,12 +1219,12 @@ traverseTree <- function(g, starting_cell, end_cells){
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-# #' Make a cds by traversing from one cell to another cell
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+#' Make a cds by traversing from one cell to another cell
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a new cds containing only the cells traversed from the intial cell to the end cell
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1242,7 +1240,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   cds_subset <- SubSet_cds(cds, subset_cell)
 
   root_state <- pData(cds_subset[, starting_cell])[, 'State']
-  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
+  cds_subset <- orderCells(cds_subset, root_cells = starting_cell)
 
   return(cds_subset)
 }
