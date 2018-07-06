@@ -2296,8 +2296,11 @@ project_to_representatives <- function(data,
   return(list(sub_coord_mat = coord, sub_g = sub_g))
 }
 
-# the following functioin is taken from vegan package for performing procrustes analysis 
-# Function procrustes rotates a configuration to maximum similarity with another configuration. Function protest tests the non-randomness (significance) between two configurations.
+
+#' The following functioin is taken from vegan package for performing procrustes analysis 
+#'
+#' @description Function procrustes rotates a configuration to maximum similarity with another configuration. Function protest tests the non-randomness (significance) between two configurations.
+#' 
 #' @param X Target matrix
 #' @param Y Matrix to be rotated.
 #' @param scale Allow scaling of axes of Y.
