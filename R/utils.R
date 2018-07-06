@@ -791,4 +791,81 @@ select_cells <- function(cds, show_pp_only = FALSE, return_index = FALSE) {
   return(cds)
 }
 
+#' Subset a cds which only includes cells provided with the argument cells
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param cells a vector contains all the cells you want to subset
+#' @return a new cds containing only the cells from the cells argument
+#' @importFrom igraph graph.adjacency
+#' @export
+#' @examples 
+#' \dontrun{
+#' lung <- load_lung()
+#' tmp <- subset_cds(lung, cells = row.names(subset(pData(lung), State == 1)))
+#' plot_cell_trajectory(tmp)
+#' }
+subset_cds <- function(cds, cells){
+  cells <- unique(intersect(cells, colnames(cds)))
+  if(length(cells) == 0) {
+    stop("Cannot find any cell from the cds matches with the cell name from the cells argument! Please make sure the cell name you input is correct.")
+  }
+  
+  exprs_mat <- exprs(cds[, cells])
+  cds_subset <- newCellDataSet(exprs_mat,
+                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[cells, ]),
+                                 featureData = new("AnnotatedDataFrame", data = fData(cds)),
+                                 lowerDetectionLimit=cds@lowerDetectionLimit, 
+                                 expressionFamily=cds@expressionFamily)
+  
+  cds_subset@dispFitInfo <- cds@dispFitInfo
+  
+  if(ncol(cds@reducedDimS) == ncol(cds)) {
+    cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+  } else {
+    cds_subset@reducedDimS <- cds@reducedDimS
+  }
+  if(ncol(cds@reducedDimW) == ncol(cds)) {
+    cds_subset@reducedDimW <- cds@reducedDimW[, cells]
+  } else {
+    cds_subset@reducedDimW <- cds@reducedDimW
+  }
+  if(ncol(cds@reducedDimA) == ncol(cds)) {
+    cds_subset@reducedDimA <- cds@reducedDimA[, cells]
+  } else {
+    cds_subset@reducedDimA <- cds@reducedDimA
+  }
 
+  if(nrow(cds@normalized_data_projection) == ncol(cds)) {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection[cells, ]
+  } else {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection
+  }
+  
+  # we may also subset results from any RGE methods 
+  if('DDRTree' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$DDRTree$stree <- cds@auxOrderingData$DDRTree$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$DDRTree$R <- cds@auxOrderingData$DDRTree$R[cells, principal_node_ids]
+    cds_subset@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('SimplePPT' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$SimplePPT$stree <- cds@auxOrderingData$SimplePPT$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('L1Graph' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, principal_node_ids]
+    cds_subset@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  
+  # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
+  principal_graph_points <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[cells, 1]
+  cds_subset@minSpanningTree <- induced_subgraph(cds@minSpanningTree, paste0('Y_', principal_graph_points))
+  
+  cds_subset@reducedDimK <- cds@reducedDimK[, principal_graph_points]
+  cds_subset@dim_reduce_type <- cds@dim_reduce_type
+  cds_subset 
+}
