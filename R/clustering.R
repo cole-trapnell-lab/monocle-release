@@ -226,10 +226,10 @@ clusterCells <- function(cds,
     if(nrow(data) == 0) {
       message('ReduceDimension is not applied to this dataset. We are using the normalized reduced space obtained from preprocessCDS to cluster cells...')
       data <- cds@normalized_data_projection
-      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, random_seed = random_seed, verbose, ...)
+      louvain_res <- louvain_clustering(data = data, pd = pData(cds), k = k, weight = weight, louvain_iter = louvain_iter, resolution = res, random_seed = random_seed, verbose = verbose, ...)
     } else {
       if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
-        louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, random_seed = random_seed, verbose, ...)
+        louvain_res <- louvain_clustering(data = data, pd = pData(cds), k = k, weight = weight, louvain_iter = louvain_iter, resolution = res, random_seed = random_seed, verbose = verbose, ...)
       } else {
         louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
       }
@@ -321,7 +321,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   }
 
   for (iter in 1:louvain_iter) {
-    if (verbose) {
+    if(verbose) {
       cat("Running louvain iteration ", iter, "...\n")
     }
     if(!is.null(resolution)) {
