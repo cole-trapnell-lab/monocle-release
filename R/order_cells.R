@@ -731,6 +731,7 @@ learnGraph <- function(cds,
   Y <- reducedDimS(cds)
   reduced_dim_res = Y 
   
+  RGE_method <- RGE_method[1] # set RGE_method to be the first one if user doesn't specifiy 
   # 
   if(do_partition && !(partition_group %in% colnames(pData(cds))))
     stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds!')

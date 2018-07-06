@@ -33,7 +33,9 @@ find_cluster_markers(cds, spatial_res, group_by = "Cluster",
 \item{...}{Additional arguments passed to function}
 }
 \value{
-a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
+a tibble (Tibbles are a modern take on data frame) containing mean expression in each group (mean), percentage of cells 
+expressed in each group (percentage), specifity score (specifity) for each gene in each cluster and the principalGraphTest statistics 
+(by default, the Moran's I test), together with the information from pData.
 }
 \description{
 Tests each gene for differential expression as a function of pseudotime
@@ -41,6 +43,16 @@ or according to other covariates as specified. \code{differentialGeneTest} is
 Monocle's main differential analysis routine.
 It accepts a CellDataSet and two model formulae as input, which specify generalized
 lineage models as implemented by the \code{VGAM} package.
+n Monocle 3, we incoporated the find_cluster_markers to find marker genes for each group of cells. 
+In order to calculate the specificity of each gene to each cluster, we first create a perfect specific 
+distribution ( Q ) of each gene by assigning probability 1 to one particular cluster while all 0 to any 
+other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
+to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate
+the specificity score as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
+The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions ($P,Q$).
+The Jensen-Shannon divergence, defined for two distributions $P$ and $Q$ by
+$JSD(P,Q) = \frac{1}{2}D(P\|M) + \frac{1}{2}D(Q\|M)$
+where $M = \frac{1}{2}(P+Q)$ and $D(A\|B)$ is the Kullback-Leibler divergence.
 }
 \seealso{
 \code{\link{principalGraphTest}} principalGraphTest
