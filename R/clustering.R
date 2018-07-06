@@ -68,6 +68,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
 #' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`. 
 #' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
+#' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
 #' @param cores number of cores computer should use to execute function
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -99,6 +100,7 @@ clusterCells <- function(cds,
                          weight = FALSE,
                          res = NULL, #seq(0, 1e-4, length.out = 5)
                          method = c('densityPeak', 'louvain'),
+                         random_seed = 0L, 
                          verbose = F, 
                          cores=1,
                          ...) {
@@ -224,10 +226,10 @@ clusterCells <- function(cds,
     if(nrow(data) == 0) {
       message('ReduceDimension is not applied to this dataset. We are using the normalized reduced space obtained from preprocessCDS to cluster cells...')
       data <- cds@normalized_data_projection
-      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, verbose, ...)
+      louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, random_seed = random_seed, verbose, ...)
     } else {
       if(!('louvain_res' %in% names(cds@auxOrderingData[[cds@dim_reduce_type]]))) {
-        louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, verbose, ...)
+        louvain_res <- louvain_clustering(data, pData(cds), k, weight, louvain_iter, res, random_seed = random_seed, verbose, ...)
       } else {
         louvain_res <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res     
       }
@@ -257,13 +259,14 @@ clusterCells <- function(cds,
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph 
 #' @param louvain_iter the number of iteraction for louvain clustering 
 #' @param resolution resolution of clustering result, specifiying the granularity of clusters
+#' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
 #' @return a list with four elements (g (igraph object for the kNN graph), coord (coordinates of the graph with 
 #' layout_component, if the number of cells is less than 3000), edge_links (the data frame to plot the edges of 
 #' the igraph, if the number of cells is less than 3000) and optim_res (the louvain clustering result)). 
 #' 
-louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = NULL, verbose = F, ...) {
+louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = NULL, random_seed = 0L, verbose = F, ...) {
   extra_arguments <- list(...)
   cell_names <- row.names(pd)
   if(cell_names != row.names(pd))
@@ -312,6 +315,11 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   Qp <- -1
   optim_res <- NULL
   best_max_resolution <- 'No resolution'
+    
+  if(louvain_iter >= 2) {
+    random_seed <- NULL
+  }
+
   for (iter in 1:louvain_iter) {
     if (verbose) {
       cat("Running louvain iteration ", iter, "...\n")
@@ -319,7 +327,7 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
     if(!is.null(resolution)) {
       for(i in 1:length(resolution)) {
         cur_resolution <- resolution[i]
-        louvain_args <- c(list(X = igraph::get.adjacency(g), res = as.numeric(cur_resolution), verbose = verbose),
+        louvain_args <- c(list(X = igraph::get.adjacency(g), res = as.numeric(cur_resolution), random_seed = random_seed, verbose = verbose),
                           extra_arguments[names(extra_arguments) %in% 
                                             c("python_home", "partition_method", "initial_membership", "weights", "node_sizes", 'return_all')])
         Q <- do.call(louvain_R, louvain_args)  

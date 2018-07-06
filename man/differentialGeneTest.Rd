@@ -25,9 +25,9 @@ differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime 
+Tests each gene for differential expression as a function of pseudotime
 or according to other covariates as specified. \code{differentialGeneTest} is
-Monocle's main differential analysis routine. 
+Monocle's main differential analysis routine.
 It accepts a CellDataSet and two model formulae as input, which specify generalized
 lineage models as implemented by the \code{VGAM} package.
 }
