@@ -5,11 +5,11 @@
 \title{Plots the minimum spanning tree on cells.}
 \usage{
 plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
-  layout = NULL, color_by = "State", show_tree = TRUE,
-  show_backbone = TRUE, backbone_color = "black", markers = NULL,
-  show_cell_names = FALSE, cell_size = 1.5, cell_link_size = 0.75,
-  cell_name_size = 2, show_branch_points = TRUE, jitter_width = NULL,
-  jitter_height = NULL, ...)
+  layout = NULL, color_by = "State", show_backbone = TRUE,
+  backbone_color = "black", markers = NULL, show_cell_names = FALSE,
+  cell_size = 1.5, cell_link_size = 0.75, cell_name_size = 2,
+  show_branch_points = TRUE, jitter_width = NULL, jitter_height = NULL,
+  ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -24,8 +24,6 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
 ensure the layout function you passed in return a matrix with dimension N x 2 where N corresponds to the number of vertex in the CDS}
 
 \item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
-
-\item{show_tree}{whether to show the links between cells connected in the minimum spanning tree}
 
 \item{show_backbone}{whether to show the diameter path of the MST used to order the cells}
 
