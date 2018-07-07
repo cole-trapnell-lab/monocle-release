@@ -9,7 +9,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "Pseudotime",
   use_color_gradient = FALSE, markers_linear = FALSE,
   show_cell_names = FALSE, show_state_number = FALSE, cell_size = 1.5,
   cell_link_size = 0.75, cell_name_size = 2, state_number_size = 2.9,
-  show_branch_points = TRUE, theta = 0, ...)
+  show_branch_points = TRUE, theta = 0, alpha = 1, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -45,6 +45,8 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "Pseudotime",
 \item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
 
 \item{theta}{How many degrees you want to rotate the trajectory}
+
+\item{alpha}{The alpha aesthetics for the original cell points, useful to highlight the learned principal graph}
 
 \item{...}{Additional arguments passed into scale_color_viridis function}
 }

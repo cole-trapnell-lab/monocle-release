@@ -730,6 +730,11 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #'
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
+#' @examples
+#' \dontrun{
+#' lung <- load_lung()
+#' lung <- assign_cell_states(lung)
+#' }
 assign_cell_states <- function(cds){
   
   if(class(cds)[1] != "CellDataSet") {
@@ -825,6 +830,8 @@ assign_cell_states <- function(cds){
   cds$State <- tmp[cds$State]
   pData(cds)$State <- as.factor(pData(cds)$State)
   
+  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- V(dp_mst)[which(degree(dp_mst) > 2)]$name
+
   cds
 }
 

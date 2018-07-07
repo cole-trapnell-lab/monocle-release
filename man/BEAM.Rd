@@ -56,3 +56,10 @@ expression. The full model is the product of smooth Pseudotime and the Branch a 
 The reduced model just includes Pseudotime. You can modify these to include 
 arbitrary additional effects in the full or both models.
 }
+\examples{
+\dontrun{
+lung <- load_lung()
+lung <- assign_cell_states(lung)
+BEAM(lung)
+}
+}

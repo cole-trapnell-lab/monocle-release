@@ -33,6 +33,7 @@ monocle_theme_opts <- function()
 #' @param state_number_size the size of the state number
 #' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
 #' @param theta How many degrees you want to rotate the trajectory
+#' @param alpha The alpha aesthetics for the original cell points, useful to highlight the learned principal graph 
 #' @param ... Additional arguments passed into scale_color_viridis function 
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -66,6 +67,7 @@ plot_cell_trajectory <- function(cds,
                                  state_number_size = 2.9,
                                  show_branch_points=TRUE,
                                  theta = 0,
+                                 alpha = 1, 
                                  ...) {
   requireNamespace("igraph")
   gene_short_name <- NA
@@ -164,13 +166,13 @@ plot_cell_trajectory <- function(cds,
     if(use_color_gradient) {
       # g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
     } else {
-      g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
+      g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE, alpha = alpha)
     }
   }else {
     if(use_color_gradient) {
       # g <- g + geom_point(aes_string(color = color_by), na.rm = TRUE)
     } else {
-      g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE)
+      g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, alpha = alpha)
       if (class(pData(cds)[,color_by]) == "numeric"){
         g <- g + scale_color_viridis(option="C")
       }
@@ -178,7 +180,7 @@ plot_cell_trajectory <- function(cds,
   }
   
   
-  if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
+  if (show_branch_points && cds@dim_reduce_type %in% c('DDRTree', 'SimplePPT')){
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_point_df <- ica_space_df %>%
       slice(match(mst_branch_nodes, sample_name)) %>%

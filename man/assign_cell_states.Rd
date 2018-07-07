@@ -23,3 +23,9 @@ with degree equal to 2 (the first cell if there is no cells has degree equal to 
 root cell. Note that this function also assigns pseudotime by default. But the orderCells function should be 
 used in order to obtain correct ordering of the developmental trajectory under study.
 }
+\examples{
+\dontrun{
+lung <- load_lung()
+lung <- assign_cell_states(lung)
+}
+}
