@@ -23,16 +23,16 @@
 #' @return a CellDataSet with the duplicated cells and stretched branches
 #' @export
 buildBranchCellDataSet <- function(cds,
-                                   progenitor_method = c('sequential_split', 'duplicate'), 
+                                   progenitor_method = c('duplicate', 'sequential_split'), 
                                    branch_states = NULL, 
                                    branch_point = 1,
                                    branch_labels = NULL, 
                                    stretch = TRUE)
 {
-  # identify the current louvain component we are on. 
   closest_vertex <- as.data.frame(cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex)
   colnames(closest_vertex) <- 'principal_points'
   
+  # identify the louvain component we are currently looking at. 
   if(!is.null(branch_point)) {
     branch_principal_point <- as.numeric(strsplit(cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points[branch_point], '_')[[1]][2])
     principal_point_cells <- row.names(subset(closest_vertex, principal_points == branch_principal_point))
@@ -43,7 +43,7 @@ buildBranchCellDataSet <- function(cds,
     }
     cur_louvain_component <- unique(subset(pData(cds), State %in% branch_states)[, "louvain_component"])
     if(length(cur_louvain_component) > 1) {
-      stop(paste0('Error: the branch_states ', branch_states , '. you passed in poinits to two different louvain components!'))
+      stop(paste0('Error: the branch_states ', branch_states, ' you passed in comes from two different louvain components!'))
     }
   }
   
@@ -73,10 +73,7 @@ buildBranchCellDataSet <- function(cds,
   
   tmp <- subset(pData(cds), louvain_component == cur_louvain_component)
   root_cell <- row.names(subset(tmp, Pseudotime == 0))
-  
   root_state <- unique(pData(cds)[root_cell, ]$State)
-  #root_state <- V(pr_graph_cell_proj_mst)[root_cell,]$State
-  
   pr_graph_root <- subset(pData(cds), State == root_state)
   
   if (cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')){
@@ -85,7 +82,7 @@ buildBranchCellDataSet <- function(cds,
     root_cell_point_in_Y <- row.names(pr_graph_root)
   }
   
-  root_cell <- names(which(degree(pr_graph_cell_proj_mst, v = root_cell_point_in_Y, mode = "all")==1, useNames = T))[1] # identify root cell in the principal graph with degree equal to 1 
+  root_cell <- paste0('Y_', closest_vertex[root_cell, 1]) # identify root "cell" in the principal graph based on cell with pseudotime 0 
   
   paths_to_root <- list()
   if (is.null(branch_states) == FALSE){
@@ -119,13 +116,6 @@ buildBranchCellDataSet <- function(cds,
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_branch
     }
   }else{
-    if(cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')) {
-      pr_graph_cell_proj_mst <- minSpanningTree(cds)
-    }
-    else {
-      stop("Doesn't support BEAM analysis for other methods")
-    }
-    
     mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
     branch_cell <- mst_branch_nodes[branch_point]
     mst_no_branch_point <- pr_graph_cell_proj_mst - V(pr_graph_cell_proj_mst)[branch_cell]
@@ -158,14 +148,15 @@ buildBranchCellDataSet <- function(cds,
   all_cells_in_subset <- c()
   
   if (is.null(branch_labels) == FALSE){
-    if (length(branch_labels) != 2)
+    if (length(branch_labels) != 2) {
       stop("Error: branch_labels must have exactly two entries")
+    }
     names(paths_to_root) <- branch_labels
   }
   
   for (path_to_ancestor in paths_to_root){
     if (length(path_to_ancestor) == 0){
-      stop("Error: common ancestors between selected State values on path to root State")
+      stop("Error: selected State values doesn't include two branches from a root cell state (with pseudotime zero)")
     }
     all_cells_in_subset <- c(all_cells_in_subset, path_to_ancestor)
   }
@@ -198,6 +189,7 @@ buildBranchCellDataSet <- function(cds,
     branch_pseudotime <- max(pData[common_ancestor_cells,]$Pseudotime)
     #ancestor_scaling_factor <- branch_pseudotime / max_pseudotime
     
+    # Firstly ensure max time for each branch to be max_pseudotime 
     for (path_to_ancestor in paths_to_root){
       max_pseudotime_on_path <- max(pData[path_to_ancestor,]$Pseudotime) 
       path_scaling_factor <-(max_pseudotime - branch_pseudotime) / (max_pseudotime_on_path - branch_pseudotime)
@@ -206,39 +198,37 @@ buildBranchCellDataSet <- function(cds,
         pData[branch_cells,]$Pseudotime <- ((pData[branch_cells,]$Pseudotime - branch_pseudotime) * path_scaling_factor + branch_pseudotime)
       }
     }
-    #pData[common_ancestor_cells,]$Pseudotime <- pData[common_ancestor_cells,]$Pseudotime / max_pseudotime
     
+    # Scale maximum pseudotime to be 100 
     pData$Pseudotime <- 100 * pData$Pseudotime / max_pseudotime
   }
+
   pData$original_cell_id <- row.names(pData)
   
-  pData$original_cell_id <- row.names(pData)
-  
-  if(length(paths_to_root) != 2)
+  if(length(paths_to_root) != 2) {
     stop('more than 2 branch states are used!')
+  }
   
   pData[common_ancestor_cells, "Branch"] <- names(paths_to_root)[1] #set progenitors to the branch 1
   
   progenitor_pseudotime_order <- order(pData[common_ancestor_cells, 'Pseudotime'])
   
   if (progenitor_method == 'duplicate') {
-    ancestor_exprs <- exprs(cds)[,common_ancestor_cells]
+    ancestor_exprs <- exprs(cds)[, common_ancestor_cells, drop = F]
     expr_blocks <- list()
     
     # Duplicate the expression data
     for (i in 1:length(paths_to_root)) { #duplicate progenitors for multiple branches
-      if (nrow(ancestor_exprs) == 1)
-        exprs_data <- t(as.matrix(ancestor_exprs))
-      else exprs_data <- ancestor_exprs
+      exprs_data <- ancestor_exprs
       
       colnames(exprs_data) <- paste('duplicate', i, 1:length(common_ancestor_cells), sep = '_')
-      expr_lineage_data <- exprs(cds)[,setdiff(paths_to_root[[i]], common_ancestor_cells)]
+      expr_lineage_data <- exprs(cds)[, setdiff(paths_to_root[[i]], common_ancestor_cells), drop = F]
       exprs_data <- cbind(exprs_data, expr_lineage_data)
       expr_blocks[[i]] <- exprs_data
     }
     
     # Make a bunch of copies of the pData entries from the common ancestors
-    ancestor_pData_block <- pData[common_ancestor_cells,]
+    ancestor_pData_block <- pData[common_ancestor_cells, , drop = F]
     
     pData_blocks <- list()
     
@@ -343,6 +333,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                        relative_expr = TRUE,
                        cores = 1, 
                        branch_labels = NULL, 
+                       group_by = NULL, 
                        verbose = FALSE,
                        ...) {
   
@@ -361,6 +352,7 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
+                                         group_by = group_by, 
                                          verbose=verbose)
   
   return(branchTest_res)
@@ -852,6 +844,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 					branch_point=1,
 					relative_expr = TRUE, 
 					branch_labels = NULL, 
+          group_by = NULL, 
 					verbose = FALSE,
 					cores = 1, 
 					...) {
@@ -863,6 +856,7 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 	                       relative_expr = relative_expr,
 	                       cores = cores, 
 	                       branch_labels = branch_labels, 
+                         group_by = group_by, 
 	                       verbose=verbose, 
 	                       ...)
 	cmbn_df <- branchTest_res[, 1:4] 

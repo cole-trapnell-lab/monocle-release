@@ -15,13 +15,9 @@ diff_test_helper <- function(x,
                              expressionFamily, 
                              relative_expr,
                              weights,
-                             disp_func=NULL,
-                             verbose=FALSE
-                             ){ 
-  
-  reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
-  fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
-  
+                             disp_func=NULL, 
+                             group_by=NULL, 
+                             verbose=FALSE){  
   x_orig <- x
   disp_guess <- 0
   
@@ -50,23 +46,60 @@ diff_test_helper <- function(x,
   }else{
     f_expression <- log10(x)
   }
-  
+
+  if(!is.null(group_by)) {
+    all_vals <- unique(c(all.vars(as.formula(fullModelFormulaStr)), all.vars(as.formula(reducedModelFormulaStr)), 'x'))
+    vglm_data <- do.call(cbind.data.frame, mget(all_vals, inherits = T)) # get data from parent environment 
+    vglm_data <- vglm_data %>% group_by_(group_by) %>% mutate(average = mean(x)) %>% 
+        select(-x) %>% unique()
+    if(expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+      vglm_data$average <- round(vglm_data$average)
+    }
+    reducedModelFormulaStr <- paste("average", reducedModelFormulaStr, sep="")
+    fullModelFormulaStr <- paste("average", fullModelFormulaStr, sep="")
+  } else {
+    reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
+    fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
+  }
+
   test_res <- tryCatch({
     if (expressionFamily@vfamily %in% c("binomialff")){
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
+        if(is.null(group_by)) {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)       
+        }  else {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)                 
+        }    
+
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        if(is.null(group_by)) {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        }  else {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))                    
+        }  
       }
     }else{
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
+        if(is.null(group_by)) {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)       
+        }  else {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)                 
+        }    
+
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        if(is.null(group_by)) {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        }  else {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))                    
+        }  
       }
     }
 
@@ -135,6 +168,7 @@ differentialGeneTest <- function(cds,
                                  reducedModelFormulaStr="~1", 
                                  relative_expr=TRUE,
                                  cores=1, 
+                                 group_by = NULL, 
                                  verbose=FALSE
                                  ){
   status <- NA
@@ -170,6 +204,7 @@ differentialGeneTest <- function(cds,
                              expressionFamily=cds@expressionFamily,
                              relative_expr=relative_expr,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                             group_by = group_by, 
                              verbose=verbose
                        #       ,
                        # backup_method = backup_method, 
@@ -185,6 +220,7 @@ differentialGeneTest <- function(cds,
                                 expressionFamily=cds@expressionFamily, 
                                 relative_expr=relative_expr,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                                group_by = group_by, 
                                 verbose=verbose
                        #          ,
                        # backup_method = backup_method, 
