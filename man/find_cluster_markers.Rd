@@ -6,7 +6,8 @@
 \usage{
 find_cluster_markers(cds, spatial_res, group_by = "Cluster",
   qval_threshold = 0.05, morans_I_threshold = 0.25, lower_threshold = 0,
-  pseudocount = 1, top_n_by_group = NULL, verbose = FALSE, ...)
+  pseudocount = 1, top_n_by_group = NULL, block_size = 100,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
@@ -25,6 +26,8 @@ find_cluster_markers(cds, spatial_res, group_by = "Cluster",
 
 \item{top_n_by_group}{Select top_n_by_group from each group based on the specificity}
 
+\item{block_size}{the number of genes to process per bloclk which dramatically reduces the memory footprints. Default to be 100.}
+
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 
 \item{...}{Additional arguments passed to function}
@@ -33,9 +36,9 @@ find_cluster_markers(cds, spatial_res, group_by = "Cluster",
 a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime 
+Tests each gene for differential expression as a function of pseudotime
 or according to other covariates as specified. \code{differentialGeneTest} is
-Monocle's main differential analysis routine. 
+Monocle's main differential analysis routine.
 It accepts a CellDataSet and two model formulae as input, which specify generalized
 lineage models as implemented by the \code{VGAM} package.
 }

@@ -191,6 +191,7 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
 #' @importFrom plyr ddply .
 #' @importFrom stats optim
 #' @importFrom parallel mcmapply mclapply detectCores
+#' @importFrom pbmcapply pbmcmapply
 #' @examples
 #' \dontrun{
 #' HSMM_relative_expr_matrix <- exprs(HSMM)
@@ -264,7 +265,7 @@ relative2abs <- function(relative_cds,
     }, ERCC_annotation, valid_ids)
     if (verbose) 
       message("Apply the fitted robust linear regression model to recovery the absolute copy number for all transcripts each cell...")
-    norm_fpkms <- mcmapply(function(cell_exprs, molModel) {
+    norm_fpkms <- pbmcmapply(function(cell_exprs, molModel) {
       tryCatch({
         norm_df <- data.frame(log_fpkm = log10(cell_exprs))
         res <- 10^predict(molModel, type = "response", 
