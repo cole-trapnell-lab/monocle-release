@@ -1126,7 +1126,7 @@ findNearestPointOnMST <- function(cds){
   
   closest_vertex_df <- NULL
   cur_start_index <- 0 
-  browser()
+
   for(i in 1:length(dp_mst_list)) {
     cur_dp_mst <- dp_mst_list[[i]]
     
@@ -1156,7 +1156,7 @@ findNearestPointOnMST <- function(cds){
 
 #' @importFrom igraph graph.adjacency V
 #' @importFrom stats dist
-project2MST <- function(cds, Projection_Method, k = 25){
+project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
@@ -1208,10 +1208,10 @@ project2MST <- function(cds, Projection_Method, k = 25){
 
   colnames(P) <- colnames(Z)
   
-  browser()
   dp_mst_list <- decompose.graph(dp_mst)
-  dp_mst <- NULL
+  dp_mst_df <- NULL
   louvain_component <- pData(cds)$louvain_component
+
   if(!is.null(louvain_component)) {
     for(cur_louvain_comp in sort(unique(louvain_component))) {
       data_df <- NULL 
@@ -1246,37 +1246,39 @@ project2MST <- function(cds, Projection_Method, k = 25){
 
       # calculate distance between each pair 
       cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the principal graph points 
-      data_df$graph_dist <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
+      data_df$weight <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
+      data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0])
 
       # create the graph 
-      cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'graph_dist')], directed = FALSE)
-
+      # cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'weight')], directed = FALSE)
       # union with the principal graph 
-      dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_list[[as.numeric(cur_louvain_comp)]])
-
-  #     cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name])
-  #     # if(ncol(subset_cds) > 2000) {
-  #       cell_names <- c(colnames(cur_z), cur_centroid_name)
-  #       tmp <- RANN::nn2(t(cur_p), t(cur_p), min(k + 1, length(subset_cds_col_names) - 1), searchtype = "standard")
-  #       neighborMatrix <- tmp[[1]][, -1]
-  #       distMatrix <- tmp[[2]][, -1]
-  #       links <- monocle:::jaccard_coeff(neighborMatrix, F)
-  #       # links <- links[links[, 1] > 0, ]
-  #       relations <- as.data.frame(links)
-  #       colnames(relations) <- c("from", "to", "weight")
-  #       relations$weight <-  melt(t(distMatrix))[, 3]
-          
-  #       relations$from <- cell_names[relations$from]
-  #       relations$to <- cell_names[relations$to]
-  #       cur_dp_mst <- igraph::graph.data.frame(relations, directed = FALSE)
-  #       dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_list[[cur_louvain_comp]])
-      if(length(decompose.graph(dp_mst)) > 1) {
-        browser()
+      
+      # code to get the get.edgelist with weight 
+      ## the trick is that we might need to swap the columns of the
+      ## edge lists, because they are ordered according to numeric
+      ## vertex ids and not names
+      reordel <- function(graph) {
+        el <- cbind(as.data.frame(get.edgelist(graph), stringsAsFactors=FALSE),
+                    E(graph)$weight)
+        swap <- which(el[,1] > el[,2])
+        if (length(swap) > 0) { el[swap,1:2] <- cbind(el[swap,2], el[swap,1]) }
+        el
       }
+      
+      dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst_pc <- minimum.spanning.tree(gp)
+      dp <- reordel(dp_mst_pc)
+      colnames(dp) <- c("new_source", "new_target", 'weight')
+      
+      dp_mst_df <- Reduce(rbind, list(dp_mst_df, data_df[, c("new_source", "new_target", 'weight')], dp))
+      # dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_pc)
     }
   } else {
     stop('Error: please run partitionCells before running project2MST')
   }
+
+  dp_mst <- igraph::graph.data.frame(dp_mst_df, directed = FALSE)
   cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree <- dp_mst
   cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
   cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
@@ -1570,6 +1572,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   }
   #xy <- xy.coords(x, y); x <- xy$x; y <- xy$y
   sel <- rep(FALSE, nrow(ica_space_df))
+  # browser() 
   
   if (use_3d){
     open3d(windowRect=c(0,0,1024,1024))
@@ -1577,7 +1580,6 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                col="black",
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
-    browser()
     while(sum(sel) < num_roots) {
       ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
       if(!length(ans)) break
