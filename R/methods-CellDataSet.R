@@ -45,21 +45,17 @@ setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
            environment =,
            lockedEnvironment = {
              aData <- new.env(parent=emptyenv())
-             pb1 <- txtProgressBar(max = length(ls(orig)), style = 3, file = stderr(), min = 0)
              if (missing(i))  {                   # j must be present
                for(nm in ls(orig)) {
                  aData[[nm]] <- orig[[nm]][, j, ..., drop = drop]
-                setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
                }
              } else if (missing(j)) { # j may or may not be present
                  for(nm in ls(orig)) {
                    aData[[nm]] <- orig[[nm]][i,, ..., drop = drop]
-                   setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1) 
                 }
              }  else {
                  for(nm in ls(orig)) {
                    aData[[nm]] <- orig[[nm]][i, j, ..., drop = drop]
-                   setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
                   }
              }
                if ("lockedEnvironment" == storage.mode) assayDataEnvLock(aData)
@@ -67,12 +63,12 @@ setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
            },
            list = {
              if (missing(i))                     # j must be present
-               pblapply(orig, function(obj) obj[, j, ..., drop = drop])
+               lapply(orig, function(obj) obj[, j, ..., drop = drop])
              else {                              # j may or may not be present
                if (missing(j))
-                 pblapply(orig, function(obj) obj[i,, ..., drop = drop])
+                 lapply(orig, function(obj) obj[i,, ..., drop = drop])
                else
-                 pblapply(orig, function(obj) obj[i, j, ..., drop = drop])
+                 lapply(orig, function(obj) obj[i, j, ..., drop = drop])
              }
            })
   x@auxOrderingData = as.environment(as.list(x@auxOrderingData, all.names=TRUE))

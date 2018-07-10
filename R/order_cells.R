@@ -1018,7 +1018,7 @@ learnGraph <- function(cds,
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-        tmp <- matrix(pbapply(cds@auxOrderingData$DDRTree$R, 1, which.max))
+        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
         row.names(tmp) <- colnames(cds)
         cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
@@ -1453,11 +1453,11 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
     
     if(is.null(reducedDimK_coord)) {
       curr_cell_names <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- matrix(pbapply(ddrtree_res$R, 1, which.max))
+      pr_graph_cell_proj_closest_vertex <- matrix(apply(ddrtree_res$R, 1, which.max))
       cell_name_vec <- colnames(X_subset)
     } else {
       curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(pbapply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
+      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
       cell_name_vec <- c(cell_name_vec, colnames(X_subset))
     }
     
@@ -1468,7 +1468,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
     
     cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
     
-    tmp <- matrix(pbapply(ddrtree_res$R, 1, which.max))
+    tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
     
     if(length(close_loop) == length(unique(louvain_component)))
       curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]

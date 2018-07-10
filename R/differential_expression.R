@@ -306,6 +306,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 #' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
 #' @importFrom spdep knn2nb nb2listw moran spweights.constants
 #' @importFrom stats p.adjust
+#' @importFrom pbmcapply pbmclapply
 #' @seealso \code{\link[spdep]{moran.test}}
 #' @export
 principalGraphTest <- function(cds,
@@ -321,7 +322,7 @@ principalGraphTest <- function(cds,
   }
   exprs_mat <- exprs(cds)
   wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
-  test_res <- mclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
+  test_res <- pbmclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
     exprs_val <- exprs_mat[x, ]
     
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){

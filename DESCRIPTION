@@ -61,6 +61,7 @@ Imports:
     htmltools,
     matrixStats,
     doParallel,
+    pbmcapply,
     viridisLite
 LinkingTo: Rcpp
 Suggests:
