@@ -14,32 +14,53 @@ setOrderingFilter <- function(cds, ordering_genes){
 #' @importFrom igraph V distances
 extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 {
+  Z <- reducedDimS(cds)
+  Y <- reducedDimK(cds)
   pr_graph <- minSpanningTree(cds)
   
   res <- list(subtree = pr_graph, root = root_cell)
 
-  parents = rep(NA, length(V(pr_graph)))
-  states = rep(NA, length(V(pr_graph)))
+  parents <- rep(NA, length(V(pr_graph)))
+  states <- rep(NA, length(V(pr_graph)))
 
   if(any(is.na(E(pr_graph)$weight))) {
     E(pr_graph)$weight <- 1
   }  
-  pr_graph_node_distances = distances(pr_graph, v=root_cell)
-  if (length(root_cell) > 1){
-    node_names = colnames(pr_graph_node_distances)
-    pseudotimes = apply(pr_graph_node_distances, 2, min)
+
+  # do pseudotime calculation on the cell-wise graph 
+  # 1. identify nearest cells to the selected principal node 
+  # 2. build a cell-wise graph for each louvain group 
+  # 3. run the distance function to assign pseudotime for each cell 
+  closest_vertex <- findNearestVertex(Y[, root_cell, drop = F], Z)
+  closest_vertex_id <- colnames(cds)[closest_vertex]
+  cds <- project2MST(cds, project_point_to_line_segment)
+  cell_wise_graph <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+  cell_wise_distances <- distances(cell_wise_graph, v = closest_vertex_id)
+  
+  if (length(closest_vertex_id) > 1){
+    node_names <- colnames(cell_wise_distances)
+    pseudotimes <- apply(cell_wise_distances, 2, min)
   }else{
-    node_names = names(pr_graph_node_distances)
-    pseudotimes = pr_graph_node_distances
+    node_names <- names(cell_wise_distances)
+    pseudotimes <- cell_wise_distances
   }
-  
-  
+
+  # pr_graph_node_distances <- distances(pr_graph, v=root_cell)
+  # if (length(root_cell) > 1){
+  #   node_names <- colnames(pr_graph_node_distances)
+  #   pseudotimes <- apply(pr_graph_node_distances, 2, min)
+  # }else{
+  #   node_names <- names(pr_graph_node_distances)
+  #   pseudotimes <- pr_graph_node_distances
+  # }
+    
   names(pseudotimes) <- node_names
   
-  ordering_df <- data.frame(sample_name = V(pr_graph)$name,
-                            cell_state = states,
-                            pseudo_time = as.vector(pseudotimes),
-                            parent = parents)
+  ordering_df <- data.frame(sample_name = V(cell_wise_graph)$name, # pr_graph
+                            # cell_state = states,
+                            pseudo_time = as.vector(pseudotimes)
+                            # parent = parents
+                            )
   row.names(ordering_df) <- ordering_df$sample_name
   return(ordering_df)
 }
@@ -131,8 +152,9 @@ orderCells <- function(cds,
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
   
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-  closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
-  pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
+  pData(cds)$Pseudotime = cc_ordering[row.names(pData(cds)), ]$pseudo_time
+  # closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  # pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
   cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
 
   cds
@@ -1095,34 +1117,52 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
 
 # Project each point to the nearest on the MST:
 findNearestPointOnMST <- function(cds){
-  dp_mst <- minSpanningTree(cds)
-  Z <- reducedDimS(cds)
-  Y <- reducedDimK(cds)
-
-  tip_leaves <- names(which(degree(dp_mst) == 1))
-
-  #distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
-  #closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
-  closest_vertex = findNearestVertex(Z, Y)
+  if(is.null(pData(cds)$louvain_component)) {
+    stop('Error: please run partitionCells before running findNearestPointOnMST!')  
+  }
   
-  #closest_vertex <- as.vector(closest_vertex)
-  closest_vertex_names <- colnames(Y)[closest_vertex]
-  closest_vertex_df <- as.matrix(closest_vertex) #index on Z
-  row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
+  dp_mst <- minSpanningTree(cds)
+  dp_mst_list <- decompose.graph(dp_mst) 
+  
+  closest_vertex_df <- NULL
+  cur_start_index <- 0 
+  browser()
+  for(i in 1:length(dp_mst_list)) {
+    cur_dp_mst <- dp_mst_list[[i]]
+    
+    Z <- reducedDimS(cds)[, pData(cds)$louvain_component == i]
+    Y <- reducedDimK(cds)[, igraph::V(cur_dp_mst)$name]
+  
+    tip_leaves <- names(which(degree(cur_dp_mst) == 1))
+  
+    #distances_Z_to_Y <- proxy::dist(t(Z), t(Y))
+    #closest_vertex <- apply(distances_Z_to_Y, 1, function(z) { which ( z == min(z) )[1] } )
+    closest_vertex_ori <- findNearestVertex(Z, Y)
+    closest_vertex <- closest_vertex_ori + cur_start_index 
 
+    #closest_vertex <- as.vector(closest_vertex)
+    closest_vertex_names <- colnames(Y)[closest_vertex_ori]
+    cur_name <- names(closest_vertex)
+    closest_vertex <- as.matrix(closest_vertex)
+    row.names(closest_vertex) <- cur_name #original cell names for projection
+    closest_vertex_df <- rbind(closest_vertex_df, closest_vertex) #index on Z
+
+    cur_start_index <- cur_start_index + vcount(cur_dp_mst)
+  }
+  closest_vertex_df <- closest_vertex_df[colnames(cds), , drop = F]
   cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
 }
 
 #' @importFrom igraph graph.adjacency V
 #' @importFrom stats dist
-project2MST <- function(cds, Projection_Method){
+project2MST <- function(cds, Projection_Method, k = 25){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
 
   cds <- findNearestPointOnMST(cds)
-  closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
 
   #closest_vertex <- as.vector(closest_vertex)
   closest_vertex_names <- colnames(Y)[closest_vertex]
@@ -1137,8 +1177,10 @@ project2MST <- function(cds, Projection_Method){
   }
   else{
     P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
-    for(i in 1:length(closest_vertex)) {
-      neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ])
+    nearest_edges <- matrix(rep(0, length(Z[1:2, ])), ncol = 2)
+    row.names(nearest_edges) <-  colnames(cds)
+    for(i in 1:length(closest_vertex)) { # This loop is going to be slow 
+      neighbors <- names(neighborhood(dp_mst, nodes = closest_vertex_names[i], mode = 'all')[[1]])[-1]  
       projection <- NULL
       distance <- NULL
       Z_i <- Z[, i]
@@ -1153,34 +1195,95 @@ project2MST <- function(cds, Projection_Method){
         projection <- rbind(projection, tmp)
         distance <- c(distance, dist(rbind(Z_i, tmp)))
       }
-      if(class(projection) != 'matrix')
+      if(class(projection) != 'matrix') {
         projection <- as.matrix(projection)
-      P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
+      }
+      
+      which_min <- which(distance == min(distance))[1]
+      P[, i] <- projection[which_min, ] #use only the first index to avoid assignment error
+      nearest_edges[i, ] <- c(closest_vertex_names[i], neighbors[which_min])
     }
   }
-    # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
+  # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
 
   colnames(P) <- colnames(Z)
+  
+  browser()
+  dp_mst_list <- decompose.graph(dp_mst)
+  dp_mst <- NULL
+  louvain_component <- pData(cds)$louvain_component
+  if(!is.null(louvain_component)) {
+    for(cur_louvain_comp in sort(unique(louvain_component))) {
+      data_df <- NULL 
+      message('current louvain component is ', cur_louvain_comp)
+      subset_cds_col_names <- colnames(cds)[pData(cds)$louvain_component == cur_louvain_comp]
+      cur_z <- Z[, subset_cds_col_names]
+      cur_p <- P[, subset_cds_col_names]
+      
+      cur_centroid_name <- V(dp_mst_list[[as.numeric(cur_louvain_comp)]])$name
+      
+      cur_nearest_edges <- nearest_edges[subset_cds_col_names, ] # the nearest edge for each cell
+      data_df <- cbind(as.data.frame(t(cur_p)), apply(cur_nearest_edges, 1, sort) %>% t())
+      row.names(data_df) <- colnames(cur_p)
+      colnames(data_df) <- c(paste0("P_", 1:nrow(cur_p)), 'source', 'target')
+      # colnames(data_df)[(ncol(data_df) - (nrow(cur_p) - 1)):ncol(data_df)] <- paste0('S_', 1:nrow(cur_p))
 
-  #reducedDimK(cds) <- P
-  dp <- as.matrix(dist(t(P)))
-  #dp <- as.matrix(dist(t(reducedDimS(cds))))
+      # sort each cell's distance to the source in each principal edge group 
+      data_df$distance_2_source <-  sqrt(colSums((cur_p - cds@reducedDimK[, data_df[, 'source']])^2)) 
+      data_df <- data_df %>% rownames_to_column() %>% mutate(group = paste(source, target, sep = '_')) %>%
+              arrange(group, desc(-distance_2_source)) 
 
-  min_dist = min(dp[dp!=0])
-  #dp[dp == 0] <- min_dist
-  dp <- dp + min_dist #to avoid exact Pseudotime for a lot cells
-  diag(dp) <- 0
+      # add the links from the source to the nearest points belong to the principal edge and also all following connections between those points  
+      data_df <- data_df %>% group_by(group) %>% mutate(new_source = lag(rowname), new_target = rowname) 
+      data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) # use the correct name of the source point  
 
-  cellPairwiseDistances(cds) <- dp
-  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
+      # add the links from the last point on the principal edge to the target point of the edge
+      data_df <- data_df %>% group_by(group) %>% do(add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
+      added_rows <- which(is.na(data_df$new_source) & is.na(data_df$new_target)) # find those rows 
+      data_df <- as.data.frame(data_df, stringsAsFactors = F)
+      data_df <- as.data.frame(as.matrix(data_df), stringsAsFactors = F)
+      data_df[added_rows, c('new_source', 'new_target')] <- data_df[added_rows - 1, c('rowname', 'target')] # assign names for the points  
 
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
-  cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+      # calculate distance between each pair 
+      cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the principal graph points 
+      data_df$graph_dist <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
 
-  cds
-}
+      # create the graph 
+      cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'graph_dist')], directed = FALSE)
+
+      # union with the principal graph 
+      dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_list[[as.numeric(cur_louvain_comp)]])
+
+  #     cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name])
+  #     # if(ncol(subset_cds) > 2000) {
+  #       cell_names <- c(colnames(cur_z), cur_centroid_name)
+  #       tmp <- RANN::nn2(t(cur_p), t(cur_p), min(k + 1, length(subset_cds_col_names) - 1), searchtype = "standard")
+  #       neighborMatrix <- tmp[[1]][, -1]
+  #       distMatrix <- tmp[[2]][, -1]
+  #       links <- monocle:::jaccard_coeff(neighborMatrix, F)
+  #       # links <- links[links[, 1] > 0, ]
+  #       relations <- as.data.frame(links)
+  #       colnames(relations) <- c("from", "to", "weight")
+  #       relations$weight <-  melt(t(distMatrix))[, 3]
+          
+  #       relations$from <- cell_names[relations$from]
+  #       relations$to <- cell_names[relations$to]
+  #       cur_dp_mst <- igraph::graph.data.frame(relations, directed = FALSE)
+  #       dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_list[[cur_louvain_comp]])
+      if(length(decompose.graph(dp_mst)) > 1) {
+        browser()
+      }
+    }
+  } else {
+    stop('Error: please run partitionCells before running project2MST')
+  }
+  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree <- dp_mst
+  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
+  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+
+  # minSpanningTree(cds) <- gp # this may create problem 
+  cds 
+} 
 
 #project points to a line
 projPointOnLine <- function(point, line) {
@@ -1474,6 +1577,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                col="black",
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
+    browser()
     while(sum(sel) < num_roots) {
       ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
       if(!length(ans)) break
@@ -1626,7 +1730,11 @@ multi_component_RGE <- function(cds,
   
   merge_rge_res <- NULL
   max_ncenter <- 0
-  for(cur_comp in unique(louvain_component)) {
+  for(cur_comp in sort(unique(louvain_component))) {
+    if(verbose) {
+      message(paste0('Processing louvain component ', cur_comp))
+    }
+
     X_subset <- X[, louvain_component == cur_comp]
     
     #add other parameters...
