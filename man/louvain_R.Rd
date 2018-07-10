@@ -7,8 +7,8 @@
 \usage{
 louvain_R(X, python_home = system("which python", intern = TRUE),
   partition_method = "CPMVertexPartition", initial_membership = NULL,
-  weights = NULL, res = 0.6, node_sizes = NULL, verbose = FALSE,
-  return_all = FALSE)
+  weights = NULL, res = 0.6, node_sizes = NULL, random_seed = 0L,
+  verbose = FALSE, return_all = FALSE)
 }
 \arguments{
 \item{X}{the dataset upon which to perform umap dimension reduction}
@@ -24,6 +24,8 @@ louvain_R(X, python_home = system("which python", intern = TRUE),
 \item{res}{(double) – Resolution parameter.}
 
 \item{node_sizes}{(list of int, or vertex attribute) – Sizes of nodes are necessary to know the size of communities in aggregate graphs. Usually this is set to 1 for all nodes, but in specific cases this could be changed.}
+
+\item{random_seed}{the seed used by the random number generator in louvain-igraph package}
 
 \item{verbose}{bool (optional, default False)}
 

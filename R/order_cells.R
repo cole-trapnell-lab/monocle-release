@@ -579,7 +579,7 @@ reduceDimension <- function(cds,
 
 #' This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues 
 #'
-#' @description Recently Alex Wolf and colleague first proposed the idea to represent the data with an “abstract partition graph”
+#' Recently Alex Wolf and colleague first proposed the idea to represent the data with an “abstract partition graph”
 #' of clusters identified by Louvain clustering by simply connecting significantly overlapping Louvain clusters (Wolf et al. 2017). 
 #' Similar methods for “abstract partition graph” are also recently developed and applied in analyzing the zebrafish / frog cell 
 #' atlas datasets (Wagner et al. 2018; Briggs et al. 2018). This coarse-graining representation of the data address a few limitations 
@@ -592,11 +592,11 @@ reduceDimension <- function(cds,
 #' UMAP data space. In contrast to the cluster participation method, the principal graph learnt provides an abstraction of the data 
 #' manifold while also preserves the local information from the original data space as it is directly embedded in the original data space. 
 #' In Monocle 3, we uses the clustering_louvain function from the igraph package to perform community detection and implemented an efficient
-#' version of “abstract partition graph” from Alex Wolf. Basically, we first create a design matrix $$X$$ representing the allocation of 
-#' each cell to a particular louvain cluster. The column of $$X$$ represents a louvain cluster while the row of $$X$$ a particular cell. 
-#' $$X_{ij} = 1$$ if cell $$i$$ belongs to cluster $$j$$, otherwise 0. We can further obtain the adjacency matrix $$A$$ of the kNN graph 
-#' used to perform the louvain clustering where $$A_{ij} = 1$$ if cell $$i$$ connects to $$j$$ in the kNN graph. Then the connection 
-#' matrix $$M$$ between each cluster is calculated as, $$M = X‘ x A x X$$. Once $$M$$ is constructed, we can then follow 
+#' version of “abstract partition graph” from Alex Wolf. Basically, we first create a design matrix \eqn{X} representing the allocation of 
+#' each cell to a particular louvain cluster. The column of \eqn{X} represents a louvain cluster while the row of \eqn{X} a particular cell. 
+#' \eqn{X_{ij}}{1} if cell \eqn{i} belongs to cluster \eqn{j}, otherwise 0. We can further obtain the adjacency matrix \eqn{A} of the kNN graph 
+#' used to perform the louvain clustering where \eqn{A_{ij}}{1} if cell \eqn{i} connects to \eqn{j} in the kNN graph. Then the connection 
+#' matrix \eqn{M} between each cluster is calculated as, \eqn{M}{\times{X‘}{A}{X}}. Once \eqn{M} is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 #' 
@@ -1308,6 +1308,7 @@ cal_ncenter <- function(ncells, ncells_limit = 100){
 #' @param y The number of dimension to plot 
 #' @param num_roots Number of roots for the trajectory 
 #' @param pch Size of the principal graph node
+#' @param ... Extra arguments to pass to function
 #' 
 selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
 {

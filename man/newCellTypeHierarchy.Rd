@@ -20,6 +20,16 @@ calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
 
 \item{cth}{CellTypeHierarchy}
 
+\item{method}{Either set to "glmnet" or "markers-only". Default is set to "glmnet".}
+
+\item{rank_prob_ratio}{The probability ratio of the rank.}
+
+\item{min_observations}{Minimum of the observation.}
+
+\item{max_training_samples}{The maximum number of training samples.}
+
+\item{cores}{The number of cores the computer should use when executing this function}
+
 \item{remove_ambig}{a boolean that determines if ambiguous cells should be removed}
 
 \item{remove_unknown}{a boolean that determines whether unknown cells should be removed}

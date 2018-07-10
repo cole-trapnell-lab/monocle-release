@@ -34,7 +34,7 @@
 
 \item{j}{index (or name) to extract or replace}
 
-\item{...}{extra argument passed to the method}
+\item{...}{extra arguments passed to method}
 
 \item{drop}{If TRUE the result is coerced to the lowest possible dimension (see the examples). This only works for extracting elements, not for the replacement.}
 
@@ -54,8 +54,6 @@ The default groups all cells together.}
 \item{remove_outliers}{Whether to remove outliers (using Cook's distance) when estimating dispersions}
 
 \item{cores}{The number of cores to use for computing dispersions}
-
-\item{...}{Additional arguments to be passed to estimateSizeFactorsForMatrix}
 }
 \description{
 Methods for the CellDataSet class

@@ -1800,6 +1800,7 @@ plot_ordering_genes <- function(cds){
 #' @param cell_size The size of the point for each cell
 #' @param cell_name_size the size of cell name labels
 #' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
+#' @param show_group_id A logic flag signifying whether or not you'd like the plot to display the id of each group
 #' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -2920,7 +2921,8 @@ plot_cell_fdl <- function(cds,
 #' @param markers_linear a boolean used to indicate whether you want to scale the markers logarithimically or linearly
 #' @param webGL_filename the name of a file to which you'd to write a webGL file containing the plot
 #' @param image_filename the name of a file to which you'd to write an animated GIF containing the plot
-# #' @param show_backbone whether to show the principal graph used to order the cells
+#' @param obj_filename The filename that you'd like to save the 3d plot to
+#' @param view_matrix A 4x4 matrix signifying your point of view on the 3d plot
 #' @param scale_expr whether to tranform the log expression values to z scores
 #' @param palette the color palette used for plotting
 #' @param width the width of the plot in pixels
@@ -2930,7 +2932,8 @@ plot_cell_fdl <- function(cds,
 #' @param cell_size size of cells, default value is 5
 #' @param backbone_segment_color color of backbone, value is a string containing a hex color value
 #' @param backbone_vertex_color Color for the vertex on the principal graph backbone 
-#' @param cell_alpha Alpha value for the vertex in the 3D plot 
+#' @param cell_alpha Alpha value for the vertex in the 3D plot
+#' @param ... Extra arguments passed to the function 
 #' @return a ggplot2 plot object
 #' @import rgl
 #' @import htmltools
@@ -3389,10 +3392,12 @@ plot_genes_spatial_lags <- function(cds, markers,
 #' @param markers a gene name or gene id to use for setting the size of each cell in the plot
 #' @param method a character string specifying the method (the default 'local_G' or 'local_moran') for detecting local spatial statistics along the principal graph embedded in the low dimensional space.
 #' @param log a logic value to determine whether or not we need to log the gene expression
-#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
-#' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+# #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+# #' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
+# #' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
 #' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
+#' @param tabulate 
+#' @param zero.policy A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.
 #' @export
 plot_local_spatial_statistics <- function(cds, markers, 
                                           method = 'local_G', 
@@ -3489,10 +3494,15 @@ plot_local_spatial_statistics <- function(cds, markers,
 }
 
 #' Show the gene pair expression correlation across low dimensional embedding 
+#' 
+#' @param cds The cellDataSet you'd like to plot the genes from
+#' @param x The gene_short_name of the first gene in the gene pair expression 
+#' @param y The gene_short_name of the second gene in the gene pair expression
+#' @param log A logic flag determining whether or not to log the gene expressions
 plot_gene_pair_spatial_correlation <- function(cds, x, y, log = T) {
   # Variables to use in the correlation: 
   x_id <- row.names(subset(fData(cds), gene_short_name == x))
-  y_id <- row.names(subset(fData(cds), gene_short_name == x))
+  y_id <- row.names(subset(fData(cds), gene_short_name == y))
   x <- as.numeric(cds@assayData$exprs[x_id, ])
   y <- as.numeric(cds@assayData$exprs[y_id, ])
   

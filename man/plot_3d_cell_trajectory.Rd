@@ -39,13 +39,19 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 
 \item{image_filename}{the name of a file to which you'd to write an animated GIF containing the plot}
 
+\item{obj_filename}{The filename that you'd like to save the 3d plot to}
+
 \item{scale_expr}{whether to tranform the log expression values to z scores}
 
 \item{width}{the width of the plot in pixels}
 
 \item{height}{the height of the plot in pixels}
 
+\item{view_matrix}{A 4x4 matrix signifying your point of view on the 3d plot}
+
 \item{useNULL_GLdev}{if TRUE, don't show the plot on the screen (to be used with webGL or movie output)}
+
+\item{...}{Extra arguments passed to the function}
 }
 \value{
 a ggplot2 plot object

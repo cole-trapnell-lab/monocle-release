@@ -27,6 +27,8 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 
 \item{min_expr}{the minimum (untransformed) expression level to use in plotted the genes.}
 
+\item{show_group_id}{A logic flag signifying whether or not you'd like the plot to display the id of each group}
+
 \item{...}{additional arguments passed into the scale_color_viridis function}
 }
 \value{

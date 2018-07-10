@@ -6,6 +6,7 @@ cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
   #print (unique(pData(cds_subset)$Cluster))
+  pb1 <- txtProgressBar(max = length(V(cth@classificationTree)), style = 3, file = stderr(), min = 0)
   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
     
     child_cell_class_func <- V(cth@classificationTree) [ child ]$classify_func[[1]]
@@ -24,6 +25,7 @@ cth_classifier_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
       next_nodes <- c(next_nodes, cell_type_name)
     }
     #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
+    setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
   }
   
   if (length(next_nodes) == 1){
@@ -47,6 +49,7 @@ classifyCellsHelperCds <- function(cds_subset, cth, frequency_thresh){
 
 count_cell_conflicts <- function(cth, gate_res){
   conflicts = data.frame()
+  pb2 <- txtProgressBar(max = length(seq(2, length(gate_res) - 1)), style = 3, file = stderr(), min = 0)
   for (i in seq(2, length(gate_res) - 1)){ # Skip the root
     for (j in seq(i + 1, length(gate_res))){
       if (i < j){
@@ -55,6 +58,7 @@ count_cell_conflicts <- function(cth, gate_res){
         
       }
     }
+    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
   return(conflicts)
 }
@@ -101,6 +105,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
   names(ambiguities) = row.names(gate_res[[2]])
   
   # First, mark off the ambiguous cells:
+  pb3 <- txtProgressBar(max = length(V(cth@classificationTree)), style = 3, file = stderr(), min = 0)
   for (v in V(cth@classificationTree)){
     if (length(V(cth@classificationTree) [suppressWarnings(nei(v, mode="out")) ]) > 1){
       type_res <- gate_res[ V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]$name]
@@ -110,6 +115,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
       tryCatch({ambiguities[Matrix::rowSums(mat) > 1] = TRUE}, error = function(e) {})
       
     }
+    setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
   }
  
   
@@ -117,6 +123,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
   names(assignments) = row.names(gate_res[[2]])
   
   fill_in_assignments <- function(curr_assignments, cth, v, gate_res, max_depth=NULL){
+    pb4 <- txtProgressBar(max = length(V(cth@classificationTree)), style = 3, file = stderr(), min = 0)
     for (child in V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]){
       # type_res <- gate_res[[V(cth@classificationTree) [ child ]$name]]
       # if (V(cth@classificationTree)[v]$name != "root")
@@ -129,7 +136,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
         type_res <- gate_res[parents]
         if (length(type_res) > 1){
           mat <- do.call("cBind",type_res)
-          type_res = apply(mat, 1, function(x) { prod(x) })
+          type_res = pbapply(mat, 1, function(x) { prod(x) })
         }else{
           type_res = type_res[[1]]
         }
@@ -143,6 +150,7 @@ cth_classifier_cell <- function(cth, gate_res, curr_node=1, max_depth = NULL) {
           curr_assignments = fill_in_assignments(curr_assignments, cth, child, gate_res)
         }
       }
+      setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
     }
     return (curr_assignments)
   }
@@ -193,6 +201,7 @@ classifyCellsHelperCell <- function(cds, cth){
   #next_node_list <- rep(list(), ncol(cds)) 
   
   gate_res <- list()
+  pb5 <- txtProgressBar(max = length(V(cth@classificationTree)), style = 3, file = stderr(), min = 0)
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
   
@@ -212,6 +221,7 @@ classifyCellsHelperCell <- function(cds, cth){
     row.names(type_res) = row.names(pData(cds))
     colnames(type_res) =V(cth@classificationTree) [ v ]$name
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
+    setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
   }
   
   CellType = cth_classifier_cell(cth, gate_res)
@@ -389,10 +399,12 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
     #obs_prob = 1/obs_counts
     target_obs_per_cell_type =  ceiling(max_training_samples / length(obs_counts))
     training_sample = c()
+    pb6 <- txtProgressBar(max = length(names(obs_counts)), file = stderr(), style = 3, min = 0)
     for(i in names(obs_counts)){
       num_obs_for_type_i = min(target_obs_per_cell_type, obs_counts[i])
       obs_for_type_i = sample(which(ctf_cell_type == i), num_obs_for_type_i)
       training_sample = append(training_sample, obs_for_type_i)
+      setTxtProgressBar(pb = pb6, value = pb6$getVal() + 1)
     }
     training_sample = ctf_cell_type[training_sample]
   }else{
@@ -436,9 +448,11 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
   y = droplevels(training_sample)
   
   candidate_model_genes = c()
+  pb7 <- txtProgressBar(max = length(levels(y)), file = stderr(), style = 3, min = 0)
   for (cell_type in levels(y)){
     genes_in_cell_type = names(which(Matrix::rowSums(exprs(cds_sub[,y == cell_type]) > 0) > 0.01 * sum(y == cell_type)))
     candidate_model_genes = append(candidate_model_genes, genes_in_cell_type)
+    setTxtProgressBar(pb = pb7, value = pb7$getVal() + 1)
   }
   candidate_model_genes = unique(candidate_model_genes)
   #candidate_model_genes = names(which(Matrix::rowSums(exprs(cds_sub) > 0) > 0))
@@ -562,11 +576,13 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
   #colnames(predictions) = "CellType"
   #row.names(predictions) = rownames(x)
   #predictions = model.matrix(~.+0,predictions)
-
+  
+  pb8 <- txtProgressBar(max = length(predictions), style = 3, file = stderr(), min = 0)
   for (i in 1:length(predictions)){
     p = as(as(predictions[[i]], "sparseVector"), "sparseMatrix")
     row.names(p) = row.names(pData(cds))
     predictions[[i]] = p
+    setTxtProgressBar(pb = pb8, value = pb8$getVal() + 1)
   }
   
   return(predictions)
@@ -587,6 +603,7 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
 classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
   
   gate_res <- list()
+  pb9 <- txtProgressBar(max = length(V(cth@classificationTree)), file = stderr(), style = 3, min = 0)
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
     
@@ -606,9 +623,11 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
     row.names(type_res) = row.names(pData(cds))
     colnames(type_res) =V(cth@classificationTree) [ v ]$name
     gate_res[[ V(cth@classificationTree) [ v ]$name]] <- type_res
+    setTxtProgressBar(pb = pb9, value = pb9$getVal() + 1)
   }
   
   imputed_gate_res <- list()
+  pb10 <- txtProgressBar(max = length(V(cth@classificationTree)), file = stderr(), style = 3, min = 0)
   for (v in V(cth@classificationTree)){
     child_cell_types = V(cth@classificationTree) [ suppressWarnings(nei(v, mode="out")) ]$name
     if (length(child_cell_types) > 0){
@@ -619,6 +638,7 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
                                       cores=cores)
       imputed_gate_res = append(imputed_gate_res, new_gate_res)
     }
+    setTxtProgressBar(pb = pb10, value = pb10$getValue() + 1)
   }
   
   cds_pdata <- dplyr::group_by_(dplyr::select_(rownames_to_column(pData(cds)), "rowname"), "rowname") 
@@ -652,6 +672,12 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
 #' 
 #' @describeIn newCellTypeHierarchy Add a cell type to a CellTypeHierarchy
 #' @param cds The CelllDataSet you want to classify
+#' 
+#' @param method Either set to "glmnet" or "markers-only". Default is set to "glmnet".
+#' @param rank_prob_ratio The probability ratio of the rank.
+#' @param min_observations Minimum of the observation.
+#' @param max_training_samples The maximum number of training samples.
+#' @param cores The number of cores the computer should use when executing this function
 #' @param ... character strings that you wish to pass to dplyr's group_by_ routine
 #' @importFrom dplyr select_ do group_by_ inner_join %>%
 #' @importFrom tibble rownames_to_column
@@ -733,6 +759,7 @@ cth_classifier_cluster_cds <- function(cds_subset, cth, curr_node, frequency_thr
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()
   print (paste ("Cluster", unique(pData(cds_subset)$Cluster)))
+  pb11 <- txtProgressBar(max = length(V(cth@classificationTree)), file = stderr(), style = 3, min = 0)
   for (child in V(cth@classificationTree) [ suppressWarnings(nei(curr_node, mode="out")) ]){
     
     #child_cell_class_func <- V(cth@classificationTree) [ child ]$classify_func[[1]]
@@ -755,6 +782,7 @@ cth_classifier_cluster_cds <- function(cds_subset, cth, curr_node, frequency_thr
       }
     }
     #print (paste(V(cth@classificationTree) [ child ]$name, ":", sum(type_res),  " of ", length(type_res) ))
+    setTxtProgressBar(pb = pb11, value = pb11$getVal() + 1)
   }
   
   if (length(next_nodes) == 1){
@@ -866,10 +894,10 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
   class_df <- class_df[,-1]
   class_df <- t(as.matrix(class_df))
   
-  marker_specificities <- lapply(1:ncol(class_df), function(cell_type_i){
+  marker_specificities <- pblapply(1:ncol(class_df), function(cell_type_i){
     perfect_specificity <- rep(0.0, ncol(class_df))
     perfect_specificity[cell_type_i] <- 1.0
-    apply(class_df, 1, function(x) { 
+    pbapply(class_df, 1, function(x) { 
       if (sum(x) > 0) 1 - JSdistVec(makeprobsvec(x), perfect_specificity)
       else 0
     })
@@ -951,10 +979,12 @@ markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FA
     
     message(paste("Least frequent cell type is '", least_frequent_type, "', randomly selecting ", n_cells, " cells for marker identification test", sep=""))
     selected_cells <- c()
-
+    
+    pb12 <- txtProgressBar(max = length(names(cell_type_counts)), file = stderr(), style = 3, min = 0)
     for (cell_type in names(cell_type_counts)){
       cell_type_sample <- sample_n(rownames_to_column(subset(pData(cds), CellType == cell_type)), n_cells)$rowname
       selected_cells <- c(selected_cells, cell_type_sample)
+      setTxtProgressBar(pb = pb12, value = pb12$getVal() + 1)
     }
     
     cds <- cds[,selected_cells]

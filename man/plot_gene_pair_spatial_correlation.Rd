@@ -6,6 +6,15 @@
 \usage{
 plot_gene_pair_spatial_correlation(cds, x, y, log = T)
 }
+\arguments{
+\item{cds}{The cellDataSet you'd like to plot the genes from}
+
+\item{x}{The gene_short_name of the first gene in the gene pair expression}
+
+\item{y}{The gene_short_name of the second gene in the gene pair expression}
+
+\item{log}{A logic flag determining whether or not to log the gene expressions}
+}
 \description{
 Show the gene pair expression correlation across low dimensional embedding
 }

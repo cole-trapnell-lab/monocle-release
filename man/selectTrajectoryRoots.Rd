@@ -17,6 +17,8 @@ selectTrajectoryRoots(cds, x = 1, y = 2, num_roots = NULL, pch = 19,
 \item{num_roots}{Number of roots for the trajectory}
 
 \item{pch}{Size of the principal graph node}
+
+\item{...}{Extra arguments to pass to function}
 }
 \description{
 Select the roots of the principal graph

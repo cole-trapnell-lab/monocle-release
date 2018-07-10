@@ -16,13 +16,11 @@ plot_local_spatial_statistics(cds, markers, method = "local_G", log = TRUE,
 
 \item{log}{a logic value to determine whether or not we need to log the gene expression}
 
+\item{tabulate}{}
+
+\item{zero.policy}{A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.}
+
 \item{return_all}{A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned}
-
-\item{color_by}{the cell attribute (e.g. the column of pData(cds)) to map to each cell's color}
-
-\item{quiet}{default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed}
-
-\item{labels}{character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence}
 }
 \description{
 plot the local moran's I or the local g for the cells

@@ -14,7 +14,7 @@ setValidity( "CellDataSet", function( object ) {
 #' @param x the CellDataset object 
 #' @param i index (or name) to extract or replace
 #' @param j index (or name) to extract or replace
-#' @param ... extra argument passed to the method 
+#' @param ... extra arguments passed to method 
 #' @param drop If TRUE the result is coerced to the lowest possible dimension (see the examples). This only works for extracting elements, not for the replacement.
 #' @docType methods
 #' @rdname extract-methods
@@ -91,7 +91,6 @@ setReplaceMethod("sizeFactors", signature(object="CellDataSet", value="numeric")
 
 #' @rdname CellDataSet-methods
 #' @param locfunc A function applied to the geometric-mean-scaled expression values to derive the size factor.
-#' @param ... Additional arguments to be passed to estimateSizeFactorsForMatrix
 #' @importFrom BiocGenerics sizeFactors<-
 #' @importFrom BiocGenerics estimateSizeFactors
 #' @aliases CellDataSet,ANY,ANY-method

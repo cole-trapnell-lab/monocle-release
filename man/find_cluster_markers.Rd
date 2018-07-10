@@ -49,10 +49,10 @@ distribution ( Q ) of each gene by assigning probability 1 to one particular clu
 other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
 to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate
 the specificity score as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
-The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions ($P,Q$).
-The Jensen-Shannon divergence, defined for two distributions $P$ and $Q$ by
-$JSD(P,Q) = \frac{1}{2}D(P\|M) + \frac{1}{2}D(Q\|M)$
-where $M = \frac{1}{2}(P+Q)$ and $D(A\|B)$ is the Kullback-Leibler divergence.
+The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions (P,Q).
+The Jensen-Shannon divergence, defined for two distributions P and Q by
+\eqn{JSD(P,Q)}{\sum{\frac{1}{2}D(P|M)}{\frac{1}{2}D(Q|M)}}
+where \eqn{M}{\frac{1}{2}(\sum{P}{Q})} and \eqn{D(A|B)} is the Kullback-Leibler divergence.
 }
 \seealso{
 \code{\link{principalGraphTest}} principalGraphTest

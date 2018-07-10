@@ -2,10 +2,19 @@
 % Please edit documentation in R/differential_expression.R
 \name{calculateLW}
 \alias{calculateLW}
-\title{Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object}
+\title{Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object}
 \usage{
 calculateLW(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE)
 }
+\arguments{
+\item{cds}{The cellDataSet object where the neighbors list is calculated from}
+
+\item{verbose}{A logic flag that determines whether or not to print execution details}
+
+\item{k}{The maximum number of nearest neighbors to compute}
+
+\item{return_sparse_matrix}{A logic flag that controls whether or not to return a sparse matrix}
+}
 \description{
-Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object
+Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
 }

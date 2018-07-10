@@ -207,7 +207,11 @@ differentialGeneTest <- function(cds,
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-#' Function to calculate the a neighbours list with spatial weights for the chosen coding scheme from a cell dataset object
+#' Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
+#' @param cds The cellDataSet object where the neighbors list is calculated from 
+#' @param verbose A logic flag that determines whether or not to print execution details
+#' @param  k The maximum number of nearest neighbors to compute
+#' @param return_sparse_matrix A logic flag that controls whether or not to return a sparse matrix
 calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
@@ -314,7 +318,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 #' lineage models as implemented by the \code{VGAM} package.
 #'
 #' @param cds a CellDataSet object upon which to perform this operation
-#' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)
+# #' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)
 #' @param relative_expr Whether to transform expression into relative values.
 #' @param k Number of nearest neighbors used for building the kNN graph which is passed to knn2nb function during the Moran's I (Geary's C) test procedure.
 #' @param method a character string specifying the method (the default 'Moran_I' or 'Geary_C') for detecting significant genes showing correlated genes along the principal graph embedded in the low dimensional space.
@@ -522,7 +526,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 
 #' Find marker genes for each group of cells
 #'
-#' Tests each gene for differential expression as a function of pseudotime
+#' @description Tests each gene for differential expression as a function of pseudotime
 #' or according to other covariates as specified. \code{differentialGeneTest} is
 #' Monocle's main differential analysis routine.
 #' It accepts a CellDataSet and two model formulae as input, which specify generalized
@@ -533,10 +537,10 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
 #' to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate
 #' the specificity score as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
-#' The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions ($P,Q$).
-#' The Jensen-Shannon divergence, defined for two distributions $P$ and $Q$ by
-#' $JSD(P,Q) = \frac{1}{2}D(P\|M) + \frac{1}{2}D(Q\|M)$
-#' where $M = \frac{1}{2}(P+Q)$ and $D(A\|B)$ is the Kullback-Leibler divergence.
+#' The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions (P,Q).
+#' The Jensen-Shannon divergence, defined for two distributions P and Q by
+#' \eqn{JSD(P,Q)}{\sum{\frac{1}{2}D(P|M)}{\frac{1}{2}D(Q|M)}}
+#' where \eqn{M}{\frac{1}{2}(\sum{P}{Q})} and \eqn{D(A|B)} is the Kullback-Leibler divergence.
 
 #' @seealso \code{\link{principalGraphTest}} principalGraphTest
 #' @param cds a CellDataSet object upon which to perform this operation
