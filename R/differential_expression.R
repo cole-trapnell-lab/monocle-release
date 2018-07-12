@@ -592,7 +592,7 @@ find_cluster_markers <- function(cds,
     exprs_mat$Gene <- as.character(exprs_mat$Gene)
     exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
 
-    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
+    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed = sum(Expression > lower_threshold))
 
     ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
     ExpVal$Group <- ExpVal$Group
@@ -628,5 +628,5 @@ find_cluster_markers <- function(cds,
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
   }
 
-  specificity_res %>% select(colnames(cluster_marker_res)[1:4], 'specificity', everything())
+  specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed", "percentage", everything())
 }

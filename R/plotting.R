@@ -3253,9 +3253,9 @@ plot_markers_by_group <- function(cds,
   
   # + scale_color_gradient(low ="blue",   high = "red", limits=c(1, max(ExpVal$mean) ))
   if(flip_percentage_mean){
-    g <- ggplot(ExpVal, aes(y = Gene,  x = Group)) + geom_point(aes(colour = percentage,  size = mean)) + scale_size(range = c(0, max.size)) + scale_color_viridis(name = 'log(mean + 0.1)')
+    g <- ggplot(ExpVal, aes(y = Gene,  x = Group)) + geom_point(aes(colour = percentage,  size = mean)) + scale_color_viridis(name = 'percentage') + scale_size(name = 'log(mean + 0.1)', range = c(0, max.size))
   } else {
-    g <- ggplot(ExpVal, aes(y = Gene,  x = Group)) + geom_point(aes(colour = mean,  size = percentage)) + scale_size(range = c(0, max.size)) + scale_color_viridis(name = 'percentage')
+    g <- ggplot(ExpVal, aes(y = Gene,  x = Group)) + geom_point(aes(colour = mean,  size = percentage)) + scale_color_viridis(name = 'log(mean + 0.1)') + scale_size(name = 'percentage', range = c(0, max.size))
   }
   
   g <- g + xlab("Cluster") + ylab("Gene") + monocle_theme_opts() + xlab("Cluster") + ylab("Gene") + 
