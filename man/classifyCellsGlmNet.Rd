@@ -14,7 +14,7 @@ classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
 
 \item{rank_prob_ratio}{The probability ratio of the rank}
 
-\item{min_observations}{Minimun of the observation}
+\item{min_observations}{Minimum of the observation}
 
 \item{max_training_samples}{Maximum training samples}
 

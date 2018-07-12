@@ -5,6 +5,7 @@
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object
+#' @importFrom pbapply pbapply
 #' @export
 setOrderingFilter <- function(cds, ordering_genes){
   fData(cds)$use_for_ordering <- row.names(fData(cds)) %in% ordering_genes
@@ -1018,7 +1019,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
     num_blocks = ceiling(ncol(data_matrix) / block_size)
-    pb5 <- txtProgressBar(max = length(num_blocks), file = stderr(), style = 3, min = 0)
+    pb5 <- txtProgressBar(max = length(num_blocks), file = "", style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = data_matrix[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1026,15 +1027,16 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
         block = data_matrix[,((((i-1) * block_size)+1):(ncol(data_matrix)))]
       }
       distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
-      closest_vertex_for_block <- pbapply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       closest_vertex = append(closest_vertex, closest_vertex_for_block)
       setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
     }
+    close(pb5)
   }else{
     num_blocks = ceiling(ncol(target_points) / block_size)
     dist_to_closest_vertex = rep(Inf, length(ncol(data_matrix)))
     closest_vertex = rep(NA, length(ncol(data_matrix)))
-    pb6 <- txtProgressBar(max = length(num_blocks), file = stderr(), style = 3, min = 0)
+    pb6 <- txtProgressBar(max = length(num_blocks), file = "", style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1042,7 +1044,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
         block = target_points[,((((i-1) * block_size)+1):(ncol(target_points)))]
       }
       distances_Z_to_Y <- proxy::dist(t(data_matrix), t(block))
-      closest_vertex_for_block <- pbapply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
+      closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       new_block_distances = distances_Z_to_Y[cbind(1:nrow(distances_Z_to_Y), closest_vertex_for_block)]
       updated_nearest_idx = which(new_block_distances < dist_to_closest_vertex)
       closest_vertex[updated_nearest_idx] = closest_vertex_for_block[updated_nearest_idx] + (i-1) * block_size
@@ -1051,6 +1053,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       setTxtProgressBar(pb = pb6, value = pb6$getVal() + 1)
     }
   }
+  close(pb6)
   stopifnot(length(closest_vertex) == ncol(data_matrix))
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   return (closest_vertex)
@@ -1100,7 +1103,7 @@ project2MST <- function(cds, Projection_Method){
   }
   else{
     P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
-    pb1 <- txtProgressBar(max = length(closest_vertex), file = stderr(), style = 3, min = 0)
+    pb1 <- txtProgressBar(max = length(closest_vertex), file = "", style = 3, min = 0)
     for(i in 1:length(closest_vertex)) {
       neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ])
       projection <- NULL
@@ -1122,6 +1125,7 @@ project2MST <- function(cds, Projection_Method){
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
       setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
     }
+    close(pb1)
   }
     # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
 
@@ -1236,7 +1240,7 @@ traverseTree <- function(g, starting_cell, end_cells){
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
-  pb2 <- txtProgressBar(max = length(end_cells), file = stderr(), style = 3, min = 0)
+  pb2 <- txtProgressBar(max = length(end_cells), file = "", style = 3, min = 0)
   for(end_cell in end_cells) {
     traverse_res <- traverseTree(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
@@ -1244,7 +1248,7 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
     subset_cell <- c(subset_cell, path_cells)
     setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
-
+  close(pb2)
   subset_cell <- unique(subset_cell)
   cds_subset <- SubSet_cds(cds, subset_cell)
 
@@ -1314,11 +1318,11 @@ reverseEmbeddingCDS <- function(cds) {
   cds_subset <- cds[row.names(FM), ]
   
   #make every value larger than 1: 
-  reverse_embedding_data <- t(pbapply(reverse_embedding_data, 1, function(x) x + abs(min(x))))
+  reverse_embedding_data <- t(apply(reverse_embedding_data, 1, function(x) x + abs(min(x))))
   
   #rescale to the original scale: 
   raw_data <- as.matrix(exprs(cds)[row.names(FM), ]) 
-  reverse_embedding_data <- reverse_embedding_data * (pbapply(raw_data, 1, function(x) quantile(x, 0.99)) ) / pbapply(reverse_embedding_data, 1, max)
+  reverse_embedding_data <- reverse_embedding_data * (apply(raw_data, 1, function(x) quantile(x, 0.99)) ) / apply(reverse_embedding_data, 1, max)
 
   Biobase::exprs(cds_subset) <- reverse_embedding_data
   
@@ -1392,7 +1396,6 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   }
   #xy <- xy.coords(x, y); x <- xy$x; y <- xy$y
   sel <- rep(FALSE, nrow(ica_space_df))
-  
   if (use_3d){
     open3d(windowRect=c(0,0,1024,1024))
     segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5,6,7,8)])), ncol=3, byrow=T), lwd=2, 
@@ -1409,7 +1412,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   }else{
     plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel]);
     segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
-  
+    
     while(sum(sel) < num_roots) {
       ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
       if(!length(ans)) break
@@ -1441,7 +1444,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
   dp_mst <- NULL 
   pr_graph_cell_proj_closest_vertex <- NULL 
   cell_name_vec <- NULL
-  pb3 <- txtProgressBar(max = length(unique(louvain_component)), style = 3, file = stderr(), min = 0)
+  pb3 <- txtProgressBar(max = length(unique(louvain_component)), style = 3, file = "", min = 0)
   for(cur_comp in unique(louvain_component)) {
     setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
     X_subset <- X[, louvain_component == cur_comp]
@@ -1514,7 +1517,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
     
     
   }
-  
+  close(pb3)
   row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
   
   ddrtree_res_W <- ddrtree_res$W
@@ -1544,7 +1547,7 @@ connectTips <- function(pd,
                         kmean_num = 5, 
                         verbose = FALSE,
                         ...) {
-  tmp <- matrix(pbapply(R, 1, which.max))
+  tmp <- matrix(apply(R, 1, which.max))
   
   row.names(tmp) <- colnames(reducedDimS_old)
   
@@ -1569,7 +1572,7 @@ connectTips <- function(pd,
   mst_g <- mst_g_old
   diameter_dis <- diameter(mst_g_old)
   reducedDimK_df <- reducedDimK_old
-  pb4 <- txtProgressBar(max = length(nrow(valid_connection)), file = stderr(), style = 3, min = 0)
+  pb4 <- txtProgressBar(max = length(nrow(valid_connection)), file = "", style = 3, min = 0)
   for(i in 1:nrow(valid_connection)) {
     edge_vec <- unique(louvain_res$optim_res$membership)[valid_connection[i, ]]
     
@@ -1592,6 +1595,6 @@ connectTips <- function(pd,
     }
     setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
   }
-  
+  close(pb4)
   list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)
 }

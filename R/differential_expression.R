@@ -369,7 +369,7 @@ principalGraphTest <- function(cds,
     error = function(e) {
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
-  }, alternative = alternative, method = method, mc.cores = cores)
+  }, alternative = alternative, method = method, mc.cores = cores, ignore.interactive = TRUE)
   
   if(verbose) {
     message("returning results: ...")
