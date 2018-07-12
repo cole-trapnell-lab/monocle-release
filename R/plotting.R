@@ -1047,7 +1047,7 @@ plot_clusters<-function(cds,
 #   ##adjust x-axis labels
 #   g2=g2+theme(axis.text.x=element_text(angle=-90, hjust=0))
 #   
-#   #write(paste(c("Length of heatscale is :", length(heatscale))), stderr())
+#   #write(paste(c("Length of heatscale is :", length(heatscale))), "")
 #   
 #   if(is.function(rescaling))
 #   {
@@ -1072,7 +1072,7 @@ plot_clusters<-function(cds,
 #     if (is.null(heatMidpoint))
 #     {
 #       heatMidpoint = (max(m) + min(m)) / 2.0
-#       #write(heatMidpoint, stderr())
+#       #write(heatMidpoint, "")
 #     }
 #     g2 <- g2 + theme(panel.border = element_blank())
 #     g2 <- g2 + scale_fill_gradient2(low=heatscale[1], mid=heatscale[2], high=heatscale[3], midpoint=heatMidpoint, name=legendTitle)
@@ -1154,7 +1154,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   
 
   #remove genes with no expression in any condition
-  m=m[!pbapply(m,1,sum)==0,]
+  m=m[!apply(m,1,sum)==0,]
   
   norm_method <- match.arg(norm_method)
   
@@ -1167,7 +1167,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   }
   
   # Row-center the data.
-  m=m[!pbapply(m,1,sd)==0,]
+  m=m[!apply(m,1,sd)==0,]
   m=Matrix::t(scale(Matrix::t(m),center=TRUE))
   m=m[is.na(row.names(m)) == FALSE,]
   m[is.nan(m)] = 0
@@ -1414,12 +1414,12 @@ plot_genes_branched_pseudotime <- function (cds,
                                             relative_expr = T, new_data = new_data)
   colnames(full_model_expectation) <- colnames(cds_subset)
   
-  cds_exprs$full_model_expectation <- pbapply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
+  cds_exprs$full_model_expectation <- apply(cds_exprs,1, function(x) full_model_expectation[x[2], x[1]])
   if(!is.null(reducedModelFormulaStr)){
     reduced_model_expectation <- genSmoothCurves(cds_subset, cores=1, trend_formula = reducedModelFormulaStr,
                                                  relative_expr = T, new_data = new_data)
     colnames(reduced_model_expectation) <- colnames(cds_subset)
-    cds_exprs$reduced_model_expectation <- pbapply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
+    cds_exprs$reduced_model_expectation <- apply(cds_exprs,1, function(x) reduced_model_expectation[x[2], x[1]])
   }
   
   # FIXME: If you want to show the bifurcation time for each gene, this function
@@ -1644,7 +1644,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   
   heatmap_matrix <- cbind(BranchA_exprs[, (col_gap_ind - 1):1], BranchB_exprs)
   
-  heatmap_matrix=heatmap_matrix[!pbapply(heatmap_matrix, 1, sd)==0,]
+  heatmap_matrix=heatmap_matrix[!apply(heatmap_matrix, 1, sd)==0,]
   heatmap_matrix=Matrix::t(scale(Matrix::t(heatmap_matrix),center=TRUE))
   heatmap_matrix=heatmap_matrix[is.na(row.names(heatmap_matrix)) == FALSE,]
   heatmap_matrix[is.nan(heatmap_matrix)] = 0
@@ -2221,13 +2221,17 @@ plot_complex_cell_trajectory <- function(cds,
     layout_coord_ori <- layout_coord 
     row.names(layout_coord) <- V(dp_mst)$name
     
+<<<<<<< 608500e6f447f967264d065b7a75ea1b05740d3c
     branch_points_cells <- cds@auxOrderingData[[cds@rge_method]]$branch_points
+=======
+    branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+>>>>>>> removed unnecessary progress bars, added bar to relative2abs
     terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
     from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
-    order_path_len <- order(unlist(pblapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
+    order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
     
     modified_vec <- c()
-    pb1 <- txtProgressBar(max = length(order_path_len), file = stderr(), style = 3, min = 0)
+    pb1 <- txtProgressBar(max = length(order_path_len), file = "", style = 3, min = 0)
     for(order_i in order_path_len) {
       curr_vertex <- from_root_to_branch_points[[order_i]]$name
       curr_vertex <- setdiff(curr_vertex, modified_vec)
@@ -2245,6 +2249,7 @@ plot_complex_cell_trajectory <- function(cds,
       modified_vec <- c(modified_vec, curr_vertex)
       setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
     }
+    close(pb1)
   }
   # layout_coord <- layout_with_fr(dp_mst) # , root=root_cell
  
@@ -2438,7 +2443,7 @@ plot_multiple_branches_heatmap <- function(cds,
   g <- cds@minSpanningTree
   m <- NULL
   # branche_cell_num <- c()
-  pb2 <- txtProgressBar(max = length(branches), file = stderr(), style = 3, min = 0)
+  pb2 <- txtProgressBar(max = length(branches), file = "", style = 3, min = 0)
   for(branch_in in branches) {
     branches_cells <- row.names(subset(pData(cds), State == branch_in))
     root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
@@ -2471,7 +2476,7 @@ plot_multiple_branches_heatmap <- function(cds,
       m <- cbind(m, tmp)
     setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
-  
+  close(pb2)
   #remove genes with no expression in any condition
   m=m[!apply(m,1,sum)==0,]
   
@@ -2655,7 +2660,7 @@ plot_multiple_branches_pseudotime <- function(cds,
     m <- NULL
     cds_exprs <- NULL 
     # branche_cell_num <- c()
-    pb3 <- txtProgressBar(max = length(branches), file = stderr(), style = 3, min = 0)
+    pb3 <- txtProgressBar(max = length(branches), file = "", style = 3, min = 0)
     for(branch_in in branches) {
         branches_cells <- row.names(subset(pData(cds), State == branch_in))
         root_state <- subset(pData(cds), Pseudotime == 0)[, 'State']
@@ -2711,7 +2716,7 @@ plot_multiple_branches_pseudotime <- function(cds,
             m <- cbind(m, tmp)
         setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
       }
-    
+      close(pb3)
     #remove genes with no expression in any condition
     m=m[!apply(m,1,sum)==0,]
     
@@ -3238,14 +3243,15 @@ plot_markers_by_group <- function(cds,
     
   } else if(ordering_type == 'maximal_on_diag'){
     
-    order_mat <- t(pbapply(res, major_axis, order))
+    order_mat <- t(apply(res, major_axis, order))
     max_ind_vec <- c()
-    pb4 <- txtProgressBar(max = length(nrow(order_mat)), file = stderr(), style = 3, min = 0)
+    pb4 <- txtProgressBar(max = length(nrow(order_mat)), file = "", style = 3, min = 0)
     for(i in 1:nrow(order_mat)) {
       tmp <- max(which(!(order_mat[i, ] %in% max_ind_vec)))
       max_ind_vec <- c(max_ind_vec, order_mat[i, tmp])
       setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
     }
+    close(pb4)
     max_ind_vec <- max_ind_vec[!is.na(max_ind_vec)]
     
     if(major_axis == 1){

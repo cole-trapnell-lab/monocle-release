@@ -7,7 +7,7 @@ makeprobsvec<-function(p){
 
 # Calculate the probability matrix for a relative abundance matrix
 makeprobs<-function(a){
-  colSums<-pbapply(a,2,sum)
+  colSums<-apply(a,2,sum)
   b<-Matrix::t(Matrix::t(a)/colSums)
   b[is.na(b)] = 0
   b
@@ -128,7 +128,7 @@ dmode <- function(x, breaks="Sturges") {
 
 estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
   #apply each column
-  unlist(pbapply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))))) #avoid multiple output
+  unlist(apply(relative_expr_matrix, 2, function(relative_expr) 10^mean(dmode(log10(relative_expr[relative_expr > relative_expr_thresh]))))) #avoid multiple output
 }
 
 #' Calibrate_per_cell_total_proposal 
@@ -137,6 +137,7 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' @param expected_capture_rate The fraction of mRNAs captured as cDNAs
 #' @param method the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)
 #' @importFrom stats ecdf
+#' @importFrom pbapply pblappy
 calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate, method = c('num_genes', 'tpm_fraction') ){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
 
@@ -191,6 +192,7 @@ calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate,
 #' @importFrom plyr ddply .
 #' @importFrom stats optim
 #' @importFrom parallel mcmapply mclapply detectCores
+#' @importFrom pbapply pbapply pblapply
 #' @importFrom pbmcapply pbmcmapply
 #' @examples
 #' \dontrun{
@@ -236,7 +238,7 @@ relative2abs <- function(relative_cds,
                          detection_threshold)
     if (verbose) 
       message("Performing robust linear regression for each cell based on the spikein data...")
-    molModels <- pbapply(ERCC_controls, 2, function(cell_exprs, 
+    molModels <- apply(ERCC_controls, 2, function(cell_exprs, 
                                                   input.ERCC.annotation, valid_ids) {
       spike_df <- input.ERCC.annotation
       spike_df <- cbind(spike_df, cell_exprs[row.names(spike_df)])
@@ -265,7 +267,7 @@ relative2abs <- function(relative_cds,
     }, ERCC_annotation, valid_ids)
     if (verbose) 
       message("Apply the fitted robust linear regression model to recovery the absolute copy number for all transcripts each cell...")
-    norm_fpkms <- pbmcmapply(function(cell_exprs, molModel) {
+    norm_fpkms <- mcmapply(function(cell_exprs, molModel) {
       tryCatch({
         norm_df <- data.frame(log_fpkm = log10(cell_exprs))
         res <- 10^predict(molModel, type = "response", 
@@ -278,7 +280,7 @@ relative2abs <- function(relative_cds,
     k_b_solution <- data.frame(b = unlist(pblapply(molModels, 
                                                  FUN = function(x) {
                                                    intercept = x$coefficients[1]
-                                                 })), k = unlist(pblapply(molModels, FUN = function(x) {
+                                                 })), k = unlist(lapply(molModels, FUN = function(x) {
                                                    slope = x$coefficients[2]
                                                  })))
     kb_model <- MASS::rlm(b ~ k, data = k_b_solution)

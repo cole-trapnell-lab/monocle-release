@@ -474,7 +474,6 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   # delete edge 75|2434from current cluster 8 and target cluster 18with weight 0
   # delete edge 487|879from current cluster 8 and target cluster 18with weight 0
   
-  pb3 <- utils::txtProgressBar(min = 0, max = length(sort(unique(as.vector(cell_membership)))), style = 3, file = stderr())
   for(i in sort(unique(as.vector(cell_membership)))) {
     if(verbose) {
       message('current cluster is ', i)
@@ -483,7 +482,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
     
     neigh_list <- igraph::neighborhood(pc_g, nodes = curr_cluster_cell)
     # identify connected cells outside a Louvain group
-    conn_cluster_res <- do.call(rbind, pblapply(1:length(curr_cluster_cell), function(x) {
+    conn_cluster_res <- do.call(rbind, lapply(1:length(curr_cluster_cell), function(x) {
       cell_outside <- setdiff(neigh_list[[x]]$name, curr_cluster_cell)
       if(length(cell_outside)) {
         data.frame(current_cell = curr_cluster_cell[x], 
@@ -513,9 +512,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         }
       }
     }
-    utils::setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
   }
-  
   ########################################################################################################################################################################
   # identify the all leaf cell 
   # identify the nearest leaf cells 
@@ -525,7 +522,6 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   cluster_inner_edges <- rep(0, n_cluster)
   cluster_mat <- matrix(nrow = n_cluster, ncol = n_cluster)
   cnt_i <- 1
-  pb4 <- utils::txtProgressBar(min = 0, max = length(unique(cell_membership)), style = 3, file = stderr())
   for(i in unique(cell_membership)) {
     cluster_inner_edges[i] <- igraph::ecount(igraph::subgraph(g, cell_names[which(cell_membership == i)])) # most are zero
     cnt_j <- 1
@@ -546,9 +542,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
       cnt_j <- cnt_j + 1
     }
     cnt_i <- cnt_i + 1
-    utils::setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
   }
-  
   ########################################################################################################################################################################
   # downstream pseudotime and branch analysis 
   ########################################################################################################################################################################
@@ -563,7 +557,6 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
   optim_res <- NULL
   
   louvain_iter <- 1
-  utils::pb5 <- txtProgressBar(max = length(louvain_iter), style = 3, file = stderr(), min = 0)
   for (iter in 1:louvain_iter) {
     Q <- igraph::cluster_louvain(cluster_g)
     
@@ -578,9 +571,7 @@ cluster_graph <- function(pc_g, g, optim_res, data, verbose = FALSE) {
         Qp <- Qt
       }
     }
-    utils::setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
   }
-  
   if(verbose) {
     message('clusters in the cluster graph is ', length(unique(igraph::membership(optim_res))))
   }

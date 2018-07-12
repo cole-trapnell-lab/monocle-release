@@ -65,27 +65,26 @@ newCellDataSet <- function( cellData,
   validObject( cds )
   cds
 }
-
 sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
   if (convert_to_dense){
     if (MARGIN == 1){
       Sp_X <- Matrix::t(Sp_X)
-      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(as.matrix(Sp_X[,i]), ...) 
       }, FUN, ...)
     }else{
-      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(as.matrix(Sp_X[,i]), ...) 
       }, FUN, ...)
     }
   }else{
     if (MARGIN == 1){
       Sp_X <- Matrix::t(Sp_X)
-      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(Sp_X[,i], ...) 
       }, FUN, ...)
     }else{
-      res <- pblapply(colnames(Sp_X), function(i, FUN, ...) {
+      res <- lapply(colnames(Sp_X), function(i, FUN, ...) {
         FUN(Sp_X[,i], ...) 
       }, FUN, ...)
     }
@@ -97,12 +96,12 @@ sparseApply <- function(Sp_X, MARGIN, FUN, convert_to_dense, ...){
 
 #' @importFrom parallel splitIndices
 splitRows <- function (x, ncl) {
-  pblapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
+  lapply(splitIndices(nrow(x), ncl), function(i) x[i, , drop = FALSE])
 }
 
 #' @importFrom parallel splitIndices
 splitCols <- function (x, ncl) {
-  pblapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
+  lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
 #' @importFrom BiocGenerics clusterApply
@@ -164,10 +163,8 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   
   if (is.null(required_packages) == FALSE){
     clusterCall(cl, function(pkgs) {
-      pb1 <- txtProgressBar(max = length(pkgs), file = stderr(), style = 3, min = 0)
       for (req in pkgs) {
         library(req, character.only=TRUE)
-        setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
       }
     }, required_packages)
   }
@@ -183,6 +180,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
 }
 
 #' @importFrom Biobase multiassign
+#' @importFrom pbapply pbapply
 smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
   parent <- environment(FUN)
   if (is.null(parent))
@@ -244,7 +242,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
     FM <- Matrix::t(Matrix::t(FM)/colSums(FM))
   }
   
-  negentropy_exp <- pbapply(FM,1,function(x) { 
+  negentropy_exp <- apply(FM,1,function(x) { 
     
     expression <- x[x > expression_lower_thresh]
     expression <- log2(x); 
@@ -261,7 +259,7 @@ selectNegentropyGenes <- function(cds, lower_negentropy_bound="0%",
   )
   
   
-  means <- pbapply(FM,1,function(x) { 
+  means <- apply(FM,1,function(x) { 
     expression <- x[x > expression_lower_thresh]
     expression <- log2(x); 
     expression[is.finite(expression) == FALSE] <- NA; 
@@ -437,16 +435,16 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
   if (round_exprs)
     CM <- round(CM)
   if (method == "weighted-median"){
-    log_medians <- pbapply(CM, 1, function(cell_expr) { 
+    log_medians <- apply(CM, 1, function(cell_expr) { 
       log(locfunc(cell_expr))
     })
     
-    weights <- pbapply(CM, 1, function(cell_expr) {
+    weights <- apply(CM, 1, function(cell_expr) {
       num_pos <- sum(cell_expr > 0)
       num_pos / length(cell_expr)
     })
     
-    sfs <- pbapply( CM, 2, function(cnts) {
+    sfs <- apply( CM, 2, function(cnts) {
       norm_cnts <-  weights * (log(cnts) -  log_medians)
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
@@ -456,7 +454,7 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
   }else if (method == "median-geometric-mean"){
     log_geo_means <- rowMeans(log(CM))
     
-    sfs <- pbapply( CM, 2, function(cnts) {
+    sfs <- apply( CM, 2, function(cnts) {
       norm_cnts <- log(cnts) -  log_geo_means
       norm_cnts <- norm_cnts[is.nan(norm_cnts) == FALSE]
       norm_cnts <- norm_cnts[is.finite(norm_cnts)]
@@ -464,15 +462,15 @@ estimateSizeFactorsForDenseMatrix <- function(counts, locfunc = median, round_ex
       exp( locfunc( norm_cnts ))
     })
   }else if(method == "median"){
-    row_median <- pbapply(CM, 1, median)
-    sfs <- pbapply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
+    row_median <- apply(CM, 1, median)
+    sfs <- apply(Matrix::t(Matrix::t(CM) - row_median), 2, median)
   }else if(method == 'mode'){
     sfs <- estimate_t(CM)
   }else if(method == 'geometric-mean-total') {
-    cell_total <- pbapply(CM, 2, sum)
+    cell_total <- apply(CM, 2, sum)
     sfs <- log(cell_total) / mean(log(cell_total))
   }else if(method == 'mean-geometric-mean-total') {
-    cell_total <- pbapply(CM, 2, sum)
+    cell_total <- apply(CM, 2, sum)
     sfs <- cell_total / exp(mean(log(cell_total)))
   } 
   
