@@ -2246,8 +2246,8 @@ project_to_representatives <- function(data,
     sub_g <- graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
   } else if(method == 'PSL') {
     d <- 2 # d can only be 2 for dla coordinates merging method 
-    PSL_args <- c(list(Y = data, d = d, dist = adj_mat), # add verbose ncol(data)
-                  extra_arguments[names(extra_arguments) %in% c('K', 'C', 'param.gamma', 'maxIter')])
+    PSL_args <- c(list(Y = data, d = d), # add verbose ncol(data)
+                  extra_arguments[names(extra_arguments) %in% c('K', 'C', "sG", 'dist', 'param.gamma', 'maxIter')])
     
     PSL_res <- do.call(psl, PSL_args)
     
