@@ -452,3 +452,39 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, num_links = num_links, cluster_mat = cluster_mat, enrichment_mat = enrichment_mat, cluster_coord = coord, edge_links = edge_links)
 }
 
+#' function to run louvain clustering algorithm 
+#'
+#' @param data low dimensional space used to perform graph clustering 
+#' @param k number of nearest neighbors used for Louvain clustering 
+#' @param return_graph whether or not to return the kNN graph instead of the asymmetric adjacency matrix 
+#' @return Either a sparse asymmetric adjacent matrix or a corresponding directed weighted kNN graph 
+#' 
+build_asym_kNN_graph <- function(data, k = 20, return_graph = F) {
+  # build an asymmetric kNN graph -- replace with the louvain_clustering one 
+  nbrs <- RANN::nn2(data, k = k + 1)
+  N <- nrow(data)
+  distances <- nbrs$nn.dists[, -1]
+  indices =  nbrs$nn.idx[, -1]
+  
+  rows <- rep(0, N * k)
+  cols <- rep(0, N * k)
+  dists <- rep(0, N * k)
+  location <- 1
+  
+  for(i in 1:N) {
+    inds <- location:(location + k)
+    rows[inds] <- i
+    cols[inds] <- indices[i, ]
+    dists[inds] <- distances[i, ]
+    location <- location + k
+  }
+  adj_mat <- sparseMatrix(rows, cols, x = dists^2, dims = c(N, N))
+  dimnames(adj_mat) <- list(row.names(data), row.names(data))
+
+  if(return_graph) {
+    g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T)
+    return(g)
+  } else {
+    adj_mat
+  }
+}

@@ -24,7 +24,8 @@ Depends:
     VGAM (>= 1.0-1),
     DDRTree (>= 0.1.4),
     L1Graph, 
-    PSL
+    PSL,
+    sse
 Imports:
     parallel,
     igraph (>= 1.0.1),

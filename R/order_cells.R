@@ -2048,6 +2048,7 @@ patchEmbedding <- function(cds,
                                       ...) 
     
     coord <- res$sub_coord_mat
+    row.names(coord) <- colnames(cds) 
     g <- res$sub_g   
   } else {    
     group_stat <- table(pData(cds)$louvain_component)
@@ -2188,16 +2189,16 @@ patchEmbedding <- function(cds,
   return(cds)
 }
 
-#' Apply embedding smoothing techniques, inlcuding force-directed layout, SSE, PSL, etc. on the kNN graph built from all cells or the downsampled representive 
+#' Apply embedding smoothing techniques, inlcuding PSL, SSE, force-directed layout, etc. on the kNN graph built from all cells or the downsampled representive 
 #' cells (if number of samples is large than 2000) and then project other non-representative cells to the low dimensional space with five nearest (on original 
-#' UMAP or PCA space) representive cells' coordinates 
+#' UMAP or PCA space) representive cells' coordinates.
 #'
 #' @param data (dowmsampled) data to perform Louvain clustering and kNN graph construction 
 #' @param data_ori All data points without downsampling. This data space will be used to find the nearest five points for projecting non-landmark points  
 #' @param landmark_id The index of cells   
-#' @param louvain_res The result of louvain clustering clustering from the original space 
+#' @param louvain_res The result of louvain clustering from the original space 
 #' @param pd the data frame of phenotype information 
-#' @param method The force directed layout function to use  
+#' @param method The force directed layout function to use. Only relevant to when drl, fr or kk are used as fdl methods 
 #' @param start.temp argument passed into layout_with_fr function 
 #' @param verbose Wheter to print all running details 
 #' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
@@ -2213,25 +2214,28 @@ project_to_representatives <- function(data,
                                        ...) {
   extra_arguments <- list(...)
   
-  # build kNN graph 
   if(verbose) {
     message("Running louvain clustering algorithm ...")
   }
   
-  louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
-                               extra_arguments[names(extra_arguments) %in% c("weight", "louvain_iter")])
-  data_louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-
-  adj_mat <- get.adjacency(data_louvain_res$g)
-
+  # build an asymmetric kNN graph -- replace with the louvain_clustering one 
+  adj_mat <- build_asym_kNN_graph(data, k)
+  # this one gives an symmetric matrix
+  # louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
+  #                              extra_arguments[names(extra_arguments) %in% 
+  #                              c("weight", "louvain_iter", "resolution", "random_seed")])
+  # data_louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  # 
+  # adj_mat <- igraph::get.adjacency(data_louvain_res$g)
+  # adj_mat@x[adj_mat@x > 0] <- 1 # Ensure a connectivity graph (only 1 represents connectivity)
   if(method %in% c('drl', 'fr', 'kk')) {  
     # layout kNN with force direct layout 
-    if (method=="fr") coord <- layout_with_fr(data_louvain_res$g, dim=2, coords=data[, 1:2], start.temp=start.temp)
-    if (method=="drl") coord <- layout_with_drl(data_louvain_res$g, dim=2, options=list(edge.cut=0))
-    if (method=="kk") coord <- layout_with_kk(data_louvain_res$g, dim=2, coords=data[, 1:2])  
+    sub_g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T)
+    if (method=="fr") coord <- igraph::layout_with_fr(sub_g, dim=2, coords=data[, 1:2], start.temp=start.temp)
+    if (method=="drl") coord <- igraph::layout_with_drl(sub_g, dim=2, options=list(edge.cut=0))
+    if (method=="kk") coord <- igraph::layout_with_kk(sub_g, dim=2, coords=data[, 1:2])  
     
-    row.names(coord) <- V(data_louvain_res$g)$name
-    sub_g <- igraph::induced_subgraph(louvain_res$g, row.names(data))
+    row.names(coord) <- row.names(data)
   } else if(method == 'SSE') {
     d <- 2 # d can only be 2 for dla coordinates merging method 
     sse_args <- c(list(data=data, dist_mat = adj_mat, verbose = verbose, embeding_dim = d),
@@ -2243,11 +2247,11 @@ project_to_representatives <- function(data,
     dimnames(SSE_res$W) <- list(rownames(data), rownames(data))
     
     coord <- SSE_res$Y 
-    sub_g <- graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
+    sub_g <- igraph::graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
   } else if(method == 'PSL') {
     d <- 2 # d can only be 2 for dla coordinates merging method 
-    PSL_args <- c(list(Y = data, d = d), # add verbose ncol(data)
-                  extra_arguments[names(extra_arguments) %in% c('K', 'C', "sG", 'dist', 'param.gamma', 'maxIter')])
+    PSL_args <- c(list(Y = data, d = d, K = k, sG = adj_mat), # as.matrix(adj_mat)), #, # add verbose ncol(data)
+                  extra_arguments[names(extra_arguments) %in% c('C', 'param.gamma', 'maxIter')])
     
     PSL_res <- do.call(psl, PSL_args)
     
@@ -2256,7 +2260,7 @@ project_to_representatives <- function(data,
     dimnames(PSL_res$S) <- list(rownames(data), rownames(data))
     
     coord <- as.matrix(PSL_res$Z) 
-    sub_g <- graph.adjacency(PSL_res$S, mode = "undirected", weighted = TRUE)
+    sub_g <- igraph::graph.adjacency(PSL_res$S, mode = "undirected", weighted = TRUE)
   } else {
     stop("Unknown method. Please ensure method to be any one from 'drl', 'fr', 'kk', 'SSE' or 'PSL'")
   }
