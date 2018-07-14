@@ -5,7 +5,6 @@
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param ordering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
 #' @return an updated CellDataSet object
-#' @importFrom pbapply pbapply
 #' @export
 setOrderingFilter <- function(cds, ordering_genes){
   fData(cds)$use_for_ordering <- row.names(fData(cds)) %in% ordering_genes
@@ -28,7 +27,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   pr_graph_node_distances = distances(pr_graph, v=root_cell)
   if (length(root_cell) > 1){
     node_names = colnames(pr_graph_node_distances)
-    pseudotimes = pbapply(pr_graph_node_distances, 2, min)
+    pseudotimes = apply(pr_graph_node_distances, 2, min)
   }else{
     node_names = names(pr_graph_node_distances)
     pseudotimes = pr_graph_node_distances
@@ -544,8 +543,8 @@ reduceDimension <- function(cds,
       
       umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                      extra_arguments[names(extra_arguments) %in% 
-                                       c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                         'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
+                                       c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "learning_rate", "init", "min_dist", "spread", 
+                                         'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'repulsion_strength', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
       tmp <- do.call(UMAP, umap_args)
       tmp$embedding_ <- (tmp$embedding_ - min(tmp$embedding_)) / max(tmp$embedding_) # normalize UMAP space
       umap_res <- tmp$embedding_; 
@@ -736,11 +735,9 @@ learnGraph <- function(cds,
   if(RGE_method == 'L1graph') { 
     # FIXME: This case is broken, because I didn't have time to update the landmark
     # stuff during the refactor.
-    if(cds@dim_reduce_type == "UMAP") {
-      
-    } else {
+    if(cds@dim_reduce_type != "UMAP") {
       stop('L1graph can be only applied to the UMAP space, please first call reduceDimension() using UMAP!')
-    }
+    } 
     
     if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
       ncenter <- extra_arguments$ncenter
@@ -1103,7 +1100,6 @@ project2MST <- function(cds, Projection_Method){
   }
   else{
     P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
-    pb1 <- txtProgressBar(max = length(closest_vertex), file = "", style = 3, min = 0)
     for(i in 1:length(closest_vertex)) {
       neighbors <- names(V(dp_mst) [ suppressWarnings(nei(closest_vertex_names[i], mode="all")) ])
       projection <- NULL
@@ -1123,9 +1119,7 @@ project2MST <- function(cds, Projection_Method){
       if(class(projection) != 'matrix')
         projection <- as.matrix(projection)
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
-      setTxtProgressBar(pb = pb1, value = pb1$getVal() + 1)
     }
-    close(pb1)
   }
     # tip_leaves <- names(which(degree(minSpanningTree(cds)) == 1))
 
@@ -1240,15 +1234,12 @@ traverseTree <- function(g, starting_cell, end_cells){
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
-  pb2 <- txtProgressBar(max = length(end_cells), file = "", style = 3, min = 0)
   for(end_cell in end_cells) {
     traverse_res <- traverseTree(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
 
     subset_cell <- c(subset_cell, path_cells)
-    setTxtProgressBar(pb = pb2, value = pb2$getVal() + 1)
   }
-  close(pb2)
   subset_cell <- unique(subset_cell)
   cds_subset <- SubSet_cds(cds, subset_cell)
 
