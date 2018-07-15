@@ -452,14 +452,14 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, num_links = num_links, cluster_mat = cluster_mat, enrichment_mat = enrichment_mat, cluster_coord = coord, edge_links = edge_links)
 }
 
-#' function to run louvain clustering algorithm 
+#' function to run build asymmetric kNN graph 
 #'
 #' @param data low dimensional space used to perform graph clustering 
 #' @param k number of nearest neighbors used for Louvain clustering 
 #' @param return_graph whether or not to return the kNN graph instead of the asymmetric adjacency matrix 
 #' @return Either a sparse asymmetric adjacent matrix or a corresponding directed weighted kNN graph 
 #' 
-build_asym_kNN_graph <- function(data, k = 20, return_graph = F) {
+build_asym_kNN_graph <- function(data, k = 20, cosine = F, return_graph = F) {
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
   nbrs <- RANN::nn2(data, k = k + 1)
   N <- nrow(data)
@@ -472,10 +472,26 @@ build_asym_kNN_graph <- function(data, k = 20, return_graph = F) {
   location <- 1
   
   for(i in 1:N) {
-    inds <- location:(location + k)
+    inds <- location:(location + k - 1)
     rows[inds] <- i
     cols[inds] <- indices[i, ]
-    dists[inds] <- distances[i, ]
+    if(cosine) {
+      if(N < 3000) {
+        tmp <- lapply(1:k, function(j) {
+          x <- data[i, ]
+          y <- data[indices[i, j], ] 
+          cosine(x, y) 
+        })
+
+        dists[inds] <- unlist(tmp)
+      } else {
+        message('Cosine distance only supports running on 3K cells at most! Using euclidean distance instead!')
+        dists[inds] <- distances[i, ]
+      }
+    } else {
+      dists[inds] <- distances[i, ]
+    }
+
     location <- location + k
   }
   adj_mat <- sparseMatrix(rows, cols, x = dists^2, dims = c(N, N))
@@ -488,3 +504,20 @@ build_asym_kNN_graph <- function(data, k = 20, return_graph = F) {
     adj_mat
   }
 }
+
+#' function to calculate cosine distance 
+cosine <- function (x , y ) {
+  cp <- t( x ) %*% y
+  normx <- sqrt (t( x ) %*% x )
+  normy <- sqrt (t( y ) %*% y )
+  cp / normx / normy
+}
+
+# cosine <- function ( x ) {
+#   x <- t(x)
+#   cp <- crossprod ( x )
+#   rtdg <- sqrt ( diag ( cp ) )
+#   cos <- cp / tcrossprod ( rtdg )
+#   return (cos )
+# }
+

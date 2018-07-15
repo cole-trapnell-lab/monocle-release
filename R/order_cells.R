@@ -592,6 +592,7 @@ reduceDimension <- function(cds,
 #' representation of the data. It can be used to facilitate visualization of the data or downstream graph learning 
 #' 
 #' @param cds CellDataSet for the experiment
+#' @param max_components the dimensionality of the reduced space
 #' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.     
 #' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param method The embedding smoothing technique to use, including force directed layout (which includes drl, fr, kk three methods), our new method PSL and SSE  
@@ -611,6 +612,7 @@ reduceDimension <- function(cds,
 #' @seealso \code{\link[monocle]{patchEmbedding}}
 #' @export 
 smoothEmbedding <- function(cds,
+                           max_components = 2, 
                            do_partition = FALSE, 
                            use_pca = FALSE, 
                            method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
@@ -622,6 +624,7 @@ smoothEmbedding <- function(cds,
                            verbose = FALSE,
                             ...){
   cds <- patchEmbedding(cds = cds, 
+                        max_components = max_components, 
                         do_partition = do_partition, 
                         use_pca = use_pca, 
                         method = method, 
@@ -1966,6 +1969,7 @@ connectTips <- function(pd,
 #'  
 #'
 #' @param cds CellDataSet for the experiment
+#' @param max_components the dimensionality of the reduced space
 #' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups    
 #' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param method The embedding smoothing technique to use, including force directed layout (which includes drl, fr, kk three methods), our new method PSL and SSE  
@@ -1984,6 +1988,7 @@ connectTips <- function(pd,
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
 #' @export
 patchEmbedding <- function(cds, 
+                           max_components = 2, 
                            do_partition = FALSE, 
                            use_pca = FALSE, 
                            method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
@@ -2044,6 +2049,8 @@ patchEmbedding <- function(cds,
                                       method, 
                                       start.temp, 
                                       k, 
+                                      do_partition = do_partition, 
+                                      max_components = max_components, 
                                       verbose,
                                       ...) 
     
@@ -2110,6 +2117,8 @@ patchEmbedding <- function(cds,
                                         method, 
                                         start.temp, 
                                         k, 
+                                        do_partition = do_partition, 
+                                        max_components = max_components, 
                                         verbose,
                                         ...) 
       
@@ -2200,6 +2209,8 @@ patchEmbedding <- function(cds,
 #' @param pd the data frame of phenotype information 
 #' @param method The force directed layout function to use. Only relevant to when drl, fr or kk are used as fdl methods 
 #' @param start.temp argument passed into layout_with_fr function 
+#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.     
+#' @param max_components the dimensionality of the reduced space
 #' @param verbose Wheter to print all running details 
 #' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
 project_to_representatives <- function(data, 
@@ -2210,6 +2221,8 @@ project_to_representatives <- function(data,
                                        method = c('PSL', 'drl', 'fr', 'kk', 'SSE'),  
                                        start.temp = NULL, 
                                        k = 20,
+                                       do_partition = F, 
+                                       max_components = 2, 
                                        verbose, 
                                        ...) {
   extra_arguments <- list(...)
@@ -2217,9 +2230,16 @@ project_to_representatives <- function(data,
   if(verbose) {
     message("Running louvain clustering algorithm ...")
   }
+
+  if(do_partition == FALSE) {
+    d <- max_components
+  } else {
+    message('if do_partition is TRUE, we can only set the dimensionality of reduced space to be 2 because the drl coordinates-merging algorithm also support for two dimensions')
+    d <- 2
+  }
   
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
-  adj_mat <- build_asym_kNN_graph(data, k)
+  adj_mat <- build_asym_kNN_graph(data, k, ...)
   # this one gives an symmetric matrix
   # louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
   #                              extra_arguments[names(extra_arguments) %in% 
@@ -2229,27 +2249,28 @@ project_to_representatives <- function(data,
   # adj_mat <- igraph::get.adjacency(data_louvain_res$g)
   # adj_mat@x[adj_mat@x > 0] <- 1 # Ensure a connectivity graph (only 1 represents connectivity)
   if(method %in% c('drl', 'fr', 'kk')) {  
-    # layout kNN with force direct layout 
-    sub_g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T)
-    if (method=="fr") coord <- igraph::layout_with_fr(sub_g, dim=2, coords=data[, 1:2], start.temp=start.temp)
-    if (method=="drl") coord <- igraph::layout_with_drl(sub_g, dim=2, options=list(edge.cut=0))
-    if (method=="kk") coord <- igraph::layout_with_kk(sub_g, dim=2, coords=data[, 1:2])  
+    # layout kNN with force direct layout: https://github.com/TypeFox/R-Examples/blob/d0917dbaf698cb8bc0789db0c3ab07453016eab9/igraph/R/layout_drl.R
+    sub_g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T) # 
+    if (method=="fr") coord <- igraph::layout_with_fr(sub_g, dim=d, coords=data[, 1:d], weights = NULL, start.temp=start.temp)
+    if (method=="drl") coord <- igraph::layout_with_drl(sub_g, dim=d, weights = NULL, options=drl_defaults$final) # list(edge.cut=0, simmer.attraction=0)
+    if (method=="kk") coord <- igraph::layout_with_kk(sub_g, dim=d, coords=data[, 1:d]) # weights = E(sub_g)$weight / max(E(sub_g)$weight)
     
+    colnames(coord) <- paste0(method, 1:d)
     row.names(coord) <- row.names(data)
   } else if(method == 'SSE') {
-    d <- 2 # d can only be 2 for dla coordinates merging method 
+    # d <- 2 # d can only be 2 for dla coordinates merging method 
     sse_args <- c(list(data=data, dist_mat = adj_mat, verbose = verbose, embeding_dim = d),
                   extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
     SSE_res <- do.call(SSE, sse_args)    
 
-    colnames(SSE_res$Y) <- colnames(data)
+    colnames(SSE_res$Y) <- paste0('SSE_', 1:d)
     rownames(SSE_res$Y) <- rownames(data)
     dimnames(SSE_res$W) <- list(rownames(data), rownames(data))
     
     coord <- SSE_res$Y 
     sub_g <- igraph::graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
   } else if(method == 'PSL') {
-    d <- 2 # d can only be 2 for dla coordinates merging method 
+    # d <- 2 # d can only be 2 for dla coordinates merging method 
     PSL_args <- c(list(Y = data, d = d, K = k, sG = adj_mat), # as.matrix(adj_mat)), #, # add verbose ncol(data)
                   extra_arguments[names(extra_arguments) %in% c('C', 'param.gamma', 'maxIter')])
     
