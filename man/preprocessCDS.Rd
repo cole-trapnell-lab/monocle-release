@@ -4,7 +4,7 @@
 \alias{preprocessCDS}
 \title{project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data}
 \usage{
-preprocessCDS(cds, method = c("PCA", "LSI", "none"), use_tf_idf = FALSE,
+preprocessCDS(cds, method = c("PCA", "none"), use_tf_idf = FALSE,
   num_dim = 50, norm_method = c("log", "vstExprs", "none"),
   residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
   scaling = TRUE, verbose = FALSE, ...)

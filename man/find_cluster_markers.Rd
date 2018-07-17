@@ -14,7 +14,7 @@ find_cluster_markers(cds, pr_graph_test_res, group_by = "Cluster",
 
 \item{pr_graph_test_res}{the result returned from principalGraphTest}
 
-\item{group_by}{a column in the pData specifying the groups for calculating the specifities. By default it is Cluster}
+\item{group_by}{a column in the pData specifying the groups for calculating the specificities. Its default value is Cluster.}
 
 \item{qval_threshold}{The q-value threshold for genes to be selected}
 
@@ -38,22 +38,22 @@ expressed in each group (percentage), specifity score (specifity) for each gene 
 (by default, the Moran's I test), together with the information from pData.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime
-or according to other covariates as specified. \code{differentialGeneTest} is
+Tests each gene for differential expression as a function of pseudo time
+or according to other covariates are specified. \code{differentialGeneTest} is
 Monocle's main differential analysis routine.
 It accepts a CellDataSet and two model formulae as input, which specify generalized
 lineage models as implemented by the \code{VGAM} package.
-n Monocle 3, we incoporated the find_cluster_markers to find marker genes for each group of cells. 
-In order to calculate the specificity of each gene to each cluster, we first create a perfect specific 
-distribution ( Q ) of each gene by assigning probability 1 to one particular cluster while all 0 to any 
+In Monocle 3, we incorporated the find_cluster_markers to find marker genes for each group of cells.
+In order to calculate the specificity of each gene to each cluster, we first create a perfect specific
+distribution (Q) of each gene by assigning probability 1 to one particular cluster while all 0 to any
 other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
-to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate
+to a probability distribution (P) by dividing the sum of the percentages across all clusters. Then we calculate
 the specificity score as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
-The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions (P,Q).
+The Jensen-Shannon divergence is a method measuring the similarity between two probability distributions (P,Q).
 The Jensen-Shannon divergence, defined for two distributions P and Q by
-\eqn{JSD(P,Q)}{\sum{\frac{1}{2}D(P|M)}{\frac{1}{2}D(Q|M)}}
-where \eqn{M}{\frac{1}{2}(\sum{P}{Q})} and \eqn{D(A|B)} is the Kullback-Leibler divergence.
+\eqn{JSD(P,Q)}{} \eqn{\frac{1}{2} \cdot D(P|M) \cdot \frac{1}{2} \cdot D(Q|M)}{}
+where \eqn{M \cdot \frac{1}{2} \cdot P + Q}{} and \eqn{D(A|B)}{} is the Kullback-Leibler divergence.
 }
 \seealso{
-\code{\link{principalGraphTest}} principalGraphTest
+principalGraphTest
 }

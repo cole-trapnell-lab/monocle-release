@@ -3398,6 +3398,7 @@ plot_genes_spatial_lags <- function(cds, markers,
 #' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
 #' @param tabulate 
 #' @param zero.policy A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.
+#' @param ... Additional arguments to pass to scale_color_viridis 
 #' @export
 plot_local_spatial_statistics <- function(cds, markers, 
                                           method = 'local_G', 
@@ -3407,7 +3408,7 @@ plot_local_spatial_statistics <- function(cds, markers,
                                           return_all = FALSE, ...) {
   listw <- calculateLW(cds)
   data_df <- pData(cds)
-  if (color_by %in% colnames(cds)) {
+  if (!(color_by %in% colnames(cds))) {
     stop(paste0(color_by, " doesn't belong to the columns of the pData."))
   }
   

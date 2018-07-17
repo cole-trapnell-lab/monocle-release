@@ -21,6 +21,8 @@ plot_local_spatial_statistics(cds, markers, method = "local_G", log = TRUE,
 \item{zero.policy}{A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.}
 
 \item{return_all}{A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned}
+
+\item{...}{Additional arguments to pass to scale_color_viridis}
 }
 \description{
 plot the local moran's I or the local g for the cells
