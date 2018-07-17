@@ -292,7 +292,7 @@ normalize_expr_data <- function(cds,
 #' @import irlba
 #' @importFrom stats dist prcomp
 #' @export
-preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF'
+preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
                           use_tf_idf = FALSE, 
                           num_dim=50,
                           norm_method = c("log", "vstExprs", "none"),
@@ -438,13 +438,13 @@ reduceDimension <- function(cds,
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
   if (verbose)
-    message("Retrieving normalized and PCA (LSI) reduced data ...")
+    message("Retrieving normalized data ...")
   
   FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
   
   if(is.null(FM)) {
-    message('Warning: The cds is not normalized or PCA (LSI) reduced with preprocessCDS function yet, running preprocessCDS with default parameters!')
+    message('Warning: The cds has not been pre-processed yet. Running preprocessCDS() with default parameters.')
     cds <- preprocessCDS(cds)
     FM <- cds@auxOrderingData$normalize_expr_data
     irlba_pca_res <- cds@normalized_data_projection
