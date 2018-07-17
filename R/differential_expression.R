@@ -544,7 +544,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 
 #' @seealso \code{\link{principalGraphTest}} principalGraphTest
 #' @param cds a CellDataSet object upon which to perform this operation
-#' @param spatial_res the result returned from spatialDifferentialTest
+#' @param pr_graph_test_res the result returned from principalGraphTest
 #' @param group_by a column in the pData specifying the groups for calculating the specifities. By default it is Cluster
 #' @param qval_threshold The q-value threshold for genes to be selected
 #' @param morans_I_threshold The lowest Morans' I threshold for selecting genes
@@ -562,7 +562,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @export
 #'
 find_cluster_markers <- function(cds,
-                                spatial_res,
+                                pr_graph_test_res,
                                 group_by = 'Cluster',
                                 qval_threshold = 0.05,
                                 morans_I_threshold = 0.25,
@@ -576,7 +576,7 @@ find_cluster_markers <- function(cds,
     stop('Please ensure group_by is included in the pData')
   }
 
-  gene_ids <- row.names(subset(spatial_res, qval < qval_threshold & morans_I > morans_I_threshold))
+  gene_ids <- row.names(subset(pr_graph_test_res, qval < qval_threshold & morans_I > morans_I_threshold))
   num_blocks = ceiling(length(gene_ids) / block_size)
 
   specificity_res <- NULL
@@ -594,7 +594,7 @@ find_cluster_markers <- function(cds,
 
     ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed = sum(Expression > lower_threshold))
 
-    ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
+    ExpVal <- merge(ExpVal, pr_graph_test_res, by.x = 'Gene', by = "row.names")
     ExpVal$Group <- ExpVal$Group
 
     FUN <- function(df) {
