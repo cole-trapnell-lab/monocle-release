@@ -1435,9 +1435,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
   dp_mst <- NULL 
   pr_graph_cell_proj_closest_vertex <- NULL 
   cell_name_vec <- NULL
-  pb3 <- txtProgressBar(max = length(unique(louvain_component)), style = 3, file = "", min = 0)
   for(cur_comp in unique(louvain_component)) {
-    setTxtProgressBar(pb = pb3, value = pb3$getVal() + 1)
     X_subset <- X[, louvain_component == cur_comp]
     
     #add other parameters...
@@ -1508,7 +1506,6 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
     
     
   }
-  close(pb3)
   row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
   
   ddrtree_res_W <- ddrtree_res$W
