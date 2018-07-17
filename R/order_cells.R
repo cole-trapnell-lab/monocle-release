@@ -73,10 +73,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' will assign them increasingly large values of Pseudotime.
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param root_state The state to use as the root of the trajectory.
-#' You must already have called orderCells() once to use this argument.
-#' @param num_paths the number of end-point cell states to allow in the biological process.
-#' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' @param root_pr_nodes The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process. 
+#' @param root_cells The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -580,6 +578,7 @@ reduceDimension <- function(cds,
 }
 
 #' This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues 
+#'
 #' @description Recently Alex Wolf and colleague first proposed the idea to represent the data with an “abstract partition graph”
 #' of clusters identified by Louvain clustering by simply connecting significantly overlapping Louvain clusters (Wolf et al. 2017). 
 #' Similar methods for “abstract partition graph” are also recently developed and applied in analyzing the zebrafish / frog cell 
@@ -600,22 +599,27 @@ reduceDimension <- function(cds,
 #' matrix $$M$$ between each cluster is calculated as, $$M = X‘ x A x X$$. Once $$M$$ is constructed, we can then follow 
 #' Supplemental Note 3.1 from (Wolf et al. 2017) to calculate the significance of the connection between each louvain clustering and 
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
-
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
 #' @param louvain_iter the number of iteraction for louvain clustering (pass to louvain_clustering function)
+#' @param resolution resolution of clustering result, specifiying the granularity of clusters. 
+#' Default to not use resolution and the standard igraph louvain clustering algorithm will be used. 
 #' @param louvain_qval The q-val threshold used to determine the partition of cells (pass to compute_louvain_connected_components)
+#' @param return_all Whether to return all saved objects from compute_louvain_connected_components function. 
 #' @param verbose Whether to emit verbose output during louvain clustering
 #' @param ... additional arguments to pass to the smoothEmbedding function
 #' @return an updated CellDataSet object
+#'
 #' @export
 partitionCells <- function(cds,
                            k = 20, 
                            weight = F, 
                            louvain_iter = 1, 
+                           resolution = NULL,
                            louvain_qval = 0.05, 
+                           return_all = FALSE, 
                            verbose = FALSE, ...){
   extra_arguments <- list(...)
   FM <- cds@auxOrderingData$normalize_expr_data
@@ -627,8 +631,11 @@ partitionCells <- function(cds,
   if(verbose)
     message("Running louvain clustering algorithm ...")
   #row.names(umap_res) <- colnames(FM)
+  if(nrow(Y) == 0) {
+    reduced_dim_res <- t(irlba_pca_res)
+  }
   louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
-                                    weight = weight , louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
+                                    resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
   
   if(length(unique(louvain_res$optim_res$membership)) == 1) {
@@ -646,8 +653,13 @@ partitionCells <- function(cds,
   
   cds@auxClusteringData$partitionCells <- louvain_res
   
-  return(cds)
+  if(return_all) {
+    return(list(cds = cds, cluster_graph_res = cluster_graph_res))
+  } else {
+    return(cds)
+  }
 }
+
 
 #' Learn principal graph from the reduced space using reversed graph embedding 
 #' 
@@ -719,6 +731,7 @@ learnGraph <- function(cds,
   Y <- reducedDimS(cds)
   reduced_dim_res = Y 
   
+  RGE_method <- RGE_method[1] # set RGE_method to be the first one if user doesn't specifiy 
   # 
   if(do_partition && !(partition_group %in% colnames(pData(cds))))
     stop('Please make sure the partition_group you want to partition the dataset based on is included in the pData of the cds!')
@@ -1222,12 +1235,12 @@ traverseTree <- function(g, starting_cell, end_cells){
   return(list(shortest_path = path$vpath, distance = distance, branch_points = intersect(branchPoints, unlist(path$vpath))))
 }
 
-# #' Make a cds by traversing from one cell to another cell
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+#' Make a cds by traversing from one cell to another cell
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a new cds containing only the cells traversed from the intial cell to the end cell
 traverseTreeCDS <- function(cds, starting_cell, end_cells){
   subset_cell <- c()
   dp_mst <- cds@minSpanningTree
@@ -1243,47 +1256,9 @@ traverseTreeCDS <- function(cds, starting_cell, end_cells){
   cds_subset <- SubSet_cds(cds, subset_cell)
 
   root_state <- pData(cds_subset[, starting_cell])[, 'State']
-  cds_subset <- orderCells(cds_subset, root_state = as.numeric(root_state))
+  cds_subset <- orderCells(cds_subset, root_cells = starting_cell)
 
   return(cds_subset)
-}
-
-# #' Subset a cds which only includes cells provided with the argument cells
-# #'
-# #' @param cds a cell dataset after trajectory reconstruction
-# #' @param cells a vector contains all the cells you want to subset
-# #' @return a new cds containing only the cells from the cells argument
-#' @importFrom igraph graph.adjacency
-SubSet_cds <- function(cds, cells){
-  cells <- unique(cells)
-  if(ncol(reducedDimK(cds)) != ncol(cds))
-    stop("SubSet_cds doesn't support cds with ncenter run for now. You can try to subset the data and do the construction of trajectory on the subset cds")
-
-  exprs_mat <- as(as.matrix(exprs(cds[, cells])), "sparseMatrix")
-  cds_subset <- newCellDataSet(exprs_mat,
-                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[colnames(exprs_mat), ]),
-                                 featureData = new("AnnotatedDataFrame", data = fData(cds)),
-                                 expressionFamily=negbinomial.size(),
-                                 lowerDetectionLimit=1)
-  sizeFactors(cds_subset) <- sizeFactors(cds[, cells])
-  cds_subset@dispFitInfo <- cds@dispFitInfo
-
-  cds_subset@reducedDimW <- cds@reducedDimW
-  cds_subset@reducedDimS <- cds@reducedDimS[, cells]
-  cds_subset@reducedDimK <- cds@reducedDimK[, cells]
-
-  cds_subset@cellPairwiseDistances <- cds@cellPairwiseDistances[cells, cells]
-
-  adjusted_K <- Matrix::t(reducedDimK(cds_subset))
-  dp <- as.matrix(dist(adjusted_K))
-  cellPairwiseDistances(cds_subset) <- dp
-  gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-  dp_mst <- minimum.spanning.tree(gp)
-  minSpanningTree(cds_subset) <- dp_mst
-  cds_subset@dim_reduce_type <- "DDRTree"
-  cds_subset <- findNearestPointOnMST(cds_subset)
-
-  cds_subset <- orderCells(cds_subset)
 }
 
 # #' Reverse embedding latent graph coordinates back to the high dimension

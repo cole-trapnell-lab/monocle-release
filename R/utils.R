@@ -769,3 +769,214 @@ select_cells <- function(cds){
   return(cds)
 }
 
+#' This function reads in a list of 10X pipeline output directories and output a Monocle cell dataset for downstream analysis
+#'
+#' @description Takes a list of 10X pipeline output directories and generates a cellDataSet containing all cells in these experiments. 
+#' This function is originally from Andrew Hill. 
+#'
+#' @param pipeline_dirs Directory name or list of directory names of the top level 10X output directory for an experiment(s)
+#' @param genome String with genome name specified for 10X run (such as hg19)
+#' @param lowerDetectionLimit A number that signifies the minimum expression level required in order for a gene to be truly expressed in a cell
+#' @param include_analysis A boolean that signifies whether or not an analysis path can be found in the 10X output and if you wish to include it
+#' @return A cellDataSet object containing data from all experiments.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' cds <- tenx_to_cds(c("/net/trapnell/vol1/home/xqiu/aggregated_samples_1", 
+#'                         "/net/trapnell/vol1/home/xqiu/aggregated_samples_1", 'hg19'))
+#' }
+tenx_to_cds = function(pipeline_dirs, 
+                       genome="hg19", 
+                       include_analysis = F,
+                       lowerDetectionLimit = 1) {
+  
+  # Outer scope variables for collecting data
+  expression_matrices <- vector(mode = 'list', length = length(pipeline_dir))
+  metadata_dfs <- vector(mode = 'list', length = length(pipeline_dir))
+  gene_table <- NULL # will keep first gene table so can match ordering for each dataset
+  current_i <- 1
+  
+  lapply(pipeline_dirs, function(pipeline_dir) {
+    # Check initial user input
+    if(!file.exists(pipeline_dir)) {
+      stop(paste("Specified 10X output directory does not exist:", pipeline_dir)) 
+    }
+    
+    # Construct paths for pipeline output files and check that they exist
+    base_path = file.path(pipeline_dir, "outs", "filtered_gene_bc_matrices_mex", genome)
+    
+    if(!file.exists(base_path)) { 
+      stop(paste("Specified genome does not appear in 10X output:", base_path)) 
+    }
+    
+    matrix_path <- file.path(base_path, "matrix.mtx")
+    genes_path <- file.path(base_path, "genes.tsv")
+    barcodes_path <- file.path(base_path, "barcodes.tsv")
+    
+    if(include_analysis) {
+      analysis_path <- file.path(pipeline_dir, "outs", "analysis")
+    }
+    
+    if(!file.exists(matrix_path)) { 
+      stop(paste("Expression matrix not found in 10X output:", matrix_path)) 
+    }
+    if(!file.exists(genes_path) ) { 
+      stop(paste("Genes file not found in 10X output:", genes_path)) 
+    }
+    if(!file.exists(barcodes_path) ) { s
+      top(paste("Barcodes file not found in 10X output:", barcodes_path)) 
+    }
+    if(include_analysis) {
+      if(!file.exists(analysis_path) ) { 
+        stop(paste("Analysis  path not found in 10X output:", analysis_path)) 
+      }
+    }
+    
+    # All files exist, read them in
+    matrix <- Matrix::readMM(matrix_path)
+    
+    barcodes <- read.table(barcodes_path, header=F, as.is=T)[,1]
+    
+    current_gene_table <- read.delim(genes_path, stringsAsFactors = FALSE, sep = "\t", header = FALSE)
+    
+    if(include_analysis) {
+      tsne <- read.delim(file.path(analysis_path, "tsne", "/2_components/projection.csv"), sep=',')
+    }
+    
+    if(is.null(gene_table)) { 
+      gene_table <<- current_gene_table 
+    } ## store the first gene table so can match ordering between all experiments
+    
+    genes <- current_gene_table[, 1]
+    
+    # Add gene and sample names to expression matrix (adding dataset post-fix in case barcodes appear in multiple samples)
+    sample <- basename(pipeline_dir)
+    row.names(matrix) <- genes
+    colnames(matrix) <- paste(barcodes, sample, sep="_") ## adds dataset post-fix
+    matrix <- matrix[gene_table[, 1], ] ## ensures order of genes matches between experiments
+    
+    # Construct metadata table that includes directory samples come from and other stats
+    total_umis <- Matrix::colSums(matrix)
+    
+    if(include_analysis) {
+      metadata_df <- data.frame(
+        cell = colnames(matrix),
+        total_umis = total_umis,
+        sample = sample,
+        TSNE.1 = tsne$TSNE.1,
+        TSNE.2 = tsne$TSNE.2
+      )
+    } else {
+      metadata_df <- data.frame(
+        cell = colnames(matrix),
+        total_umis = total_umis,
+        sample = sample)      
+    }
+    
+    # Add both matrices to the running list
+    expression_matrices[[current_i]] <<- matrix
+    metadata_dfs[[current_i]] <<- metadata_df
+    
+    current_i <- current_i + 1
+  })
+  
+  # Now combine all the dataframes into one and make CDS
+  combined_expression_matrix <- do.call(Matrix::cBind, expression_matrices)
+  row.names(combined_expression_matrix) <- gene_table[, 1]
+  
+  combined_metadata_df <- do.call(rbind, metadata_dfs)
+  row.names(combined_metadata_df) <- combined_metadata_df$cell
+  
+  colnames(gene_table) <- c("id", "gene_short_name")
+  row.names(gene_table) <- gene_table$id
+  
+  pd <- new("AnnotatedDataFrame", data = combined_metadata_df)
+  fd <- new("AnnotatedDataFrame", data = gene_table)
+  cds <- newCellDataSet(combined_expression_matrix,
+                        phenoData=pd,
+                        featureData=fd,
+                        expressionFamily=negbinomial.size(),
+                        lowerDetectionLimit=lowerDetectionLimit)
+  return(cds)
+}
+
+#' Subset a cds which only includes cells provided with the argument cells
+#'
+#' @param cds a cell dataset after trajectory reconstruction
+#' @param cells a vector contains all the cells you want to subset
+#' @return a new cds containing only the cells from the cells argument
+#' @importFrom igraph graph.adjacency
+#' @export
+#' @examples 
+#' \dontrun{
+#' lung <- load_lung()
+#' tmp <- subset_cds(lung, cells = row.names(subset(pData(lung), State == 1)))
+#' plot_cell_trajectory(tmp)
+#' }
+subset_cds <- function(cds, cells){
+  cells <- unique(intersect(cells, colnames(cds)))
+  if(length(cells) == 0) {
+    stop("Cannot find any cell from the cds matches with the cell name from the cells argument! Please make sure the cell name you input is correct.")
+  }
+  
+  exprs_mat <- exprs(cds[, cells])
+  cds_subset <- newCellDataSet(exprs_mat,
+                                 phenoData = new("AnnotatedDataFrame", data = pData(cds)[cells, ]),
+                                 featureData = new("AnnotatedDataFrame", data = fData(cds)),
+                                 lowerDetectionLimit=cds@lowerDetectionLimit, 
+                                 expressionFamily=cds@expressionFamily)
+  
+  cds_subset@dispFitInfo <- cds@dispFitInfo
+  
+  if(ncol(cds@reducedDimS) == ncol(cds)) {
+    cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+  } else {
+    cds_subset@reducedDimS <- cds@reducedDimS
+  }
+  if(ncol(cds@reducedDimW) == ncol(cds)) {
+    cds_subset@reducedDimW <- cds@reducedDimW[, cells]
+  } else {
+    cds_subset@reducedDimW <- cds@reducedDimW
+  }
+  if(ncol(cds@reducedDimA) == ncol(cds)) {
+    cds_subset@reducedDimA <- cds@reducedDimA[, cells]
+  } else {
+    cds_subset@reducedDimA <- cds@reducedDimA
+  }
+
+  if(nrow(cds@normalized_data_projection) == ncol(cds)) {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection[cells, ]
+  } else {
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection
+  }
+  
+  # we may also subset results from any RGE methods 
+  if('DDRTree' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$DDRTree$stree <- cds@auxOrderingData$DDRTree$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$DDRTree$R <- cds@auxOrderingData$DDRTree$R[cells, principal_node_ids]
+    cds_subset@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('SimplePPT' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$SimplePPT$stree <- cds@auxOrderingData$SimplePPT$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  if('L1Graph' %in% names(cds@auxOrderingData)) {
+    principal_node_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
+    cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[principal_node_ids, principal_node_ids]
+    cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, principal_node_ids]
+    cds_subset@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
+  }
+  
+  # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
+  principal_graph_points <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[cells, 1]
+  cds_subset@minSpanningTree <- induced_subgraph(cds@minSpanningTree, paste0('Y_', principal_graph_points))
+  
+  cds_subset@reducedDimK <- cds@reducedDimK[, principal_graph_points]
+  cds_subset@dim_reduce_type <- cds@dim_reduce_type
+  cds_subset 
+}

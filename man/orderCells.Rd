@@ -9,12 +9,9 @@ orderCells(cds, root_pr_nodes = NULL, root_cells = NULL)
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
 
-\item{root_state}{The state to use as the root of the trajectory.
-You must already have called orderCells() once to use this argument.}
+\item{root_pr_nodes}{The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process.}
 
-\item{num_paths}{the number of end-point cell states to allow in the biological process.}
-
-\item{reverse}{whether to reverse the beginning and end points of the learned biological process.}
+\item{root_cells}{The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell

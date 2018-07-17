@@ -527,7 +527,17 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' Monocle's main differential analysis routine.
 #' It accepts a CellDataSet and two model formulae as input, which specify generalized
 #' lineage models as implemented by the \code{VGAM} package.
-#'
+#' n Monocle 3, we incoporated the find_cluster_markers to find marker genes for each group of cells. 
+#' In order to calculate the specificity of each gene to each cluster, we first create a perfect specific 
+#' distribution ( Q ) of each gene by assigning probability 1 to one particular cluster while all 0 to any 
+#' other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
+#' to a probability distribution ( P ) by dividing the sum of the percentages across all clusters. Then we calculate
+#' the specificity score as 1 - Jensen-Shannon distance between this distribution to the perfect specific distribution.
+#' The Jensen–Shannon divergence is a method of measuring the similarity between two probability distributions ($P,Q$).
+#' The Jensen-Shannon divergence, defined for two distributions $P$ and $Q$ by
+#' $JSD(P,Q) = \frac{1}{2}D(P\|M) + \frac{1}{2}D(Q\|M)$
+#' where $M = \frac{1}{2}(P+Q)$ and $D(A\|B)$ is the Kullback-Leibler divergence.
+
 #' @seealso \code{\link{principalGraphTest}} principalGraphTest
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param spatial_res the result returned from spatialDifferentialTest
@@ -540,8 +550,10 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @param block_size the number of genes to process per bloclk which dramatically reduces the memory footprints. Default to be 100.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
 #' @param ... Additional arguments passed to function
-#' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
-#' @importFrom dplyr group_by summarize desc arrange top_n do
+#' @return a tibble (Tibbles are a modern take on data frame) containing mean expression in each group (mean), percentage of cells 
+#' expressed in each group (percentage), specifity score (specifity) for each gene in each cluster and the principalGraphTest statistics 
+#' (by default, the Moran's I test), together with the information from pData. 
+#' @importFrom dplyr group_by summarize desc arrange top_n do select everything 
 #' @importFrom reshape2 melt
 #' @export
 #'
@@ -576,7 +588,7 @@ find_cluster_markers <- function(cds,
     exprs_mat$Gene <- as.character(exprs_mat$Gene)
     exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
 
-    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression))
+    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed = sum(Expression > lower_threshold))
 
     ExpVal <- merge(ExpVal, spatial_res, by.x = 'Gene', by = "row.names")
     ExpVal$Group <- ExpVal$Group
@@ -611,5 +623,6 @@ find_cluster_markers <- function(cds,
   if(!is.null(top_n_by_group)) {
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
   }
-  specificity_res
+
+  specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed", "percentage", everything())
 }

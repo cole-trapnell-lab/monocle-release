@@ -8,8 +8,8 @@ clusterCells(cds, use_pca = FALSE, skip_rho_sigma = F,
   num_clusters = NULL, inspect_rho_sigma = F, rho_threshold = NULL,
   delta_threshold = NULL, peaks = NULL, gaussian = T,
   clustering_genes = NULL, k = 20, louvain_iter = 5, weight = FALSE,
-  res = NULL, method = c("densityPeak", "louvain"), verbose = F,
-  cores = 1, ...)
+  res = NULL, method = c("densityPeak", "louvain"), random_seed = 0L,
+  verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -43,6 +43,8 @@ will automatically calculated based on the top num_cluster product of rho and si
 \item{res}{Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`.}
 
 \item{method}{method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm.}
+
+\item{random_seed}{the seed used by the random number generator in louvain-igraph package}
 
 \item{verbose}{Verbose A logic flag to determine whether or not we should print the running details.}
 
