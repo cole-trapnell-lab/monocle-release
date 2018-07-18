@@ -3396,7 +3396,7 @@ plot_genes_spatial_lags <- function(cds, markers,
 # #' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
 # #' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
 #' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
-#' @param tabulate 
+#' @param tabulate A logical argument 
 #' @param zero.policy A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.
 #' @param ... Additional arguments to pass to scale_color_viridis 
 #' @export
@@ -3408,9 +3408,6 @@ plot_local_spatial_statistics <- function(cds, markers,
                                           return_all = FALSE, ...) {
   listw <- calculateLW(cds)
   data_df <- pData(cds)
-  if (!(color_by %in% colnames(cds))) {
-    stop(paste0(color_by, " doesn't belong to the columns of the pData."))
-  }
   
   markers_exprs <- NULL
   if (is.null(markers) == FALSE) {
@@ -3426,8 +3423,7 @@ plot_local_spatial_statistics <- function(cds, markers,
     }
   }
   
-  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 
-      0) {
+  if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0) {
     data_df <- merge(data_df, markers_exprs, by.x = "row.names", 
                      by.y = "cell_id")
     if(log)
