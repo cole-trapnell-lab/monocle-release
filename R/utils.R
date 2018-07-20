@@ -787,6 +787,7 @@ select_cells <- function(cds){
 #' cds <- tenx_to_cds(c("/net/trapnell/vol1/home/xqiu/aggregated_samples_1", 
 #'                         "/net/trapnell/vol1/home/xqiu/aggregated_samples_1", 'hg19'))
 #' }
+#' @importFrom utils read.table read.delim
 tenx_to_cds = function(pipeline_dirs, 
                        genome="hg19", 
                        include_analysis = F,
@@ -915,6 +916,7 @@ tenx_to_cds = function(pipeline_dirs,
 #' tmp <- subset_cds(lung, cells = row.names(subset(pData(lung), State == 1)))
 #' plot_cell_trajectory(tmp)
 #' }
+#' @importFrom igraph induced_subgraph
 subset_cds <- function(cds, cells){
   cells <- unique(intersect(cells, colnames(cds)))
   if(length(cells) == 0) {

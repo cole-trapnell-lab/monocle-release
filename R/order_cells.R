@@ -711,8 +711,9 @@ partitionCells <- function(cds,
 #' @import irlba
 #' @import DDRTree
 #' @import Rtsne
-#' @importFrom stats dist prcomp
+#' @importFrom stats dist prcomp kmeans
 #' @importFrom igraph graph.adjacency
+#' @importFrom L1graph get_mst_with_shortcuts
 #' @export
 learnGraph <- function(cds,
                        max_components=2,
@@ -1310,7 +1311,7 @@ cal_ncenter <- function(ncells, ncells_limit = 100){
 #' @param num_roots Number of roots for the trajectory 
 #' @param pch Size of the principal graph node
 #' @param ... Extra arguments to pass to function
-#' 
+#' @importFrom graphics segments points
 selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...)
 {
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
@@ -1402,6 +1403,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 #' @param extra_arguments Extra arguments passed into learnGraph (which calls this function) 
 #' @param close_loop A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)
 #' @param verbose Whether to emit verbose output when running this function 
+#' @importFrom igraph get.adjacency union
 multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
@@ -1501,6 +1503,8 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
               dp_mst = dp_mst))
 }
 
+#' @importFrom igraph diameter as_adjacency_matrix add_vertices add_edges
+#' @importFrom stats kmeans
 connectTips <- function(pd,
                         R, 
                         mst_g_old, 

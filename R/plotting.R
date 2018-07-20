@@ -1311,6 +1311,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
 #' @importFrom plyr ddply
 #' @importFrom reshape2 melt
 #' @importFrom BiocGenerics sizeFactors
+#' @importFrom stats formula
 #' @export 
 plot_genes_branched_pseudotime <- function (cds, 
                                             branch_states = NULL, 
@@ -2007,6 +2008,7 @@ plot_rho_delta <- function(cds, rho_threshold = NULL, delta_threshold = NULL){
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @export
+#' @importFrom stats formula
 #' @examples
 #' \dontrun{
 #' library(HSMMSingleCell)
@@ -2938,6 +2940,7 @@ plot_cell_fdl <- function(cds,
 #' @import rgl
 #' @import htmltools
 #' @import viridisLite
+#' @importFrom grDevices hcl
 #' @export
 #' @examples
 #' \dontrun{
@@ -3330,6 +3333,7 @@ plot_ridge <- function(cds, x = 'Pseudotime', y = 'Cluster', markers = NULL) {
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
 #' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
+#' @importFrom spdep lag.listw influence.measures lm
 #' @export
 plot_genes_spatial_lags <- function(cds, markers, 
                        log = TRUE,
@@ -3396,9 +3400,13 @@ plot_genes_spatial_lags <- function(cds, markers,
 # #' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
 # #' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
 #' @param return_all A logical argument to determine whether or not the dataframe of the local G or Moran's I should be returned
-#' @param tabulate A logical argument 
+#' @param tabulate A logical argument that when set to TRUE will create column named 'quadrant' in the dataframe supplied to the plot
+#' where the values are either 'high-high', 'high-low', 'low-high', 'low-low' or 'insignificant. The values on the left and right of the hyphen are determined
+#'  by the mean of the value from value column of the dataframe and the mean-moran value respectively.
 #' @param zero.policy A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.
 #' @param ... Additional arguments to pass to scale_color_viridis 
+#' @importFrom stats lag.listw
+#' @importFrom spdep lag.listw
 #' @export
 plot_local_spatial_statistics <- function(cds, markers, 
                                           method = 'local_G', 
@@ -3612,6 +3620,7 @@ plot_gene_pair_spatial_correlation <- function(cds, x, y, log = T) {
 #' @import ggplot2
 #' @importFrom reshape2 melt dcast
 #' @importFrom viridis scale_color_viridis
+#' @importFrom plyr summarise
 #' @export
 plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...) {
   gene_ids <- row.names(subset(fData(cds), gene_short_name %in% markers))

@@ -754,7 +754,7 @@ classifyCells <- function(cds, cth, method=c("glmnet", "markers-only"), rank_pro
 
 #' @import methods
 #' @importFrom Biobase exprs pData
-#' @importFrom igraph V
+#' @importFrom igraph V subcomponent
 cth_classifier_cluster_cds <- function(cds_subset, cth, curr_node, frequency_thresh) {
   #curr_cell_vertex <-  V(cth@classificationTree)[curr_node]
   next_nodes <- c()

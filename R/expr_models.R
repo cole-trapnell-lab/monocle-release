@@ -8,6 +8,7 @@
 #' @title Helper function for parallel VGAM fitting
 #' @name fit_model_helper
 #' @description test
+#' @importFrom stats formula
 fit_model_helper <- function(x,
                              modelFormulaStr,
                              expressionFamily,

@@ -8,7 +8,8 @@
 #' @param disp_func test
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
 #' @name diff_test_helper
-#' @description test
+#' @description A helper function for differentialGeneTest
+#' @importFrom stats formula
 diff_test_helper <- function(x,
                              fullModelFormulaStr,
                              reducedModelFormulaStr,
@@ -212,6 +213,7 @@ differentialGeneTest <- function(cds,
 #' @param verbose A logic flag that determines whether or not to print execution details
 #' @param  k The maximum number of nearest neighbors to compute
 #' @param return_sparse_matrix A logic flag that controls whether or not to return a sparse matrix
+#' @importFrom igraph get.adjacency
 calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
@@ -388,6 +390,7 @@ principalGraphTest <- function(cds,
   test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
+#' @importFrom stats na.fail pnorm
 my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation = TRUE)
 {
   zero.policy = TRUE
@@ -457,6 +460,7 @@ my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation 
   res
 }
 
+#' @importFrom stats pnorm
 my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "greater")
 {
   zero.policy = TRUE

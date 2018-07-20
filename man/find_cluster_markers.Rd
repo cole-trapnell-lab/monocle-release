@@ -55,5 +55,5 @@ The Jensen-Shannon divergence, defined for two distributions P and Q by
 where \eqn{M \cdot \frac{1}{2} \cdot P + Q}{} and \eqn{D(A|B)}{} is the Kullback-Leibler divergence.
 }
 \seealso{
-principalGraphTest
+\code{\link{principalGraphTest}}
 }

@@ -16,7 +16,9 @@ plot_local_spatial_statistics(cds, markers, method = "local_G", log = TRUE,
 
 \item{log}{a logic value to determine whether or not we need to log the gene expression}
 
-\item{tabulate}{}
+\item{tabulate}{A logical argument that when set to TRUE will create column named 'quadrant' in the dataframe supplied to the plot
+where the values are either 'high-high', 'high-low', 'low-high', 'low-low' or 'insignificant. The values on the left and right of the hyphen are determined
+ by the mean of the value from value column of the dataframe and the mean-moran value respectively.}
 
 \item{zero.policy}{A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.}
 

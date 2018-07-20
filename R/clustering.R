@@ -388,6 +388,8 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   return(list(g = g, relations = relations, distMatrix = distMatrix, coord = coord, edge_links = edge_links, optim_res = optim_res))
 }
 
+#' @importFrom igraph as_adjacency_matrix
+#' @importFrom stats pnorm
 compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05, verbose = FALSE){
   cell_membership <- as.factor(igraph::membership(optim_res))
   membership_matrix = sparse.model.matrix( ~ cell_membership + 0)
