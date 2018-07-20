@@ -69,7 +69,7 @@ updateCDS <- function(cds) {
     cds_update@cellPairwiseDistances <- cds@cellPairwiseDistances
     cds_update@dispFitInfo <- cds@dispFitInfo
     cds_update@dim_reduce_type <- cds@dim_reduce_type
-    #cds_update@rge_method <- cds@rge_method
+    cds_update@rge_method <- cds@rge_method
     cds_update@auxOrderingData <- cds@auxOrderingData
     cds_update@auxClusteringData <- cds@auxClusteringData
     

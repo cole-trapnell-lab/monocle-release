@@ -223,19 +223,20 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     message("retrieve the matrices for Moran's test...")
   }
 
-  if(cds@dim_reduce_type == 'L1graph') {
-    cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
-    principal_g <- cds@auxOrderingData[["L1graph"]]$W
-  } else if(cds@dim_reduce_type %in% c('DDRTree', 'SimplePPT')) {
-    cell_coords <- t(reducedDimS(cds))
-    principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
-  } else if(cds@dim_reduce_type %in% c('UMAP')) {
+   if(length(cds@rge_method) == 0) {
+    cds@rge_method <- 'UMAP'
     cell_coords <- t(reducedDimS(cds))
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
+  } else if(cds@rge_method == 'L1graph') {
+    cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
+    principal_g <- cds@auxOrderingData[["L1graph"]]$W
+  } else if(cds@rge_method %in% c('DDRTree', 'SimplePPT')) {
+    cell_coords <- t(reducedDimS(cds))
+    principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
 
   exprs_mat <- exprs(cds)
-  cell2pp_map <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
+  cell2pp_map <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
 
   if(is.null(cell2pp_map)) {
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
@@ -596,7 +597,7 @@ find_cluster_markers <- function(cds,
     exprs_mat$Gene <- as.character(exprs_mat$Gene)
     exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
 
-    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed = sum(Expression > lower_threshold))
+    ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed_in_group = sum(Expression > lower_threshold))
 
     ExpVal <- merge(ExpVal, pr_graph_test_res, by.x = 'Gene', by = "row.names")
     ExpVal$Group <- ExpVal$Group
@@ -632,5 +633,5 @@ find_cluster_markers <- function(cds,
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
   }
 
-  specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed", "percentage", everything())
+  specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed_in_group", "percentage", everything())
 }
