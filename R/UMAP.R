@@ -249,7 +249,7 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
                     as.integer(target_n_neighbors),
                     as.character(target_metric),
                     target_metric_kwds,
-                    target_weight,
+                    as.numeric(target_weight),
                     as.integer(transform_seed), 
                     as.logical(verbose))
   

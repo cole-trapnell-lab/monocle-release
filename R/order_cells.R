@@ -546,14 +546,14 @@ reduceDimension <- function(cds,
       
       umap_args <- c(list(X = irlba_pca_res, log = F, n_component = as.integer(max_components), verbose = verbose, return_all = T),
                      extra_arguments[names(extra_arguments) %in% 
-                                       c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "alpha", "init", "min_dist", "spread", 
-                                         'set_op_mix_ratio', 'local_connectivity', 'bandwidth', 'gamma', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
+                                       c("python_home", "n_neighbors", "metric", "n_epochs", "negative_sample_rate", "learning_rate", "init", "min_dist", "spread", 
+                                         'set_op_mix_ratio', 'local_connectivity', 'repulsion_strength', 'a', 'b', 'random_state', 'metric_kwds', 'angular_rp_forest', 'verbose')])
       tmp <- do.call(UMAP, umap_args)
       tmp$embedding_ <- (tmp$embedding_ - min(tmp$embedding_)) / max(tmp$embedding_) # normalize UMAP space
       umap_res <- tmp$embedding_; 
       
-      adj_mat <- Matrix::sparseMatrix(i = tmp$graph$indices, p = tmp$graph$indptr, 
-                                      x = -as.numeric(tmp$graph$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
+      adj_mat <- Matrix::sparseMatrix(i = tmp$graph_$indices, p = tmp$graph_$indptr, 
+                                      x = -as.numeric(tmp$graph_$data), dims = c(ncol(cds), ncol(cds)), index1 = F, 
                                       dimnames = list(colnames(cds), colnames(cds)))
       
       S <- t(umap_res)
@@ -1717,7 +1717,7 @@ multi_component_RGE <- function(cds,
           colnames(rge_res$X) <- colnames(X_subset)
           # assign R column names first
           row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
-          colnames(rge_res$Y) <- paste("Y_", (ncol(merge_rge_res$Y) + 1):(ncol(rge_res$Y)), sep = "")
+          colnames(rge_res$Y) <- paste("Y_", (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
           merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
           colnames(rge_res$Z) <- colnames(X_subset)
           merge_rge_res$R <- c(merge_rge_res$R, list(rge_res$R))
@@ -1761,7 +1761,7 @@ multi_component_RGE <- function(cds,
         } else {
           colnames(rge_res$X) <- colnames(X_subset)
           row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
-          colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+          colnames(rge_res$Y) <- paste("Y_", (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
           merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
           # colnames(rge_res$Z) <- colnames(X_subset)
           merge_rge_res$R <- c(merge_rge_res$R, list(rge_res$R))
@@ -1796,7 +1796,7 @@ multi_component_RGE <- function(cds,
       } else {
         colnames(rge_res$X) <- colnames(X_subset)
         row.names(rge_res$R) <- colnames(X_subset); colnames(rge_res$R) <- paste0('Y_', (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
-        colnames(rge_res$Y) <- paste("Y_", ncol(merge_rge_res$Y) + 1:ncol(rge_res$Y), sep = "")
+        colnames(rge_res$Y) <- paste("Y_", (ncol(merge_rge_res$Y) + 1):(ncol(merge_rge_res$Y) + ncol(rge_res$Y)), sep = "")
         merge_rge_res$Y <- cbind(merge_rge_res$Y, rge_res$Y)
         # colnames(rge_res$Z) <- colnames(X_subset)
         merge_rge_res$R <- c(merge_rge_res$R, list(rge_res$R))

@@ -8,7 +8,7 @@ UMAP or PCA space) representive cells' coordinates.}
 \usage{
 project_to_representatives(data, data_ori, landmark_id, louvain_res, pd,
   method = c("PSL", "drl", "fr", "kk", "SSE"), start.temp = NULL, k = 20,
-  verbose, ...)
+  do_partition = F, max_components = 2, verbose, ...)
 }
 \arguments{
 \item{data}{(dowmsampled) data to perform Louvain clustering and kNN graph construction}
@@ -24,6 +24,10 @@ project_to_representatives(data, data_ori, landmark_id, louvain_res, pd,
 \item{method}{The force directed layout function to use. Only relevant to when drl, fr or kk are used as fdl methods}
 
 \item{start.temp}{argument passed into layout_with_fr function}
+
+\item{do_partition}{Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.}
+
+\item{max_components}{the dimensionality of the reduced space}
 
 \item{verbose}{Wheter to print all running details}
 

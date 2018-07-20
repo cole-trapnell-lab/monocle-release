@@ -4,13 +4,15 @@
 \alias{patchEmbedding}
 \title{Run embedding smoothing techniques (drl, PSL and SSE) for each isolated group and then put different embedding in the same coordinate system}
 \usage{
-patchEmbedding(cds, do_partition = FALSE, use_pca = FALSE,
-  method = c("PSL", "drl", "fr", "kk", "SSE"),
+patchEmbedding(cds, max_components = 2, do_partition = FALSE,
+  use_pca = FALSE, method = c("PSL", "drl", "fr", "kk", "SSE"),
   merge_coords_method = c("dla", "procrutes"), start.temp = NULL, k = 20,
   landmark_num = 2000, cell_num_threshold = 0, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{max_components}{the dimensionality of the reduced space}
 
 \item{do_partition}{Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups}
 

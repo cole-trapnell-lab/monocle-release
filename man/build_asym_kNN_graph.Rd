@@ -2,9 +2,9 @@
 % Please edit documentation in R/clustering.R
 \name{build_asym_kNN_graph}
 \alias{build_asym_kNN_graph}
-\title{function to run louvain clustering algorithm}
+\title{function to run build asymmetric kNN graph}
 \usage{
-build_asym_kNN_graph(data, k = 20, return_graph = F)
+build_asym_kNN_graph(data, k = 20, cosine = TRUE, return_graph = F)
 }
 \arguments{
 \item{data}{low dimensional space used to perform graph clustering}
@@ -17,5 +17,5 @@ build_asym_kNN_graph(data, k = 20, return_graph = F)
 Either a sparse asymmetric adjacent matrix or a corresponding directed weighted kNN graph
 }
 \description{
-function to run louvain clustering algorithm
+function to run build asymmetric kNN graph
 }

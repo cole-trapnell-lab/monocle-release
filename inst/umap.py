@@ -26,5 +26,5 @@ def umap(i, j, val, dim, n, n_c, metric, n_epochs, negative_sample_rate, learnin
 				  	target_metric_kwds = target_metric_kwds, 
 				  	target_weight = target_weight, 
 				  	transform_seed = transform_seed, 
-				  	verbose = verbose).fit(data) 
+				  	verbose = verbose).fit(data.toarray()) 
   return res

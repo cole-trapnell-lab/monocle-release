@@ -4,13 +4,15 @@
 \alias{smoothEmbedding}
 \title{This function tries to learn a smooth embedding from the noisy reduced dimension using different techniques}
 \usage{
-smoothEmbedding(cds, do_partition = FALSE, use_pca = FALSE,
-  method = c("PSL", "drl", "fr", "kk", "SSE"),
+smoothEmbedding(cds, max_components = 2, do_partition = FALSE,
+  use_pca = FALSE, method = c("PSL", "drl", "fr", "kk", "SSE"),
   merge_coords_method = c("dla", "procrutes"), start.temp = NULL, k = 20,
   landmark_num = 2000, cell_num_threshold = 0, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
+
+\item{max_components}{the dimensionality of the reduced space}
 
 \item{do_partition}{Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.}
 
