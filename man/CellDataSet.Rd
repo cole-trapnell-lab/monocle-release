@@ -36,6 +36,8 @@ operate on CellDataSet objects constitute the basic Monocle workflow.
 
 \item{\code{dim_reduce_type}}{A string encoding how this CellDataSet has been reduced in dimensionality}
 
+\item{\code{rge_method}}{A string encoding how this CellDataSet has been fitted with a principal graph}
+
 \item{\code{auxOrderingData}}{An environment of auxilliary data structures used by various steps in Monocle. Not to be accessed by users directly.}
 }}
 

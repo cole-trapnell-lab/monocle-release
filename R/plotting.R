@@ -79,8 +79,8 @@ plot_cell_trajectory <- function(cds,
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
   lib_info_with_pseudo <- pData(cds)
   
-  if (is.null(cds@dim_reduce_type)){
-    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+  if (is.null(cds@dim_reduce_type) | is.null(cds@rge_method)){
+    stop("Error: dimensionality not reduced or graph is not learned yet. Please call reduceDimension(), partitionCells() and learnGraph() before calling this function.")
   }
   
 
@@ -180,8 +180,8 @@ plot_cell_trajectory <- function(cds,
   }
   
   
-  if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
-    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+  if (show_branch_points && cds@rge_method == 'DDRTree'){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     branch_point_df <- ica_space_df %>%
       slice(match(mst_branch_nodes, sample_name)) %>%
       mutate(branch_point_idx = seq_len(n()))
@@ -1331,7 +1331,7 @@ plot_genes_branched_pseudotime <- function (cds,
                                             #gene_pairs = NULL,
                                             ...)
 {
-  if(cds@dim_reduce_type == "L1graph") 
+  if(cds@rge_method == "L1graph") 
     stop('plot_genes_branched_pseudotime does not work with L1-graph trajectories')
   
   Branch <- NA  
@@ -1591,7 +1591,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
                                         return_heatmap=FALSE,
                                         cores = 1, ...) {
   
-  if(cds@dim_reduce_type == "L1graph") 
+  if(cds@rge_method == "L1graph") 
     stop('buildBranchCellDataSet does not work with L1-graph trajectories')
   
   cds <- NA
@@ -2156,7 +2156,7 @@ plot_complex_cell_trajectory <- function(cds,
   data_dim_1 <- NA
   data_dim_2 <- NA
   
-  if(cds@dim_reduce_type == "L1graph") 
+  if(cds@rge_method == "L1graph") 
     stop('plot_complex_cell_trajectory does not work with L1-graph trajectories')
   
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
@@ -2218,7 +2218,7 @@ plot_complex_cell_trajectory <- function(cds,
     layout_coord_ori <- layout_coord 
     row.names(layout_coord) <- V(dp_mst)$name
     
-    branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    branch_points_cells <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
     from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
     order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest
@@ -2275,7 +2275,7 @@ plot_complex_cell_trajectory <- function(cds,
   if(cds@dim_reduce_type == "ICA"){
     S_matrix <- layout_coord[,] #colnames(cds)
     
-  } else if(cds@dim_reduce_type %in% c("DDRTree", "SimplePPT", "SGL-tree")){
+  } else if(cds@rge_method %in% c("DDRTree", "SimplePPT", "SGL-tree")){
     S_matrix <- layout_coord[closest_vertex,]
     closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
   }
@@ -2327,8 +2327,8 @@ plot_complex_cell_trajectory <- function(cds,
     }
   }
 
-  if (show_branch_points && cds@dim_reduce_type == 'DDRTree'){
-    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+  if (show_branch_points && cds@rge_method == 'DDRTree'){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     branch_point_df <- subset(edge_df, sample_name %in% mst_branch_nodes)[,c("sample_name", "source_prin_graph_dim_1", "source_prin_graph_dim_2")]
     branch_point_df$branch_point_idx <- match(branch_point_df$sample_name, mst_branch_nodes)
     branch_point_df <- branch_point_df[!duplicated(branch_point_df$branch_point_idx), ]
@@ -2413,7 +2413,7 @@ plot_multiple_branches_heatmap <- function(cds,
                                            
                                            return_heatmap=FALSE,
                                            cores=1){
-  if(cds@dim_reduce_type == "L1graph") 
+  if(cds@rge_method == "L1graph") 
     stop('buildBranchCellDataSet does not work with L1-graph trajectories')
   
   pseudocount <- 1
@@ -2624,7 +2624,7 @@ plot_multiple_branches_pseudotime <- function(cds,
                                               cores=1){
     
     
-  if(cds@dim_reduce_type == "L1graph") 
+  if(cds@rge_method == "L1graph") 
     stop('buildBranchCellDataSet does not work with L1-graph trajectories')
   
     if(TPM) {
@@ -2863,26 +2863,26 @@ plot_cell_fdl <- function(cds,
                           markers = NULL,
                           cell_size = 0.5,
                           cell_link_size = 1) {
-  if(is.null(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res)) {
+  if(is.null(cds@auxOrderingData[[cds@rge_method]]$louvain_res)) {
     stop('make sure you first run UMAP, SSE or UMAPSSE dimension reduction before layout with force directed layout')
   }
   
   if(is.null(layout)) {
-    coord <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$coord
+    coord <- cds@auxOrderingData[[cds@rge_method]]$louvain_res$coord
 
     if(is.null(coord)) {
       stop("coordinates for force direct layout doesn't exist. The number of cells in your cds is more than 3K?")
     }
   } 
   if(is.function(layout)) {
-    coord <- layout(cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$g)
+    coord <- layout(cds@auxOrderingData[[cds@rge_method]]$louvain_res$g)
     if(nrow(coord) != nrow(cds) | ncol(coord) != 2) {
       stop("your layout function don't return the correct dimension: row is the number of cells while the column is two")
     }
   }
 
   coord$sample_name <- row.names(coord)
-  edge_links <- cds@auxOrderingData[[cds@dim_reduce_type]]$louvain_res$edge_links
+  edge_links <- cds@auxOrderingData[[cds@rge_method]]$louvain_res$edge_links
 
   markers_exprs <- NULL
   if (is.null(markers) == FALSE){

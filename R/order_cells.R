@@ -114,7 +114,7 @@ orderCells <- function(cds,
     if (length(valid_root_cells) == 0){
       stop("Error: no such cell")
     }
-    closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+    closest_vertex = cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
     root_pr_nodes = closest_vertex[valid_root_cells,]
   }else{
     if (length(intersect(root_pr_nodes, V(minSpanningTree(cds))$name)) == 0){
@@ -126,12 +126,12 @@ orderCells <- function(cds,
     stop("Error: no valid root principal graph nodes.")
   }
   
-  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
   
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-  closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex = cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
   pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
 
   cds
 }
@@ -292,7 +292,7 @@ normalize_expr_data <- function(cds,
 #' @import irlba
 #' @importFrom stats dist prcomp
 #' @export
-preprocessCDS <- function(cds, method = c('PCA', 'LSI', 'none'), #, 'LSI' , 'NMF'
+preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
                           use_tf_idf = FALSE, 
                           num_dim=50,
                           norm_method = c("log", "vstExprs", "none"),
@@ -438,13 +438,13 @@ reduceDimension <- function(cds,
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
   if (verbose)
-    message("Retrieving normalized and PCA (LSI) reduced data ...")
+    message("Retrieving normalized data ...")
   
   FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
   
   if(is.null(FM)) {
-    message('Warning: The cds is not normalized or PCA (LSI) reduced with preprocessCDS function yet, running preprocessCDS with default parameters!')
+    message('Warning: The cds has not been pre-processed yet. Running preprocessCDS() with default parameters.')
     cds <- preprocessCDS(cds)
     FM <- cds@auxOrderingData$normalize_expr_data
     irlba_pca_res <- cds@normalized_data_projection
@@ -860,7 +860,7 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     #cds@dim_reduce_type <- "L1graph"
-    cds@dim_reduce_type <- RGE_method
+    #cds@dim_reduce_type <- RGE_method[1]
     cds <- findNearestPointOnMST(cds)
   } else if(RGE_method == 'SimplePPT') {
     if(ncol(cds@reducedDimS) > 1) {
@@ -1033,7 +1033,8 @@ learnGraph <- function(cds,
     
   }
   
-  cds@dim_reduce_type <- RGE_method
+  cds@rge_method = RGE_method
+  #cds@dim_reduce_type <- RGE_method[1]
   
   cds 
 }
@@ -1097,7 +1098,7 @@ findNearestPointOnMST <- function(cds){
   closest_vertex_df <- as.matrix(closest_vertex) #index on Z
   row.names(closest_vertex_df) <- names(closest_vertex) #original cell names for projection
 
-  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
   cds
 }
 
@@ -1333,7 +1334,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@dim_reduce_type %in% c("SimplePPT", "DDRTree", "UMAP") ){
+  if (cds@rge_method %in% c("SimplePPT", "DDRTree", "UMAP") ){
     reduced_dim_coords <- reducedDimK(cds)
   } else {
     stop("Error: unrecognized dimensionality reduction method.")
@@ -1383,7 +1384,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")

@@ -559,7 +559,7 @@ load_HSMM_markers <- function(){
 get_correct_root_state <- function(cds, cell_phenotype, root_type){
   cell_ids <- which(pData(cds)[, cell_phenotype] == root_type)
   
-  closest_vertex <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
   closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])  
   root_pr_nodes <- V(cds@minSpanningTree)$name[as.numeric(names(which.max(table(closest_vertex[cell_ids,]))))]
   
@@ -973,10 +973,11 @@ subset_cds <- function(cds, cells){
   }
   
   # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
-  principal_graph_points <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex[cells, 1]
+  principal_graph_points <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex[cells, 1]
   cds_subset@minSpanningTree <- induced_subgraph(cds@minSpanningTree, paste0('Y_', principal_graph_points))
   
   cds_subset@reducedDimK <- cds@reducedDimK[, principal_graph_points]
   cds_subset@dim_reduce_type <- cds@dim_reduce_type
+  cds_subset@rge_method <- cds@rge_method
   cds_subset 
 }

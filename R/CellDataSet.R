@@ -19,6 +19,7 @@ setOldClass(c("igraph"), prototype=structure(list(), class="igraph"))
 #' @field lowerDetectionLimit A numeric value specifying the minimum expression level considered to be true expression.
 #' @field dispFitInfo An environment containing lists, one for each set of estimated dispersion values. See estimateDispersions.
 #' @field dim_reduce_type A string encoding how this CellDataSet has been reduced in dimensionality
+#' @field rge_method A string encoding how this CellDataSet has been fitted with a principal graph
 #' @field auxOrderingData An environment of auxilliary data structures used by various steps in Monocle. Not to be accessed by users directly.
 #' @name CellDataSet 
 #' @rdname CellDataSet
@@ -37,6 +38,7 @@ setClass( "CellDataSet",
                     lowerDetectionLimit="numeric",
                     dispFitInfo = "environment",
                     dim_reduce_type="character",
+                    rge_method="character",
                     auxOrderingData = "environment", 
                     auxClusteringData = "environment",
                     normalized_data_projection = "matrix"
@@ -67,6 +69,7 @@ updateCDS <- function(cds) {
     cds_update@cellPairwiseDistances <- cds@cellPairwiseDistances
     cds_update@dispFitInfo <- cds@dispFitInfo
     cds_update@dim_reduce_type <- cds@dim_reduce_type
+    cds_update@rge_method <- cds@rge_method
     cds_update@auxOrderingData <- cds@auxOrderingData
     cds_update@auxClusteringData <- cds@auxClusteringData
     
