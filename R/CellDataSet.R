@@ -50,11 +50,15 @@ setClass( "CellDataSet",
 #' Functions to update a old CDS to the current version
 #' @param cds CellDataSet you'd like to update  
 #' @export
+
+
 updateCDS <- function(cds) {
-  cds_update <- tryCatch({
+  
+
+    cds_update <- tryCatch({
     validObject(cds)
     cds
-  }, error = function(e) {
+  }, error = function(cond) {
     pd <- new("AnnotatedDataFrame",data=pData(cds))
     fd <- new("AnnotatedDataFrame",data=fData(cds))
     
@@ -69,13 +73,11 @@ updateCDS <- function(cds) {
     cds_update@cellPairwiseDistances <- cds@cellPairwiseDistances
     cds_update@dispFitInfo <- cds@dispFitInfo
     cds_update@dim_reduce_type <- cds@dim_reduce_type
-    cds_update@rge_method <- cds@rge_method
+    cds_update@rge_method <- cds_update@dim_reduce_type
     cds_update@auxOrderingData <- cds@auxOrderingData
     cds_update@auxClusteringData <- cds@auxClusteringData
     
-    cds_update
-  }
-  )
+    cds_update})
   
   cds_update
 }
