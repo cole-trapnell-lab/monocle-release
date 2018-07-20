@@ -52,11 +52,14 @@
 #'   can have arguments passed via the metric_kwds dictionary. At this
 #'   time care must be taken and dictionary elements must be ordered
 #'   appropriately; this will hopefully be fixed in the future.
-#' @param n_epochs int The number of training epochs to use in optimization.
+#' @param n_epochs int The number of training epochs to be used in optimizing the
+#'  low dimensional embedding. Larger values result in more accurate
+#'  embeddings. If None is specified a value will be selected based on
+#'  the size of the input dataset (200 for large datasets, 500 for small).
 #' @param negative_sample_rate int (optional, default 5)
 #' The number of negative edge/1-simplex samples to use per positive 
 #' edge/1-simplex sample in optimizing the low dimensional embedding. 
-#' @param alpha float (optional, default 1.0)
+#' @param learning_rate float (optional, default 1.0)
 #' The initial learning rate for the embedding optimization.
 #' @param init string (optional, default 'spectral')
 #' How to initialize the low dimensional embedding. Options are:
@@ -86,15 +89,15 @@
 #' The higher this value the more connected the manifold becomes
 #' locally. In practice this should be not more than the local intrinsic
 #' dimension of the manifold.
-#' @param gamma float (optional, default 1.0)
+#' @param repulsion_strength float (optional, default 1.0)
 #' Weighting applied to negative samples in low dimensional embedding
 #' optimization. Values higher than one will result in greater weight
 #' being given to negative samples.
-#' @param bandwidth float (optional, default 1.0)
-#' The effective bandwidth of the kernel if we view the algorithm as
-#' similar to Laplacian eigenmaps. Larger values induce more
-#' connectivity and a more global view of the data, smaller values
-#' concentrate more locally.
+#' @param transform_queue_size: float (optional, default 4.0)
+#' For transform operations (embedding new points using a trained model_
+#' this will control how aggressively to search for nearest neighbors.
+#' Larger values will result in slower performance but more accurate
+#' nearest neighbor evaluation.
 #' @param a float (optional, default None) (not passed in)
 #' More specific parameters controlling the embedding. If None these
 #' values are set automatically as determined by ``min_dist`` and
@@ -118,6 +121,27 @@
 #' mostly on useful for metric that use an angular style distance such
 #' as cosine, correlation etc. In the case of those metrics angular forests
 #' will be chosen automatically.
+#' @param target_n_neighbors: int (optional, default -1)
+#' The number of nearest neighbors to use to construct the target simplcial
+#' set. If set to -1 use the ``n_neighbors`` value.
+#' @param target_metric: string or callable (optional, default 'categorical')
+#' The metric used to measure distance for a target array is using supervised
+#' dimension reduction. By default this is 'categorical' which will measure
+#' distance in terms of whether categories match or are different. Furthermore,
+#' if semi-supervised is required target values of -1 will be trated as
+#' unlabelled under the 'categorical' metric. If the target array takes
+#' continuous values (e.g. for a regression problem) then metric of 'l1'
+#' or 'l2' is probably more appropriate.
+#' @param target_metric_kwds: dict (optional, default None)
+#' Keyword argument to pass to the target metric when performing
+#' supervised dimension reduction. If None then no arguments are passed on.
+#' @param target_weight: float (optional, default 0.5)
+#' weighting factor between data topology and target topology. A value of
+#' 0.0 weights entirely on data, a value of 1.0 weights entirely on target.
+#' The default of 0.5 balances the weighting equally between data and target.
+#' @param transform_seed: int (optional, default 42)
+#' Random seed used for the stochastic aspects of the transform operation.
+#' This ensures consistency in transform operations.
 #' @param verbose bool (optional, default False)
 #' Controls verbosity of logging.
 #' @param return_all Whether to return all slots after UMAP 
@@ -134,19 +158,24 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   metric = "correlation", 
   n_epochs = NULL, 
   negative_sample_rate = 5L,
-  alpha = 1.0,
+  learning_rate = 1.0,
   init = 'spectral',
   min_dist = 0.1, 
   spread = 1.0,
   set_op_mix_ratio = 1.0,
   local_connectivity = 1L,
-  bandwidth = 1.0, 
-  gamma = 1.0,
+  # bandwidth = 1.0, 
+  repulsion_strength = 1.0,
   a = NULL,
   b = NULL, 
   random_state = 0L,
   metric_kwds = reticulate::dict(), 
   angular_rp_forest = FALSE,
+  target_n_neighbors = -1L, 
+  target_metric = 'categorical', 
+  target_metric_kwds = reticulate::dict(), 
+  target_weight = 0.5, 
+  transform_seed = 42L, 
   verbose = FALSE,
   return_all = FALSE) {
   
@@ -193,26 +222,35 @@ UMAP <- function(X, python_home = system('which python', intern = TRUE),
   } else {
     metric_kwds <- reticulate::dict(metric_kwds)
   }
-
+  if(is.list(target_metric_kwds) == F) {
+    target_metric_kwds <- reticulate::dict()
+  } else {
+    target_metric_kwds <- reticulate::dict(target_metric_kwds)
+  }
   umap_res <- umap(i, j, val, dim, 
                     as.integer(n_neighbors), 
                     as.integer(n_component), 
                     as.character(metric), 
                     n_epochs,
                     as.integer(negative_sample_rate),
-                    as.numeric(alpha),
+                    as.numeric(learning_rate),
                     as.character(init),
                     as.numeric(min_dist), 
                     as.numeric(spread),
                     as.numeric(set_op_mix_ratio),
                     as.integer(local_connectivity),
-                    as.numeric(bandwidth),
-                    as.numeric(gamma),
+                    # as.numeric(bandwidth),
+                    as.numeric(repulsion_strength),
                     a,
                     b,
                     as.integer(random_state),
                     metric_kwds,
                     as.logical(angular_rp_forest),
+                    as.integer(target_n_neighbors),
+                    as.character(target_metric),
+                    target_metric_kwds,
+                    target_weight,
+                    as.integer(transform_seed), 
                     as.logical(verbose))
   
   if(return_all) {
