@@ -283,7 +283,9 @@ cds <- learnGraph(cds,  RGE_method = 'SimplePPT')
           <p>Once the you've learned the trajectory, you can visualize the it and color the cells in different ways.</p>
 
 {% highlight R %}
-plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values = cell_type_color)
+plot_cell_trajectory(cds,
+                     color_by = "cell_type2") +
+                     scale_color_manual(values = cell_type_color)
 {% endhighlight %}
 
           <div class= "text-center">
@@ -313,9 +315,12 @@ plot_cell_trajectory(cds, color_by = "cell_type2") + scale_color_manual(values =
 get_correct_root_state <- function(cds, cell_phenotype, root_type){
   cell_ids <- which(pData(cds)[, cell_phenotype] == root_type)
 
-  closest_vertex <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <-
+    cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])
-  root_pr_nodes <- V(cds@minSpanningTree)$name[as.numeric(names(which.max(table(closest_vertex[cell_ids,]))))]
+  root_pr_nodes <-
+    V(cds@minSpanningTree)$name[as.numeric(names
+      (which.max(table(closest_vertex[cell_ids,]))))]
 
   root_pr_nodes
 }
@@ -326,7 +331,9 @@ get_correct_root_state <- function(cds, cell_phenotype, root_type){
           <p>Now we can call this function to automatically find the node in the principal graph where our multipotent progenitors reside:</p>
 
 {% highlight R %}
-MPP_node_ids = get_correct_root_state(cds, cell_phenotype = 'cell_type2', "Multipotent progenitors")
+MPP_node_ids = get_correct_root_state(cds,
+                                      cell_phenotype =
+                                        'cell_type2', "Multipotent progenitors")
 cds <- orderCells(cds, root_pr_nodes = MPP_node_ids)
 plot_cell_trajectory(cds)
 {% endhighlight %}
@@ -360,17 +367,22 @@ cds <- reduceDimension(cds, max_components = 3,
 
 cds <- partitionCells(cds)
 
-cds <- learnGraph(cds, max_components = 3, RGE_method = 'SimplePPT', partition_component = T,
+cds <- learnGraph(cds,
+                  max_components = 3,
+                  RGE_method = 'SimplePPT',
+                  partition_component = T,
                   verbose = F)
 
 cds <- orderCells(cds,
-                  root_pr_nodes = get_correct_root_state(cds,
-                                                         cell_phenotype = 'cell_type2',
-                                                         "Multipotent progenitors"))
+                  root_pr_nodes =
+                    get_correct_root_state(cds,
+                                           cell_phenotype = 'cell_type2',
+                                           "Multipotent progenitors"))
 
 plot_3d_cell_trajectory(cds,
                         color_by="cell_type2",
-                        webGL_filename=paste(getwd(), "/trajectory_3D.html", sep=""),
+                        webGL_filename=
+                          paste(getwd(), "/trajectory_3D.html", sep=""),
                         palette=cell_type_color,
                         show_backbone=TRUE,
                         useNULL_GLdev=TRUE)
@@ -509,8 +521,9 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
       2) apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.
       3) introduce a general differential test (<code>principalGraphTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding.
       4) the <code>find_cluster_markers</code> function to identify cluster specific genes.
-      5) various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.
-      Note that this dataset has been used by Seurat from Rahul's group as a tutoril also but our analysis here is complimentary to theirs.</p>
+      5) various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.</p>
+
+    <p>Note that this mouse cell atlas (<b>MCA</b>) dataset (Han, Xiaoping, et al. "Mapping the mouse cell atlas by Microwell-seq". Cell 172.5 (2018): 1091-1107.) has been used by Seurat from Rahul's group as a tutorial (<a href="https://satijalab.org/seurat/mca.html">https://sajitalab.org/seurat/mca.html</a>) also but our analysis here is complimentary to theirs.</p>
 
     {% highlight R %}
 rm(list = ls()) # clear the environment
@@ -524,7 +537,24 @@ suppressMessages(library(flexclust))
 suppressMessages(library(mcclust))
     {% endhighlight %}
 
-  <h3> Creaste a cds object for MCA dataset </h3>
+    <p> Make sure the python package <code>louvain</code> is installed so that we can run louvain clustering with different resolutions (see below).
+      Please also make sure the newest <b>UMAP 0.30</b> version is installed.
+      Please run the following code:</p>
+
+{% highlight R %}
+#ensure umap-learn 0.30 is installed
+py_install('umap-learn', pip = T, pip_ignore_installed = T)
+{% endhighlight %}
+
+{% highlight R %}
+library(reticulate)
+import("louvain")
+{% endhighlight %}
+
+  <h3> Create a cds object for MCA dataset </h3>
+
+  <p> In the following, we load a preprocessed sprase matrix and cell meta dataframe and then create the cell dataset for downstream analysis. We thank the Seurat development team for providing the processed data.
+    (<a href = "https://satijalab.org/seurat/mca.html">https://satijalab.org/seurat/mca.html</a>)!
 
     {% highlight R %}
 MCA <-readRDS("/Users/xqiu/Dropbox (Personal)/Projects/
@@ -543,23 +573,29 @@ MCA_cds <- newCellDataSet(MCA[, overlapping_cells], phenoData = pd,featureData =
                           lowerDetectionLimit=1)
     {% endhighlight %}
 
-  <h3> Estimate size factor or dispersion with delayed array </h3>
+  <h3> Estimate size factor and dispersion</h3>
 
-    {% highlight R %}
-# MCA_cds <- MCA_cds[, Matrix::colSums(exprs(MCA_cds)) > 1000
-    & Matrix::colSums(exprs(MCA_cds) > 0) > 500]
+  <p> As usual, we will now calculate library size factors so we can account for variation in the number of mRNAs per cell when we look for differentially expressed genes.
+    We will also fit a dispersion model, which will be used by Monocle's differential expression algorithms. These operations can take a lot of memory when run on very large
+    datasets, so we use the DelayedArray package to split them up into more manageable blocks. You can control the block size as shown below. The larger the value of DelayedArray.block.size,
+    the faster these steps will go, but they will use more memory. If you run out, the whole thing will take forever, or possibly crash R entirely. </p>
+
+{% highlight R %}
 DelayedArray:::set_verbose_block_processing(TRUE)
 options(DelayedArray.block.size=1000e6)
 MCA_cds <- estimateSizeFactors(MCA_cds)
 MCA_cds <- estimateDispersions(MCA_cds)
-    {% endhighlight %}
+{% endhighlight %}
 
-  <h3> Perform non-linear dimension reduction with <i>UMAP</i> on the PCA reduced space from normalized dataset</h3>
+  <h3>Reduce the dimensionality of the MCA dataset</h3>
 
     {% highlight R %}
+library(dplyr)
+
 disp_table = dispersionTable(MCA_cds)
 disp_table = disp_table %>% mutate(excess_disp =
-  (dispersion_empirical - dispersion_fit) / dispersion_fit) %>% arrange(plyr::desc(excess_disp))
+  (dispersion_empirical - dispersion_fit) / dispersion_fit) %>%
+    arrange(plyr::desc(excess_disp))
 top_subset_genes = as.character(head(disp_table, 2500)$gene_id)
 
 MCA_cds = setOrderingFilter(MCA_cds, top_subset_genes)
@@ -575,15 +611,34 @@ MCA_cds <- reduceDimension(MCA_cds, max_components = 2,
                        verbose = T)
     {% endhighlight %}
 
-  <h3> Save cds and run clusterCells separately </h3>
+  <h3>Group cells into different clusters</h3>
+
+  <p> Monocle 3 includes powerful new routines for clustering cells, which is often a key step in classifying cells according to type.
+    In Monocle 2, we used density peak clustering (default) or the louvain clustering implemented in the igraph package to identify cell
+    clusters on the reduced tSNE space. However, density peak clustering doesn't scale well with large datasets and the louvain clustering algorithm
+    from igraph doesn't provide the flexibility to cluster cells at different resolutions.</p>
+
+    <p> In Monocle3, we added the new support of louvain clustering based on a flexible package which provides a variety of improved community detection algorithms
+      and allows clustering at different resolutions.</p>
 
     {% highlight R %}
-cellDataSetPath <- "File/Path/Where/You/Want/To/Store/MCA_cds.rds"
-saveRDS(file = cellDataSetPath, MCA_cds)
-MCA_cds <- readRDS('/Users/xqiu/Downloads/cds_clustering.Rds')
+MCA_cds <- clusterCells(MCA_cds,
+                        method = 'louvain',
+                        res = 1e-6,
+                        louvain_iter = 1,
+                        verbose = T)
     {% endhighlight %}
 
-  <h3> Cluster cells using Louvain clustering algorithm </h3>
+    <p> Here <code>res</code> represents the resolution parameter (range from 0-1) for the louvain clustering.
+      Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be 1e-4.  <code>louvain_iter</code> represents the number of iterations used for Louvain clustering.
+      The clustering result gives the largest modularity score that will be used as the final clustering result. The default is 1. </p>
+
+    <p> Note that Monocle 3 also supports clustering cells in the PCA space prior to UMAP embedding.
+      The results are often very similar to those identified directly from low dimensional embedding. You can test this out by setting <code>use_pca = T</code>.</p>
+
+  <h3> Visualize the clustering results </h3>
+
+  <p>Let's visualize the clustering results. Here's what the cells look like in the UMAP space:</p>
 
   {% highlight R %}
 col_vector_origin <- c("#db83da",
@@ -631,31 +686,59 @@ col_vector_origin <- c("#db83da",
 col_vector <-
   col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Tissue)))]
 names(col_vector) <- unique(as.character(pData(MCA_cds)$Tissue))
-options(repr.plot.width = 8)
-options(repr.plot.height = 11)
-plot_cell_clusters(MCA_cds, color_by = 'Tissue')
-  + theme(legend.text=element_text(size=6))
+options(repr.plot.width = 11)
+options(repr.plot.height = 8)
+plot_cell_clusters(MCA_cds,
+                   color_by = 'Tissue',
+                   cell_size = 0.1,
+                   show_group_id = T)  +
+  theme(legend.text=element_text(size=6)) + #set the size of the text
+  theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
-  ## Figure 1 ##
+  <div class= "text-center">
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_tissue.png" width= 800>
+  </div>
+
+<p> Here we first color the cells by the tissue type annotated from the original study.
+  Setting <code>show_group_id = T</code> will plot the group ids according to <code>color_by</code>.
+  If the corresponding group ids are strings, we will assign each group a number and label the number on the embedding while attaching a number to the group ids from the color annotations.
+  By doing so, we avoid overlaying strings on top of each other on the UMAP embedding.
+</p>
+
+<p> From the embedding, we can see that UMAP did a great job separating cells from different tissue types and relevant cell types are clustered nearby one another.
+  For example, fetal liver (13) and adult liver (15) are close to each other in the UMAP embedding. </p>
+
+<p> We can also color the cells by the cluster ID identified by the Louvain clustering algorithm.
+  The cluster IDs are ordered from the largest cluster (in terms of number of cells) to the smallest cluster.
+  Just by eye we can see that the clustering match well with tissue types from the original study.
+  However, some clusters, (for example, clusters 1 and 5) appear to consist of multiple subclusters that haven't been broken up by the Louvain algorithm.
+  We can either increase the <code>res</code> parameter when we run the clusterCells function to identify substructure or we can subset the cds and redo the Louvain clustering again on this subset to get more fine grained clusters.
+</p>
 
   {% highlight R %}
-options(repr.plot.width = 6)
-options(repr.plot.height = 9)
+options(repr.plot.width = 11)
+options(repr.plot.height = 8)
 cluster_col_vector <-
   col_vector_origin[1:length(unique(as.character(pData(MCA_cds)$Cluster)))]
 names(cluster_col_vector) <- unique(as.character(pData(MCA_cds)$Cluster))
-plot_cell_clusters(MCA_cds, color_by = 'Cluster')
-  + scale_color_manual(values = cluster_col_vector)
-  + theme(legend.text=element_text(size=7))
+plot_cell_clusters(MCA_cds,
+                   color_by = 'Cluster',
+                   cell_size = 0.1,
+                   show_group_id = T) +
+    scale_color_manual(values = cluster_col_vector) +
+    theme(legend.text=element_text(size=6)) + #set the size of the text
+    theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
-  ## Figure 2 ##
+  <div class= "text-center">
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_cluster_id.png" width= 800>
+  </div>
 
-  <h3> Fraction of cell cluster to each tissue type </h3>
+  <h3>How do clusters break down by tissue?</h3>
   <p> We can check the percentage of cells in each cluster distributed into each tissue type. This can help us to figure out the identity of each cell cluster. </p>
 
-  {% highlight R %}
+{% highlight R %}
 Cluster_tissue_stat <- table(pData(MCA_cds)[, c('Cluster', 'Tissue')])
 
 Cluster_tissue_stat <- apply(Cluster_tissue_stat, 1, function(x) x / sum(x))
@@ -663,16 +746,39 @@ Cluster_tissue_stat <- apply(Cluster_tissue_stat, 1, function(x) x / sum(x))
 Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
 
 options(repr.plot.width=10, repr.plot.height=7)
-pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F,
-  color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
-  {% endhighlight %}
 
-  ## Figure 3 ##
+order_mat <- t(apply(Cluster_tissue_stat_ordered, 1, order))
+max_ind_vec <- c()
 
-  <h3> Fraction of tissue types to each cluster </h3>
-  <p> In order to check the distribution of tissue types to each cluster, we calculate the fraction of each tissue to all cell types. This can help us to figure out how many functional cell types in each tissue and thus the level of heterogeneity for each tissue type. </p>
+for(i in 1:nrow(order_mat)) {
+  tmp <- max(which(!(order_mat[i, ] %in% max_ind_vec)))
+  max_ind_vec <- c(max_ind_vec, order_mat[i, tmp])
+}
 
-  {% highlight R %}
+max_ind_vec <- max_ind_vec[!is.na(max_ind_vec)]
+
+max_ind_vec <- c(max_ind_vec, setdiff(1:ncol(Cluster_tissue_stat),
+                                      max_ind_vec))
+Cluster_tissue_stat_ordered <-
+  Cluster_tissue_stat_ordered[, row.names(Cluster_tissue_stat)[max_ind_vec]]
+
+pheatmap::pheatmap(Cluster_tissue_stat_ordered,
+                   cluster_cols = F,
+                   cluster_rows = F,
+                   color = colorRampPalette(RColorBrewer::brewer.pal(n=9,
+                    name='Greys'))(10))
+# annotation_row = annotation_row, annotation_colors = annotation_colors
+{% endhighlight %}
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_cluster_breakdown_by_tissue.png" width= 800>
+</div>
+
+  <h3>How do tissues break down by cluster</h3>
+  <p>We can also look at the distribution of tissue types across each cluster.
+    This can help us to figure out how many distinct cell types there are in each tissue.</p>
+
+{% highlight R %}
 Cluster_tissue_stat <- table(pData(MCA_cds)[, c('Cluster', 'Tissue')])
 
 Cluster_tissue_stat <- apply(Cluster_tissue_stat, 2, function(x) x / sum(x))
@@ -680,132 +786,348 @@ Cluster_tissue_stat <- apply(Cluster_tissue_stat, 2, function(x) x / sum(x))
 Cluster_tissue_stat_ordered <- t(Cluster_tissue_stat)
 
 options(repr.plot.width=10, repr.plot.height=7)
-pheatmap::pheatmap(Cluster_tissue_stat_ordered, cluster_cols = F, cluster_rows = F,
-color = colorRampPalette(RColorBrewer::brewer.pal(n=9, name='Greys'))(10))
+order_mat <- t(apply(Cluster_tissue_stat_ordered, 2, order))
+max_ind_vec <- c()
 
-  {% endhighlight %}
-
-  ## Figure 4 ##
-
-  <h3> Calculate the adjusted Rand index between cell clusters and the tissue labels </h3>
-  <p> We can see that the tissue types and the cell clusters match up with each other well. </p>
-
-  {% highlight R %}
-calClusteringMetrics <- function(cl1, cl2){
-  tab_1 <- table(cl1, cl2)
-  randi <- flexclust::randIndex(tab_1)
-
-  vi <- mcclust::vi.dist(cl1, cl2, parts = FALSE, base = 2)
-
-  #arandi
-  arandi <- mcclust::arandi(cl1, cl2, adjust = TRUE)
-
-  #add all result into a data frame
-  randIndex_df <-
-    data.frame(randIndex = c(randi, vi, arandi),
-      Type = c("rand index", "variation of information", "adjusted rand index"))
-
-  return(randIndex_df)
+for(i in 1:nrow(order_mat)) {
+  tmp <- max(which(!(order_mat[i, ] %in% max_ind_vec)))
+  max_ind_vec <- c(max_ind_vec, order_mat[i, tmp])
 }
 
-calClusteringMetrics(pData(MCA_cds)$Cluster, pData(MCA_cds)$Tissue)
+max_ind_vec <- max_ind_vec[!is.na(max_ind_vec)]
+
+max_ind_vec <- c(max_ind_vec, setdiff(1:ncol(Cluster_tissue_stat), max_ind_vec))
+Cluster_tissue_stat_ordered <-
+  Cluster_tissue_stat_ordered[colnames(Cluster_tissue_stat)[max_ind_vec], ]
+
+pheatmap::pheatmap(Cluster_tissue_stat_ordered,
+                   cluster_cols = F,
+                   cluster_rows = F,
+                   color = colorRampPalette(RColorBrewer::brewer.pal(n=9,
+                      name='Greys'))(10))
+# annotation_row = annotation_row, annotation_colors = annotation_colors
+{% endhighlight %}
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_tissue_breakdown_by_cluster.png" width= 800>
+</div>
+
+  <h3>How to choose the resolution for louvain clustering</h3>
+  <p>Clustering is more or less like an art.
+    The "right" resolution for clustering depends on your data and on your need during downstream analysis.
+    Here we demonstrate how the resolution parameters from the louvain clustering algorithm can help us to show the granularity of cell clustering structure.
+    The above resolution with 1e-6 works quite well but we will use 2 other different resolutions (5e-5 and 5e-7) to show this effect.</p>
+
+  {% highlight R %}
+options(repr.plot.width = 11)
+options(repr.plot.height = 8)
+MCA_cds_res_resolution <- clusterCells(MCA_cds,
+                                       use_pca = F,
+                                       method = 'louvain',
+                                       res = 5e-5,
+                                       louvain_iter = 1,
+                                       verbose = T)
+cluster_col_vector <-
+  col_vector_origin[1:length(
+    unique(as.character(pData(MCA_cds_res_resolution)$Cluster)))]
+names(cluster_col_vector) <-
+  unique(as.character(pData(MCA_cds_res_resolution)$Cluster))
+
+plot_cell_clusters(MCA_cds_res_resolution,
+                   color_by = 'Cluster',
+                   cell_size = 0.1,
+                   show_group_id = T) +
+  theme(legend.text=element_text(size=6)) + #set the size of the text
+  theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
-<h3>Identify genes spatially correlated on the low-dimensional embedding</h3>
-<p> We are interested in identifying genes spatially correlated on the principal graph (that is, gene expression has co-variation along the principal graph where cells in proximal locations appear to have correlated gene expression, either positively or negatively.) which is learnt from the low-dimensional UMAP embedding with the <code>DDRTree</code>, <code>SimplePPT</code>, <code>L1Graph</code> algorithm (or the fuzzy graph learnt with <code>UMAP</code>). However, analyzing the spatial dependency is challenging because spatial autocorrelation violates the assumption from standard statistical techniques that gene expression observations are independent among different samples. We thus adapted a powerful technique in spatial correlation analysis, the Moran’s I test, to identify manifold correlated genes. Moran’s I is a measure of multi-directional and multi-dimensional spatial autocorrelation and thus especially applicable to for finding correlated gene expression patterns in complicated manifold. Although both correlation and Moran’s I ranges from -1 to 1, due to its more complex and spatial calculation, the interpretation of Moran’s I is slightly different: -1 represents perfect dispersion (clustering of dissimilar values); 0 represents full random distribution of the gene expression and 1 represents perfect clustering of similar gene expression values (for correlation, -1 represents perfect anticorrelation; 0 represents no correlation while 1 represents perfect positive correlation). Moran's I is inversely related to Geary's C, however, while Moran's I measures global spatial autocorrelation, Geary's C measures local spatial autocorrelation. </p>
+  <div class= "text-center">
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-5.png" width= 800>
+  </div>
 
-<p> Moran’s I test (Moran 1950) is defined as,
+{% highlight R %}
+options(repr.plot.width = 11)
+options(repr.plot.height = 8)
+MCA_cds_res_resolution <- clusterCells(MCA_cds,
+                                       use_pca = F,
+                                       method = 'louvain',
+                                       res = 5e-7,
+                                       louvain_iter = 1,
+                                       verbose = T)
+cluster_col_vector <-
+  col_vector_origin[1:length(
+    unique(as.character(pData(MCA_cds_res_resolution)$Cluster)))]
+names(cluster_col_vector) <-
+  unique(as.character(pData(MCA_cds_res_resolution)$Cluster))
 
-  \begin{equation}
-  I = \frac{N}{W}  \frac{\sum_{i} \sum_{j} w_{ij}(x_{i} - \bar{x})(x_{j} - \bar{x})}{\sum_{i}(x_{i} - \bar{x})^2}
-  \end{equation}
+plot_cell_clusters(MCA_cds_res_resolution,
+                   color_by = 'Cluster',
+                   cell_size = 0.1,
+                   show_group_id = T) +
+  theme(legend.text=element_text(size=6)) + #set the size of the text
+  theme(legend.position="right") #put the color legend on the right
+{% endhighlight %}
 
-  where $N$ is the number of cells indexed by $i$ and $j$; $x$ is the expression alue of gene of interest; $\bar{x_{i}}$ $(\bar{x_{j}})$
-  is the mean of the gene expression for cell $i$'s (or $j$'s) nearest neighbors; $w_{ij}$ is a matrix of weights defined by the nearest neighbor graph with zero on the diagonal
-  (i.e., $w_{ii}$ = 0) and $w_{ij}$ = 1/$k_{i}$ where $k_{i}$ is the number of nearest neighbors; and $W$ is the sum of a ll $w_{ij}$.
-  To identify the nearest neighbors used for creating the weight matrix $W$, we first build a k (default to be 25) nearest neighbor graph (kNN) for all cells on the reduced UMAP space, followed by projecting all cells to the points (nodes) on the principal graph learnt from the graph learning algorithm (or simply UMAP). Then we remove all edges from the kNN graph that connects cells which correspond to two disconnected principal points and keep edges connects cells corresponds to the same principal point or two connected principal points on the principal graph. This operations enables us to identify genes spatially correlated on the principal graph structure. </p>
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-7.png" width= 800>
+</div>
 
-<p> In Monocle 3, we implemented the <code>manifoldTest</code> function to identify manifold correlated genes which relies on the <code>spdep</code> package for performing the Moran’s I test. Manifold test is a general differential gene expression test method. It can be either applied to the datasets with clustering patterning to identify spatially correlated genes between clusters (as used here) or applied to the datasets with clear developmental trajectory to detect braching genes, behaving like the <code>BEAM</code> test as in Monocle 2. We note that this very same method can be also used to identify spatially correlated genes for real spatial resolved single-cell measurements, including but not limitted to scRNA-fish, MERFISH.
+<h3>Identify genes that are differentially expressed between clusters</h3>
+
+<p> As mentioned in the <a href= "{{ site.baseurl }}/monocle3/#identifying-genes-that-vary-in-expression-over-a-trajectory">previous tutorial</a>, we introduced a powerful statistical test to identify genes that vary along a trajectory.
+  The test, which uses a variant of Moran's I works by finding genes that vary over a graph that describes the topological relationships between the cells.
+  This test (implemented in the <code>principalGraphTest</code> function) is very general and can be also applied to identify genes that are differentially expressed between clusters.
+  Note that since we haven't learned a developmental trajectory for this CellDataSet, Monocle 3 will return the k-nearest-neighbor graph constructed by UMAP as the graph for the Moran's I test.
+  There are quite a few cells in the dataset, so this test can take a few hours. The running time of this test depends on the <code>k</code> parameter of <code>principalGraphTest</code>.
+  Like other differential expression function in Monocle, <code>principalGraphTest</code> can use multiple cores, so you may want to run this on a multi-core machine.
 </p>
 
 {% highlight R %}
 start <- Sys.time()
-spatial_res <- principalGraphTest(MCA_cds, relative_expr = TRUE, k = 25,
-               cores = detectCores() - 2, verbose = FALSE)
+spatial_res <- principalGraphTest(MCA_cds, relative_expr = TRUE, k = 25, cores = detectCores() - 2, verbose = FALSE)
 end <- Sys.time()
 end - start
 {% endhighlight %}
 
-<h3>Cluster Markers</h3>
+<h3>Finding cluster-specific marker genes</h3>
+
+<p>Often, we wish to find genes that are not only differentially expressed across clusters - we want genes that are expressed only in certain clusters.
+There are many ways of doing this, but many statistically principled methods are also quite slow, espcially on large datasets.
+Monocle 3's test for finding genes that vary between clusters, in contrast is both fast and can easily be post-processed to yield genes <i>specific</i> to each cluster.</p>
+
+<p>To categorize genes into cluster specific genes, we simply calculate the <i>specificity</i> of each gene to each cell cluster.
+In Monocle 3, we introduce the <code>find_cluster_markers</code> function to find marker genes for each group of cells.
+This function measures specificity using the <i>Jensen-Shannon</i> distance, which is often used to identify highly tissue specific genes (Cabili et al, Genome Research).
+Genes that have scores close to one for a cluster are highly specific to that cluster.</p>
 
 {% highlight R %}
-spatial_res <- readRDS('/Users/xqiu/Downloads/MCA_cds_spatial_res.Rds')
 cluster_marker_res <-
-  find_cluster_markers(MCA_cds, spatial_res, group_by = 'Cluster', morans_I_threshold = 0.25)
-{% endhighlight %}
-
-{% highlight R %}
-genes <- (cluster_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
-  dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
-genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
-  dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
+  find_cluster_markers(MCA_cds,
+                       spatial_res,
+                       group_by = 'Cluster',
+                       morans_I_threshold = 0.25)
+ {%endhighlight%}
+ {% highlight R %}
+genes <- (cluster_marker_res %>%
+          dplyr::filter(mean > 0.5, percentage > 0.1) %>%
+          dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
 options(repr.plot.width=22, repr.plot.height=12)
-plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster',
-  ordering_type = 'maximal_on_diag')
+plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', ordering_type = 'maximal_on_diag')
 {% endhighlight %}
 
-## Figure 5 ##
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_by_group.png" width= 800>
+</div>
 
-<h3> Tissue Markers </h3>
+<h3>Visualizing marker expression across cell clusters</h3>
+<p> It is often very useful to visualize the marker gene expression pattern across cell clusters to associate each cluster with particular cell types based on the markers.
+  In Monocle 3, we provide the <code>plot_markers_cluster</code> function to visualize a heatmap of markers across cell clusters.
+  We first select the top 5 significant genes of the entire set of significant genes based on the principal graph test from each cluster based on the specifity score.
+  Then we feed those genes into the <code>plot_markers_cluster</code> function.
+  As the single cell RNA-seq datasets get bigger, we cannot visualize all cells.
+  This argument helps users to visualize the large scale dataset with a uniform downsampling scheme for cells.
+  By default, if the cell number is larger than 50000, we downsample to 1000 cells.
+  We can also ignore small clusters that is hard to visualize on the heatmap with a minimum fraction of cell number for a cluster to the largest cluster.
+</p>
 
-{% highlight R %}
-tissue_marker_res <- find_cluster_markers(MCA_cds, spatial_res,
-    group_by = 'Tissue', morans_I_threshold = 0.25)
-
-genes <- (tissue_marker_res %>% dplyr::filter(mean > 0.5, percentage > 0.1) %>%
-    dplyr::group_by(Group) %>% dplyr::slice(which.max(specificity)))
-
-options(repr.plot.width=22, repr.plot.height=12)
-plot_markers_by_group(MCA_cds, genes$gene_short_name,
-    group_by = 'Tissue', ordering_type = 'maximal_on_diag')
-{% endhighlight %}
-
-## Figure 6 ##
-
-<h3>Visualize expression for the top spatially correlated genes in the UMAP embedding</h3>
-{% highlight R %}
-plot_cell_clusters(MCA_cds, markers = c(), show_group_id = FALSE)
-{% endhighlight %}
-
-<h3>Visualize the UMAP embedding in 3 dimensions</h3>
-<p> In Monocle 3, we provide the <code>plot_3d_cell_trajectory</code> function to plot a dataset in 3 dimensions.
-  By default, this method is used to visualize the trajectory and low dimensional space after running <code>learnGraph</code>.
-  However, it can be also used to visualize the result from <code>UMAP</code> where the trajectory corresponds to the fuzzy simplicial set (or fuzzy graph) learnt from umap.
+<p> From the figure below, we see that the identified markers genes indeed show strong cluster specificity.
+  We can also see that marker genes for cluster 3 is not very strong, probably reflecting the fact that cluster 3 seems like including a mixture of different types of cells from the UMAP embedding.
+  Similarly, we can also see that cluster 7 seems like contain two groups of genes showing strong specifity.
+  Let us take a look for some genes for cluster 7 (and then for cluster 8).
 </p>
 
 {% highlight R %}
-trajectory_i_dir <- "/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/Result/"
-plot_3d_cell_trajectory(MCA_cds,
-                        color_by="Tissue",
-                        webGL_filename=
-                          paste(trajectory_i_dir, "MCA_cds.html", sep=""),
-                        palette=col_vector,
-                        show_backbone=TRUE,
-                        useNULL_GLdev=TRUE)
+genes <-
+  (cluster_marker_res %>%
+  dplyr::filter(mean > 0.5, percentage > 0.1) %>%
+  dplyr::group_by(Group) %>%
+  dplyr::top_n(5, wt = specificity))
+plot_markers_cluster(MCA_cds, as.character(genes$gene_short_name),
+                     minimal_cluster_fraction = 0.05)
 {% endhighlight %}
-<h3>Show sessionInfo </h3>
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster.png" width= 800>
+</div>
+
+<p> We can also select genes in each group based on a specifity score.
+  By doing this, we are able to see the difference in terms of the number of genes across each cell cluster more clearly.
+  Here we filter genes with a specifity larger than 0.7 and then group the genes by cluster, followed by sorting the specifity score in each cell cluster.
+</p>
+
+<p> From the figure below, we can see that cluster 7 has a large number of cluster specific genes.
+  From the plot with cell clusters on the umap embedding, we know that cluster 7 are testis genes.
+  Testis are notoriously known for expressing lots of genes that are normally restricted to other cell types.
+  On the other hand, many highly specific genes are expressed in their tissue of origin and but at low levels of testis.
+  So this result makes perfect sense biologically.
+</p>
+
+{% highlight R %}
+options(repr.plot.width=22, repr.plot.height=12)
+genes <- cluster_marker_res %>%
+         dplyr::filter(mean > 0.5, percentage > 0.1, specificity > 0.7) %>%
+         dplyr::group_by(Group) %>%
+         dplyr::arrange(Group, dplyr::desc(specificity))
+plot_markers_cluster(MCA_cds,
+                     as.character(genes$gene_short_name),
+                     minimal_cluster_fraction = 0.05,
+                     show_rownames = F)
+{% endhighlight %}
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster_specificity_filter.png" width= 800>
+</div>
+
+<h3>Visualizing marker expression in UMAP plots</h3>
+<p>Sometimes it's important to show the expression level for a set of genes in UMAP or t-SNE plots. Let's select a few highly specific genes:</p>
+{% highlight R %}
+top_4_genes <- genes %>%
+               dplyr::filter(Group == 7) %>%
+               dplyr::top_n(n = 4, wt  = specificity)
+top_4_genes
+{% endhighlight %}
+
+<div style="overflow-x:auto;">
+  <table class = "table" style="overflow:auto;">
+    <thead>
+      <tr>
+        <th>Group</th>
+        <th>Gene</th>
+        <th>gene_short_name</th>
+        <th>specificity</th>
+        <th>morans_I</th>
+        <th>moran_test_statistic</th>
+        <th>pval</th>
+        <th>qval</th>
+        <th>mean</th>
+        <th>num_cells_expressed_in_group</th>
+        <th>percentage</th>
+        <th>status</th>
+        <th>use_for_ordering</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>7</th>
+        <th>Lao1</th>
+        <th>Lao1</th>
+        <th>0.9795237</th>
+        <th>0.8505168</th>
+        <th>1532.571</th>
+        <th>0</th>
+        <th>0</th>
+        <th>1.422162</th>
+        <th>11564</th>
+        <th>0.8544407</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+      <tr>
+        <th>7</th>
+        <th>Lalba</th>
+        <th>Lalba</th>
+        <th>0.9502404</th>
+        <th>0.9662100</th>
+        <th>1741.026</th>
+        <th>0</th>
+        <th>0</th>
+        <th>2.240092</th>
+        <th>13324</th>
+        <th>0.9844835</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+      <tr>
+        <th>7</th>
+        <th>Csn1s2b</th>
+        <th>Csn1s2b</th>
+        <th>0.9422779</th>
+        <th>0.9950623</th>
+        <th>1793.012</th>
+        <th>0</th>
+        <th>0</th>
+        <th>4.832813</th>
+        <th>13534</th>
+        <th>1.0000000</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+      <tr>
+        <th>7</th>
+        <th>Wap</th>
+        <th>Wap</th>
+        <th>0.9350323</th>
+        <th>0.9932139</th>
+        <th>1789.681</th>
+        <th>0</th>
+        <th>0</th>
+        <th>5.215716</th>
+        <th>13534</th>
+        <th>1.0000000</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<p>Now we can use <code>plot_cell_clusters</code> with the markers argument to render these gene's expression levels.</p>
+
+{% highlight R %}
+options(repr.plot.width = 8)
+options(repr.plot.height = 9)
+marker_genes <- top_4_genes$Gene
+plot_cell_clusters(MCA_cds,
+                   markers = as.character(marker_genes),
+                   show_group_id = T, cell_size = 0.1)
+{% endhighlight %}
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Lao1.png" width= 800>
+</div>
+
+{% highlight R %}
+cluster_marker_res %>%
+  dplyr::filter(gene_short_name %in% c('Csn3', 'Csn1s1'), Group == 7)
+options(repr.plot.width = 8)
+options(repr.plot.height = 5.5)
+plot_cell_clusters(MCA_cds,
+                   markers = c('Csn3', 'Csn1s1'),
+                   show_group_id = T, cell_size = 0.1)
+{% endhighlight %}
+
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Csn3.png" width= 800>
+</div>
+
+<p> We see that genes from the second group of genes doesn't seem to be specific to cluster 7 as the cluster_marker_res table shows that this gene has only about 0.45 specificity.
+  From the umap embedding, we see it is actually specific to cluster 8 and also expressed in cluster 10. </p>
+
+<h3> Show sessionInfo </h3>
 {% highlight R %}
 sessionInfo()
 {% endhighlight %}
 
-<h3> Other analysis or visualization </h3>
-<p> In another tutorial for the Mouse Cell Atlas (MCA) dataset analysis, we showed analysis to identify spatially correlated genes in the low dimensional embedding. In addition, we also showed how to visualize the developmental trajectory as well as the significantl spatially correlated gene expression patterns in three dimensions. Since the workflow will be the same as that in MCA dataset analysis, in the following we will only provide a concise introduction of those analysis and visualizations. </p>
-
 <h3>Save data for future usage</h3>
 {% highlight R %}
-save.image('/Users/xqiu/Dropbox (Personal)/Projects/Monocle2_revision/RData/
-  MCA_monocle3.RData')
+save.image('/User/Defined/Directory/MCA_monocle3.RData')
 {% endhighlight %}
+
+{% highlight R %}
+saveRDS(spatial_res, "/User/Defined/Directory/spatial_res.rds")
+saveRDS(MCA_cds, "/User/Defined/Directory/MCA_cds.rds")
+{% endhighlight %}
+
+<h3>Visualize the UMAP embedding in 3 dimensions</h3>
+<p>In Monocle 3, we provide the <code>plot_3d_cell_trajectory</code> function to plot a dataset in 3 dimensions.
+  By default, this method is used to visualize the trajectory and low dimensional space after running <code>learnGraph</code>.
+  However, it can be also used to visualize the result from <code>UMAP</code> where the trajectory corresponds to the fuzzy simplicial set (or fuzzy graph) learnt from umap.
+
+<h3>Other analysis or visualization</h3>
+<p> In another tutorial for the Mouse Cell Atlas (MCA) dataset analysis, we showed analysis to identify spatially correlated genes in the low dimensional embedding.
+  In addition, we also showed how to visualize the developmental trajectory as well as the significantl spatially correlated gene expression patterns in three dimensions.
+  Since the workflow will be the same as that in MCA dataset analysis, in the following we will only provide a concise introduction of those analysis and visualizations.
+</p>
 
 <h2>Citation </h2>
 
