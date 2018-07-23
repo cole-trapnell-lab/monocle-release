@@ -696,9 +696,11 @@ plot_cell_clusters(MCA_cds,
   theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
+  <p>
   <div class= "text-center">
-  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_tissue.png" width= 800>
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_tissue.png" width= 725>
   </div>
+</p>
 
 <p> Here we first color the cells by the tissue type annotated from the original study.
   Setting <code>show_group_id = T</code> will plot the group ids according to <code>color_by</code>.
@@ -731,9 +733,11 @@ plot_cell_clusters(MCA_cds,
     theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
+  <p>
   <div class= "text-center">
-  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_cluster_id.png" width= 800>
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_clusters_cluster_id.png" width= 725>
   </div>
+</p>
 
   <h3>How do clusters break down by tissue?</h3>
   <p> We can check the percentage of cells in each cluster distributed into each tissue type. This can help us to figure out the identity of each cell cluster. </p>
@@ -770,9 +774,11 @@ pheatmap::pheatmap(Cluster_tissue_stat_ordered,
 # annotation_row = annotation_row, annotation_colors = annotation_colors
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_cluster_breakdown_by_tissue.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_cluster_breakdown_by_tissue.png" width= 725>
 </div>
+</p>
 
   <h3>How do tissues break down by cluster</h3>
   <p>We can also look at the distribution of tissue types across each cluster.
@@ -808,9 +814,11 @@ pheatmap::pheatmap(Cluster_tissue_stat_ordered,
 # annotation_row = annotation_row, annotation_colors = annotation_colors
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_tissue_breakdown_by_cluster.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/pheatmap_tissue_breakdown_by_cluster.png" width= 725>
 </div>
+</p>
 
   <h3>How to choose the resolution for louvain clustering</h3>
   <p>Clustering is more or less like an art.
@@ -841,9 +849,11 @@ plot_cell_clusters(MCA_cds_res_resolution,
   theme(legend.position="right") #put the color legend on the right
   {% endhighlight %}
 
+  <p>
   <div class= "text-center">
-  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-5.png" width= 800>
+  <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-5.png" width= 725>
   </div>
+</p>
 
 {% highlight R %}
 options(repr.plot.width = 11)
@@ -868,9 +878,11 @@ plot_cell_clusters(MCA_cds_res_resolution,
   theme(legend.position="right") #put the color legend on the right
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-7.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-7.png" width= 725>
 </div>
+</p>
 
 <h3>Identify genes that are differentially expressed between clusters</h3>
 
@@ -915,9 +927,11 @@ options(repr.plot.width=22, repr.plot.height=12)
 plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', ordering_type = 'maximal_on_diag')
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_by_group.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_by_group.png" width= 725>
 </div>
+</p>
 
 <h3>Visualizing marker expression across cell clusters</h3>
 <p> It is often very useful to visualize the marker gene expression pattern across cell clusters to associate each cluster with particular cell types based on the markers.
@@ -946,9 +960,11 @@ plot_markers_cluster(MCA_cds, as.character(genes$gene_short_name),
                      minimal_cluster_fraction = 0.05)
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster.png" width= 725>
 </div>
+</p>
 
 <p> We can also select genes in each group based on a specifity score.
   By doing this, we are able to see the difference in terms of the number of genes across each cell cluster more clearly.
@@ -974,9 +990,11 @@ plot_markers_cluster(MCA_cds,
                      show_rownames = F)
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster_specificity_filter.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_markers_cluster_specificity_filter.png" width= 725>
 </div>
+</p>
 
 <h3>Visualizing marker expression in UMAP plots</h3>
 <p>Sometimes it's important to show the expression level for a set of genes in UMAP or t-SNE plots. Let's select a few highly specific genes:</p>
@@ -1082,9 +1100,11 @@ plot_cell_clusters(MCA_cds,
                    show_group_id = T, cell_size = 0.1)
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Lao1.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Lao1.png" width= 725>
 </div>
+</p>
 
 {% highlight R %}
 cluster_marker_res %>%
@@ -1096,38 +1116,14 @@ plot_cell_clusters(MCA_cds,
                    show_group_id = T, cell_size = 0.1)
 {% endhighlight %}
 
+<p>
 <div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Csn3.png" width= 800>
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Csn3.png" width= 725>
 </div>
+</p>
 
 <p> We see that genes from the second group of genes doesn't seem to be specific to cluster 7 as the cluster_marker_res table shows that this gene has only about 0.45 specificity.
   From the umap embedding, we see it is actually specific to cluster 8 and also expressed in cluster 10. </p>
-
-<h3> Show sessionInfo </h3>
-{% highlight R %}
-sessionInfo()
-{% endhighlight %}
-
-<h3>Save data for future usage</h3>
-{% highlight R %}
-save.image('/User/Defined/Directory/MCA_monocle3.RData')
-{% endhighlight %}
-
-{% highlight R %}
-saveRDS(spatial_res, "/User/Defined/Directory/spatial_res.rds")
-saveRDS(MCA_cds, "/User/Defined/Directory/MCA_cds.rds")
-{% endhighlight %}
-
-<h3>Visualize the UMAP embedding in 3 dimensions</h3>
-<p>In Monocle 3, we provide the <code>plot_3d_cell_trajectory</code> function to plot a dataset in 3 dimensions.
-  By default, this method is used to visualize the trajectory and low dimensional space after running <code>learnGraph</code>.
-  However, it can be also used to visualize the result from <code>UMAP</code> where the trajectory corresponds to the fuzzy simplicial set (or fuzzy graph) learnt from umap.
-
-<h3>Other analysis or visualization</h3>
-<p> In another tutorial for the Mouse Cell Atlas (MCA) dataset analysis, we showed analysis to identify spatially correlated genes in the low dimensional embedding.
-  In addition, we also showed how to visualize the developmental trajectory as well as the significantl spatially correlated gene expression patterns in three dimensions.
-  Since the workflow will be the same as that in MCA dataset analysis, in the following we will only provide a concise introduction of those analysis and visualizations.
-</p>
 
 <h2>Citation </h2>
 
