@@ -1046,6 +1046,7 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
     num_blocks = ceiling(ncol(data_matrix) / block_size)
+    pb5 <- txtProgressBar(max = length(num_blocks), file = "", style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = data_matrix[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1055,11 +1056,14 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       distances_Z_to_Y <- proxy::dist(t(block), t(target_points))
       closest_vertex_for_block <- apply(distances_Z_to_Y, 1, function(z) { which.min(z) } )
       closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      setTxtProgressBar(pb = pb5, value = pb5$getVal() + 1)
     }
+    close(pb5)
   }else{
     num_blocks = ceiling(ncol(target_points) / block_size)
     dist_to_closest_vertex = rep(Inf, length(ncol(data_matrix)))
     closest_vertex = rep(NA, length(ncol(data_matrix)))
+    pb6 <- txtProgressBar(max = length(num_blocks), file = "", style = 3, min = 0)
     for (i in 1:num_blocks){
       if (i < num_blocks){
         block = target_points[,((((i-1) * block_size)+1):(i*block_size))]
@@ -1073,8 +1077,10 @@ findNearestVertex = function(data_matrix, target_points, block_size=50000, proce
       closest_vertex[updated_nearest_idx] = closest_vertex_for_block[updated_nearest_idx] + (i-1) * block_size
       dist_to_closest_vertex[updated_nearest_idx] = new_block_distances[updated_nearest_idx]
       #closest_vertex = append(closest_vertex, closest_vertex_for_block)
+      setTxtProgressBar(pb = pb6, value = pb6$getVal() + 1)
     }
   }
+  close(pb6)
   stopifnot(length(closest_vertex) == ncol(data_matrix))
   #closest_vertex <- which(distance_to_closest == min(distance_to_closest))
   return (closest_vertex)

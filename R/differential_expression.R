@@ -236,6 +236,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
       return(tmp)
     }
     knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
@@ -347,7 +348,7 @@ principalGraphTest <- function(cds,
     error = function(e) {
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
-  }, alternative = alternative, method = method, mc.cores = cores)
+  }, alternative = alternative, method = method, mc.cores = cores, ignore.interactive = TRUE)
   if(verbose) {
     message("returning results: ...")
   }
@@ -536,6 +537,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @export
 #'
 find_cluster_markers <- function(cds,
+<<<<<<< HEAD
                                 pr_graph_test_res,
                                 group_by = 'Cluster',
                                 qval_threshold = 0.05,
@@ -598,3 +600,4 @@ find_cluster_markers <- function(cds,
   }
   specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed_in_group", "percentage", everything())
 }
+
