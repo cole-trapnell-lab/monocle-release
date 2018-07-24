@@ -517,11 +517,16 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
   <h3> Introduction </h3>
 
     <p> In this tutorial, we demonstrate how to use Monocle 3 (alpha version) to perform clustering for very large datasets and then identify marker genes specific for each cluster.
-      We will mainly introduce 1) use delayedarray to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code>, and <code>preprocessCDS</code>, etc for large datasets.
-      2) apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.
-      3) introduce a general differential test (<code>principalGraphTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding.
-      4) the <code>find_cluster_markers</code> function to identify cluster specific genes.
-      5) various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.</p>
+    </p>
+      <p>
+        We will mainly introduce:
+      <ol>
+        <li>Use delayedarray to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code>, and <code>preprocessCDS</code>, etc for large datasets.</li>
+        <li>Apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.</li>
+        <li>Introduce a general differential test (<code>principalGraphTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding.</li>
+        <li>The <code>find_cluster_markers</code> function to identify cluster specific genes.</li>
+        <li>Various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.</li>
+      </ol>
 
     <p>Note that this mouse cell atlas (<b>MCA</b>) dataset (Han, Xiaoping, et al. "Mapping the mouse cell atlas by Microwell-seq". Cell 172.5 (2018): 1091-1107.) has been used by Seurat from Rahul's group as a tutorial (<a href="https://satijalab.org/seurat/mca.html">https://sajitalab.org/seurat/mca.html</a>) also but our analysis here is complimentary to theirs.</p>
 
@@ -856,7 +861,8 @@ plot_cell_clusters(MCA_cds_res_resolution,
 </p>
 
 <p>
-  We can see cluster 1 in the previous case with resolution 1e-6 is now separated into four clusters (12, 16, 22, 23, 24, 34, 37, 39, 40, 41, 44, 52). Similarly, cluster 3 is now separated into three clusters (8, 10, 20, 28, 33, 46, 47, 55). 
+  We can see cluster 1 in the previous case with resolution 1e-6 is now separated into twelve clusters (12, 16, 22, 23, 24, 34, 37, 39, 40, 41, 44, 52).
+  Similarly, cluster 3 is now separated into eight clusters (8, 10, 20, 28, 33, 46, 47, 55).
 </p>
 
 {% highlight R %}
@@ -886,6 +892,11 @@ plot_cell_clusters(MCA_cds_res_resolution,
 <div class= "text-center">
 <img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_cluster_5e-7.png" width= 725>
 </div>
+</p>
+
+<p>
+  We can see cluster 1 in this case now includes three clusters from the previous case which utilized a resolution of 1e-6 (1, 11, 8).
+  We also observe that cluster 2 in this case is now made up of two clusters from the prior case (2 and 10).
 </p>
 
 <h3>Identify genes that are differentially expressed between clusters</h3>
