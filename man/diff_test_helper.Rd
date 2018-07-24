@@ -26,5 +26,5 @@ diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
 \item{verbose}{Whether to show VGAM errors and warnings. Only valid for cores = 1.}
 }
 \description{
-test
+A helper function for differentialGeneTest
 }
