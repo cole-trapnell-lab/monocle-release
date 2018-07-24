@@ -2221,11 +2221,7 @@ plot_complex_cell_trajectory <- function(cds,
     layout_coord_ori <- layout_coord 
     row.names(layout_coord) <- V(dp_mst)$name
     
-<<<<<<< 608500e6f447f967264d065b7a75ea1b05740d3c
     branch_points_cells <- cds@auxOrderingData[[cds@rge_method]]$branch_points
-=======
-    branch_points_cells <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
->>>>>>> removed unnecessary progress bars, added bar to relative2abs
     terminal_cells <- setdiff(V(dp_mst)[which(unlist(lapply(neighborhood(dp_mst, order = 1, mode = 'out'), length)) == 2)]$name, root_cell)
     from_root_to_branch_points <- get.shortest.paths(dp_mst, root_cell, c(branch_points_cells, terminal_cells))$vpath
     order_path_len <- order(unlist(lapply(from_root_to_branch_points, length)), decreasing = F) # from longest to shortest

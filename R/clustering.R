@@ -319,7 +319,6 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
     random_seed <- NULL
   }
 
-  pb1 <- txtProgressBar(min = 0, max = length(louvain_iter), style = 3, file = stderr())
   for (iter in 1:louvain_iter) {
     if(verbose) {
       cat("Running louvain iteration ", iter, "...\n")
