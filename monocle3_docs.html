@@ -855,6 +855,10 @@ plot_cell_clusters(MCA_cds_res_resolution,
   </div>
 </p>
 
+<p>
+  We can see cluster 1 in the previous case with resolution 1e-6 is now separated into four clusters (2, 4, 17, 19). Similarly, cluster 3 is now separated into three clusters 19, 11, 14. 
+</p>
+
 {% highlight R %}
 options(repr.plot.width = 11)
 options(repr.plot.height = 8)
@@ -1099,6 +1103,60 @@ plot_cell_clusters(MCA_cds,
                    markers = as.character(marker_genes),
                    show_group_id = T, cell_size = 0.1)
 {% endhighlight %}
+
+<div style="overflow-x:auto;">
+  <table class = "table" style="overflow:auto;">
+    <thead>
+      <tr>
+        <th>Group</th>
+        <th>Gene</th>
+        <th>gene_short_name</th>
+        <th>specificity</th>
+        <th>morans_I</th>
+        <th>moran_test_statistic</th>
+        <th>pval</th>
+        <th>qval</th>
+        <th>mean</th>
+        <th>num_cells_expressed_in_group</th>
+        <th>percentage</th>
+        <th>status</th>
+        <th>use_for_ordering</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>7</th>
+        <th>Csn1s1</th>
+        <th>Csn1s1</th>
+        <th>0.7045754</th>
+        <th>0.9758849</th>
+        <th>1758.448</th>
+        <th>0</th>
+        <th>0</th>
+        <th>4.675093</th>
+        <th>13534</th>
+        <th>1</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+      <tr>
+        <th>7</th>
+        <th>Csn3</th>
+        <th>Csn3</th>
+        <th>0.6974297</th>
+        <th>0.9701249</th>
+        <th>1748.067</th>
+        <th>0</th>
+        <th>0</th>
+        <th>4.665920</th>
+        <th>13534</th>
+        <th>1</th>
+        <th>OK</th>
+        <th>TRUE</th>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
 <p>
 <div class= "text-center">
