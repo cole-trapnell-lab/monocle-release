@@ -1920,13 +1920,13 @@ plot_cell_clusters <- function(cds,
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
       g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
-            scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+            scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
             guides(alpha = FALSE) + facet_wrap(~feature_label)
             # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
 
     }else{
       g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), na.rm = TRUE) + 
-        scale_color_viridis(option = "viridis", direction = -1, name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+        scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
         guides(alpha = FALSE) + facet_wrap(~feature_label)
     }
   }else {
