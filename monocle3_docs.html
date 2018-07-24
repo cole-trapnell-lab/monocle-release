@@ -887,9 +887,9 @@ plot_cell_clusters(MCA_cds_res_resolution,
 <h3>Identify genes that are differentially expressed between clusters</h3>
 
 <p> As mentioned in the <a href= "{{ site.baseurl }}/monocle3/#identifying-genes-that-vary-in-expression-over-a-trajectory">previous tutorial</a>, we introduced a powerful statistical test to identify genes that vary along a trajectory.
-  The test, which uses a variant of Moran's I works by finding genes that vary over a graph that describes the topological relationships between the cells.
+  This test, which uses a variant of Moran's I, works by finding genes that vary over a graph that describes the topological relationships between the cells.
   This test (implemented in the <code>principalGraphTest</code> function) is very general and can be also applied to identify genes that are differentially expressed between clusters.
-  Note that since we haven't learned a developmental trajectory for this CellDataSet, Monocle 3 will return the k-nearest-neighbor graph constructed by UMAP as the graph for the Moran's I test.
+  Note that since we haven't learned a developmental trajectory for this CellDataSet, Monocle 3 will build a k-nearest-neighbor graph based on the UMAP space as the graph for the Moran's I test.
   There are quite a few cells in the dataset, so this test can take a few hours. The running time of this test depends on the <code>k</code> parameter of <code>principalGraphTest</code>.
   Like other differential expression function in Monocle, <code>principalGraphTest</code> can use multiple cores, so you may want to run this on a multi-core machine.
 </p>
@@ -936,17 +936,17 @@ plot_markers_by_group(MCA_cds, genes$gene_short_name, group_by = 'Cluster', orde
 <h3>Visualizing marker expression across cell clusters</h3>
 <p> It is often very useful to visualize the marker gene expression pattern across cell clusters to associate each cluster with particular cell types based on the markers.
   In Monocle 3, we provide the <code>plot_markers_cluster</code> function to visualize a heatmap of markers across cell clusters.
-  We first select the top 5 significant genes of the entire set of significant genes based on the principal graph test from each cluster based on the specifity score.
+  We first select the top 5 significant genes of the entire set of significant genes based on the principal graph test from each cluster ranked by the specifity score.
   Then we feed those genes into the <code>plot_markers_cluster</code> function.
   As the single cell RNA-seq datasets get bigger, we cannot visualize all cells.
   This argument helps users to visualize the large scale dataset with a uniform downsampling scheme for cells.
-  By default, if the cell number is larger than 50000, we downsample to 1000 cells.
+  By default, if the cell number is larger than 50, 000, we downsample to 1000 cells.
   We can also ignore small clusters that is hard to visualize on the heatmap with a minimum fraction of cell number for a cluster to the largest cluster.
 </p>
 
 <p> From the figure below, we see that the identified markers genes indeed show strong cluster specificity.
-  We can also see that marker genes for cluster 3 is not very strong, probably reflecting the fact that cluster 3 seems like including a mixture of different types of cells from the UMAP embedding.
-  Similarly, we can also see that cluster 7 seems like contain two groups of genes showing strong specifity.
+  We can also see that marker genes for cluster 1 is not very strong, probably reflecting the fact that cluster 1 seems like including a mixture of different types of cells from the UMAP embedding.
+  Similarly, we can also see that cluster 3 seems like contain two groups of genes showing strong specifity.
   Let us take a look for some genes for cluster 7 (and then for cluster 8).
 </p>
 
@@ -971,8 +971,8 @@ plot_markers_cluster(MCA_cds, as.character(genes$gene_short_name),
   Here we filter genes with a specifity larger than 0.7 and then group the genes by cluster, followed by sorting the specifity score in each cell cluster.
 </p>
 
-<p> From the figure below, we can see that cluster 7 has a large number of cluster specific genes.
-  From the plot with cell clusters on the umap embedding, we know that cluster 7 are testis genes.
+<p> From the figure below, we can see that cluster 6 has a large number of cluster specific genes.
+  From the plot with cell clusters on the umap embedding, we know that cluster 6 are testis genes.
   Testis are notoriously known for expressing lots of genes that are normally restricted to other cell types.
   On the other hand, many highly specific genes are expressed in their tissue of origin and but at low levels of testis.
   So this result makes perfect sense biologically.
