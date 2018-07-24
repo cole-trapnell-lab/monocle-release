@@ -21,7 +21,6 @@ Depends:
     DelayedArray,
     Biobase,
     ggplot2 (>= 1.0.0),
-    VGAM (>= 1.0-1),
     DDRTree (>= 0.1.4),
     L1Graph
 Imports:
@@ -62,6 +61,7 @@ Imports:
     matrixStats,
     doParallel,
     pbmcapply,
+    VGAM,
     viridisLite
 LinkingTo: Rcpp
 Suggests:

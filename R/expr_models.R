@@ -9,6 +9,7 @@
 #' @name fit_model_helper
 #' @description test
 #' @importFrom stats formula
+#' @importFrom VGAM vglm
 fit_model_helper <- function(x,
                              modelFormulaStr,
                              expressionFamily,

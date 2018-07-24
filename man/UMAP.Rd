@@ -146,22 +146,11 @@ mostly on useful for metric that use an angular style distance such
 as cosine, correlation etc. In the case of those metrics angular forests
 will be chosen automatically.}
 
-\item{verbose}{bool (optional, default False)
-Controls verbosity of logging.}
-
-\item{return_all}{Whether to return all slots after UMAP}
-
-\item{transform_queue_size:}{float (optional, default 4.0)
-For transform operations (embedding new points using a trained model_
-this will control how aggressively to search for nearest neighbors.
-Larger values will result in slower performance but more accurate
-nearest neighbor evaluation.}
-
-\item{target_n_neighbors:}{int (optional, default -1)
+\item{target_n_neighbors}{int (optional, default -1)
 The number of nearest neighbors to use to construct the target simplcial
 set. If set to -1 use the ``n_neighbors`` value.}
 
-\item{target_metric:}{string or callable (optional, default 'categorical')
+\item{target_metric}{string or callable (optional, default 'categorical')
 The metric used to measure distance for a target array is using supervised
 dimension reduction. By default this is 'categorical' which will measure
 distance in terms of whether categories match or are different. Furthermore,
@@ -170,18 +159,23 @@ unlabelled under the 'categorical' metric. If the target array takes
 continuous values (e.g. for a regression problem) then metric of 'l1'
 or 'l2' is probably more appropriate.}
 
-\item{target_metric_kwds:}{dict (optional, default None)
+\item{target_metric_kwds}{dict (optional, default None)
 Keyword argument to pass to the target metric when performing
 supervised dimension reduction. If None then no arguments are passed on.}
 
-\item{target_weight:}{float (optional, default 0.5)
+\item{target_weight}{float (optional, default 0.5)
 weighting factor between data topology and target topology. A value of
 0.0 weights entirely on data, a value of 1.0 weights entirely on target.
 The default of 0.5 balances the weighting equally between data and target.}
 
-\item{transform_seed:}{int (optional, default 42)
+\item{transform_seed}{int (optional, default 42)
 Random seed used for the stochastic aspects of the transform operation.
 This ensures consistency in transform operations.}
+
+\item{verbose}{bool (optional, default False)
+Controls verbosity of logging.}
+
+\item{return_all}{Whether to return all slots after UMAP}
 }
 \value{
 Embedding of the training data in low-dimensional space if return_all is set to be FALSE, 

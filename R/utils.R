@@ -7,7 +7,8 @@
 #' @param lowerDetectionLimit the minimum expression level that consistitutes true expression
 #' @param expressionFamily the VGAM family function to be used for expression response variables
 #' @return a new CellDataSet object
-#' @import VGAM
+#' @importFrom VGAM negbinomial.size
+#' @importFrom Rcpp compileAttributes
 #' @importFrom Biobase annotatedDataFrameFrom assayDataNew
 #' @export
 #' @examples
@@ -222,6 +223,7 @@ smartEsApply <- function(X, MARGIN, FUN, convert_to_dense, ...) {
 #' @param expression_upper_thresh the expression level above which to exclude genes used to determine negentropy
 #' @return a vector of gene names
 #' @importFrom stats quantile
+#' @importFrom VGAM gaussianff
 #' @export
 #' @examples
 #' \dontrun{

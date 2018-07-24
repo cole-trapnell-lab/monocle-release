@@ -10,6 +10,7 @@
 #' @name diff_test_helper
 #' @description A helper function for differentialGeneTest
 #' @importFrom stats formula
+#' @importFrom VGAM vglm
 diff_test_helper <- function(x,
                              fullModelFormulaStr,
                              reducedModelFormulaStr,
@@ -91,6 +92,7 @@ diff_test_helper <- function(x,
 #' @param reduced_models a list of models, e.g. as returned by fitModels(), forming the denominators of the L.R.Ts.
 #' @return a data frame containing the p values and q-values from the likelihood ratio tests on the parallel arrays of models.
 #' @importFrom stats p.adjust
+#' @importFrom VGAM lrtest
 #' @export
 compareModels <- function(full_models, reduced_models){
   stopifnot(length(full_models) == length(reduced_models))
