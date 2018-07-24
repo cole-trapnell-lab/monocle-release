@@ -537,7 +537,6 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' @export
 #'
 find_cluster_markers <- function(cds,
-<<<<<<< HEAD
                                 pr_graph_test_res,
                                 group_by = 'Cluster',
                                 qval_threshold = 0.05,
