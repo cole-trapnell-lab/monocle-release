@@ -856,6 +856,7 @@ plot_cell_clusters(MCA_cds_res_resolution,
 </p>
 
 <p>
+<<<<<<< HEAD
   We can see cluster 1 in the previous case with resolution 1e-6 is now separated into four clusters (12, 16, 22, 23, 24, 34, 37, 39, 40, 41, 44, 52). Similarly, cluster 3 is now separated into three clusters (8, 10, 20, 28, 33, 46, 47, 55). 
 </p>
 
@@ -1104,6 +1105,23 @@ plot_cell_clusters(MCA_cds,
                    show_group_id = T, cell_size = 0.1)
 {% endhighlight %}
 
+
+<p>
+<div class= "text-center">
+<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Lao1.png" width= 725>
+</div>
+</p>
+
+{% highlight R %}
+cluster_marker_res %>%
+  dplyr::filter(gene_short_name %in% c('Csn3', 'Csn1s1'), Group == 7)
+options(repr.plot.width = 8)
+options(repr.plot.height = 5.5)
+plot_cell_clusters(MCA_cds,
+                   markers = c('Csn3', 'Csn1s1'),
+                   show_group_id = T, cell_size = 0.1)
+{% endhighlight %}
+
 <div style="overflow-x:auto;">
   <table class = "table" style="overflow:auto;">
     <thead>
@@ -1158,21 +1176,6 @@ plot_cell_clusters(MCA_cds,
   </table>
 </div>
 
-<p>
-<div class= "text-center">
-<img src= "{{site.baseurl}}/images/monocle3_MCA/plot_cell_clusters_Lao1.png" width= 725>
-</div>
-</p>
-
-{% highlight R %}
-cluster_marker_res %>%
-  dplyr::filter(gene_short_name %in% c('Csn3', 'Csn1s1'), Group == 7)
-options(repr.plot.width = 8)
-options(repr.plot.height = 5.5)
-plot_cell_clusters(MCA_cds,
-                   markers = c('Csn3', 'Csn1s1'),
-                   show_group_id = T, cell_size = 0.1)
-{% endhighlight %}
 
 <p>
 <div class= "text-center">
