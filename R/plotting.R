@@ -3330,7 +3330,8 @@ plot_ridge <- function(cds, x = 'Pseudotime', y = 'Cluster', markers = NULL) {
 #' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
 #' @param quiet default NULL, use !verbose global option value; if TRUE, output of summary of influence object suppressed
 #' @param labels character labels for points with high influence measures, if set to FALSE, no labels are plotted for points with large influence
-#' @importFrom spdep lag.listw influence.measures lm
+#' @importFrom spdep lag.listw 
+#' @importFrom stats influence.measures lm
 #' @export
 plot_genes_spatial_lags <- function(cds, markers, 
                        log = TRUE,
@@ -3402,7 +3403,6 @@ plot_genes_spatial_lags <- function(cds, markers,
 #'  by the mean of the value from value column of the dataframe and the mean-moran value respectively.
 #' @param zero.policy A logic flag that determines the assignment of lagged values of zones without neighbors. When TRUE, zero is assigned. When FALSE NA is assigned. Default value is TRUE.
 #' @param ... Additional arguments to pass to scale_color_viridis 
-#' @importFrom stats lag.listw
 #' @importFrom spdep lag.listw
 #' @export
 plot_local_spatial_statistics <- function(cds, markers, 

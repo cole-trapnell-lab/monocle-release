@@ -137,7 +137,7 @@ estimate_t <- function(relative_expr_matrix, relative_expr_thresh = 0.1) {
 #' @param expected_capture_rate The fraction of mRNAs captured as cDNAs
 #' @param method the formula to estimate the total mRNAs (num_genes corresponds to the second formula while tpm_fraction corresponds to the first formula, see the anouncement on Trapnell lab website for the Census paper)
 #' @importFrom stats ecdf
-#' @importFrom pbapply pblappy
+#' @importFrom pbapply pblapply
 calibrate_per_cell_total_proposal <- function(relative_exprs_matrix, t_estimate, expected_capture_rate, method = c('num_genes', 'tpm_fraction') ){
   split_relative_exprs <- split(relative_exprs_matrix, rep(1:ncol(relative_exprs_matrix), each = nrow(relative_exprs_matrix)))
 

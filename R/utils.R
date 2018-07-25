@@ -555,7 +555,7 @@ load_HSMM_markers <- function(){
 #' @param cds CellDataSet
 #' @param cell_phenotype A column in the pData. This describes the characteristics of the cells in the cds
 #' @param root_type A value in from the cell_phenotype column that corresponds to the predicted starting cell
-#' @importFrom Iranges which.max
+#' @importFrom IRanges which.max
 #' @export
 get_correct_root_state <- function(cds, cell_phenotype, root_type){
   cell_ids <- which(pData(cds)[, cell_phenotype] == root_type)
