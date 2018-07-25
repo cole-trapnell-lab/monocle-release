@@ -38,8 +38,8 @@ expressed in each group (percentage), specifity score (specifity) for each gene 
 (by default, the Moran's I test), together with the information from pData.
 }
 \description{
-Tests each gene for differential expression as a function of pseudotime
-or according to other covariates as specified. \code{differentialGeneTest} is
+Tests each gene for differential expression as a function of pseudo time
+or according to other covariates are specified. \code{differentialGeneTest} is
 Monocle's main differential analysis routine.
 It accepts a CellDataSet and two model formulae as input, which specify generalized
 lineage models as implemented by the \code{VGAM} package.
