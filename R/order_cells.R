@@ -713,6 +713,7 @@ partitionCells <- function(cds,
 #' @import Rtsne
 #' @importFrom stats dist prcomp kmeans
 #' @importFrom igraph graph.adjacency
+#' @importFrom L1Graph get_mst_with_shortcuts
 #' @export
 learnGraph <- function(cds,
                        max_components=2,

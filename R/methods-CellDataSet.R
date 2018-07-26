@@ -18,7 +18,6 @@ setValidity( "CellDataSet", function( object ) {
 #' @param drop If TRUE the result is coerced to the lowest possible dimension (see the examples). This only works for extracting elements, not for the replacement.
 #' @docType methods
 #' @rdname extract-methods
-#' 
 setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
   if (missing(drop))
     drop <- FALSE
@@ -39,7 +38,7 @@ setMethod("[", "CellDataSet", function(x, i, j, ..., drop = FALSE) {
     featureData(x) <- featureData(x)[i,,..., drop=drop]
   ## assayData; implemented here to avoid function call
   orig <- assayData(x)
-  storage.mode <-  Biobase:::assayDataStorageMode(orig)
+  storage.mode <-  Biobase::assayDataStorageMode(orig)
   assayData(x) <-
     switch(storage.mode,
            environment =,
