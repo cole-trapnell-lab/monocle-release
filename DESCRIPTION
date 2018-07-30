@@ -62,6 +62,8 @@ Imports:
     doParallel,
     pbmcapply,
     VGAM,
+    IRanges,
+    pbapply,
     viridisLite
 LinkingTo: Rcpp
 Suggests:
