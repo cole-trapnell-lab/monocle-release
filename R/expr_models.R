@@ -9,7 +9,6 @@
 #' @name fit_model_helper
 #' @description test
 #' @importFrom stats formula
-#' @importFrom VGAM vglm
 fit_model_helper <- function(x,
                              modelFormulaStr,
                              expressionFamily,
@@ -481,6 +480,8 @@ disp_calc_helper_NB <- function(cds, expressionFamily, min_cells_detected){
   # options(DelayedArray.block.size=100e6) 
   # We should make this clear in the documentation, and possibly
   # emit a message to users on calling this (and possibly other) functions.
+  
+  #Progress Bar here
   x <- DelayedArray(t(t(rounded[nzGenes,]) / pData(cds[nzGenes,])$Size_Factor))
 
   xim <- mean(1/ pData(cds[nzGenes,])$Size_Factor)

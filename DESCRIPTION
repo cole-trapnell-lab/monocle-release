@@ -21,8 +21,8 @@ Depends:
     DelayedArray,
     Biobase,
     ggplot2 (>= 1.0.0),
-    DDRTree (>= 0.1.4),
-    L1Graph
+    igraph,
+    DDRTree (>= 0.1.4)
 Imports:
     parallel,
     igraph (>= 1.0.1),
@@ -32,12 +32,14 @@ Imports:
     cluster,
     fastICA,
     grid,
+    L1Graph,
     irlba (>= 2.0.0),
     DelayedMatrixStats,
     densityClust (>= 0.3),
     Rtsne,
     MASS,
     reshape2,
+    SingleCellExperiment,
     limma,
     tibble,
     dplyr,

@@ -660,7 +660,6 @@ plot_genes_positive_cells <- function(cds_subset,
 #' @import ggplot2
 #' @importFrom plyr ddply .
 #' @importFrom reshape2 melt
-#' @importFrom ggplot2 Position
 #' @export
 #' @examples
 #' \dontrun{
@@ -803,7 +802,6 @@ plot_genes_in_pseudotime <-function(cds_subset,
 #' @import ggplot2
 #' @importFrom reshape2 melt
 #' @importFrom stringr str_c
-#' @importFrom ggplot2 Position
 #' @import grid
 #' @export
 #' @examples
@@ -1954,7 +1952,7 @@ plot_cell_clusters <- function(cds,
 #'
 #' @param cds CellDataSet for the experiment after running clusterCells_Density_Peak
 #' @param rho_threshold The threshold of local density (rho) used to select the density peaks for plotting 
-#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting 
+#' @param delta_threshold The threshold of local distance (delta) used to select the density peaks for plotting
 #' @export
 #' @examples
 #' \dontrun{
