@@ -220,9 +220,13 @@ importFrom(stats,dist)
 importFrom(stats,ecdf)
 importFrom(stats,formula)
 importFrom(stats,glm)
+<<<<<<< HEAD
 importFrom(stats,influence.measures)
 importFrom(stats,kmeans)
 importFrom(stats,lm)
+=======
+importFrom(stats,kmeans)
+>>>>>>> 1d20f2765fcca8fdba31d3a08bae22ba6ea2e36b
 importFrom(stats,lowess)
 importFrom(stats,median)
 importFrom(stats,na.fail)
