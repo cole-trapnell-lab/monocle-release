@@ -1414,6 +1414,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 #' @param close_loop A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)
 #' @param verbose Whether to emit verbose output when running this function 
 #' @importFrom igraph get.adjacency union
+#' @importFrom L1Graph principal_graph
 multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
@@ -1514,6 +1515,7 @@ multi_tree_DDRTree <- function(cds, scale = FALSE, RGE_method, partition_group =
 
 #' @importFrom igraph diameter as_adjacency_matrix add_vertices add_edges
 #' @importFrom stats kmeans
+#' @importFrom L1Graph get_knn principal_graph
 multi_component_RGE <- function(cds, 
                                 scale = FALSE, 
                                 RGE_method, 

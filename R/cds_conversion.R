@@ -20,6 +20,7 @@
 #' scater_lung <- exportCDS(lung, export_to = 'Scater')
 #' scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
 #' }
+#' @importFrom SingleCellExperiment SingleCellExperiment
 exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all = FALSE) {
   if(export_to == 'Seurat') {
     requireNamespace("Seurat")
@@ -74,7 +75,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
     fd <- new("AnnotatedDataFrame", data = fData(monocle_cds))
     experimentData = monocle_cds@experimentData
     
-    export_cds <- scater::SingleCellExperiment(exprsData = data, countData = NULL, tpmData = NULL,
+    export_cds <- SingleCellExperiment::SingleCellExperiment(exprsData = data, countData = NULL, tpmData = NULL,
               fpkmData = NULL, cpmData = NULL, phenoData = pd, featureData = fd,
               experimentData = experimentData, is_exprsData = NULL,
               cellPairwiseDistances = dist(vector()),
