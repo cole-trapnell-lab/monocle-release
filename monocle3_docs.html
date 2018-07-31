@@ -519,17 +519,19 @@ plot_3d_cell_trajectory(cds, markers = c('Hbb-b1'),
     <p> In this tutorial, we demonstrate how to use Monocle 3 (alpha version) to perform clustering for very large datasets and then identify marker genes specific for each cluster.
     </p>
       <p>
-        We will mainly introduce:
+        We will show how to:
       <ol>
-        <li>Use delayedarray to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code>, and <code>preprocessCDS</code>, etc for large datasets.</li>
+        <li>Use DelayedArray to facilitate calculations in functions <code>estimateSizeFactor</code>, <code>estimateDispersions</code>, and <code>preprocessCDS</code> for large datasets.</li>
         <li>Apply <code>UMAP</code>, a very promising non-linear dimension reduction to learn low dimensional representation of the data.</li>
-        <li>Introduce a general differential test (<code>principalGraphTest</code>) to identify genes spatially autocorrelated on the low dimensional embedding.</li>
+        <li>Run (<code>principalGraphTest</code>) to identify genes that vary between clusters.</li>
         <li>The <code>find_cluster_markers</code> function to identify cluster specific genes.</li>
-        <li>Various visualization functionality, including the dotplot, gene expression over low-dimensional embedding, or the marker heatmap plot, etc., to visualize the marker gene expression specificity.</li>
+        <li>Visualize these results using new plotting functions</li>
       </ol>
 
-    <p>Note that this mouse cell atlas (<b>MCA</b>) dataset (Han, Xiaoping, et al. "Mapping the mouse cell atlas by Microwell-seq". Cell 172.5 (2018): 1091-1107.) has been used by Seurat from Rahul's group as a tutorial (<a href="https://satijalab.org/seurat/mca.html">https://sajitalab.org/seurat/mca.html</a>) also but our analysis here is complimentary to theirs.</p>
-
+    <p>We will use the "Mouse Cell Atlas" (<b>MCA</b>) dataset (Han, Xiaoping, et al. "Mapping the mouse cell atlas by Microwell-seq". Cell 172.5 (2018): 1091-1107.) for this tutorial. You may want to check out <a href="https://satijalab.org/seurat/mca.html">another analysis</a> of this dataset with <a href="https://satijalab.org/seurat/">Seurat</a> from Rahul Satija's lab.</p>
+    
+    <h3> Load necessary packages </h3>
+    <p>First, let's load up the packages we'll need in this tutorial.</p>
     {% highlight R %}
 rm(list = ls()) # clear the environment
 #load all the necessary libraries
@@ -785,7 +787,7 @@ pheatmap::pheatmap(Cluster_tissue_stat_ordered,
 </div>
 </p>
 
-  <h3>How do tissues break down by cluster</h3>
+  <h3>How do tissues break down by cluster?</h3>
   <p>We can also look at the distribution of tissue types across each cluster.
     This can help us to figure out how many distinct cell types there are in each tissue.</p>
 
@@ -895,7 +897,7 @@ plot_cell_clusters(MCA_cds_res_resolution,
 </p>
 
 <p>
-  We can see cluster 1 in this case now includes three clusters from the previous case which utilized a resolution of 1e-6 (1, 11, 8).
+  We can see cluster 1 in this case now includes three clusters from the previous case which specified a resolution of 1e-6 (1, 11, 8).
   We also observe that cluster 2 in this case is now made up of two clusters from the prior case (2 and 10).
 </p>
 
