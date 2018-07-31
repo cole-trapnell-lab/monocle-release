@@ -20,7 +20,6 @@
 #' scater_lung <- exportCDS(lung, export_to = 'Scater')
 #' scater_lung_all <- exportCDS(lung, export_to = 'Scater', export_all = T)
 #' }
-#' @importFrom SingleCellExperiment SingleCellExperiment
 exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all = FALSE) {
   if(export_to == 'Seurat') {
     requireNamespace("Seurat")

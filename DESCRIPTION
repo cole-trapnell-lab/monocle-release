@@ -39,7 +39,6 @@ Imports:
     Rtsne,
     MASS,
     reshape2,
-    SingleCellExperiment,
     limma,
     tibble,
     dplyr,
@@ -74,6 +73,7 @@ Suggests:
     scater,
     testthat, 
     reticulate,
+    SingleCellExperiment,
     magick
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
