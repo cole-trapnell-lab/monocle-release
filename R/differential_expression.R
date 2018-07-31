@@ -211,7 +211,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
-   if(length(cds@rge_method) == 0 | cds@dim_reduce_type %in% c('UMAP')) {
+   if(length(cds@rge_method) == 0 & cds@dim_reduce_type %in% c('UMAP')) {
     cds@rge_method <- 'UMAP'
     cell_coords <- t(reducedDimS(cds))
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
