@@ -564,10 +564,8 @@ import("louvain")
     (<a href = "https://satijalab.org/seurat/mca.html">https://satijalab.org/seurat/mca.html</a>)!
 
     {% highlight R %}
-MCA <-readRDS("/Users/xqiu/Dropbox (Personal)/Projects/
-  Monocle3/cell_atlas_dataset/MCA/MCA_merged_mat.rds")
-cell.meta.data <- read.csv("/Users/xqiu/Dropbox (Personal)/Projects/Monocle3/
-    cell_atlas_dataset/MCA/MCA_All-batch-removed-assignments.csv", row.names = 1)
+    MCA <- readRDS(gzcon(url("http://trapnell-lab.gs.washington.edu/public_share/MCA_merged_mat.rds")))
+    cell.meta.data <- read.csv(url("http://trapnell-lab.gs.washington.edu/public_share/MCA_All-batch-removed-assignments.csv"), row.names = 1)
 
 overlapping_cells <- intersect(row.names(cell.meta.data), colnames(MCA))
 gene_ann <- data.frame(gene_short_name = row.names(MCA), row.names = row.names(MCA))
