@@ -217,7 +217,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
   } else if(cds@rge_method == 'L1graph') {
     cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
-    principal_g <- cds@auxOrderingData[["L1graph"]]$W
+    principal_g <- as(cds@auxOrderingData[["L1graph"]]$W, 'sparseMatrix')
   } else if(cds@rge_method %in% c('DDRTree', 'SimplePPT')) {
     cell_coords <- t(reducedDimS(cds))
     principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
