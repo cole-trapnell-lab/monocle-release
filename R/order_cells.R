@@ -1679,7 +1679,11 @@ multi_component_RGE <- function(cds,
   max_ncenter <- 0
   for(cur_comp in unique(louvain_component)) {
     X_subset <- X[, louvain_component == cur_comp]
-    
+    if(verbose) message('Current louvain_component is ', cur_comp)
+    if(ncol(X_subset) < 10) {
+      message('Louvain component with less than 10 cells will be ignored!')
+      next; 
+    }
     #add other parameters...
     if(scale) {
       X_subset <- t(as.matrix(scale(t(X_subset))))
@@ -1731,14 +1735,40 @@ multi_component_RGE <- function(cds,
       centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter), ]
       centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
       
-      kmean_res <- kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
+      kmean_res <- tryCatch({
+        kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
+        }, error = function() {
+          kmeans(t(X_subset), ncenter, iter.max = 100)  
+        })
+      
       if (kmean_res$ifault != 0){
         message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
       }
       nearest_center <- findNearestVertex(t(kmean_res$centers), X_subset, process_targets_in_blocks=TRUE)
       medioids <- X_subset[, unique(nearest_center)]
       reduced_dim_res <- t(medioids)
-      
+      k <- 25
+      mat <- t(X_subset)
+      if (is.null(k)) {
+        k <- round(sqrt(nrow(mat))/2)
+        k <- max(10, k)
+      }
+      if (verbose)
+        message("Finding kNN using FNN with ", k, " neighbors")
+      dx <- FNN::get.knn(mat, k = min(k, nrow(mat) - 1))
+      nn.index <- dx$nn.index
+      nn.dist <- dx$nn.dist
+      if (verbose)
+        message("Calculating the local density for each sample based on kNNs ...")
+      rho <- exp(-rowMeans(nn.dist))
+      mat_df <- as.data.frame(mat)
+      tmp <- mat_df %>% tibble::rownames_to_column() %>% dplyr::mutate(cluster = kmean_res$cluster, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density)
+      # louvain_clustering_args <- c(list(data = reduced_dim_res, pd = pData(cds)[colnames(X_subset), ], k = 25, 
+      #                                   resolution = 1e-1, weight = FALSE, louvain_iter = 1, verbose = T)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
+      # louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+      # tmp <- mat_df %>% tibble::rownames_to_column() %>% dplyr::mutate(cluster = louvain_res$optim_res$membership, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density)
+      medioids <- X_subset[, tmp$rowname]
+      reduced_dim_res <- t(medioids)
       l1graph_args <- c(list(X = X_subset, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       
@@ -1875,7 +1905,7 @@ multi_component_RGE <- function(cds,
   R_row_names <- NULL 
   for(i in 1:length(merge_rge_res$R)) {
     current_R <- merge_rge_res$R[[i]]
-    R[curr_row_id:(curr_row_id + nrow(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- current_R
+    # R[curr_row_id:(curr_row_id + nrow(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- current_R # this is why learnGraph is very slow ...
     
     stree[curr_col_id:(curr_col_id + ncol(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- merge_rge_res$stree[[i]]
 
@@ -2027,7 +2057,8 @@ patchEmbedding <- function(cds,
         data <- data_ori[current_cell_ids, ] 
         
         cell_num_in_cluster <- round(landmark_ratio * length(current_cell_ids))
-        centers <- data[seq(1, nrow(data), length.out=cell_num_in_cluster), ]
+        if(cell_num_in_cluster == 0) cell_num_in_cluster <- 1  # avoid the case where cell_num_in_cluster = 0
+        centers <- data[seq(1, nrow(data), length.out=cell_num_in_cluster), , drop = F] # avoid the case where cell_num_in_cluster = 0
         centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
         kmean_res <- kmeans(data, cell_num_in_cluster, centers=centers, iter.max = 100)
         landmark_id_tmp <- unique(findNearestVertex(t(kmean_res$centers), t(data), process_targets_in_blocks=TRUE))
