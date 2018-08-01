@@ -17,6 +17,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// pnorm_over_mat
+NumericMatrix pnorm_over_mat(SEXP R_num_links_ij, SEXP R_var_null_num_links);
+RcppExport SEXP _monocle_pnorm_over_mat(SEXP R_num_links_ijSEXP, SEXP R_var_null_num_linksSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type R_num_links_ij(R_num_links_ijSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type R_var_null_num_links(R_var_null_num_linksSEXP);
+    rcpp_result_gen = Rcpp::wrap(pnorm_over_mat(R_num_links_ij, R_var_null_num_links));
+    return rcpp_result_gen;
+END_RCPP
+}
 // select_landmarks
 Rcpp::List select_landmarks(SEXP R_data, SEXP R_indices, SEXP R_indptr, SEXP R_n, SEXP R_dim, SEXP R_count);
 RcppExport SEXP _monocle_select_landmarks(SEXP R_dataSEXP, SEXP R_indicesSEXP, SEXP R_indptrSEXP, SEXP R_nSEXP, SEXP R_dimSEXP, SEXP R_countSEXP) {
@@ -36,6 +48,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_monocle_jaccard_coeff", (DL_FUNC) &_monocle_jaccard_coeff, 2},
+    {"_monocle_pnorm_over_mat", (DL_FUNC) &_monocle_pnorm_over_mat, 2},
     {"_monocle_select_landmarks", (DL_FUNC) &_monocle_select_landmarks, 6},
     {NULL, NULL, 0}
 };

@@ -427,10 +427,12 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   theta <- (as.matrix(edges_per_module) / total_edges) %*% t(edges_per_module / total_edges)
   var_null_num_links <- theta * (1 - theta) / total_edges
   num_links_ij <- num_links / total_edges - theta
-  tmp <- data.frame(mrow=c(row(num_links)),   # straightens out the arguments
-           mcol=c(col(num_links)), 
-           m.f.res= mapply(function(r, c) pnorm(num_links_ij[r, c], 0, sqrt(var_null_num_links[r, c]), lower.tail = FALSE), row(num_links), col(num_links)  ) )
-  cluster_mat <- as.matrix(dcast(tmp, mrow ~ mcol)[, -1])
+  # tmp <- data.frame(mrow=c(row(num_links)),   # straightens out the arguments
+  #          mcol=c(col(num_links)), 
+  #          m.f.res= mcmapply(function(r, c) pnorm(num_links_ij[r, c], 0, sqrt(var_null_num_links[r, c]), lower.tail = FALSE), row(num_links), col(num_links), mc.cores = cores  ) )
+  # cluster_mat <- as.matrix(dcast(tmp, mrow ~ mcol)[, -1])
+  cluster_mat <- pnorm_over_mat(as.matrix(num_links_ij), var_null_num_links) # c++ version 
+  
   enrichment_mat <- num_links_ij
   num_links <- num_links_ij / total_edges
   
