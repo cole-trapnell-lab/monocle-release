@@ -1699,6 +1699,7 @@ multi_component_RGE <- function(cds,
       ncenter <- min(ncol(X_subset) - 1, extra_arguments$ncenter)
     }
     
+    kmean_res <- NULL 
     if(RGE_method == 'DDRTree') {
       ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
@@ -1755,20 +1756,19 @@ multi_component_RGE <- function(cds,
         k <- max(10, k)
       }
       if (verbose)
-        message("Finding kNN using FNN with ", k, " neighbors")
-      dx <- FNN::get.knn(mat, k = min(k, nrow(mat) - 1))
-      nn.index <- dx$nn.index
-      nn.dist <- dx$nn.dist
-      if (verbose)
+        message("Finding kNN using RANN with ", k, " neighbors")
+      dx <- RANN::nn2(mat, k = min(k, nrow(mat) - 1))
+      nn.index <- dx$nn.idx[, -1]
+      nn.dist <- dx$nn.dists[, -1]
+
+      if (verbose) 
         message("Calculating the local density for each sample based on kNNs ...")
+
       rho <- exp(-rowMeans(nn.dist))
       mat_df <- as.data.frame(mat)
-      tmp <- mat_df %>% tibble::rownames_to_column() %>% dplyr::mutate(cluster = kmean_res$cluster, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density)
-      # louvain_clustering_args <- c(list(data = reduced_dim_res, pd = pData(cds)[colnames(X_subset), ], k = 25, 
-      #                                   resolution = 1e-1, weight = FALSE, louvain_iter = 1, verbose = T)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
-      # louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-      # tmp <- mat_df %>% tibble::rownames_to_column() %>% dplyr::mutate(cluster = louvain_res$optim_res$membership, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density)
-      medioids <- X_subset[, tmp$rowname]
+      tmp <- mat_df %>% dplyr::add_rownames() %>% dplyr::mutate(cluster = kmean_res$cluster, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density) %>% arrange(-desc(cluster))
+      medioids <- X_subset[, tmp$rowname] # select representative cells by highest density
+      
       reduced_dim_res <- t(medioids)
       l1graph_args <- c(list(X = X_subset, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
@@ -1805,14 +1805,20 @@ multi_component_RGE <- function(cds,
     }
     
     if(close_loop) {
-      G <- get_knn(medioids, K = min(5, ncol(medioids)))
+      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], rge_res$R, stree, 
+                                     rge_res$Y, cds@reducedDimS[, louvain_component == cur_comp],
+                                           medioids, kmean_res = kmean_res, verbose = verbose)
+      medioids <- connectTips_res$medioids
+      stree <- connectTips_res$stree    
+      # use louvain clustering method to get a better initial graph? 
+      G <- connectTips_res$G
 
-      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+      l1graph_args <- c(list(X = X_subset, G = G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
       
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
-      stree <- rge_res$W
+      stree <- as(rge_res$W, 'sparseMatrix')
 
       if(is.null(merge_rge_res)) {
         colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
@@ -1853,44 +1859,8 @@ multi_component_RGE <- function(cds,
     dimnames(stree) <- list(curr_cell_names, curr_cell_names)
     cur_dp_mst <- graph.adjacency(stree, mode = "undirected", weighted = TRUE)
     
-    # tmp <- matrix(apply(rge_res$R, 1, which.max))
-    
-    # if(length(close_loop) == length(unique(louvain_component)))
-    #   curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
-    # else 
-    #   curr_close_loop <- close_loop[1]
-    
-    # if(curr_close_loop == TRUE) {
-    #   colnames(curr_reducedDimK_coord) <- curr_cell_names
-    #   connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], rge_res$R, cur_dp_mst, 
-    #                                  curr_reducedDimK_coord, cds@reducedDimS[, louvain_component == cur_comp])
-    
-    #   curr_reducedDimK_coord <- connectTips_res$reducedDimK_df
-    #   cur_dp_mst <- connectTips_res$mst_g
-    
-    #   current_W <- as.matrix(get.adjacency(cur_dp_mst))
-    #   message('current_W dim is ', nrow(current_W), ncol(current_W))
-    #   l1graph_args <- c(list(X = curr_reducedDimK_coord, C0 = curr_reducedDimK_coord, G = current_W, gstruct = 'l1-graph', verbose = verbose),
-    #                     extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
-    
-    #   l1_graph_res <- do.call(principal_graph, l1graph_args)
-    
-    #   W <- l1_graph_res$W
-    #   message('W dim is ', nrow(W), ncol(W))
-    #   message('nrow(rge_res$R) is ', nrow(rge_res$R))
-    #   start_id <- min(nrow(rge_res$R), nrow(current_W))
-    
-    #   dimnames(W) <- list(V(cur_dp_mst)$name, V(cur_dp_mst)$name)
-    #   current_W[, start_id:nrow(current_W)] <- W[, start_id:nrow(current_W)]
-    #   current_W[start_id:nrow(current_W), ] <- W[start_id:nrow(current_W), ]
-    
-    #   # W[W < 1e-5] <- 0
-    #   cur_dp_mst <- graph.adjacency(current_W, mode = "undirected", weighted = TRUE)
-    # }
-    
     dp_mst <- graph.union(dp_mst, cur_dp_mst)
     reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
-    
   }
   
   row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
@@ -1936,69 +1906,93 @@ multi_component_RGE <- function(cds,
 #' functions to connect the tip points after learning the DDRTree or simplePPT tree
 connectTips <- function(pd,
                         R, # kmean cluster
-                        mst_g_old, 
+                        stree, 
                         reducedDimK_old, 
                         reducedDimS_old, 
-                        k = 10, 
+                        medioids, 
+                        k = 25, 
                         weight = F,
                         qval_thresh = 0.05, 
-                        kmean_num = 5, 
+                        kmean_res, 
+                        euclidean_distance_ratio = 1, 
+                        geodestic_distance_ratio = 1/3, 
                         verbose = FALSE,
                         ...) {
-  tmp <- matrix(apply(R, 1, which.max))
+  mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
+  if(is.null(kmean_res)) {
+    tmp <- matrix(apply(R, 1, which.max))
+    
+    row.names(tmp) <- colnames(reducedDimS_old)
+    
+    tip_pc_points <- which(igraph::degree(mst_g_old) == 1)
+
+    data <- t(reducedDimS_old[, ])
+    
+    louvain_res <- louvain_clustering(data, pd[, ], k = k, weight = weight, verbose = verbose)
+    
+    # louvain_res$optim_res$memberships[1, ] <-  tmp[raw_data_tip_pc_points, 1]
+    louvain_res$optim_res$membership <- tmp[, 1]
+  } else { # use kmean clustering result 
+    tip_pc_points <- which(igraph::degree(mst_g_old) == 1)
+    tip_pc_points_kmean_clusters <- sort(kmean_res$cluster[names(tip_pc_points)])
+    # raw_data_tip_pc_points <- which(kmean_res$cluster %in% tip_pc_points_kmean_clusters) # raw_data_tip_pc_points <- which(kmean_res$cluster %in% tip_pc_points)
+    
+    data <- t(reducedDimS_old[, ]) # raw_data_tip_pc_points
+    
+    louvain_res <- louvain_clustering(data, pd[row.names(data), ], k = k, weight = weight, verbose = verbose)
+    
+    # louvain_res$optim_res$memberships[4, ] <-  kmean_res$cluster #[raw_data_tip_pc_points]
+    louvain_res$optim_res$membership <- kmean_res$cluster #[raw_data_tip_pc_points]   
+  }
   
-  row.names(tmp) <- colnames(reducedDimS_old)
-  
-  tip_pc_points <- which(degree(mst_g_old) == 1)
-  raw_data_tip_pc_points <- which(tmp[, 1] %in% tip_pc_points)
-  
-  data <- t(reducedDimS_old[, raw_data_tip_pc_points])
-  
-  louvain_res <- louvain_clustering(data, pd[raw_data_tip_pc_points, ], k = k, weight = weight, verbose = verbose)
-  
-  louvain_res$optim_res$memberships[1, ] <-  tmp[raw_data_tip_pc_points, 1]
-  louvain_res$optim_res$membership <- tmp[raw_data_tip_pc_points, 1]
-  
+  # identify edges between only tip cells  
   cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, qval_thresh=qval_thresh, verbose = verbose)
-  
-  valid_connection <- which(cluster_graph_res$cluster_mat < qval_thresh, arr.ind = T)
+  dimnames(cluster_graph_res$cluster_mat) <- dimnames(cluster_graph_res$num_links)
+  valid_connection <- which(cluster_graph_res$cluster_mat < qval_thresh, arr.ind = T) 
+  valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+
+  # prepare the PAGA graph 
+  G <- cluster_graph_res$cluster_mat
+  G[cluster_graph_res$cluster_mat < qval_thresh] <- -1
+  G[cluster_graph_res$cluster_mat > 0] <- 0
+  G <- - G
   
   if(nrow(valid_connection) == 0) {
-    return(list(mst_g = mst_g_old, reducedDimK_df = reducedDimK_old))
+    return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, medioids = medioids, G = G))
   }
   
+  # calculate length of the MST diameter path   
   mst_g <- mst_g_old
-  diameter_dis <- diameter(mst_g_old)
+  diameter_dis <- igraph::diameter(mst_g_old)
   reducedDimK_df <- reducedDimK_old
   
+  # find the maximum distance between nodes from the MST   
+  res <- dist(t(reducedDimK_old))
+  g <- igraph::graph_from_adjacency_matrix(as.matrix(res), weighted = T, mode = 'undirected')
+  mst <- igraph::minimum.spanning.tree(g)
+  max_node_dist <- max(igraph::E(mst)$weight)
+
+  # append new edges to close loops in the spanning tree returned from SimplePPT   
   for(i in 1:nrow(valid_connection)) {
-    edge_vec <- unique(louvain_res$optim_res$membership)[valid_connection[i, ]]
+    # cluster id for the tip point; if kmean_res return valid_connection[i, ] is itself; otherwise the id identified in the tmp file 
+    edge_vec <- sort(unique(louvain_res$optim_res$membership))[valid_connection[i, ]]
+    edge_vec_in_tip_pc_point <- igraph::V(mst_g_old)$name[edge_vec]
     
-    if((distances(mst_g, edge_vec[1], edge_vec[2]) > 7 * diameter_dis / 8) & 
-       (distances(mst_g, edge_vec[1], edge_vec[2]) < diameter_dis)) {
-      raw_data_tip_pc_points_tmp <- which(tmp[, 1] %in% edge_vec)
+    if(length(edge_vec_in_tip_pc_point) == 1) next; 
+    
+    if(all(edge_vec %in% tip_pc_points) & (igraph::distances(mst_g_old, edge_vec_in_tip_pc_point[1], edge_vec_in_tip_pc_point[2]) > geodestic_distance_ratio * diameter_dis) & 
+                                           (euclidean_distance_ratio * max_node_dist > dist(t(reducedDimK_old[, edge_vec]))) ) {
+      if(verbose) message('edge_vec is ', edge_vec[1], '\t', edge_vec[2])
+      if(verbose) message('edge_vec_in_tip_pc_point is ', edge_vec_in_tip_pc_point[1], '\t', edge_vec_in_tip_pc_point[2])
       
-      data <- t(reducedDimS_old[, raw_data_tip_pc_points_tmp])
-      kmeans_res <- kmeans(data, min(kmean_num, nrow(data) - 1))$centers
-      
-      curr_id <- as.numeric(strsplit(V(mst_g)$name[vcount(mst_g)], "_")[[1]][2])
-      row.names(kmeans_res) <- paste0("Y_", (curr_id + 1):(curr_id + nrow(kmeans_res)))
-      adjusted_K <- rbind(kmeans_res, t(reducedDimK_df[, edge_vec]))
-      dp <- as.matrix(dist(adjusted_K))
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
-      
-      mst_g <- add_vertices(mst_g, nrow(kmeans_res), name = row.names(kmeans_res)) %>% add_edges(as.vector(t(get.edgelist(dp_mst))), weight = E(dp_mst)$weight) 
-      reducedDimK_df <- cbind(reducedDimK_df, t(kmeans_res))  
+      mst_g <- igraph::add_edges(mst_g, edge_vec_in_tip_pc_point) 
     }
   }
-  
-  list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)
+
+  list(stree = igraph::get.adjacency(mst_g), Y = reducedDimK_df, medioids = medioids, G = G)
 }
 
 #' Run embedding smoothing techniques (drl, PSL and SSE) for each isolated group and then put different embedding in the same coordinate system 
-#' 
-#'  
 #'
 #' @param cds CellDataSet for the experiment
 #' @param max_components the dimensionality of the reduced space

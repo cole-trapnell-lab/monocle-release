@@ -405,40 +405,21 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   edges_per_module = rowSums(num_links)
   total_edges = sum(num_links)
   
-  # for(i in 1:length(louvain_modules)){
-  #   for(j in 1:length(louvain_modules)){
-      
-  #     theta_i = edges_per_module[i] / total_edges
-  #     theta_j = edges_per_module[j] / total_edges
-      
-  #     #all_ij <- num_links[i,j] + num_links[i,i] + num_links[j,j] # edges in all cells from two Louvain landmark groups
-  #     #only_i <- num_links[i,i] # edges from the first Louvain landmark groups
-  #     #only_j <- num_links[j,j] # edges from the second Louvain landmark groups
-  #     #overlap_weight <- (all_ij - only_i - only_j) / all_ij
-  #     num_links_i_j = num_links[i,j]/total_edges - theta_i * theta_j
-  #     var_null_num_links_i_j = theta_i * theta_j *( 1 - theta_i * theta_j) / total_edges
-  #     p_val_i_j = pnorm(num_links_i_j, 0, sqrt(var_null_num_links_i_j), lower.tail = FALSE)
-  #     cluster_mat[i,j] = p_val_i_j
-  #     enrichment_mat[i,j] = num_links_i_j
-  #     num_links[i, j] <- num_links[i,j]/total_edges
-  #   }
-  # }
-  # Fast version below (https://stackoverflow.com/questions/7395397/how-to-apply-function-over-each-matrix-elements-indices)
   theta <- (as.matrix(edges_per_module) / total_edges) %*% t(edges_per_module / total_edges)
   var_null_num_links <- theta * (1 - theta) / total_edges
   num_links_ij <- num_links / total_edges - theta
+  # use mcmapply below (https://stackoverflow.com/questions/7395397/how-to-apply-function-over-each-matrix-elements-indices)
   # tmp <- data.frame(mrow=c(row(num_links)),   # straightens out the arguments
   #          mcol=c(col(num_links)), 
   #          m.f.res= mcmapply(function(r, c) pnorm(num_links_ij[r, c], 0, sqrt(var_null_num_links[r, c]), lower.tail = FALSE), row(num_links), col(num_links), mc.cores = cores  ) )
   # cluster_mat <- as.matrix(dcast(tmp, mrow ~ mcol)[, -1])
-  cluster_mat <- pnorm_over_mat(as.matrix(num_links_ij), var_null_num_links) # c++ version 
+  cluster_mat <- pnorm_over_mat(as.matrix(num_links_ij), var_null_num_links) # much faster c++ version 
   
   enrichment_mat <- num_links_ij
   num_links <- num_links_ij / total_edges
   
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
-  #cluster_mat[cluster_mat > qval_thresh] = 0
-  
+
   sig_links <- as.matrix(num_links)
   sig_links[cluster_mat > qval_thresh] = 0
   diag(sig_links) = 0
@@ -447,6 +428,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   louvain_modules <- igraph::cluster_louvain(cluster_g)
   
   # return also the layout coordinates and the edges link for the graph of clusters
+
   coord <- igraph::layout_components(cluster_g) 
   coord <- as.data.frame(coord)
   colnames(coord) <- c('x', 'y')
@@ -454,13 +436,16 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   coord$Cluster <- 1:nrow(coord)
   coord$louvain_cluster <- as.character(igraph::membership(louvain_modules))
   
-  edge <- get.data.frame(cluster_g)
-  edge <- as.data.frame(edge)
-  colnames(edge) <- c('start', 'end', 'weight')
-  edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
-  edge_links <- as.data.frame(edge_links)
-  colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
-  edge_links$weight <- edge[, 3]
+  edge_links <- NULL
+  if(length(E(cluster_g)) > 0) { # run this only when there is edges
+    edge <- get.data.frame(cluster_g)
+    edge <- as.data.frame(edge)
+    colnames(edge) <- c('start', 'end', 'weight')
+    edge_links <- cbind(coord[edge$start, 1:2], coord[edge$end, 1:2])
+    edge_links <- as.data.frame(edge_links)
+    colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
+    edge_links$weight <- edge[, 3]
+  }
   
   list(cluster_g = cluster_g, cluster_optim_res = optim_res, num_links = num_links, cluster_mat = cluster_mat, enrichment_mat = enrichment_mat, cluster_coord = coord, edge_links = edge_links)
 }
