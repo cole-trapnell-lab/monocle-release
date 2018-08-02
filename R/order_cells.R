@@ -760,6 +760,11 @@ partitionCells <- function(cds,
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param do_partition When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scale When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
+#' @param euclidean_distance_ratio The maximal ratio between the euclidean distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+#' that of the maximum distance between any connecting points on the spanning tree allowed to be connected during the loop closure procedure .   
+#' @param geodestic_distance_ratio  The minimal ratio between the geodestic distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+#' that of the length of the diameter path on the spanning tree allowed to be connected during the loop closure procedure. (Both euclidean_distance_ratio and geodestic_distance_ratio 
+#' need to be satisfied to introduce the edge for loop closure.)    
 #' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
@@ -785,6 +790,8 @@ learnGraph <- function(cds,
                        do_partition = TRUE, 
                        scale = FALSE, 
                        close_loop = FALSE, 
+                       euclidean_distance_ratio = 1, 
+                       geodestic_distance_ratio = 1/3, 
                        verbose = FALSE, 
                        ...){
   RGE_method <- RGE_method[1]
@@ -932,7 +939,16 @@ learnGraph <- function(cds,
     
     #louvain_component <- pData(cds)[, partition_group]
     if(do_partition && length(louvain_component) == ncol(cds)) {
-      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, 
+        RGE_method = RGE_method, 
+        partition_group = partition_group, 
+        irlba_pca_res = irlba_pca_res, 
+        max_components = max_components, 
+        extra_arguments = extra_arguments, 
+        close_loop = close_loop, 
+        euclidean_distance_ratio = euclidean_distance_ratio, 
+        geodestic_distance_ratio = geodestic_distance_ratio, 
+        verbose = verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1025,8 +1041,17 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, RGE_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
-      
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, 
+        RGE_method = RGE_method, 
+        partition_group = partition_group, 
+        irlba_pca_res = irlba_pca_res, 
+        max_components = max_components, 
+        extra_arguments = extra_arguments, 
+        close_loop = close_loop, 
+        euclidean_distance_ratio = euclidean_distance_ratio, 
+        geodestic_distance_ratio = geodestic_distance_ratio, 
+        verbose = verbose)
+
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
       ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
@@ -1666,6 +1691,8 @@ multi_component_RGE <- function(cds,
                                 max_components, 
                                 extra_arguments, 
                                 close_loop = FALSE, 
+                                euclidean_distance_ratio = 1, 
+                                geodestic_distance_ratio = 1/3, 
                                 verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
@@ -1805,10 +1832,15 @@ multi_component_RGE <- function(cds,
     }
     
     if(close_loop) {
-      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], rge_res$R, stree, 
-                                     rge_res$Y, cds@reducedDimS[, louvain_component == cur_comp],
-                                           medioids, kmean_res = kmean_res, verbose = verbose)
-      medioids <- connectTips_res$medioids
+      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], 
+                                           R = rge_res$R, 
+                                           stree = stree, 
+                                           reducedDimK_old = rge_res$Y, 
+                                           reducedDimS_old = cds@reducedDimS[, louvain_component == cur_comp],
+                                           kmean_res = kmean_res, 
+                                           euclidean_distance_ratio = 1, 
+                                           geodestic_distance_ratio = 1/3, 
+                                           verbose = verbose)
       stree <- connectTips_res$stree    
       # use louvain clustering method to get a better initial graph? 
       G <- connectTips_res$G
@@ -1909,7 +1941,6 @@ connectTips <- function(pd,
                         stree, 
                         reducedDimK_old, 
                         reducedDimS_old, 
-                        medioids, 
                         k = 25, 
                         weight = F,
                         qval_thresh = 0.05, 
@@ -1958,7 +1989,7 @@ connectTips <- function(pd,
   G <- - G
   
   if(nrow(valid_connection) == 0) {
-    return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, medioids = medioids, G = G))
+    return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, G = G))
   }
   
   # calculate length of the MST diameter path   
@@ -1989,7 +2020,7 @@ connectTips <- function(pd,
     }
   }
 
-  list(stree = igraph::get.adjacency(mst_g), Y = reducedDimK_df, medioids = medioids, G = G)
+  list(stree = igraph::get.adjacency(mst_g), Y = reducedDimK_df, G = G)
 }
 
 #' Run embedding smoothing techniques (drl, PSL and SSE) for each isolated group and then put different embedding in the same coordinate system 

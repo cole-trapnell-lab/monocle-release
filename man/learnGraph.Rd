@@ -7,7 +7,8 @@
 learnGraph(cds, max_components = 2, RGE_method = c("SimplePPT", "L1graph",
   "DDRTree"), auto_param_selection = TRUE,
   partition_group = "louvain_component", do_partition = TRUE,
-  scale = FALSE, close_loop = FALSE, verbose = FALSE, ...)
+  scale = FALSE, close_loop = FALSE, euclidean_distance_ratio = 1,
+  geodestic_distance_ratio = 1/3, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -25,6 +26,13 @@ learnGraph(cds, max_components = 2, RGE_method = c("SimplePPT", "L1graph",
 \item{scale}{When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.}
 
 \item{close_loop}{Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space}
+
+\item{euclidean_distance_ratio}{The maximal ratio between the euclidean distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+that of the maximum distance between any connecting points on the spanning tree allowed to be connected during the loop closure procedure .}
+
+\item{geodestic_distance_ratio}{The minimal ratio between the geodestic distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+that of the length of the diameter path on the spanning tree allowed to be connected during the loop closure procedure. (Both euclidean_distance_ratio and geodestic_distance_ratio 
+need to be satisfied to introduce the edge for loop closure.)}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 
