@@ -4,7 +4,8 @@
 \alias{calculateLW}
 \title{Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object}
 \usage{
-calculateLW(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE)
+calculateLW(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE,
+  interactive = FALSE)
 }
 \arguments{
 \item{cds}{The cellDataSet object where the neighbors list is calculated from}

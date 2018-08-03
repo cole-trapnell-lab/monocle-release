@@ -4,7 +4,7 @@
 \alias{learnGraph}
 \title{Learn principal graph from the reduced space using reversed graph embedding}
 \usage{
-learnGraph(cds, max_components = 2, RGE_method = c("SimplePPT", "L1graph",
+learnGraph(cds, max_components = 2, rge_method = c("SimplePPT", "L1graph",
   "DDRTree"), auto_param_selection = TRUE,
   partition_group = "louvain_component", do_partition = TRUE,
   scale = FALSE, close_loop = FALSE, verbose = FALSE, ...)
@@ -14,7 +14,7 @@ learnGraph(cds, max_components = 2, RGE_method = c("SimplePPT", "L1graph",
 
 \item{max_components}{the dimensionality of the reduced space}
 
-\item{RGE_method}{Determines how to transform expression values prior to reducing dimensionality}
+\item{rge_method}{Determines how to transform expression values prior to reducing dimensionality}
 
 \item{auto_param_selection}{when this argument is set to TRUE (default), it will automatically calculate the proper value for the ncenter (number of centroids) parameters which will be passed into DDRTree call.}
 
@@ -63,4 +63,11 @@ Often, experiments include cells from different batches or treatments. You can
 reduce the effects of these treatments by transforming the data with a linear
 model prior to dimensionality reduction. To do so, provide a model formula
 through \code{residualModelFormulaStr}.
+}
+\references{
+DDRTree: Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. Dimensionality reduction via graph structure learning. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015.
+
+L1graph (generalized SimplePPT): Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. Principal graph and structure learning based on reversed graph embedding . IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016.
+
+Original SimplePPT: Qi Mao, Le Yang, Li Wang, Steve Goodison, Yijun Sun. SimplePPT: A Simple Principal Tree Algorithm https://epubs.siam.org/doi/10.1137/1.9781611974010.89
 }

@@ -63,12 +63,12 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' will automatically calculated based on the top num_cluster product of rho and sigma. 
 #' @param gaussian A logic flag passed to densityClust function in desnityClust package to determine whether or not Gaussian kernel will be used for calculating the local density
 #' @param clustering_genes a vector of feature ids (from the CellDataSet's featureData) used for ordering cells
-#' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 50
-#' @param louvain_iter number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 5. 
+#' @param k number of kNN used in creating the k nearest neighbor graph for Louvain clustering. The number of kNN is related to the resolution of the clustering result, bigger number of kNN gives low resolution and vice versa. Default to be 20
+#' @param louvain_iter Integer number of iterations used for Louvain clustering. The clustering result gives the largest modularity score will be used as the final clustering result.  Default to be 1. Note that if louvain_iter is large than 1, the `seed` argument will be ignored.  
 #' @param weight A logic argument to determine whether or not we will use Jaccard coefficent for two nearest neighbors (based on the overlapping of their kNN) as the weight used for Louvain clustering. Default to be FALSE.
 #' @param res Resolution parameter for the louvain clustering. Values between 0 and 1e-2 are good, bigger values give you more clusters. Default is set to be `seq(0, 1e-4, length.out = 5)`. 
 #' @param method method for clustering cells. Three methods are available, including densityPeak, louvian and DDRTree. By default, we use density peak clustering algorithm for clustering. For big datasets (like data with 50 k cells or so), we recommend using the louvain clustering algorithm. 
-#' @param random_seed  the seed used by the random number generator in louvain-igraph package  
+#' @param random_seed  the seed used by the random number generator in louvain-igraph package. This argument will be ignored if louvain_iter is larger than 1.    
 #' @param verbose Verbose A logic flag to determine whether or not we should print the running details. 
 #' @param cores number of cores computer should use to execute function
 #' @param ... Additional arguments passed to \code{\link{densityClust}()}
@@ -96,9 +96,9 @@ clusterCells <- function(cds,
                          gaussian = T, 
                          clustering_genes=NULL,
                          k = 20, 
-                         louvain_iter = 5, 
+                         louvain_iter = 1, 
                          weight = FALSE,
-                         res = NULL, #seq(0, 1e-4, length.out = 5)
+                         res = NULL, 
                          method = c('densityPeak', 'louvain'),
                          random_seed = 0L, 
                          verbose = F, 
@@ -258,7 +258,8 @@ clusterCells <- function(cds,
 #' @param k number of nearest neighbors used for Louvain clustering 
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph 
 #' @param louvain_iter the number of iteraction for louvain clustering 
-#' @param resolution resolution of clustering result, specifiying the granularity of clusters
+#' @param resolution resolution of clustering result, specifiying the granularity of clusters.
+#' Default to not use resolution and the standard igraph louvain clustering algorithm will be used. 
 #' @param random_seed  the seed used by the random number generator in louvain-igraph package  
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... extra arguments used to run louvain_R
@@ -280,7 +281,8 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   if (k < 1) {
     stop("k must be a positive integer!")
   } else if (k > nrow(data) - 2) {
-    stop("RANN counts the point itself, k must be smaller than\nthe total number of points - 1 (all other points) - 1 (itself)!")
+    k <- nrow(data) - 2
+    warning("RANN counts the point itself, k must be smaller than\nthe total number of points - 1 (all other points) - 1 (itself)!")
   }
   if (verbose) {
     message("Run kNN based graph clustering starts:", "\n", "  -Input data of ",
@@ -316,10 +318,11 @@ louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, r
   Qp <- -1
   optim_res <- NULL
   best_max_resolution <- 'No resolution'
+  
   if(louvain_iter >= 2) {
     random_seed <- NULL
   }
-
+    
   for (iter in 1:louvain_iter) {
     if(verbose) {
       cat("Running louvain iteration ", iter, "...\n")
@@ -420,6 +423,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
       p_val_i_j = pnorm(num_links_i_j, 0, sqrt(var_null_num_links_i_j), lower.tail = FALSE)
       cluster_mat[i,j] = p_val_i_j
       enrichment_mat[i,j] = num_links_i_j
+      num_links[i, j] <- num_links[i,j]/total_edges
     }
   }
   cluster_mat = matrix(p.adjust(cluster_mat), nrow=length(louvain_modules), ncol=length(louvain_modules))
@@ -448,7 +452,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
   colnames(edge_links) <- c('x_start', 'x_end', 'y_start', 'y_end')
   edge_links$weight <- edge[, 3]
   
-  list(cluster_g = cluster_g, cluster_optim_res = optim_res, cluster_coord = coord, edge_links = edge_links)
+  list(cluster_g = cluster_g, cluster_optim_res = optim_res, num_links = num_links, cluster_mat = cluster_mat, enrichment_mat = enrichment_mat, cluster_coord = coord, edge_links = edge_links)
 }
 
 

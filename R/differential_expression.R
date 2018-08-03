@@ -17,11 +17,9 @@ diff_test_helper <- function(x,
                              expressionFamily,
                              relative_expr,
                              weights,
-                             disp_func=NULL,
-                             verbose=FALSE){
-  reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
-  fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
-  
+                             disp_func=NULL, 
+                             group_by=NULL, 
+                             verbose=FALSE){  
   x_orig <- x
   disp_guess <- 0
   
@@ -50,23 +48,60 @@ diff_test_helper <- function(x,
   }else{
     f_expression <- log10(x)
   }
-  
+
+  if(!is.null(group_by)) {
+    all_vals <- unique(c(all.vars(as.formula(fullModelFormulaStr)), all.vars(as.formula(reducedModelFormulaStr)), 'x'))
+    vglm_data <- do.call(cbind.data.frame, mget(all_vals, inherits = T)) # get data from parent environment 
+    vglm_data <- vglm_data %>% group_by_(group_by) %>% mutate(average = mean(x)) %>% 
+        select(-x) %>% unique()
+    if(expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+      vglm_data$average <- round(vglm_data$average)
+    }
+    reducedModelFormulaStr <- paste("average", reducedModelFormulaStr, sep="")
+    fullModelFormulaStr <- paste("average", fullModelFormulaStr, sep="")
+  } else {
+    reducedModelFormulaStr <- paste("f_expression", reducedModelFormulaStr, sep="")
+    fullModelFormulaStr <- paste("f_expression", fullModelFormulaStr, sep="")
+  }
+
   test_res <- tryCatch({
     if (expressionFamily@vfamily %in% c("binomialff")){
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+        if(is.null(group_by)) {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)       
+        }  else {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)                 
+        }    
+
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+        if(is.null(group_by)) {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        }  else {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))                    
+        }  
       }
     }else{
       if (verbose){
-        full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
-        reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+        if(is.null(group_by)) {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)       
+        }  else {
+          full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)
+          reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily)                 
+        }    
+
       }else{
-        full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
-        reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+        if(is.null(group_by)) {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily))                    
+        }  else {
+          full_model_fit <- suppressWarnings(VGAM::vglm(as.formula(fullModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))
+          reduced_model_fit <- suppressWarnings(VGAM::vglm(as.formula(reducedModelFormulaStr), data = vglm_data, epsilon=1e-1, family=expressionFamily))                    
+        }  
       }
     }
     
@@ -135,7 +170,8 @@ differentialGeneTest <- function(cds,
                                  fullModelFormulaStr="~sm.ns(Pseudotime, df=3)",
                                  reducedModelFormulaStr="~1",
                                  relative_expr=TRUE,
-                                 cores=1,
+                                 cores=1, 
+                                 group_by = NULL, 
                                  verbose=FALSE
 ){
   status <- NA
@@ -171,7 +207,13 @@ differentialGeneTest <- function(cds,
                              expressionFamily=cds@expressionFamily,
                              relative_expr=relative_expr,
                              disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                             verbose=verbose)
+                             group_by = group_by, 
+                             verbose=verbose
+                       #       ,
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon, 
+                       # stepsize = stepsize
+                             )
     diff_test_res
   }else{
     diff_test_res<-smartEsApply(cds,1,diff_test_helper,
@@ -181,7 +223,14 @@ differentialGeneTest <- function(cds,
                                 expressionFamily=cds@expressionFamily,
                                 relative_expr=relative_expr,
                                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
-                                verbose=verbose)
+                                group_by = group_by, 
+                                verbose=verbose
+                       #          ,
+                       # backup_method = backup_method, 
+                       # use_epislon = use_epislon,
+                       # stepsize = stepsize
+
+                                )
     diff_test_res
   }
   
@@ -203,11 +252,11 @@ differentialGeneTest <- function(cds,
 #' @param  k The maximum number of nearest neighbors to compute
 #' @param return_sparse_matrix A logic flag that controls whether or not to return a sparse matrix
 #' @importFrom igraph get.adjacency
-calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE) {
+calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE, interactive = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  
+  interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
@@ -231,14 +280,39 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     relations <- as.data.frame(links)
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+    
+    if(interactive) {
+      if('Marked' %in% names(pData(cds))) {
+        points_selected <- which(pData(cds)$Marked)
+      } else {
+        cat("Left click or drag multiple points to select a group of cells\n")
+        cat("Press <Esc> in the rgl screen to exit \n")
+        points_selected <- sort(select_cells(cds))
+      }
+      knn_list <- lapply(points_selected, function(x) intersect(knn_res[x, -1], points_selected))
+      knn_res_graph <- knn_res_graph[points_selected, points_selected]
+      region_id_names <- colnames(cds)[points_selected]
+      
+      id_map <- 1:length(points_selected)
+      names(id_map) <- points_selected
+    } else {
+      knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
+      region_id_names <- colnames(cds)
+      
+      id_map <- 1:ncol(cds)
+      names(id_map) <- id_map
+      
+      points_selected <- 1:nrow(knn_res)
+    }
+    
     if(return_sparse_matrix) {
       tmp <- get.adjacency(knn_res_graph)
       dimnames(tmp) <- list(colnames(cds), colnames(cds))
       
       return(tmp)
     }
-    knn_list <- lapply(1:nrow(knn_res), function(x) knn_res[x, -1])
 
+    knn_list <- lapply(points_selected, function(x) id_map[as.character(knn_res[x, -1])])
   } else {
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
@@ -270,6 +344,27 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
     # remove edges across cells belong to two disconnected principal points
     tmp <- get.adjacency(knn_res_graph) * feasible_space
+    
+    if(interactive) {
+      if('Marked' %in% names(pData(cds))) {
+        points_selected <- which(pData(cds)$Marked)
+      } else {
+        cat("Left click or drog multiple points to select a group of cells\n")
+        cat("Press <Esc> in the rgl screen to exit \n")
+        points_selected <- sort(select_cells(cds))
+      }
+      tmp <- tmp[points_selected, points_selected]
+      region_id_names <- colnames(cds)[points_selected]
+      
+      id_map <- 1:length(points_selected)
+      names(id_map) <- points_selected
+    } else {
+      region_id_names <- colnames(cds)
+      
+      id_map <- 1:ncol(cds)
+      names(id_map) <- id_map
+    }
+
     if(return_sparse_matrix) {
       dimnames(tmp) <- list(colnames(cds), colnames(cds))
       return(tmp)
@@ -282,22 +377,26 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     })
   }
   # create the lw list for moran.test
+  names(knn_list) <- id_map[names(knn_list)]
   class(knn_list) <- "nb"
-  attr(knn_list, "region.id") <- colnames(cds)
+  attr(knn_list, "region.id") <- region_id_names 
   attr(knn_list, "call") <- match.call()
   # attr(knn_list, "type") <- "queen"
   lw <- nb2listw(knn_list, zero.policy = TRUE)
   lw
 }
 
-#' Test genes for differential expression based on the low dimensional embedding and the principal graph
-#'
-#' Tests each gene for differential expression as a function of pseudotime
-#' or according to other covariates as specified. \code{differentialGeneTest} is
-#' Monocle's main differential analysis routine.
-#' It accepts a CellDataSet and two model formulae as input, which specify generalized
-#' lineage models as implemented by the \code{VGAM} package.
-#'
+#' Test genes for differential expression based on the low dimensional embedding and the principal graph 
+#' 
+#' We are often interested in finding genes that are differentially expressed across a single-cell trajectory. 
+#' Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial 
+#' correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional
+#' spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have 
+#' similar (or dissimilar) expression levels for the gene being tested. Although both Pearson correlation and 
+#' Moran’s I ranges from -1 to 1, the interpretation of Moran’s I is slightly different: +1 means that nearby 
+#' cells will have perfectly similar expression; 0 represents no correlation, 
+#' and -1 means that neighboring cells will be *anti-correlated*.
+#' 
 #' @param cds a CellDataSet object upon which to perform this operation
 # #' @param landmark_num Number of landmark cells selected for performing aggregate Moran's I test, default is NULL (no landmark selection and all cells are used)
 #' @param relative_expr Whether to transform expression into relative values.
@@ -305,34 +404,38 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 #' @param method a character string specifying the method (the default 'Moran_I' or 'Geary_C') for detecting significant genes showing correlated genes along the principal graph embedded in the low dimensional space.
 #' @param alternative a character string specifying the alternative hypothesis, must be one of greater (default), less or two.sided.
 #' @param cores the number of cores to be used while testing each gene for differential expression.
-#' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
+#' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
+#' @param verbose Whether to show spatial test (Moran's I or Gearys' C test) errors and warnings. Only valid for cores = 1. 
 #' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
 #' @importFrom spdep knn2nb nb2listw moran spweights.constants
-#' @importFrom stats p.adjust
-#' @importFrom pbmcapply pbmclapply
-#' @seealso \code{\link[spdep]{moran.test}}
+#' @importFrom stats p.adjust 
+#' @seealso \code{\link[spdep]{moran.test}} \code{\link[spdep]{geary.test}}
 #' @export
 principalGraphTest <- function(cds,
                                relative_expr=TRUE,
                                k = 25,
                                method = c('Moran_I'),
-                               alternative = 'greater',
-                               cores=1,
-                               verbose=FALSE) {
-  lw <- calculateLW(cds, verbose = verbose, k = k)
+                               alternative = 'greater', 
+                               cores=1, 
+                               interactive = FALSE, 
+                               verbose=FALSE) { 
+  lw <- calculateLW(cds, verbose = verbose, k = k, interactive = interactive)
+  
   if(verbose) {
     message("Performing Moran's test: ...")
   }
-  exprs_mat <- exprs(cds)
+  exprs_mat <- exprs(cds)[, attr(lw, "region.id")]
+  sz <- sizeFactors(cds)[attr(lw, "region.id")]
+  
   wc <- spweights.constants(lw, zero.policy = TRUE, adjust.n = TRUE)
-  test_res <- pbmclapply(row.names(exprs_mat), FUN = function(x, alternative, method) {
+  test_res <- pbmclapply(row.names(exprs_mat), FUN = function(x, sz, alternative, method) {
     exprs_val <- exprs_mat[x, ]
     
     if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
       exprs_val <- exprs_val
     }else{
       if(relative_expr) {
-        exprs_val <- log10(exprs_val / sizeFactors(cds) + 0.1)
+        exprs_val <- log10(exprs_val / sz + 0.1)
       } else {
         exprs_val <- log10(exprs_val + 0.1)
       }
@@ -350,7 +453,8 @@ principalGraphTest <- function(cds,
     error = function(e) {
       data.frame(status = 'FAIL', pval = NA, morans_test_statistic = NA, morans_I = NA)
     })
-  }, alternative = alternative, method = method, mc.cores = cores, ignore.interactive = TRUE)
+  }, sz = sz, alternative = alternative, method = method, mc.cores = cores, ignore.interactive = TRUE)
+  
   if(verbose) {
     message("returning results: ...")
   }
@@ -366,8 +470,7 @@ principalGraphTest <- function(cds,
 }
 
 #' @importFrom stats na.fail pnorm
-my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation = TRUE)
-{
+my.moran.test <- function (x, listw, wc, alternative = "greater", randomisation = TRUE) {
   zero.policy = TRUE
   adjust.n = TRUE
   na.action = na.fail
@@ -519,7 +622,6 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' \eqn{JSD(P,Q)}{} \eqn{\frac{1}{2} \cdot D(P|M) \cdot \frac{1}{2} \cdot D(Q|M)}{}
 #' where \eqn{M \cdot \frac{1}{2} \cdot P + Q}{} and \eqn{D(A|B)}{} is the Kullback-Leibler divergence.
 
-#' @seealso \code{\link{principalGraphTest}}
 #' @param cds a CellDataSet object upon which to perform this operation
 #' @param pr_graph_test_res the result returned from principalGraphTest
 #' @param group_by a column in the pData specifying the groups for calculating the specificities. Its default value is Cluster.
@@ -536,6 +638,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' (by default, the Moran's I test), together with the information from pData. 
 #' @importFrom dplyr group_by summarize desc arrange top_n do select everything 
 #' @importFrom reshape2 melt
+#' @seealso \code{\link[monocle]{principalGraphTest}}
 #' @export
 #'
 find_cluster_markers <- function(cds,
