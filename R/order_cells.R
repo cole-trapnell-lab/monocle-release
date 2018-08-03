@@ -113,32 +113,37 @@ orderCells <- function(cds,
   }
   
   if (is.null(cds@dim_reduce_type)){
-    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() and learnGraph() (for learning principal graph) before calling this function.")
+  }
+  if (is.null(cds@RGE_method)){
+    stop("Error: principal graph has not learned yet. Please call learnGraph() before calling this function.")
   }
   # reducedDimA, S, and K are not NULL in the cds
-  if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 0))) {
+  if (length(cds@reducedDimS) == 0) {
     stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
   }
-  
-  if(igraph::vcount(minSpanningTree(cds)) > 50000) {
-    stop("orderCells doesn't support more than 50k centroids (cells)")
+  if (length(cds@reducedDimK) == 0) {
+    stop("Error: principal graph learning didn't prodvide correct results. Please check your learnGraph() step and ensure correct principal graph learning are performed before calling this function.")
+  }
+  if(igraph::vcount(minSpanningTree(cds)) > 10000) {
+    stop("orderCells doesn't support more than 10k centroids (cells)")
   }
   if (is.null(root_pr_nodes) == FALSE & is.null(root_cells) == FALSE){
     stop("Error: please specify either root_pr_nodes or root_cells, not both")
   }
   if (is.null(root_pr_nodes) & is.null(root_cells)){
     if (interactive()){
-      root_pr_nodes = selectTrajectoryRoots(cds)
+      root_pr_nodes <- selectTrajectoryRoots(cds)
     }else{
       stop("Error: You must provide one or more root cells (or principal graph nodes) in non-interactive mode")
     }
   }else if(is.null(root_pr_nodes)){
-    valid_root_cells = intersect(root_cells, row.names(pData(cds)))
+    valid_root_cells <- intersect(root_cells, row.names(pData(cds)))
     if (length(valid_root_cells) == 0){
       stop("Error: no such cell")
     }
-    closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
-    root_pr_nodes = closest_vertex[valid_root_cells,]
+    closest_vertex <- cds@auxOrderingData[[cds@RGE_method]]$pr_graph_cell_proj_closest_vertex
+    root_pr_nodes <- closest_vertex[valid_root_cells,]
   }else{
     if (length(intersect(root_pr_nodes, V(minSpanningTree(cds))$name)) == 0){
       stop("Error: no such principal graph node")
@@ -149,13 +154,13 @@ orderCells <- function(cds,
     stop("Error: no valid root principal graph nodes.")
   }
   
-  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  cds@auxOrderingData[[cds@RGE_method]]$root_pr_nodes <- root_pr_nodes
   
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
   pData(cds)$Pseudotime = cc_ordering[row.names(pData(cds)), ]$pseudo_time
   # closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   # pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-  cds@auxOrderingData[[cds@dim_reduce_type]]$root_pr_nodes <- root_pr_nodes
+  cds@auxOrderingData[[cds@RGE_method]]$root_pr_nodes <- root_pr_nodes
 
   cds
 }
