@@ -635,7 +635,7 @@ smoothEmbedding <- function(cds,
                         cell_num_threshold = cell_num_threshold, 
                         verbose = verbose, 
                         ...)
-
+  cds@dim_reduce_type <- 'psl'
   cds
 }
 
@@ -1705,7 +1705,7 @@ multi_component_RGE <- function(cds,
   
   merge_rge_res <- NULL
   max_ncenter <- 0
-  for(cur_comp in unique(louvain_component)) {
+  for(cur_comp in sort(unique(louvain_component))) { 
     X_subset <- X[, louvain_component == cur_comp]
     if(verbose) message('Current louvain_component is ', cur_comp)
     if(ncol(X_subset) < 10) {
@@ -1734,6 +1734,11 @@ multi_component_RGE <- function(cds,
       rge_res <- do.call(DDRTree, ddr_args)
       medioids <- rge_res$Y
       stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
@@ -1765,9 +1770,9 @@ multi_component_RGE <- function(cds,
       centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
       
       kmean_res <- tryCatch({
-        kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
-        }, error = function() {
-          kmeans(t(X_subset), ncenter, iter.max = 100)  
+        kmeans(t(X_subset), centers=centers, iter.max = 100)
+        }, error = function(err) {
+          kmeans(t(X_subset), centers = ncenter, iter.max = 100)  
         })
       
       if (kmean_res$ifault != 0){
@@ -1804,6 +1809,11 @@ multi_component_RGE <- function(cds,
       
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
       stree <- rge_res$W
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
@@ -1838,12 +1848,15 @@ multi_component_RGE <- function(cds,
                                            reducedDimK_old = rge_res$Y, 
                                            reducedDimS_old = cds@reducedDimS[, louvain_component == cur_comp],
                                            kmean_res = kmean_res, 
-                                           euclidean_distance_ratio = 1, 
-                                           geodestic_distance_ratio = 1/3, 
+                                           euclidean_distance_ratio = euclidean_distance_ratio, 
+                                           geodestic_distance_ratio = geodestic_distance_ratio, 
                                            verbose = verbose)
       stree <- connectTips_res$stree    
       # use louvain clustering method to get a better initial graph? 
       G <- connectTips_res$G
+      if(all(G == 0)) {
+        G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+      }
 
       l1graph_args <- c(list(X = X_subset, G = G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
@@ -1851,7 +1864,12 @@ multi_component_RGE <- function(cds,
       rge_res <- do.call(principal_graph, l1graph_args)
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
       stree <- as(rge_res$W, 'sparseMatrix')
-
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
+      
       if(is.null(merge_rge_res)) {
         colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
         merge_rge_res <- rge_res
