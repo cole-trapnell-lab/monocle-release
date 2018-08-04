@@ -22,7 +22,10 @@ Depends:
     Biobase,
     ggplot2 (>= 1.0.0),
     igraph,
-    DDRTree (>= 0.1.4)
+    DDRTree (>= 0.1.4),
+    VGAM (>= 1.0-1),
+    L1Graph, 
+    PSL
 Imports:
     parallel,
     igraph (>= 1.0.1),
@@ -32,7 +35,6 @@ Imports:
     cluster,
     fastICA,
     grid,
-    L1Graph,
     irlba (>= 2.0.0),
     DelayedMatrixStats,
     densityClust (>= 0.3),
@@ -63,7 +65,8 @@ Imports:
     VGAM,
     IRanges,
     pbapply,
-    viridisLite
+    viridisLite,
+    sse
 LinkingTo: Rcpp
 Suggests:
     destiny,

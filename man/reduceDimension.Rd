@@ -4,8 +4,8 @@
 \alias{reduceDimension}
 \title{Compute a projection of a CellDataSet object into a lower dimensional space with non-linear dimension reduction methods}
 \usage{
-reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA", "tSNE", "UMAP", "none"), auto_param_selection = TRUE,
+reduceDimension(cds, max_components = 2, reduction_method = c("UMAP",
+  "tSNE", "DDRTree", "ICA", "none"), auto_param_selection = TRUE,
   scaling = TRUE, verbose = FALSE, ...)
 }
 \arguments{

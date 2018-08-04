@@ -140,10 +140,10 @@ plot_cell_trajectory <- function(cds,
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
     if(use_color_gradient) {
       if(markers_linear){
-        g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color= value), size=I(cell_size), na.rm = TRUE) + 
+        g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color= value), size=I(cell_size), na.rm = TRUE, alpha = alpha) + 
           scale_color_viridis(name = paste0("value"), ...) + facet_wrap(~feature_label)
         } else {
-          g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE) + 
+          g <- ggplot(data=data_df, aes(x=data_dim_1, y=data_dim_2)) + geom_point(aes(color=log10(value + 0.1)), size=I(cell_size), na.rm = TRUE, alpha = alpha) + 
               scale_color_viridis(name = paste0("log10(value + 0.1)"), ...) + facet_wrap(~feature_label)
         }
     } else {
@@ -188,7 +188,7 @@ plot_cell_trajectory <- function(cds,
     
     g <- g +
       geom_point(aes_string(x="prin_graph_dim_1", y="prin_graph_dim_2"),
-                 size=5, na.rm=TRUE, branch_point_df) +
+                 size=5, na.rm=TRUE, branch_point_df, alpha = alpha) +
       geom_text(aes_string(x="prin_graph_dim_1", y="prin_graph_dim_2", label="branch_point_idx"),
                 size=4, color="white", na.rm=TRUE, branch_point_df)
   }
@@ -1176,7 +1176,7 @@ plot_pseudotime_heatmap <- function(cds_subset,
   
   if(is.null(hmcols)) {
     bks <- seq(-3.1,3.1, by = 0.1)
-    hmcols <- blue2green2red(length(bks) - 1)
+    hmcols <- viridis::viridis(length(bks) - 1) #blue2green2red(length(bks) - 1)
   }
   else {
     bks <- seq(-3.1,3.1, length.out = length(hmcols))
@@ -1655,7 +1655,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
   exp_rng <- range(heatmap_matrix) #bks is based on the expression range
   bks <- seq(exp_rng[1] - 0.1, exp_rng[2] + 0.1, by=0.1)
   if(is.null(hmcols)) {
-    hmcols <- blue2green2red(length(bks) - 1)
+    hmcols <- viridis:viridis(length(bks) - 1) # blue2green2red(length(bks) - 1)
   }
   
   # prin  t(hmcols)
@@ -2488,7 +2488,7 @@ plot_multiple_branches_heatmap <- function(cds,
   
   if(is.null(hmcols)) {
     bks <- seq(-3.1,3.1, by = 0.1)
-    hmcols <- blue2green2red(length(bks) - 1)
+    hmcols <- viridis:viridis(length(bks) - 1) # blue2green2red(length(bks) - 1)
   }
   else {
     bks <- seq(-3.1,3.1, length.out = length(hmcols))

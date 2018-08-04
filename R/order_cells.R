@@ -620,6 +620,58 @@ reduceDimension <- function(cds,
   cds
 }
 
+#' This function tries to learn a smooth embedding from the noisy reduced dimension using different techniques 
+#' @description The function relies on smooth skeleton learning or force direct layout function to learn a smoothier
+#' representation of the data. It can be used to facilitate visualization of the data or downstream graph learning 
+#' 
+#' @param cds CellDataSet for the experiment
+#' @param max_components the dimensionality of the reduced space
+#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.     
+#' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
+#' @param method The embedding smoothing technique to use, including force directed layout (which includes drl, fr, kk three methods), our new method PSL and SSE  
+#' @param merge_coords_method The method used to patch different smoothed embedding from disconnected component into a coordinate system
+#' @param start.temp argument passed into layout_with_fr function 
+#' @param k Number of nearest neighbors used in calculating the force direct layout 
+#' @param landmark_num Number of landmark used for downsampling the data. Currently landmarks are defined as the medoids from kmean clustering.  
+#' @param cell_num_threshold The minimum number of cells in each partition component required for running embedding smooth  
+#' @param verbose Wheter to print all running details 
+#' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
+#' @return a cds with smoothed embedding for each disconnected component learned (stored in reduceDimS, reduceDimK) and the corresponding graph stored in minSpanningTree
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
+#' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
+#' @seealso \code{\link[monocle]{patchEmbedding}}
+#' @export 
+smoothEmbedding <- function(cds,
+                           max_components = 2, 
+                           do_partition = FALSE, 
+                           use_pca = FALSE, 
+                           method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
+                           merge_coords_method = c('dla', 'procrutes'), 
+                           start.temp = NULL, 
+                           k = 20, 
+                           landmark_num = 2000, 
+                           cell_num_threshold = 0, 
+                           verbose = FALSE,
+                            ...){
+  cds <- patchEmbedding(cds = cds, 
+                        max_components = max_components, 
+                        do_partition = do_partition, 
+                        use_pca = use_pca, 
+                        method = method, 
+                        merge_coords_method = merge_coords_method, 
+                        start.temp = start.temp,
+                        k = k, 
+                        landmark_num = landmark_num,
+                        cell_num_threshold = cell_num_threshold, 
+                        verbose = verbose, 
+                        ...)
+  cds@dim_reduce_type <- 'psl'
+  cds
+}
+
 #' This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues 
 #'
 #' Recently Alex Wolf and colleague first proposed the idea to represent the data with an "abstract partition graph"
@@ -743,6 +795,11 @@ partitionCells <- function(cds,
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param do_partition When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scale When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
+#' @param euclidean_distance_ratio The maximal ratio between the euclidean distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+#' that of the maximum distance between any connecting points on the spanning tree allowed to be connected during the loop closure procedure .   
+#' @param geodestic_distance_ratio  The minimal ratio between the geodestic distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
+#' that of the length of the diameter path on the spanning tree allowed to be connected during the loop closure procedure. (Both euclidean_distance_ratio and geodestic_distance_ratio 
+#' need to be satisfied to introduce the edge for loop closure.)    
 #' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
@@ -756,7 +813,7 @@ partitionCells <- function(cds,
 #' @import Rtsne
 #' @importFrom stats dist prcomp kmeans
 #' @importFrom igraph graph.adjacency
-#' @importFrom L1Graph get_mst_with_shortcuts
+#' @importFrom L1graph get_mst_with_shortcuts
 #' @references DDRTree: Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. Dimensionality reduction via graph structure learning. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015.
 #' @references L1graph (generalized SimplePPT): Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. Principal graph and structure learning based on reversed graph embedding . IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016.
 #' @references Original SimplePPT: Qi Mao, Le Yang, Li Wang, Steve Goodison, Yijun Sun. SimplePPT: A Simple Principal Tree Algorithm https://epubs.siam.org/doi/10.1137/1.9781611974010.89
@@ -769,6 +826,8 @@ learnGraph <- function(cds,
                        do_partition = TRUE, 
                        scale = FALSE, 
                        close_loop = FALSE, 
+                       euclidean_distance_ratio = 1, 
+                       geodestic_distance_ratio = 1/3, 
                        verbose = FALSE, 
                        ...){
   rge_method <- rge_method[1]
@@ -795,7 +854,7 @@ learnGraph <- function(cds,
   louvain_component <- pData(cds)$louvain_component
   names(louvain_component) <- colnames(cds)
   
-  if(rge_method == 'L1graph') { 
+  if(rge_method == 'L1graph_old') { 
     # FIXME: This case is broken, because I didn't have time to update the landmark
     # stuff during the refactor.
     if(cds@dim_reduce_type != "UMAP") {
@@ -873,11 +932,11 @@ learnGraph <- function(cds,
       colnames(G) = colnames(W)
     }
     
-    l1graph_args <- c(list(X = reduced_dim_res, C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
+    L1graph_args <- c(list(X = reduced_dim_res, C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
                       extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
     
     
-    l1_graph_res <- do.call(principal_graph, l1graph_args)
+    l1_graph_res <- do.call(principal_graph, L1graph_args)
     
     colnames(l1_graph_res$C) <-  colnames(reduced_dim_res)
     #DCs <- reduced_dim_res #FM
@@ -905,14 +964,23 @@ learnGraph <- function(cds,
     # dp_mst <- minimum.spanning.tree(gp)
     minSpanningTree(cds) <- gp
     cds <- findNearestPointOnMST(cds)
-  } else if(rge_method == 'SimplePPT') {
+  } else if(rge_method %in% c('SimplePPT', 'L1graph') ) {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
     }
     
     #louvain_component <- pData(cds)[, partition_group]
     if(do_partition && length(louvain_component) == ncol(cds)) {
-      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, rge_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, 
+        rge_method = rge_method, 
+        partition_group = partition_group, 
+        irlba_pca_res = irlba_pca_res, 
+        max_components = max_components, 
+        extra_arguments = extra_arguments, 
+        close_loop = close_loop, 
+        euclidean_distance_ratio = euclidean_distance_ratio, 
+        geodestic_distance_ratio = geodestic_distance_ratio, 
+        verbose = verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
@@ -1005,8 +1073,17 @@ learnGraph <- function(cds,
       pr_graph_cell_proj_closest_vertex <- NULL 
       cell_name_vec <- NULL
       
-      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, rge_method, partition_group, irlba_pca_res, max_components, extra_arguments, close_loop, verbose)
-      
+      multi_tree_DDRTree_res <- multi_component_RGE(cds, scale = scale, 
+        rge_method = rge_method, 
+        partition_group = partition_group, 
+        irlba_pca_res = irlba_pca_res, 
+        max_components = max_components, 
+        extra_arguments = extra_arguments, 
+        close_loop = close_loop, 
+        euclidean_distance_ratio = euclidean_distance_ratio, 
+        geodestic_distance_ratio = geodestic_distance_ratio, 
+        verbose = verbose)
+
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
       ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
       ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
@@ -1463,7 +1540,7 @@ subset_cds <- function(cds, cells){
     cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[cells, cell_ids]
     cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
   }
-  if('L1Graph' %in% names(cds@auxOrderingData)) {
+  if('L1graph' %in% names(cds@auxOrderingData)) {
     cell_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
     cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[cell_ids, cell_ids]
     cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, cell_ids]
@@ -1610,119 +1687,9 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
   as.character(ica_space_df$sample_name[which(sel)])
 }
 
-#' the following functioin is used to learn trajectory on each disjointed components 
-#' @param cds CellDataSet  The CellDataSet upon which to perform this operation
-#' @param scale A logical argument to determine whether or not we should scale the data before constructing trajectory (default to be FALSE)
-#' @param rge_method The method for reversed graph embedding  
-#' @param partition_group The column name in the pData used to partition cells 
-#' @param irlba_pca_res The matrix for PCA top components (retrieved with irlba by default)
-#' @param max_components Number of maximum component 
-#' @param extra_arguments Extra arguments passed into learnGraph (which calls this function) 
-#' @param close_loop A logical argument to determine whether or not we should close loop for the trajectory we learned (default to be FALSE)
-#' @param verbose Whether to emit verbose output when running this function 
-#' @importFrom igraph get.adjacency union
-#' @importFrom L1Graph principal_graph
-multi_tree_DDRTree <- function(cds, scale = FALSE, rge_method, partition_group = 'louvain_component', irlba_pca_res, max_components, extra_arguments, close_loop = FALSE, verbose = FALSE) {
-  louvain_component <- pData(cds)[, partition_group]
-  
-  X <- t(irlba_pca_res)
-  
-  reducedDimK_coord <- NULL  
-  dp_mst <- NULL 
-  pr_graph_cell_proj_closest_vertex <- NULL 
-  cell_name_vec <- NULL
-  for(cur_comp in unique(louvain_component)) {
-    X_subset <- X[, louvain_component == cur_comp]
-    
-    #add other parameters...
-    if(scale) 
-      X_subset <- t(as.matrix(scale(t(X_subset))))
-    
-    ncenter <- cal_ncenter(ncol(X_subset))
-    
-    ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
-                  extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
-    #browser()
-    ddrtree_res <- do.call(DDRTree, ddr_args)
-    
-    if(is.null(reducedDimK_coord)) {
-      curr_cell_names <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- matrix(apply(ddrtree_res$R, 1, which.max))
-      cell_name_vec <- colnames(X_subset)
-    } else {
-      curr_cell_names <- paste("Y_", ncol(reducedDimK_coord) + 1:ncol(ddrtree_res$Y), sep = "")
-      pr_graph_cell_proj_closest_vertex <- rbind(pr_graph_cell_proj_closest_vertex, matrix(apply(ddrtree_res$R, 1, which.max) + ncol(reducedDimK_coord)))
-      cell_name_vec <- c(cell_name_vec, colnames(X_subset))
-    }
-    
-    curr_reducedDimK_coord <- ddrtree_res$Y
-    
-    dp <- as.matrix(dist(t(curr_reducedDimK_coord))) #ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
-    dimnames(dp) <- list(curr_cell_names, curr_cell_names)
-    
-    cur_dp_mst <- mst(graph.adjacency(dp, mode = "undirected", weighted = TRUE))
-    
-    tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
-    
-    if(length(close_loop) == length(unique(louvain_component)))
-      curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
-    else 
-      curr_close_loop <- close_loop[1]
-    
-    if(curr_close_loop == TRUE) {
-      colnames(curr_reducedDimK_coord) <- curr_cell_names
-      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], ddrtree_res$R, cur_dp_mst, 
-                                     curr_reducedDimK_coord, cds@reducedDimS[, louvain_component == cur_comp])
-      
-      curr_reducedDimK_coord <- connectTips_res$reducedDimK_df
-      cur_dp_mst <- connectTips_res$mst_g
-      
-      current_W <- as.matrix(get.adjacency(cur_dp_mst))
-      message('current_W dim is ', nrow(current_W), ncol(current_W))
-      l1graph_args <- c(list(X = curr_reducedDimK_coord, C0 = curr_reducedDimK_coord, G = current_W, gstruct = 'l1-graph', verbose = verbose),
-                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
-      
-      l1_graph_res <- do.call(principal_graph, l1graph_args)
-      
-      W <- l1_graph_res$W
-      message('W dim is ', nrow(W), ncol(W))
-      message('nrow(ddrtree_res$R) is ', nrow(ddrtree_res$R))
-      start_id <- min(nrow(ddrtree_res$R), nrow(current_W))
-      
-      dimnames(W) <- list(V(cur_dp_mst)$name, V(cur_dp_mst)$name)
-      current_W[, start_id:nrow(current_W)] <- W[, start_id:nrow(current_W)]
-      current_W[start_id:nrow(current_W), ] <- W[start_id:nrow(current_W), ]
-      
-      # W[W < 1e-5] <- 0
-      cur_dp_mst <- graph.adjacency(current_W, mode = "undirected", weighted = TRUE)
-    }
-    
-    dp_mst <- graph.union(dp_mst, cur_dp_mst)
-    reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
-    
-    
-  }
-  row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
-  
-  ddrtree_res_W <- ddrtree_res$W
-  ddrtree_res_Z <- cds@reducedDimS
-  ddrtree_res_Y <- reducedDimK_coord
-  
-  cds@auxOrderingData[[rge_method]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-  cds@auxOrderingData[[rge_method]]$pr_graph_cell_proj_closest_vertex <- pr_graph_cell_proj_closest_vertex
-  
-  colnames(ddrtree_res_Y) <- paste0("Y_", 1:ncol(ddrtree_res_Y), sep = "")
-  
-  return(list(cds = cds, 
-              ddrtree_res_W = ddrtree_res_W, 
-              ddrtree_res_Z = ddrtree_res_Z, 
-              ddrtree_res_Y = ddrtree_res_Y, 
-              dp_mst = dp_mst))
-}
-
 #' @importFrom igraph diameter as_adjacency_matrix add_vertices add_edges
 #' @importFrom stats kmeans
-#' @importFrom L1Graph get_knn principal_graph
+#' @importFrom L1graph get_knn principal_graph
 multi_component_RGE <- function(cds, 
                                 scale = FALSE, 
                                 rge_method, 
@@ -1731,6 +1698,8 @@ multi_component_RGE <- function(cds,
                                 max_components, 
                                 extra_arguments, 
                                 close_loop = FALSE, 
+                                euclidean_distance_ratio = 1, 
+                                geodestic_distance_ratio = 1/3, 
                                 verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
@@ -1750,7 +1719,11 @@ multi_component_RGE <- function(cds,
     }
 
     X_subset <- X[, louvain_component == cur_comp]
-    
+    if(verbose) message('Current louvain_component is ', cur_comp)
+    if(ncol(X_subset) < 10) {
+      message('Louvain component with less than 10 cells will be ignored!')
+      next; 
+    }
     #add other parameters...
     if(scale) {
       X_subset <- t(as.matrix(scale(t(X_subset))))
@@ -1765,6 +1738,8 @@ multi_component_RGE <- function(cds,
       ncenter <- min(ncol(X_subset) - 1, extra_arguments$ncenter)
     }
     
+    kmean_res <- NULL 
+
     if(rge_method == 'DDRTree') {
       ddr_args <- c(list(X=X_subset, dimensions=max_components, ncenter=ncenter, no_reduction = T, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
@@ -1772,6 +1747,11 @@ multi_component_RGE <- function(cds,
       rge_res <- do.call(DDRTree, ddr_args)
       medioids <- rge_res$Y
       stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
@@ -1798,25 +1778,55 @@ multi_component_RGE <- function(cds,
           merge_rge_res$objective_vals <- c(merge_rge_res$objective_vals, list(rge_res$objective_vals))   
         }
       }
-    } else if(rge_method == 'SimplePPT') {
+    } else if(rge_method %in% c('SimplePPT', 'L1graph')) {
       centers <- t(X_subset)[seq(1, ncol(X_subset), length.out=ncenter), , drop = F]
       centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
       
-      kmean_res <- kmeans(t(X_subset), ncenter, centers=centers, iter.max = 100)
+      kmean_res <- tryCatch({
+        kmeans(t(X_subset), centers=centers, iter.max = 100)
+        }, error = function(err) {
+          kmeans(t(X_subset), centers = ncenter, iter.max = 100)  
+        })
+      
       if (kmean_res$ifault != 0){
         message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
       }
       nearest_center <- findNearestVertex(t(kmean_res$centers), X_subset, process_targets_in_blocks=TRUE)
       medioids <- X_subset[, unique(nearest_center)]
       reduced_dim_res <- t(medioids)
+      k <- 25
+      mat <- t(X_subset)
+      if (is.null(k)) {
+        k <- round(sqrt(nrow(mat))/2)
+        k <- max(10, k)
+      }
+      if (verbose)
+        message("Finding kNN using RANN with ", k, " neighbors")
+      dx <- RANN::nn2(mat, k = min(k, nrow(mat) - 1))
+      nn.index <- dx$nn.idx[, -1]
+      nn.dist <- dx$nn.dists[, -1]
+
+      if (verbose) 
+        message("Calculating the local density for each sample based on kNNs ...")
+
+      rho <- exp(-rowMeans(nn.dist))
+      mat_df <- as.data.frame(mat)
+      tmp <- mat_df %>% dplyr::add_rownames() %>% dplyr::mutate(cluster = kmean_res$cluster, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density) %>% arrange(-desc(cluster))
+      medioids <- X_subset[, tmp$rowname] # select representative cells by highest density
       
-      l1graph_args <- c(list(X = X_subset, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
+      reduced_dim_res <- t(medioids)
+      L1graph_args <- c(list(X = X_subset, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
                         extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       
-      rge_res <- do.call(principal_graph, l1graph_args)
+      rge_res <- do.call(principal_graph, L1graph_args)
       
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
       stree <- rge_res$W
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
       
       if(!close_loop) {
         if(is.null(merge_rge_res)) {
@@ -1845,15 +1855,39 @@ multi_component_RGE <- function(cds,
     }
     
     if(close_loop) {
-      G <- get_knn(medioids, K = min(5, ncol(medioids)))
-
-      l1graph_args <- c(list(X = X_subset, G = G$G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
-                        extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
+      connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], 
+                                           R = rge_res$R, 
+                                           stree = stree, 
+                                           reducedDimK_old = rge_res$Y, 
+                                           reducedDimS_old = cds@reducedDimS[, louvain_component == cur_comp],
+                                           kmean_res = kmean_res, 
+                                           euclidean_distance_ratio = euclidean_distance_ratio, 
+                                           geodestic_distance_ratio = geodestic_distance_ratio, 
+                                           verbose = verbose)
+      stree <- connectTips_res$stree    
       
-      rge_res <- do.call(principal_graph, l1graph_args)
-      names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
-      stree <- rge_res$W
+      if(rge_method == 'L1graph') {
+        # use louvain clustering method to get a better initial graph? 
+        G <- connectTips_res$G
+        if(all(G == 0)) {
+          G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+        }
 
+        if(verbose)
+          stop('Running constrainted L1-graph ...')
+        L1graph_args <- c(list(X = X_subset, G = G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+                          extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
+        
+        rge_res <- do.call(principal_graph, L1graph_args)
+        names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+        stree <- as(rge_res$W, 'sparseMatrix')
+      }
+      if(cds@dim_reduce_type == 'psl') {
+        dm_names <- dimnames(rge_res$Y)
+        rge_res$Y <- medioids
+        dimnames(rge_res$Y) <- dm_names
+      }
+      
       if(is.null(merge_rge_res)) {
         colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
         merge_rge_res <- rge_res
@@ -1893,44 +1927,8 @@ multi_component_RGE <- function(cds,
     dimnames(stree) <- list(curr_cell_names, curr_cell_names)
     cur_dp_mst <- graph.adjacency(stree, mode = "undirected", weighted = TRUE)
     
-    # tmp <- matrix(apply(rge_res$R, 1, which.max))
-    
-    # if(length(close_loop) == length(unique(louvain_component)))
-    #   curr_close_loop <- close_loop[which(unique(louvain_component) %in% cur_comp)]
-    # else 
-    #   curr_close_loop <- close_loop[1]
-    
-    # if(curr_close_loop == TRUE) {
-    #   colnames(curr_reducedDimK_coord) <- curr_cell_names
-    #   connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], rge_res$R, cur_dp_mst, 
-    #                                  curr_reducedDimK_coord, cds@reducedDimS[, louvain_component == cur_comp])
-    
-    #   curr_reducedDimK_coord <- connectTips_res$reducedDimK_df
-    #   cur_dp_mst <- connectTips_res$mst_g
-    
-    #   current_W <- as.matrix(get.adjacency(cur_dp_mst))
-    #   message('current_W dim is ', nrow(current_W), ncol(current_W))
-    #   l1graph_args <- c(list(X = curr_reducedDimK_coord, C0 = curr_reducedDimK_coord, G = current_W, gstruct = 'l1-graph', verbose = verbose),
-    #                     extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
-    
-    #   l1_graph_res <- do.call(principal_graph, l1graph_args)
-    
-    #   W <- l1_graph_res$W
-    #   message('W dim is ', nrow(W), ncol(W))
-    #   message('nrow(rge_res$R) is ', nrow(rge_res$R))
-    #   start_id <- min(nrow(rge_res$R), nrow(current_W))
-    
-    #   dimnames(W) <- list(V(cur_dp_mst)$name, V(cur_dp_mst)$name)
-    #   current_W[, start_id:nrow(current_W)] <- W[, start_id:nrow(current_W)]
-    #   current_W[start_id:nrow(current_W), ] <- W[start_id:nrow(current_W), ]
-    
-    #   # W[W < 1e-5] <- 0
-    #   cur_dp_mst <- graph.adjacency(current_W, mode = "undirected", weighted = TRUE)
-    # }
-    
     dp_mst <- graph.union(dp_mst, cur_dp_mst)
     reducedDimK_coord <- cbind(reducedDimK_coord, curr_reducedDimK_coord)
-    
   }
   
   row.names(pr_graph_cell_proj_closest_vertex) <- cell_name_vec
@@ -1946,7 +1944,7 @@ multi_component_RGE <- function(cds,
   R_row_names <- NULL 
   for(i in 1:length(merge_rge_res$R)) {
     current_R <- merge_rge_res$R[[i]]
-    R[curr_row_id:(curr_row_id + nrow(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- current_R
+    # R[curr_row_id:(curr_row_id + nrow(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- current_R # this is why learnGraph is very slow ...
     
     stree[curr_col_id:(curr_col_id + ncol(current_R) - 1), curr_col_id:(curr_col_id + ncol(current_R) - 1)] <- merge_rge_res$stree[[i]]
 
@@ -1973,65 +1971,503 @@ multi_component_RGE <- function(cds,
               dp_mst = dp_mst))
 }
 
+#' functions to connect the tip points after learning the DDRTree or simplePPT tree
 connectTips <- function(pd,
-                        R, 
-                        mst_g_old, 
+                        R, # kmean cluster
+                        stree, 
                         reducedDimK_old, 
                         reducedDimS_old, 
-                        k = 10, 
+                        k = 25, 
                         weight = F,
                         qval_thresh = 0.05, 
-                        kmean_num = 5, 
+                        kmean_res, 
+                        euclidean_distance_ratio = 1, 
+                        geodestic_distance_ratio = 1/3, 
                         verbose = FALSE,
                         ...) {
-  tmp <- matrix(apply(R, 1, which.max))
-  
-  row.names(tmp) <- colnames(reducedDimS_old)
-  
-  tip_pc_points <- which(degree(mst_g_old) == 1)
-  raw_data_tip_pc_points <- which(tmp[, 1] %in% tip_pc_points)
-  
-  data <- t(reducedDimS_old[, raw_data_tip_pc_points])
-  
-  louvain_res <- louvain_clustering(data, pd[raw_data_tip_pc_points, ], k = k, weight = weight, verbose = verbose)
-  
-  louvain_res$optim_res$memberships[1, ] <-  tmp[raw_data_tip_pc_points, 1]
-  louvain_res$optim_res$membership <- tmp[raw_data_tip_pc_points, 1]
-  
-  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, qval_thresh=qval_thresh, verbose = verbose)
-  
-  valid_connection <- which(cluster_graph_res$cluster_mat < qval_thresh, arr.ind = T)
-  
-  if(nrow(valid_connection) == 0) {
-    return(list(mst_g = mst_g_old, reducedDimK_df = reducedDimK_old))
+  mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
+  if(is.null(kmean_res)) {
+    tmp <- matrix(apply(R, 1, which.max))
+    
+    row.names(tmp) <- colnames(reducedDimS_old)
+    
+    tip_pc_points <- which(igraph::degree(mst_g_old) == 1)
+
+    data <- t(reducedDimS_old[, ])
+    
+    louvain_res <- louvain_clustering(data, pd[, ], k = k, weight = weight, verbose = verbose)
+    
+    # louvain_res$optim_res$memberships[1, ] <-  tmp[raw_data_tip_pc_points, 1]
+    louvain_res$optim_res$membership <- tmp[, 1]
+  } else { # use kmean clustering result 
+    tip_pc_points <- which(igraph::degree(mst_g_old) == 1)
+    tip_pc_points_kmean_clusters <- sort(kmean_res$cluster[names(tip_pc_points)])
+    # raw_data_tip_pc_points <- which(kmean_res$cluster %in% tip_pc_points_kmean_clusters) # raw_data_tip_pc_points <- which(kmean_res$cluster %in% tip_pc_points)
+    
+    data <- t(reducedDimS_old[, ]) # raw_data_tip_pc_points
+    
+    louvain_res <- louvain_clustering(data, pd[row.names(data), ], k = k, weight = weight, verbose = verbose)
+    
+    # louvain_res$optim_res$memberships[4, ] <-  kmean_res$cluster #[raw_data_tip_pc_points]
+    louvain_res$optim_res$membership <- kmean_res$cluster #[raw_data_tip_pc_points]   
   }
   
+  # identify edges between only tip cells  
+  cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, qval_thresh=qval_thresh, verbose = verbose)
+  dimnames(cluster_graph_res$cluster_mat) <- dimnames(cluster_graph_res$num_links)
+  valid_connection <- which(cluster_graph_res$cluster_mat < qval_thresh, arr.ind = T) 
+  valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+
+  # prepare the PAGA graph 
+  G <- cluster_graph_res$cluster_mat
+  G[cluster_graph_res$cluster_mat < qval_thresh] <- -1
+  G[cluster_graph_res$cluster_mat > 0] <- 0
+  G <- - G
+  
+  if(nrow(valid_connection) == 0) {
+    return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, G = G))
+  }
+  
+  # calculate length of the MST diameter path   
   mst_g <- mst_g_old
-  diameter_dis <- diameter(mst_g_old)
+  diameter_dis <- igraph::diameter(mst_g_old)
   reducedDimK_df <- reducedDimK_old
+
   pb4 <- txtProgressBar(max = length(nrow(valid_connection)), file = "", style = 3, min = 0)
+  
+  # find the maximum distance between nodes from the MST   
+  res <- dist(t(reducedDimK_old))
+  g <- igraph::graph_from_adjacency_matrix(as.matrix(res), weighted = T, mode = 'undirected')
+  mst <- igraph::minimum.spanning.tree(g)
+  max_node_dist <- max(igraph::E(mst)$weight)
+
+  # append new edges to close loops in the spanning tree returned from SimplePPT   
   for(i in 1:nrow(valid_connection)) {
-    edge_vec <- unique(louvain_res$optim_res$membership)[valid_connection[i, ]]
+    # cluster id for the tip point; if kmean_res return valid_connection[i, ] is itself; otherwise the id identified in the tmp file 
+    edge_vec <- sort(unique(louvain_res$optim_res$membership))[valid_connection[i, ]]
+    edge_vec_in_tip_pc_point <- igraph::V(mst_g_old)$name[edge_vec]
     
-    if((distances(mst_g, edge_vec[1], edge_vec[2]) > 7 * diameter_dis / 8) & 
-       (distances(mst_g, edge_vec[1], edge_vec[2]) < diameter_dis)) {
-      raw_data_tip_pc_points_tmp <- which(tmp[, 1] %in% edge_vec)
+    if(length(edge_vec_in_tip_pc_point) == 1) next; 
+    
+    if(all(edge_vec %in% tip_pc_points) & (igraph::distances(mst_g_old, edge_vec_in_tip_pc_point[1], edge_vec_in_tip_pc_point[2]) >= geodestic_distance_ratio * diameter_dis) & 
+                                           (euclidean_distance_ratio * max_node_dist > dist(t(reducedDimK_old[, edge_vec]))) ) {
+      if(verbose) message('edge_vec is ', edge_vec[1], '\t', edge_vec[2])
+      if(verbose) message('edge_vec_in_tip_pc_point is ', edge_vec_in_tip_pc_point[1], '\t', edge_vec_in_tip_pc_point[2])
       
-      data <- t(reducedDimS_old[, raw_data_tip_pc_points_tmp, drop = F])
-      kmeans_res <- kmeans(data, min(kmean_num, nrow(data) - 1))$centers
-      
-      curr_id <- as.numeric(strsplit(V(mst_g)$name[vcount(mst_g)], "_")[[1]][2])
-      row.names(kmeans_res) <- paste0("Y_", (curr_id + 1):(curr_id + nrow(kmeans_res)))
-      adjusted_K <- rbind(kmeans_res, t(reducedDimK_df[, edge_vec]))
-      dp <- as.matrix(dist(adjusted_K))
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
-      
-      mst_g <- add_vertices(mst_g, nrow(kmeans_res), name = row.names(kmeans_res)) %>% add_edges(as.vector(t(get.edgelist(dp_mst))), weight = E(dp_mst)$weight) 
-      reducedDimK_df <- cbind(reducedDimK_df, t(kmeans_res))  
+      mst_g <- igraph::add_edges(mst_g, edge_vec_in_tip_pc_point) 
     }
     setTxtProgressBar(pb = pb4, value = pb4$getVal() + 1)
   }
+
   close(pb4)
-  list(mst_g = mst_g, reducedDimK_df = reducedDimK_df)
+
+  list(stree = igraph::get.adjacency(mst_g), Y = reducedDimK_df, G = G)
+}
+
+#' Run embedding smoothing techniques (drl, PSL and SSE) for each isolated group and then put different embedding in the same coordinate system 
+#'
+#' @param cds CellDataSet for the experiment
+#' @param max_components the dimensionality of the reduced space
+#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups    
+#' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
+#' @param method The embedding smoothing technique to use, including force directed layout (which includes drl, fr, kk three methods), our new method PSL and SSE  
+#' @param merge_coords_method The method used to patch different smoothed embedding from disconnected component into a coordinate system
+#' @param start.temp argument passed into layout_with_fr function 
+#' @param k Number of nearest neighbors used in calculating the force direct layout 
+#' @param landmark_num Number of landmark used for downsampling the data. Currently landmarks are defined as the medoids from kmean clustering.  
+#' @param cell_num_threshold The minimum number of cells in each partition component required for running embedding smooth  
+#' @param verbose Wheter to print all running details 
+#' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
+#' @return a cds with smoothed embedding for each disconnected component learned (stored in reduceDimS, reduceDimK) and the corresponding graph stored in minSpanningTree
+#' @import ggplot2
+#' @importFrom reshape2 melt
+#' @importFrom viridis scale_color_viridis
+#' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
+#' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
+#' @export
+patchEmbedding <- function(cds, 
+                           max_components = 2, 
+                           do_partition = FALSE, 
+                           use_pca = FALSE, 
+                           method = c('PSL', 'drl', 'fr', 'kk', 'SSE'), 
+                           merge_coords_method = c('dla', 'procrutes'), 
+                           start.temp = NULL, 
+                           k = 20, 
+                           landmark_num = 2000, 
+                           cell_num_threshold = 0, 
+                           verbose = FALSE,
+                           ...) {
+  extra_arguments <- list(...)
+  
+  if(method == 'SSE' & do_partition == FALSE) {
+    message('Note that if your data includes separate groups, you should set do_partition to be TRUE when using SSE method!')
+  }
+
+  if(any(nrow(cds@normalized_data_projection) == 0 | nrow(cds@reducedDimS) == 0 | is.null(pData(cds)$louvain_component))) {
+    stop('Please first run preprocessCDS, reduceDimension, partitionCells (in order) before running this function!')
+  }
+  # for each louvain cluster, identify equal number of representative cells in each cluster, up to 2000 cells in total 
+  if(do_partition == FALSE) {
+    if(use_pca) {
+      data_ori <- cds@normalized_data_projection
+    } else {
+      data_ori <- t(cds@reducedDimS)
+    }
+
+    if(ncol(cds) > landmark_num) {
+      cell_cluster <- cds$louvain_component
+      cluster_ids <- unique(cell_cluster) 
+      landmark_ratio <- landmark_num / ncol(cds) # determine number of representatives in each louvain cluster 
+      
+      landmark_id <- c()
+      for(current_cluster in cluster_ids) {
+        current_cell_ids <- which(cell_cluster == current_cluster)
+        data <- data_ori[current_cell_ids, ] 
+        
+        cell_num_in_cluster <- round(landmark_ratio * length(current_cell_ids))
+        if(cell_num_in_cluster == 0) cell_num_in_cluster <- 1  # avoid the case where cell_num_in_cluster = 0
+        centers <- data[seq(1, nrow(data), length.out=cell_num_in_cluster), , drop = F] # avoid the case where cell_num_in_cluster = 0
+        centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
+        kmean_res <- kmeans(data, cell_num_in_cluster, centers=centers, iter.max = 100)
+        landmark_id_tmp <- unique(findNearestVertex(t(kmean_res$centers), t(data), process_targets_in_blocks=TRUE))
+        
+        landmark_id <- c(landmark_id, current_cell_ids[landmark_id_tmp]) # landmark index from the original data 
+      }
+      
+      data <- data_ori[landmark_id, ]
+    } else {
+      data <- data_ori
+      landmark_id <- 1:ncol(cds)
+    }
+    
+    res <- project_to_representatives(data, 
+                                      data_ori, 
+                                      landmark_id, 
+                                      cds@auxClusteringData$partitionCells, 
+                                      pd = pData(cds)[landmark_id, ], 
+                                      method, 
+                                      start.temp, 
+                                      k, 
+                                      do_partition = do_partition, 
+                                      max_components = max_components, 
+                                      verbose,
+                                      ...) 
+    
+    coord <- res$sub_coord_mat
+    row.names(coord) <- colnames(cds) 
+    g <- res$sub_g   
+  } else {    
+    group_stat <- table(pData(cds)$louvain_component)
+    cell_num_threshold <- min(max(group_stat) / 2, cell_num_threshold)
+    
+    valid_groups <- which(group_stat > cell_num_threshold)
+    sub_cds_list <- vector('list', length = length(valid_groups))
+    sub_g_list <- vector('list', length = length(valid_groups))
+    sub_coord_mat_list <- vector('list', length = length(valid_groups))
+    
+    if(verbose) {
+      message(paste("total number of valid components is", length(valid_groups)))
+    }
+    
+    for (i in 1:length(valid_groups)){
+      if(verbose) {
+        message(paste("Processing subtrajectory", valid_groups[i]))
+      }
+      
+      t_cds <- cds[, pData(cds)$louvain_component == valid_groups[i]]
+      
+      if(verbose) {
+        message(paste("t_cds has cell number:", ncol(t_cds)))
+      }
+      
+      irlba_pca_res <- cds@normalized_data_projection[pData(cds)$louvain_component == valid_groups[i], ]
+      # umap_res <- cds@reducedDimS[, pData(cds)$louvain_component == valid_groups[i]]
+      # adj_mat <- cds@minSpanningTree[pData(cds)$louvain_component == valid_groups[i], pData(cds)$louvain_component == valid_groups[i]]
+      
+      t_cds@normalized_data_projection <- irlba_pca_res
+      # t_cds@minSpanningTree <- adj_mat
+      t_cds@reducedDimS <- t_cds@reducedDimS[, colnames(t_cds)]
+      
+      sub_cds_list[[i]] <- t_cds
+      
+      # let us downsample the data 
+      if(use_pca) {
+        data_ori <- cds@normalized_data_projection[pData(cds)$louvain_component == valid_groups[i], ]
+      } else {
+        data_ori <- t(cds@reducedDimS[, pData(cds)$louvain_component == valid_groups[i]])
+      }
+      if(ncol(t_cds) > landmark_num) {      
+        centers <- data_ori[seq(1, nrow(data_ori), length.out=landmark_num), ]
+        kmean_res <- kmeans(data_ori, landmark_num, centers=centers, iter.max = 100)
+        landmark_id <- unique(findNearestVertex(t(kmean_res$centers), t(data_ori), process_targets_in_blocks=TRUE))
+        
+        data <- data_ori[landmark_id, ]
+        
+      } else {
+        data <- data_ori
+        landmark_id <- 1:ncol(t_cds)
+      } 
+      
+      res <- project_to_representatives(data, 
+                                        data_ori, 
+                                        landmark_id, 
+                                        cds@auxClusteringData$partitionCells,
+                                        pd = pData(t_cds)[landmark_id, ], 
+                                        method, 
+                                        start.temp, 
+                                        k, 
+                                        do_partition = do_partition, 
+                                        max_components = max_components, 
+                                        verbose,
+                                        ...) 
+      
+      sub_coord_mat_list[[i]] <- res$sub_coord_mat
+      sub_g_list[[i]] <- res$sub_g 
+    }
+    
+    if(merge_coords_method == 'procrutes' & length(valid_groups) > 1) {
+      set.seed(2018)
+      
+      # get high and low dimension landmark data point 
+      landmark_num <- 5
+      landmark_res <- lapply(1:length(sub_cds_list), function(id) {
+        x <- sub_cds_list[[id]]
+        landmark_ids <- which(landmark_selection(x, landmark_num = landmark_num)$flag == 1)
+        cell_names <- colnames(x)[landmark_ids]
+        coords <- sub_coord_mat_list[[id]][landmark_ids, ]
+        
+        return(list(cell_names = cell_names, coords = coords))
+      })
+      
+      cell_names <- lapply(landmark_res, function(x) x$cell_names)
+      high_landmakrs_coord <- t(cds@reducedDimS[, unlist(cell_names)])
+      
+      # run SSE (MVU version)
+      SSE_res <- SSE(high_landmakrs_coord, embeding_dim = 2, C = Inf, knn = 3)
+      # SSE_res <- SSE(high_landmakrs_coord, embeding_dim = 2)
+      low_landmakrs_coord <- lapply(landmark_res, function(x) x$coords)
+      
+      mvu_res <- as.data.frame(SSE_res$Y) 
+      mvu_res$component <- rep(as.character(1:length(sub_cds_list)), each = landmark_num)
+      sd_df <- mvu_res %>% dplyr::group_by(component) %>% dplyr::summarize(sd_d1 = sd(V1), sd_d2 = sd(V2))
+      
+      # avoid any singular results from SSE 
+      if(any(sd_df[, 2:3] < 1e-5)) {
+        mvu_res[, 1:2] <- high_landmakrs_coord[, 1:2]
+      }
+      mean_df <- mvu_res %>% dplyr::group_by(component) %>% dplyr::summarize(mean_d1 = mean(V1), mean_d2 = mean(V2))
+      
+      # apply rotation, scaling and translation function to all other reduced data point 
+      transform_data_by_procrutes <- function(coord, procrutes_res) {
+        # ((coord %*% procrutes_res$rotation) * procrutes_res$scale) + matrix(rep(procrutes_res$translation, each = nrow(coord)), nrow = nrow(coord), byrow = F)
+        (coord %*% procrutes_res$rotation) + matrix(rep(procrutes_res$translation, each = nrow(coord)), nrow = nrow(coord), byrow = F)
+      }
+      
+      # increase the distance between centroids accordinly to avoid any overlapping 
+      centroid_dist <- as.vector(dist(mean_df[, 2:3]))
+      
+      radius_vec <- unlist(lapply(low_landmakrs_coord, function(x) {
+        sqrt((diff(range(x[, 1])) / 2)^2 + (diff(range(x[, 2])) / 2)^2)
+      })) 
+      
+      coord_scale <- min(1000, max(combn(radius_vec, 2, FUN = sum) / centroid_dist))
+      
+      # procrutes analysis on the landmark points 
+      coord_after_procrutes <- lapply(1:length(sub_cds_list), function(x, cd_scale = coord_scale) {
+        procrutes_res <- procrustes(subset(mvu_res, component == x)[, 1:2] * cd_scale * 1.1, low_landmakrs_coord[[x]])
+        transform_data_by_procrutes(sub_coord_mat_list[[x]], procrutes_res)
+      })
+      
+      coord <- do.call(rbind.data.frame, coord_after_procrutes)
+      row.names(coord) <- unlist(lapply(sub_cds_list, colnames))
+    } else {
+      coord <- igraph::merge_coords(sub_g_list, sub_coord_mat_list)
+      row.names(coord) <- unlist(lapply(sub_cds_list, colnames))
+    }
+    g <- disjoint_union(sub_g_list)
+    # browser()
+    # row.names(coord) <- V(g)$name
+  }
+  
+  cds@reducedDimS <- t(coord[colnames(cds), ])
+  cds@reducedDimK <- t(coord[colnames(cds), ])
+  
+  minSpanningTree(cds) <- g
+  
+  return(cds)
+}
+
+#' Apply embedding smoothing techniques, inlcuding PSL, SSE, force-directed layout, etc. on the kNN graph built from all cells or the downsampled representive 
+#' cells (if number of samples is large than 2000) and then project other non-representative cells to the low dimensional space with five nearest (on original 
+#' UMAP or PCA space) representive cells' coordinates.
+#'
+#' @param data (dowmsampled) data to perform Louvain clustering and kNN graph construction 
+#' @param data_ori All data points without downsampling. This data space will be used to find the nearest five points for projecting non-landmark points  
+#' @param landmark_id The index of cells   
+#' @param louvain_res The result of louvain clustering from the original space 
+#' @param pd the data frame of phenotype information 
+#' @param method The force directed layout function to use. Only relevant to when drl, fr or kk are used as fdl methods 
+#' @param start.temp argument passed into layout_with_fr function 
+#' @param do_partition Whether or not to separate participation groups and apply FDL in each partition or directly select equal number of representatives in each louvain groups.     
+#' @param max_components the dimensionality of the reduced space
+#' @param verbose Wheter to print all running details 
+#' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
+project_to_representatives <- function(data, 
+                                       data_ori, 
+                                       landmark_id, 
+                                       louvain_res, 
+                                       pd, 
+                                       method = c('PSL', 'drl', 'fr', 'kk', 'SSE'),  
+                                       start.temp = NULL, 
+                                       k = 20,
+                                       do_partition = F, 
+                                       max_components = 2, 
+                                       verbose, 
+                                       ...) {
+  extra_arguments <- list(...)
+  
+  if(verbose) {
+    message("Running louvain clustering algorithm ...")
+  }
+
+  if(do_partition == FALSE) {
+    d <- max_components
+  } else {
+    message('if do_partition is TRUE, we can only set the dimensionality of reduced space to be 2 because the drl coordinates-merging algorithm also support for two dimensions')
+    d <- 2
+  }
+  
+  # build an asymmetric kNN graph -- replace with the louvain_clustering one 
+  adj_mat <- build_asym_kNN_graph(data, k, ...)
+  # this one gives an symmetric matrix
+  # louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
+  #                              extra_arguments[names(extra_arguments) %in% 
+  #                              c("weight", "louvain_iter", "resolution", "random_seed")])
+  # data_louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  # 
+  # adj_mat <- igraph::get.adjacency(data_louvain_res$g)
+  # adj_mat@x[adj_mat@x > 0] <- 1 # Ensure a connectivity graph (only 1 represents connectivity)
+  if(method %in% c('drl', 'fr', 'kk')) {  
+    # layout kNN with force direct layout: https://github.com/TypeFox/R-Examples/blob/d0917dbaf698cb8bc0789db0c3ab07453016eab9/igraph/R/layout_drl.R
+    sub_g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T) # 
+    if (method=="fr") coord <- igraph::layout_with_fr(sub_g, dim=d, coords=data[, 1:d], weights = NULL, start.temp=start.temp)
+    if (method=="drl") coord <- igraph::layout_with_drl(sub_g, dim=d, weights = NULL, options=drl_defaults$final) # list(edge.cut=0, simmer.attraction=0)
+    if (method=="kk") coord <- igraph::layout_with_kk(sub_g, dim=d, coords=data[, 1:d]) # weights = E(sub_g)$weight / max(E(sub_g)$weight)
+    
+    colnames(coord) <- paste0(method, 1:d)
+    row.names(coord) <- row.names(data)
+  } else if(method == 'SSE') {
+    # d <- 2 # d can only be 2 for dla coordinates merging method 
+    sse_args <- c(list(data=data, dist_mat = adj_mat, verbose = verbose, embeding_dim = d),
+                  extra_arguments[names(extra_arguments) %in% c("method", "para.gamma", "knn", "C", "maxiter", "beta")])
+    SSE_res <- do.call(SSE, sse_args)    
+
+    colnames(SSE_res$Y) <- paste0('SSE_', 1:d)
+    rownames(SSE_res$Y) <- rownames(data)
+    dimnames(SSE_res$W) <- list(rownames(data), rownames(data))
+    
+    coord <- SSE_res$Y 
+    sub_g <- igraph::graph.adjacency(SSE_res$W, mode = "undirected", weighted = TRUE)
+  } else if(method == 'PSL') {
+    # d <- 2 # d can only be 2 for dla coordinates merging method 
+    PSL_args <- c(list(Y = data, d = d, K = k, sG = adj_mat), # as.matrix(adj_mat)), #, # add verbose ncol(data)
+                  extra_arguments[names(extra_arguments) %in% c('C', 'param.gamma', 'maxIter')])
+    
+    PSL_res <- do.call(psl, PSL_args)
+    
+    colnames(PSL_res$Z) <- paste0('PSL_', 1:d)
+    rownames(PSL_res$Z) <- rownames(data)
+    dimnames(PSL_res$S) <- list(rownames(data), rownames(data))
+    
+    coord <- as.matrix(PSL_res$Z) 
+    sub_g <- igraph::graph.adjacency(PSL_res$S, mode = "undirected", weighted = TRUE)
+  } else {
+    stop("Unknown method. Please ensure method to be any one from 'drl', 'fr', 'kk', 'SSE' or 'PSL'")
+  }
+    
+  # project other cells to the current location 
+  if(nrow(data_ori) > nrow(data)) {
+    block_size <- 50000
+    num_blocks = ceiling(nrow(data_ori) / block_size)
+    weight_mat <- NULL
+    
+    for (j in 1:num_blocks){
+      if (j < num_blocks){
+        block <- data_ori[((((j-1) * block_size)+1):(j*block_size)), ]
+      }else{
+        block <- data_ori[((((j-1) * block_size)+1):(nrow(data_ori))), ]
+      }
+      distances_Z_to_Y <- proxy::dist(block, data_ori[landmark_id, ])
+      
+      tmp <- as(t(apply(distances_Z_to_Y , 1, function(x) {
+        tmp <- sort(x)[6] # choose 5 nearest neighbors for projection 
+        x[x > tmp] <- 0; p <- rep(0, length(x))
+        bandwidth <- mean(range(x[x > 0])) # half of the range of the nearest neighbors as bindwidth 
+        p[x > 0] <- exp(-x[x > 0]/bandwidth) # Gaussian kernel 
+        p / sum(p) 
+      })), 'sparseMatrix')
+      
+      weight_mat <- rBind(weight_mat, tmp)
+    }
+    
+    projection_res <- as.matrix(weight_mat %*% as(as.matrix(coord), 'sparseMatrix'))
+    projection_res[landmark_id, ] <- as.matrix(coord)
+    
+    coord <- as.matrix(projection_res)
+    row.names(coord) <- row.names(data_ori)
+  }
+  
+  return(list(sub_coord_mat = coord, sub_g = sub_g))
+}
+
+
+#' The following functioin is taken from vegan package for performing procrustes analysis 
+#'
+#' @description Function procrustes rotates a configuration to maximum similarity with another configuration. Function protest tests the non-randomness (significance) between two configurations.
+#' 
+#' @param X Target matrix
+#' @param Y Matrix to be rotated.
+#' @param scale Allow scaling of axes of Y.
+#' @param symmetric Use symmetric Procrustes statistic (the rotation will still be non-symmetric).
+procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE) 
+{
+  # X <- scores(X, display = scores, ...)
+  # Y <- scores(Y, display = scores, ...)
+  if (nrow(X) != nrow(Y)) 
+    stop(gettextf("matrices have different number of rows: %d and %d", 
+                  nrow(X), nrow(Y)))
+  if (ncol(X) < ncol(Y)) {
+    warning("X has fewer axes than Y: X adjusted to comform Y\n")
+    addcols <- ncol(Y) - ncol(X)
+    for (i in 1:addcols) X <- cbind(X, 0)
+  }
+  ctrace <- function(MAT) sum(MAT^2)
+  c <- 1
+  if (symmetric) {
+    X <- scale(X, scale = FALSE)
+    Y <- scale(Y, scale = FALSE)
+    X <- X/sqrt(ctrace(X))
+    Y <- Y/sqrt(ctrace(Y))
+  }
+  xmean <- apply(X, 2, mean)
+  ymean <- apply(Y, 2, mean)
+  if (!symmetric) {
+    X <- scale(X, scale = FALSE)
+    Y <- scale(Y, scale = FALSE)
+  }
+  XY <- crossprod(X, Y)
+  sol <- svd(XY)
+  A <- sol$v %*% t(sol$u)
+  if (scale) {
+    c <- sum(sol$d)/ctrace(Y)
+  }
+  Yrot <- c * Y %*% A
+  b <- xmean - c * ymean %*% A
+  R2 <- ctrace(X) + c * c * ctrace(Y) - 2 * c * sum(sol$d)
+  reslt <- list(Yrot = Yrot, X = X, ss = R2, rotation = A, 
+                translation = b, scale = c, xmean = xmean, symmetric = symmetric, 
+                call = match.call())
+  reslt$svd <- sol
+  class(reslt) <- "procrustes"
+  reslt
 }

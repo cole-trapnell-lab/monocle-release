@@ -4,10 +4,12 @@
 \alias{assign_cell_states}
 \title{Assign a state for each cell.}
 \usage{
-assign_cell_states(cds)
+assign_cell_states(cds, minimal_branch_len = 10)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
+
+\item{minimal_branch_len}{the minimal length of the principal tree segment to be treated as a true branch. Default to be 10.}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell

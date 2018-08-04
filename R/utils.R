@@ -993,7 +993,7 @@ subset_cds <- function(cds, cells){
     cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[principal_node_ids, principal_node_ids]
     cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
   }
-  if('L1Graph' %in% names(cds@auxOrderingData)) {
+  if('L1graph' %in% names(cds@auxOrderingData)) {
     principal_node_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
     cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[principal_node_ids, principal_node_ids]
     cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, principal_node_ids]

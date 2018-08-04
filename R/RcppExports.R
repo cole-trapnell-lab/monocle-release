@@ -5,6 +5,10 @@ jaccard_coeff <- function(R_idx, R_weight) {
     .Call('_monocle_jaccard_coeff', PACKAGE = 'monocle', R_idx, R_weight)
 }
 
+pnorm_over_mat <- function(R_num_links_ij, R_var_null_num_links) {
+    .Call('_monocle_pnorm_over_mat', PACKAGE = 'monocle', R_num_links_ij, R_var_null_num_links)
+}
+
 select_landmarks <- function(R_data, R_indices, R_indptr, R_n, R_dim, R_count) {
     .Call('_monocle_select_landmarks', PACKAGE = 'monocle', R_data, R_indices, R_indptr, R_n, R_dim, R_count)
 }
