@@ -467,7 +467,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
 #' @export
 reduceDimension <- function(cds,
                             max_components=2,
-                            reduction_method=c("DDRTree", "ICA", 'tSNE', "UMAP", 'none'),
+                            reduction_method=c("UMAP", 'tSNE', "DDRTree", "ICA", 'none'),
                             auto_param_selection = TRUE,
                             scaling = TRUE,
                             verbose=FALSE,
@@ -568,7 +568,7 @@ reduceDimension <- function(cds,
     }
     else if (reduction_method == c("DDRTree")) {
       
-      message('DDRTree will be eventually deprecated in reduceDimension call and be used in RGE function instead. We are calling RGE for you now.')
+      message('DDRTree will be eventually deprecated in reduceDimension call and be used in learnGraph function instead. We are calling learnGraph for you now.')
       cds@reducedDimS <- t(cds@normalized_data_projection)
       cds <- partitionCells(cds)
       cds <- learnGraph(cds, rge_method = 'DDRTree', do_partition = F, ...)

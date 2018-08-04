@@ -271,7 +271,7 @@ clusterCells <- function(cds,
 louvain_clustering <- function(data, pd, k = 20, weight = F, louvain_iter = 1, resolution = NULL, random_seed = 0L, verbose = F, ...) {
   extra_arguments <- list(...)
   cell_names <- row.names(pd)
-  if(cell_names != row.names(pd))
+  if(!identical(cell_names, row.names(pd)))
     stop("phenotype and row name from the data doesn't match")
   
   if (is.data.frame(data))

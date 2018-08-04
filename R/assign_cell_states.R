@@ -724,9 +724,9 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' used in order to obtain correct ordering of the developmental trajectory under study. 
 #'
 #' @param cds the CellDataSet upon which to perform this operation
-#' 
+#' @param minimal_branch_len the minimal length of the principal tree segment to be treated as a true branch. Default to be 10. 
 #' @importFrom stats dist
-#' @importFrom igraph decompose.graph V graph.dfs
+#' @importFrom igraph graph.empty neighborhood.size decompose.graph V graph.dfs E add_edges add_vertices degree
 #'
 #' @return an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
 #' @export
@@ -735,23 +735,29 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' lung <- load_lung()
 #' lung <- assign_cell_states(lung)
 #' }
-assign_cell_states <- function(cds){
+assign_cell_states <- function(cds, minimal_branch_len = 10){
   
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
   }
   
   if (is.null(cds@dim_reduce_type)){
-    stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+    stop("Error: dimensionality not yet reduced. Please call reduceDimension() and learnGraph() (for learning principal graph) before calling this function.")
+  }
+  if (is.null(cds@rge_method)){
+    stop("Error: principal graph has not learned yet. Please call learnGraph() before calling this function.")
   }
   # reducedDimA, S, and K are not NULL in the cds
-  if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 0))) {
+  if (length(cds@reducedDimS) == 0) {
     stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
-  } 
-  if(igraph::vcount(minSpanningTree(cds)) > 50000) {
-    stop("orderCells doesn't support more than 50k centroids (cells)")
   }
-  
+  if (length(cds@reducedDimK) == 0) {
+    stop("Error: principal graph learning didn't prodvide correct results. Please check your learnGraph() step and ensure correct principal graph learning are performed before calling this function.")
+  }
+  if(igraph::vcount(minSpanningTree(cds)) > 10000) {
+    stop("orderCells doesn't support more than 10k centroids (cells)")
+  }
+
   # iterate over each graph component and assign branches, pseduotime for each component 
   if(is.null(cds@minSpanningTree)) {
     stop('Error: please run partitionCells and learnGraph before assign cell states')
@@ -771,6 +777,11 @@ assign_cell_states <- function(cds){
   parents = rep(NA, ncol(dp))
   names(parents) <- V(dp_mst)$name
 
+  # create a state graph: 
+  # vertex: - name: cell state; properties: (1) cells in the state 
+  # edge: - name: branch principal point:  properties: (1) true branch point? 
+  state_graph <- graph.empty(n=0, directed=TRUE)
+
   for(cur_g in g_list) {
     root_cell <- which(neighborhood.size(cur_g) == 2)[1] 
     if(is.na(root_cell)) {
@@ -783,7 +794,6 @@ assign_cell_states <- function(cds){
                                unreachable=FALSE,
                                father=TRUE)
     mst_traversal$father <- as.numeric(mst_traversal$father)
-
     for (i in 1:length(mst_traversal$order)){
       curr_node <- mst_traversal$order[i]
       curr_node_name <- V(cur_g)[curr_node]$name
@@ -794,10 +804,18 @@ assign_cell_states <- function(cds){
         parent_node_pseudotime <- pseudotimes[parent_node_name]
         parent_node_state <- states[parent_node_name]
         curr_node_pseudotime <- parent_node_pseudotime + dp[curr_node_name, parent_node_name]
+
         if (degree(cur_g, v=parent_node_name) > 2){
           curr_state <- curr_state + 1
+
+          state_graph <- add_vertices(state_graph, nv = 1, attr = list(name = as.character(curr_state), cell_names = list(curr_node_name) ))
+          state_graph <- add_edges(state_graph, c(curr_state - 1, curr_state), attr = list(name = parent_node_name)) # , branch == TRUE
+        } else {
+          # add names for new cell - Note that we need to use list so that the length of the value for 'cell_names' is 1 
+          state_graph <- set.vertex.attribute(state_graph, 'cell_names', curr_state, list(c(V(state_graph)[curr_state]$cell_names[[1]], curr_node_name) )) 
         }
       }else{
+        state_graph <- add_vertices(state_graph, nv = 1, attr = list(name = as.character(curr_state), cell_names = list(curr_node_name) ))
         parent_node = NA
         parent_node_name = NA
         curr_node_pseudotime = 0
@@ -813,6 +831,62 @@ assign_cell_states <- function(cds){
     
   }
 
+  # prune the graph with small insignificant branches   
+  if(minimal_branch_len != 1) {
+    branch_points <- NULL 
+
+    g_list <- decompose.graph(state_graph) 
+    curr_state <- 1
+
+    for(cur_g in g_list) {
+      root_cell <- which(neighborhood.size(cur_g) == 2)[1] 
+      if(is.na(root_cell)) {
+        root_cell <- V(cur_g)$name[1]
+      } 
+      mst_traversal <- graph.dfs(cur_g,
+                                 root = root_cell,
+                                 neimode = "all",
+                                 unreachable=FALSE,
+                                 father=TRUE)
+      mst_traversal$father <- as.numeric(mst_traversal$father)
+
+      for (i in 1:length(mst_traversal$order)){
+        curr_node <- mst_traversal$order[i]
+        curr_node_name <- V(cur_g)[curr_node]$name
+
+        if (is.na(mst_traversal$father[curr_node]) == FALSE){
+          parent_node <- mst_traversal$father[curr_node]
+          parent_node_name <- V(cur_g)[parent_node]$name
+
+          # if the current graph segment is less than minimal_branch_len, use the parent cell's state 
+          if(length(V(cur_g)[curr_node]$cell_names[[1]]) < minimal_branch_len) {
+            states[V(cur_g)[curr_node]$cell_names[[1]]] <- V(cur_g)[parent_node_name]$cell_state
+            V(cur_g)[curr_node]$cell_state <- V(cur_g)[parent_node_name]$cell_state
+          } else {
+            curr_state <- curr_state + 1
+            states[V(cur_g)[curr_node]$cell_names[[1]]] <- curr_state
+            V(cur_g)[curr_node]$cell_state <- curr_state
+
+            # only if the current graph segment is no less than minimal_branch_len, we will append the current node to branch_points set
+            branch_points <- c(branch_points, E(cur_g)[parent_node_name %--% curr_node_name]$name)
+          }
+
+        }else{
+          parent_node = NA
+
+          states[V(cur_g)[curr_node]$cell_names[[1]]] <- curr_state
+          V(cur_g)[curr_node]$cell_state <- curr_state
+        }
+
+        curr_node_state <- curr_state
+      }
+      
+      curr_state <- curr_state + 1 # update after each graph component 
+    }
+  } else {
+    branch_points <- V(dp_mst)[which(degree(dp_mst) > 2)]$name
+  }
+
   ordering_df <- data.frame(sample_name = names(states),
                             cell_state = as.character(states),
                             pseudo_time = as.vector(pseudotimes),
@@ -822,7 +896,7 @@ assign_cell_states <- function(cds){
   pData(cds)$State <- NULL # reset state 
   pr_graph_cell_proj_closest_vertexordering_df <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   pData(cds)[row.names(pr_graph_cell_proj_closest_vertexordering_df), 'State'] <- ordering_df[paste0('Y_', pr_graph_cell_proj_closest_vertexordering_df[, 1]), 'cell_state']
-  pData(cds)[row.names(pr_graph_cell_proj_closest_vertexordering_df), 'Pseudotime'] <- ordering_df[paste0('Y_', pr_graph_cell_proj_closest_vertexordering_df[, 1]), 'pseudo_time']
+  # pData(cds)[row.names(pr_graph_cell_proj_closest_vertexordering_df), 'Pseudotime'] <- ordering_df[paste0('Y_', pr_graph_cell_proj_closest_vertexordering_df[, 1]), 'pseudo_time']
  
   # Ensure states follows a consectutive sequence 
   tmp <- 1:length(sort(unique(cds$State)))
@@ -830,7 +904,7 @@ assign_cell_states <- function(cds){
   cds$State <- tmp[cds$State]
   pData(cds)$State <- as.factor(pData(cds)$State)
   
-  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- V(dp_mst)[which(degree(dp_mst) > 2)]$name
+  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- branch_points 
 
   cds
 }
