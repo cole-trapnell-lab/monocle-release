@@ -696,6 +696,7 @@ smoothEmbedding <- function(cds,
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
 #' @param louvain_iter the number of iteraction for louvain clustering (pass to louvain_clustering function)
@@ -709,6 +710,7 @@ smoothEmbedding <- function(cds,
 #'
 #' @export
 partitionCells <- function(cds,
+                           use_pca = FALSE,
                            k = 20, 
                            weight = F, 
                            louvain_iter = 1, 
@@ -729,6 +731,11 @@ partitionCells <- function(cds,
   if(nrow(Y) == 0) {
     reduced_dim_res <- t(irlba_pca_res)
   }
+
+  if(use_pca) {
+    reduced_dim_res <- t(cds@normalized_data_projection)
+  }
+
   louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
                                     resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
@@ -1863,6 +1870,7 @@ multi_component_RGE <- function(cds,
                                            kmean_res = kmean_res, 
                                            euclidean_distance_ratio = euclidean_distance_ratio, 
                                            geodestic_distance_ratio = geodestic_distance_ratio, 
+                                           medioids = medioids,
                                            verbose = verbose)
       stree <- connectTips_res$stree    
       
@@ -1875,7 +1883,7 @@ multi_component_RGE <- function(cds,
 
         if(verbose)
           stop('Running constrainted L1-graph ...')
-        L1graph_args <- c(list(X = X_subset, G = G, C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+        L1graph_args <- c(list(X = X_subset, G = G + as.matrix(stree), C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
                           extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
         
         rge_res <- do.call(principal_graph, L1graph_args)
@@ -1983,6 +1991,7 @@ connectTips <- function(pd,
                         kmean_res, 
                         euclidean_distance_ratio = 1, 
                         geodestic_distance_ratio = 1/3, 
+                        medioids, 
                         verbose = FALSE,
                         ...) {
   mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
@@ -2024,6 +2033,12 @@ connectTips <- function(pd,
   G[cluster_graph_res$cluster_mat > 0] <- 0
   G <- - G
   
+  if(all(G == 0)) { # if no connection based on PAGA (only existed in simulated data), use the kNN graph instead  
+    G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+    valid_connection <- which(G > 0, arr.ind = T) 
+    valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+  }
+
   if(nrow(valid_connection) == 0) {
     return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, G = G))
   }
@@ -2339,14 +2354,15 @@ project_to_representatives <- function(data,
   
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
   adj_mat <- build_asym_kNN_graph(data, k, ...)
-  # this one gives an symmetric matrix
+  # # this one gives an symmetric matrix
   # louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
   #                              extra_arguments[names(extra_arguments) %in% 
   #                              c("weight", "louvain_iter", "resolution", "random_seed")])
   # data_louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
-  # 
+  
   # adj_mat <- igraph::get.adjacency(data_louvain_res$g)
   # adj_mat@x[adj_mat@x > 0] <- 1 # Ensure a connectivity graph (only 1 represents connectivity)
+
   if(method %in% c('drl', 'fr', 'kk')) {  
     # layout kNN with force direct layout: https://github.com/TypeFox/R-Examples/blob/d0917dbaf698cb8bc0789db0c3ab07453016eab9/igraph/R/layout_drl.R
     sub_g <- igraph::graph_from_adjacency_matrix(adj_mat, mode = 'direct', weighted = T) # 

@@ -460,7 +460,7 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
 #' @param return_graph whether or not to return the kNN graph instead of the asymmetric adjacency matrix 
 #' @return Either a sparse asymmetric adjacent matrix or a corresponding directed weighted kNN graph 
 #' 
-build_asym_kNN_graph <- function(data, k = 20, cosine = TRUE, return_graph = F) {
+build_asym_kNN_graph <- function(data, k = 20, dist_type = c('raw', 'euclidean', 'cosine'), return_graph = F) {
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
   nbrs <- RANN::nn2(data, k = k + 1)
   N <- nrow(data)
@@ -476,7 +476,7 @@ build_asym_kNN_graph <- function(data, k = 20, cosine = TRUE, return_graph = F) 
     inds <- location:(location + k - 1)
     rows[inds] <- i
     cols[inds] <- indices[i, ]
-    if(cosine) {
+    if(dist_type == 'cosine') {
       if(N < 3000) {
         tmp <- lapply(1:k, function(j) {
           x <- data[i, ]
@@ -489,8 +489,10 @@ build_asym_kNN_graph <- function(data, k = 20, cosine = TRUE, return_graph = F) 
         message('Cosine distance only supports running on 3K cells at most! Using euclidean distance instead!')
         dists[inds] <- distances[i, ]
       }
-    } else {
+    } else if(dist_type == 'euclidean') {
       dists[inds] <- distances[i, ]
+    } else if(dist_type == 'raw') {
+      dists[inds] <- 1
     }
 
     location <- location + k
