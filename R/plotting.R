@@ -3719,7 +3719,7 @@ plot_markers_cluster <- function(cds,
     cds <- cds[, sample(1:ncol(cds), sample_cell_num)]    
   }
 
-  gene_ids <- as.character(fData(cds)$gene_short_name[match(markers, fData(cds)$gene_short_name)])
+  gene_ids <- row.names(cds)[match(markers, fData(cds)$gene_short_name)]
   cds <- setOrderingFilter(cds, gene_ids)
   norm_mat <- normalize_expr_data(cds, norm_method = 'log', pseudo_expr = 1)
   norm_mat <- norm_mat[gene_ids, ]
@@ -3765,6 +3765,7 @@ plot_markers_cluster <- function(cds,
 
   mlt_norm_mat <- melt(norm_mat)
   colnames(mlt_norm_mat) <- c('Gene', 'Cell', 'Expression')
+  mlt_norm_mat$Gene <- fData(cds)[mlt_norm_mat$Gene, 'gene_short_name']
   mlt_norm_mat$Cluster <- pData(cds)[as.character(mlt_norm_mat$Cell), group_by]
 
   mlt_norm_mat %>% dplyr::mutate(Cell = factor(Cell, levels = colnames(norm_mat)))
