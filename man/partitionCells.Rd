@@ -4,12 +4,14 @@
 \alias{partitionCells}
 \title{This function tries to partition cells into different graphs based on a similar approach proposed by Alex Wolf and colleagues}
 \usage{
-partitionCells(cds, k = 20, weight = F, louvain_iter = 1,
-  resolution = NULL, louvain_qval = 0.05, return_all = FALSE,
-  verbose = FALSE, ...)
+partitionCells(cds, use_pca = FALSE, k = 20, weight = F,
+  louvain_iter = 1, resolution = NULL, louvain_qval = 0.05,
+  return_all = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
+
+\item{use_pca}{Whether or not to cluster cells based on top PCA component. Default to be FALSE.}
 
 \item{k}{number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)}
 

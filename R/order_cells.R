@@ -820,7 +820,7 @@ partitionCells <- function(cds,
 #' @import Rtsne
 #' @importFrom stats dist prcomp kmeans
 #' @importFrom igraph graph.adjacency
-#' @importFrom L1graph get_mst_with_shortcuts
+#' @importFrom L1Graph get_mst_with_shortcuts
 #' @references DDRTree: Qi Mao, Li Wang, Steve Goodison, and Yijun Sun. Dimensionality reduction via graph structure learning. In Proceedings of the 21th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, pages 765–774. ACM, 2015.
 #' @references L1graph (generalized SimplePPT): Qi Mao, Li Wang, Ivor Tsang, and Yijun Sun. Principal graph and structure learning based on reversed graph embedding . IEEE Trans. Pattern Anal. Mach. Intell., 5 December 2016.
 #' @references Original SimplePPT: Qi Mao, Le Yang, Li Wang, Steve Goodison, Yijun Sun. SimplePPT: A Simple Principal Tree Algorithm https://epubs.siam.org/doi/10.1137/1.9781611974010.89
@@ -1696,7 +1696,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
 
 #' @importFrom igraph diameter as_adjacency_matrix add_vertices add_edges
 #' @importFrom stats kmeans
-#' @importFrom L1graph get_knn principal_graph
+#' @importFrom L1Graph get_knn principal_graph
 multi_component_RGE <- function(cds, 
                                 scale = FALSE, 
                                 rge_method, 
@@ -2353,7 +2353,9 @@ project_to_representatives <- function(data,
   }
   
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
-  adj_mat <- build_asym_kNN_graph(data, k, ...)
+  build_asym_kNN_graph_args <- c(list(data = data, k = k), 
+                  extra_arguments[names(extra_arguments) %in% c('dist_type', 'return_graph')])
+  adj_mat <- do.call(build_asym_kNN_graph, build_asym_kNN_graph_args)
   # # this one gives an symmetric matrix
   # louvain_clustering_args <- c(list(data = data, pd = pd, k = k, verbose = verbose),
   #                              extra_arguments[names(extra_arguments) %in% 
@@ -2401,6 +2403,7 @@ project_to_representatives <- function(data,
     stop("Unknown method. Please ensure method to be any one from 'drl', 'fr', 'kk', 'SSE' or 'PSL'")
   }
     
+  # this section of code can be re-implmented in c++ -- low priority (250 k cells in 30 minutes already)
   # project other cells to the current location 
   if(nrow(data_ori) > nrow(data)) {
     block_size <- 50000

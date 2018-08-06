@@ -8,7 +8,7 @@ Version 2.99.0
   o Support for trajectories with multiple roots.
   o Ways to learn trajectories that have loops or points of convergence.
   o Algorithms that automatically partition cells to learn disjoint or parallel 
-    trajectories using ideas from "approximate    graph abstraction".
+    trajectories using ideas from "approximate graph abstraction".
   o A new statistical test for genes that have trajectory-dependent expression.
   o A 3D interface to visualize trajectories and gene expression.
   

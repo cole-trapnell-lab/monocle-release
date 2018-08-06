@@ -4,7 +4,8 @@
 \alias{build_asym_kNN_graph}
 \title{function to run build asymmetric kNN graph}
 \usage{
-build_asym_kNN_graph(data, k = 20, cosine = TRUE, return_graph = F)
+build_asym_kNN_graph(data, k = 20, dist_type = c("raw", "euclidean",
+  "cosine"), return_graph = F)
 }
 \arguments{
 \item{data}{low dimensional space used to perform graph clustering}
