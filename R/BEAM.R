@@ -29,12 +29,12 @@ buildBranchCellDataSet <- function(cds,
                                    branch_labels = NULL, 
                                    stretch = TRUE)
 {
-  closest_vertex <- as.data.frame(cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex)
+  closest_vertex <- as.data.frame(cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex)
   colnames(closest_vertex) <- 'principal_points'
   
   # identify the louvain component we are currently looking at. 
   if(!is.null(branch_point)) {
-    branch_principal_point <- as.numeric(strsplit(cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points[branch_point], '_')[[1]][2])
+    branch_principal_point <- as.numeric(strsplit(cds@auxOrderingData[[cds@rge_method]]$branch_points[branch_point], '_')[[1]][2])
     principal_point_cells <- row.names(subset(closest_vertex, principal_points == branch_principal_point))
     cur_louvain_component <- which.max(table(pData(cds)[principal_point_cells, 'louvain_component']))
   } else {
@@ -64,7 +64,7 @@ buildBranchCellDataSet <- function(cds,
     branch_map <- setNames(branch_labels, as.character(branch_states))
   }
   
-  if(cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')) {
+  if(cds@rge_method %in% c("DDRTree", 'SimplePPT', 'L1graph')) {
     pr_graph_cell_proj_mst <- minSpanningTree(cds)
   }
   else {
@@ -76,7 +76,7 @@ buildBranchCellDataSet <- function(cds,
   root_state <- unique(pData(cds)[root_cell, ]$State)
   pr_graph_root <- subset(pData(cds), State == root_state)
   
-  if (cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')){
+  if (cds@rge_method %in% c("DDRTree", 'SimplePPT', 'L1graph')){
     root_cell_point_in_Y <- closest_vertex[row.names(pr_graph_root),]
   }else{
     root_cell_point_in_Y <- row.names(pr_graph_root)
@@ -94,7 +94,7 @@ buildBranchCellDataSet <- function(cds,
       curr_cell <- subset(pData(cds), State == leaf_state)
       #Get all the nearest cells in Y for curr_cells:
       
-      if (cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')){
+      if (cds@rge_method %in% c("DDRTree", 'SimplePPT', 'L1graph')){
         curr_cell_point_in_Y <- closest_vertex[row.names(curr_cell),] 
       }else{
         curr_cell_point_in_Y <- row.names(curr_cell)
@@ -106,9 +106,9 @@ buildBranchCellDataSet <- function(cds,
       path_to_ancestor <- shortest_paths(pr_graph_cell_proj_mst,curr_cell, root_cell)
       path_to_ancestor <- names(unlist(path_to_ancestor$vpath))
       
-      if (cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')){
+      if (cds@rge_method %in% c("DDRTree", 'SimplePPT', 'L1graph')){
         ancestor_cells_for_branch <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex[, 1]]$name %in% path_to_ancestor)]
-      }else if (cds@dim_reduce_type == "ICA"){
+      }else if (cds@rge_method == "ICA"){
         .Deprecated("plot_cell_trajectory", msg = 'ICA is not supported for BEAM anymore, try the new DDRTree or SimplePPT methods in Monocle 3.') 
         return(NULL)
       }
@@ -116,7 +116,7 @@ buildBranchCellDataSet <- function(cds,
       paths_to_root[[as.character(leaf_state)]] <- ancestor_cells_for_branch
     }
   }else{
-    mst_branch_nodes <- cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points
+    mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     branch_cell <- mst_branch_nodes[branch_point]
     mst_no_branch_point <- pr_graph_cell_proj_mst - V(pr_graph_cell_proj_mst)[branch_cell]
     
@@ -131,7 +131,7 @@ buildBranchCellDataSet <- function(cds,
       if (root_cell %in% descendents == FALSE){
         path_to_root <- unique(c(path_to_ancestor, branch_cell, descendents))
         
-        if (cds@dim_reduce_type %in% c("DDRTree", 'SimplePPT')){
+        if (cds@rge_method %in% c("DDRTree", 'SimplePPT', 'L1graph')){
           path_to_root <- row.names(closest_vertex)[which(V(pr_graph_cell_proj_mst)[closest_vertex[, 1]]$name %in% path_to_root)]
         }else{
           path_to_root <- path_to_root

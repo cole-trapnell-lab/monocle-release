@@ -256,7 +256,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
+  # interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
   if(verbose) {
     message("retrieve the matrices for Moran's test...")
   }
@@ -264,10 +264,10 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
     cds@rge_method <- 'UMAP'
     cell_coords <- t(reducedDimS(cds))
     knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
-  } else if(cds@rge_method == 'L1graph') {
+  } else if(cds@rge_method == 'L1graph_old') {
     cell_coords <- t(reducedDimA(cds)) # cell coordinates on low dimensional
     principal_g <- as(cds@auxOrderingData[["L1graph"]]$W, 'sparseMatrix')
-  } else if(cds@rge_method %in% c('DDRTree', 'SimplePPT')) {
+  } else if(cds@rge_method %in% c('DDRTree', 'SimplePPT', 'L1graph')) {
     cell_coords <- t(reducedDimS(cds))
     principal_g <-  igraph::get.adjacency(cds@minSpanningTree)[1:ncol(reducedDimK(cds)), 1:ncol(reducedDimK(cds))]
   }
@@ -351,7 +351,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
       } else {
         cat("Left click or drog multiple points to select a group of cells\n")
         cat("Press <Esc> in the rgl screen to exit \n")
-        points_selected <- sort(select_cells(cds))
+        points_selected <- sort(select_cells(cds, return_index = T))
       }
       tmp <- tmp[points_selected, points_selected]
       region_id_names <- colnames(cds)[points_selected]
@@ -409,6 +409,7 @@ calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FAL
 #' @return a data frame containing the p values and q-values from the Moran's I test on the parallel arrays of models.
 #' @importFrom spdep knn2nb nb2listw moran spweights.constants
 #' @importFrom stats p.adjust 
+#' @importFrom pbmcapply pbmclapply 
 #' @seealso \code{\link[spdep]{moran.test}} \code{\link[spdep]{geary.test}}
 #' @export
 principalGraphTest <- function(cds,
