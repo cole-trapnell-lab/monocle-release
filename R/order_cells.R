@@ -34,7 +34,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   closest_vertex <- findNearestVertex(Y[, root_cell, drop = F], Z)
   closest_vertex_id <- colnames(cds)[closest_vertex]
   cds <- project2MST(cds, project_point_to_line_segment)
-  cell_wise_graph <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+  cell_wise_graph <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree
   cell_wise_distances <- distances(cell_wise_graph, v = closest_vertex_id)
   
   if (length(closest_vertex_id) > 1){
@@ -1249,16 +1249,17 @@ findNearestPointOnMST <- function(cds){
 
 #' @importFrom igraph graph.adjacency V
 #' @importFrom stats dist
+#' @importFrom dplyr do group_by add_row mutate
 project2MST <- function(cds, Projection_Method){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
 
   cds <- findNearestPointOnMST(cds)
-  closest_vertex <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  closest_vertex <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
 
   #closest_vertex <- as.vector(closest_vertex)
-  closest_vertex_names <- colnames(Y)[closest_vertex]
+  closest_vertex_names <- colnames(Y)[closest_vertex[, 1]]
   closest_vertex_df <- as.matrix(closest_vertex)
   row.names(closest_vertex_df) <- row.names(closest_vertex)
   #closest_vertex_names <- as.vector(closest_vertex)
@@ -1372,9 +1373,9 @@ project2MST <- function(cds, Projection_Method){
   }
 
   dp_mst <- igraph::graph.data.frame(dp_mst_df, directed = FALSE)
-  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree <- dp_mst
-  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
-  cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
+  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree <- dp_mst
+  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
+  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
 
   # minSpanningTree(cds) <- gp # this may create problem 
   cds 
@@ -1622,10 +1623,10 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
   
-  if (cds@rge_method %in% c("SimplePPT", "DDRTree", "UMAP") ){
+  if (cds@rge_method %in% c("SimplePPT", "DDRTree", "UMAP", 'L1graph') ){
     reduced_dim_coords <- reducedDimK(cds)
   } else {
-    stop("Error: unrecognized dimensionality reduction method.")
+    stop("Error: unrecognized reversed graph embedding method.")
   }
   
   ica_space_df <- Matrix::t(reduced_dim_coords) %>%
@@ -1679,7 +1680,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
       sel[ans] <- TRUE
     }
   }else{
-    plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel]);
+    plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], xlab="Component 1", ylab="Component 2");
     segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
     
     while(sum(sel) < num_roots) {

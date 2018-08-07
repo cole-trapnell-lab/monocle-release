@@ -894,7 +894,7 @@ assign_cell_states <- function(cds, minimal_branch_len = 10){
   row.names(ordering_df) <- ordering_df$sample_name
   
   pData(cds)$State <- NULL # reset state 
-  pr_graph_cell_proj_closest_vertexordering_df <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
+  pr_graph_cell_proj_closest_vertexordering_df <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
   pData(cds)[row.names(pr_graph_cell_proj_closest_vertexordering_df), 'State'] <- ordering_df[paste0('Y_', pr_graph_cell_proj_closest_vertexordering_df[, 1]), 'cell_state']
   # pData(cds)[row.names(pr_graph_cell_proj_closest_vertexordering_df), 'Pseudotime'] <- ordering_df[paste0('Y_', pr_graph_cell_proj_closest_vertexordering_df[, 1]), 'pseudo_time']
  
@@ -904,7 +904,7 @@ assign_cell_states <- function(cds, minimal_branch_len = 10){
   cds$State <- tmp[cds$State]
   pData(cds)$State <- as.factor(pData(cds)$State)
   
-  cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- branch_points 
+  cds@auxOrderingData[[cds@rge_method]]$branch_points <- branch_points 
 
   cds
 }
