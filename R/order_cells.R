@@ -1332,7 +1332,7 @@ project2MST <- function(cds, Projection_Method){
       data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) # use the correct name of the source point  
 
       # add the links from the last point on the principal edge to the target point of the edge
-      data_df <- data_df %>% group_by(group) %>% do(add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
+      data_df <- data_df %>% group_by(group) %>% do(dplyr::add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
       added_rows <- which(is.na(data_df$new_source) & is.na(data_df$new_target)) # find those rows 
       data_df <- as.data.frame(data_df, stringsAsFactors = F)
       data_df <- as.data.frame(as.matrix(data_df), stringsAsFactors = F)
@@ -1885,7 +1885,7 @@ multi_component_RGE <- function(cds,
         if(verbose)
           stop('Running constrainted L1-graph ...')
         L1graph_args <- c(list(X = X_subset, G = G + as.matrix(stree), C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
-                          extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn', "maxiter")])
+                          extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')]) # , "maxiter"
         
         rge_res <- do.call(principal_graph, L1graph_args)
         names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
