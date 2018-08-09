@@ -1863,6 +1863,7 @@ multi_component_RGE <- function(cds,
     }
     
     if(close_loop) {
+      stree_ori <- stree
       connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], 
                                            R = rge_res$R, 
                                            stree = stree, 
@@ -1891,6 +1892,12 @@ multi_component_RGE <- function(cds,
         names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
         stree <- as(rge_res$W, 'sparseMatrix')
       }
+
+      # stree <- pruneTree_in_learnGraph(stree_ori, rge_res$W)
+      # rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
+      # rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
+      # remove the points in Y; mediods, etc. 
+
       if(cds@dim_reduce_type == 'psl') {
         dm_names <- dimnames(rge_res$Y)
         rge_res$Y <- medioids
