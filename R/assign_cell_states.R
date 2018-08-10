@@ -1179,6 +1179,7 @@ pruneTree <- function(cds, minimal_branch_len = 10){
   cds
 }
 
+#' Function to prune the graph 
 pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branch_len = 10){
   dimnames(stree_loop_clousre) <- dimnames(stree_ori)
   stree_ori <- graph_from_adjacency_matrix(stree_ori, mode = 'undirected', weight = NULL)
@@ -1212,9 +1213,9 @@ pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branc
                              father=TRUE)
   mst_traversal$father <- as.numeric(mst_traversal$father)
   vertex_to_be_deleted <- c()
-  if('Cell_879' %in% V(stree_ori)$name) {
-    # browser()
-  }
+
+  # further remove other small branches? 
+
   for (i in 1:length(mst_traversal$order)){
     curr_node <- mst_traversal$order[i]
     curr_node_name <- V(stree_ori)[curr_node]$name
@@ -1223,49 +1224,11 @@ pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branc
       parent_node <- mst_traversal$father[curr_node]
       parent_node_name <- V(stree_ori)[parent_node]$name
 
-      # let us first assume the data is a tree for now (latter for loops and combination of loop and tree structure)
       if (degree(stree_ori, v=parent_node_name) > 2){
-        # browser()
         parent_neighbors <- neighbors(stree_ori, v=parent_node_name, mode = 'all')
-        # tmp <- mst_traversal$order$name[(match(parent_node_name, mst_traversal$order$name) + 1):vcount(stree_ori)]
-        # parent_node_name_other_neighbor <- setdiff(intersect(parent_neighbors$name, tmp), curr_node$name) # the other node of the parent node (not the current point)
         
         parent_neighbors_index <- sort(match(parent_neighbors$name, mst_traversal$order$name)) # follow the order of gene expression 
         parent_neighbors <- mst_traversal$order$name[parent_neighbors_index]
-        # vertex_name_on_branch_a <- mst_traversal$order$name[parent_neighbors_index[2]:(parent_neighbors_index[3] - 1)]
-      
-        # sub_stree_ori_a <- induced_subgraph(stree_ori, vertex_name_on_branch_a)
-        # diameter_len_a <- diameter(sub_stree_ori_a) 
-        
-        # # find the previous branch point 
-        # tmp <- shortest_paths(stree_ori, root_cell, parent_neighbors[1])$vpath[[1]]$name # mst_traversal$order$name[1:parent_neighbors_index[1]]
-        # previous_branch_point <- which(degree(stree_ori)[tmp] > 2)
-        
-        # if(length(previous_branch_point) == 0) { # if no previous branch point, this must be the first branch point, so take all other cells as the second branch 
-        #   vertex_name_on_branch_b <- mst_traversal$order$name[parent_neighbors_index[3]:(vcount(stree_ori))]
-        # } else {
-        #   previous_branch_point_name <- names(which.max(previous_branch_point)) # [-length(previous_branch_point)] get the name for the previous branch point 
-        #     tmp <- mst_traversal$order$name[parent_neighbors_index[3]:(vcount(stree_ori))] # all nodes 
-        #   vertex_name_on_branch_b <-  tryCatch({
-        #     vertex_name_on_branch_b <- tmp[1:min(which(degree(stree_ori, tmp) == 1))[1]] # tmp[1:(match(intersect(tmp, neighbors(stree_ori, v=previous_branch_point_name, mode = 'all')$name), tmp) - 1)] # restrict to only the current branch
-        #   }, error = function(err) {
-        #     browser()
-        #   })
-        # }
-        
-        # sub_stree_ori_b <- induced_subgraph(stree_ori, vertex_name_on_branch_b)
-        # diameter_len_b <- diameter(sub_stree_ori_b) 
-        # if(all(get.adjacency(stree_ori)[vertex_name_on_branch_a, vertex_name_on_branch_a] - get.adjacency(stree_loop_clousre)[vertex_name_on_branch_a, vertex_name_on_branch_a] == 0) & 
-        #    diameter_len_a < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
-        #   # browser()
-        #   vertex_to_be_deleted <- c(vertex_to_be_deleted, vertex_name_on_branch_a)
-        # }
-        # if(all(get.adjacency(stree_ori)[vertex_name_on_branch_b, vertex_name_on_branch_b] - get.adjacency(stree_loop_clousre)[vertex_name_on_branch_b, vertex_name_on_branch_b] == 0) & 
-        #    diameter_len_b < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
-        #   # browser()
-          
-        #   vertex_to_be_deleted <- c(vertex_to_be_deleted, vertex_name_on_branch_b)
-        # } 
 
         tmp <- delete.edges(stree_ori, paste0(parent_node_name, "|", parent_neighbors))
         tmp_decomposed <- decompose.graph(tmp)
@@ -1303,13 +1266,11 @@ pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branc
   valid_vertex_to_be_deleted <- setdiff(vertex_to_be_deleted, vertex_top_keep)
   stree_loop_clousre <- delete_vertices(stree_loop_clousre, valid_vertex_to_be_deleted)
 
-  tmp <- edges_to_remove_df[edges_to_remove_df[, 1] %in% V(stree_loop_clousre)$name & edges_to_remove_df[, 2] %in% V(stree_loop_clousre)$name, ]
+  tmp <- edges_to_remove_df[edges_to_remove_df[, 1] %in% V(stree_loop_clousre)$name & edges_to_remove_df[, 2] %in% V(stree_loop_clousre)$name, , drop = FALSE]
   if(nrow(tmp) > 0) {
     edges_to_remove <- paste0(tmp[, 1], '|', tmp[, 2])
     stree_loop_clousre <- delete.edges(stree_loop_clousre, edges_to_remove)
   }
-
-  # further remove other small branches? 
 
   return(get.adjacency(stree_loop_clousre))
 }

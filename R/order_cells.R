@@ -33,7 +33,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   # 3. run the distance function to assign pseudotime for each cell 
   closest_vertex <- findNearestVertex(Y[, root_cell, drop = F], Z)
   closest_vertex_id <- colnames(cds)[closest_vertex]
-  cds <- project2MST(cds, project_point_to_line_segment)
+  cds <- project2MST(cds, project_point_to_line_segment, verbose)
   cell_wise_graph <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree
   cell_wise_distances <- distances(cell_wise_graph, v = closest_vertex_id)
   
@@ -802,12 +802,14 @@ partitionCells <- function(cds,
 #' @param partition_group When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param do_partition When this argument is set to TRUE (default to be FALSE), we will learn a tree structure for each separate over-connected louvain component. 
 #' @param scale When this argument is set to TRUE (default), it will scale each gene before running trajectory reconstruction.
+#' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
 #' @param euclidean_distance_ratio The maximal ratio between the euclidean distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
 #' that of the maximum distance between any connecting points on the spanning tree allowed to be connected during the loop closure procedure .   
 #' @param geodestic_distance_ratio  The minimal ratio between the geodestic distance of two tip nodes in the spanning tree inferred from SimplePPT algorithm and 
 #' that of the length of the diameter path on the spanning tree allowed to be connected during the loop closure procedure. (Both euclidean_distance_ratio and geodestic_distance_ratio 
 #' need to be satisfied to introduce the edge for loop closure.)    
-#' @param close_loop Whether or not to perform an additional run of loop closing after running DDRTree or SimplePPT to identify potential loop structure in the data space
+#' @param prune_graph Whether or not to perform an additional run of graph pruning to remove small insignificant branches
+#' @param minimal_branch_len The minimal length of the diameter path for a branch to be preserved during graph pruning procedure
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
@@ -835,6 +837,8 @@ learnGraph <- function(cds,
                        close_loop = FALSE, 
                        euclidean_distance_ratio = 1, 
                        geodestic_distance_ratio = 1/3, 
+                       prune_graph = TRUE, 
+                       minimal_branch_len = 10, 
                        verbose = FALSE, 
                        ...){
   rge_method <- rge_method[1]
@@ -987,6 +991,8 @@ learnGraph <- function(cds,
         close_loop = close_loop, 
         euclidean_distance_ratio = euclidean_distance_ratio, 
         geodestic_distance_ratio = geodestic_distance_ratio, 
+        prune_graph = prune_graph, 
+        minimal_branch_len = minimal_branch_len, 
         verbose = verbose)
       
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
@@ -1089,6 +1095,8 @@ learnGraph <- function(cds,
         close_loop = close_loop, 
         euclidean_distance_ratio = euclidean_distance_ratio, 
         geodestic_distance_ratio = geodestic_distance_ratio, 
+        prune_graph = prune_graph, 
+        minimal_branch_len = minimal_branch_len, 
         verbose = verbose)
 
       ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
@@ -1161,6 +1169,8 @@ learnGraph <- function(cds,
   }
   
   cds@rge_method = rge_method
+  
+  cds <- project2MST(cds, project_point_to_line_segment, verbose) # recalculate the pr_graph_cell_proj_closest_vertex using the projection method instead of relying on the R matrix
   
   cds 
 }
@@ -1247,10 +1257,10 @@ findNearestPointOnMST <- function(cds){
   cds
 }
 
-#' @importFrom igraph graph.adjacency V
+#' @importFrom igraph graph.adjacency V neighborhood
 #' @importFrom stats dist
 #' @importFrom dplyr do group_by add_row mutate
-project2MST <- function(cds, Projection_Method){
+project2MST <- function(cds, Projection_Method, verbose){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
@@ -1269,9 +1279,9 @@ project2MST <- function(cds, Projection_Method){
   if(!is.function(Projection_Method)) {
     P <- Y[, closest_vertex]
   }
-  else{
+  else{ # project cell to the principal graph (each cell will get different coordinates - except certain rare cases)
     P <- matrix(rep(0, length(Z)), nrow = nrow(Z)) #Y
-    nearest_edges <- matrix(rep(0, length(Z[1:2, ])), ncol = 2)
+    nearest_edges <- matrix(rep(0, length(Z[1:2, ])), ncol = 2) # nearest principal graph edge for each cell 
     row.names(nearest_edges) <-  colnames(cds)
     for(i in 1:length(closest_vertex)) { # This loop is going to be slow 
       neighbors <- names(neighborhood(dp_mst, nodes = closest_vertex_names[i], mode = 'all')[[1]])[-1]  
@@ -1293,7 +1303,7 @@ project2MST <- function(cds, Projection_Method){
         projection <- as.matrix(projection)
       }
       
-      which_min <- which(distance == min(distance))[1]
+      which_min <- which.min(distance)
       P[, i] <- projection[which_min, ] #use only the first index to avoid assignment error
       nearest_edges[i, ] <- c(closest_vertex_names[i], neighbors[which_min])
     }
@@ -1308,8 +1318,12 @@ project2MST <- function(cds, Projection_Method){
 
   if(!is.null(louvain_component)) {
     for(cur_louvain_comp in sort(unique(louvain_component))) {
-      data_df <- NULL 
-      message('current louvain component is ', cur_louvain_comp)
+      data_df <- NULL
+
+      if(verbose) {
+        message('Projecting cells to principal points for louvain component: ', cur_louvain_comp)
+      }
+
       subset_cds_col_names <- colnames(cds)[pData(cds)$louvain_component == cur_louvain_comp]
       cur_z <- Z[, subset_cds_col_names]
       cur_p <- P[, subset_cds_col_names]
@@ -1317,9 +1331,9 @@ project2MST <- function(cds, Projection_Method){
       cur_centroid_name <- V(dp_mst_list[[as.numeric(cur_louvain_comp)]])$name
       
       cur_nearest_edges <- nearest_edges[subset_cds_col_names, ] # the nearest edge for each cell
-      data_df <- cbind(as.data.frame(t(cur_p)), apply(cur_nearest_edges, 1, sort) %>% t())
+      data_df <- cbind(as.data.frame(t(cur_p)), apply(cur_nearest_edges, 1, sort) %>% t()) # cell by coord + edge (sorted)
       row.names(data_df) <- colnames(cur_p)
-      colnames(data_df) <- c(paste0("P_", 1:nrow(cur_p)), 'source', 'target')
+      colnames(data_df) <- c(paste0("P_", 1:nrow(cur_p)), 'source', 'target') 
       # colnames(data_df)[(ncol(data_df) - (nrow(cur_p) - 1)):ncol(data_df)] <- paste0('S_', 1:nrow(cur_p))
 
       # sort each cell's distance to the source in each principal edge group 
@@ -1328,20 +1342,22 @@ project2MST <- function(cds, Projection_Method){
               arrange(group, desc(-distance_2_source)) 
 
       # add the links from the source to the nearest points belong to the principal edge and also all following connections between those points  
-      data_df <- data_df %>% group_by(group) %>% mutate(new_source = lag(rowname), new_target = rowname) 
-      data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) # use the correct name of the source point  
+      data_df <- data_df %>% group_by(group) %>% mutate(new_source = lag(rowname), new_target = rowname) # NA  1  2  3 -- lag(1:3)
+      # use the correct name of the source point 
+      data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) 
 
       # add the links from the last point on the principal edge to the target point of the edge
       data_df <- data_df %>% group_by(group) %>% do(dplyr::add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
       added_rows <- which(is.na(data_df$new_source) & is.na(data_df$new_target)) # find those rows 
-      data_df <- as.data.frame(data_df, stringsAsFactors = F)
+      data_df <- as.data.frame(data_df, stringsAsFactors = F) # ???????? 
       data_df <- as.data.frame(as.matrix(data_df), stringsAsFactors = F)
       data_df[added_rows, c('new_source', 'new_target')] <- data_df[added_rows - 1, c('rowname', 'target')] # assign names for the points  
 
       # calculate distance between each pair 
-      cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the principal graph points 
+      cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the coordinates of principal graph points 
       data_df$weight <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
-      data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0])
+      # add the minimal positive distance between any points to the distance matrix
+      data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0]) 
 
       # create the graph 
       # cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'weight')], directed = FALSE)
@@ -1359,21 +1375,27 @@ project2MST <- function(cds, Projection_Method){
         el
       }
       
+      # Calculate distance between two connected nodes directly from the original graph 
+      edge_list <- as.data.frame(get.edgelist(dp_mst_list[[as.numeric(cur_louvain_comp)]]), stringsAsFactors=FALSE)
       dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst_pc <- minimum.spanning.tree(gp)
-      dp <- reordel(dp_mst_pc)
-      colnames(dp) <- c("new_source", "new_target", 'weight')
+      edge_list$weight <- dp[cbind(edge_list[, 1], edge_list[, 2])]      
+      colnames(edge_list) <- c("new_source", "new_target", 'weight')
+      # browser()
+      # dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
+      # gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      # dp_mst_pc <- minimum.spanning.tree(gp)
+      # dp <- reordel(dp_mst_pc)
+      # colnames(dp) <- c("new_source", "new_target", 'weight')
       
-      dp_mst_df <- Reduce(rbind, list(dp_mst_df, data_df[, c("new_source", "new_target", 'weight')], dp))
+      dp_mst_df <- Reduce(rbind, list(dp_mst_df, data_df[, c("new_source", "new_target", 'weight')], edge_list))
       # dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_pc)
     }
   } else {
     stop('Error: please run partitionCells before running project2MST')
   }
-
+  
   dp_mst <- igraph::graph.data.frame(dp_mst_df, directed = FALSE)
-  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree <- dp_mst
+  cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree <- dp_mst # + cds@minSpanningTree
   cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_dist <- P #dp, P projection point not output
   cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df #as.matrix(closest_vertex)
 
@@ -1381,7 +1403,7 @@ project2MST <- function(cds, Projection_Method){
   cds 
 } 
 
-#project points to a line
+#project points to a line (in  >= 2 dimensions)
 projPointOnLine <- function(point, line) {
   ap <- point - line[, 1]
   ab <- line[, 2] - line[, 1]
@@ -1407,7 +1429,7 @@ projPointOnLine <- function(point, line) {
 #   return(point)
 # }
 
-# Project point to line segment
+# Project point to line segment (in >= 2 dimensions)
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B
   A <- df[, 1]
@@ -1673,7 +1695,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
@@ -1708,6 +1730,8 @@ multi_component_RGE <- function(cds,
                                 close_loop = FALSE, 
                                 euclidean_distance_ratio = 1, 
                                 geodestic_distance_ratio = 1/3, 
+                                prune_graph = TRUE, 
+                                minimal_branch_len = minimal_branch_len, 
                                 verbose = FALSE) {
   louvain_component <- pData(cds)[, partition_group]
   
@@ -1837,6 +1861,34 @@ multi_component_RGE <- function(cds,
       }
       
       if(!close_loop) {
+        if(rge_method == 'L1graph') {
+          # use PAGA graph to start with a better initial graph? 
+          G <- connectTips_res$G
+          if(all(G == 0)) { # if the number of centroids are too much to calculate PAGA graph, simply use kNN graph 
+            G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+          }
+
+          if(verbose) {
+            message('Running constrainted L1-graph ...')
+          }
+          L1graph_args <- c(list(X = X_subset, G = G + as.matrix(stree), C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+                            extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')]) # , "maxiter"
+          
+          rge_res <- do.call(principal_graph, L1graph_args)
+          names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+          stree <- as(rge_res$W, 'sparseMatrix')
+        }
+
+        if(prune_graph) { 
+          if(verbose) {
+            message('Running graph pruning ...')
+          }
+          stree <- pruneTree_in_learnGraph(stree_ori, as.matrix(stree), minimal_branch_len = minimal_branch_len)
+          # remove the points in Y; mediods, etc. 
+          rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
+          rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
+        }
+
         if(is.null(merge_rge_res)) {
           colnames(rge_res$Y) <- paste0('Y_', 1:ncol(rge_res$Y))
           merge_rge_res <- rge_res
@@ -1877,14 +1929,15 @@ multi_component_RGE <- function(cds,
       stree <- connectTips_res$stree    
       
       if(rge_method == 'L1graph') {
-        # use louvain clustering method to get a better initial graph? 
+        # use PAGA graph to start with a better initial graph? 
         G <- connectTips_res$G
-        if(all(G == 0)) {
+        if(all(G == 0)) { # if the number of centroids are too much to calculate PAGA graph, simply use kNN graph 
           G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
         }
 
-        if(verbose)
-          stop('Running constrainted L1-graph ...')
+        if(verbose) {
+          message('Running constrainted L1-graph ...')
+        }
         L1graph_args <- c(list(X = X_subset, G = G + as.matrix(stree), C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
                           extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')]) # , "maxiter"
         
@@ -1893,10 +1946,15 @@ multi_component_RGE <- function(cds,
         stree <- as(rge_res$W, 'sparseMatrix')
       }
        
-      stree <- pruneTree_in_learnGraph(stree_ori, as.matrix(stree))
-      rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
-      rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
-      # remove the points in Y; mediods, etc. 
+      if(prune_graph) { 
+        if(verbose) {
+          message('Running graph pruning ...')
+        }
+        stree <- pruneTree_in_learnGraph(stree_ori, as.matrix(stree), minimal_branch_len = minimal_branch_len)
+        # remove the points in Y; mediods, etc. 
+        rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
+        rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
+      }
 
       if(cds@dim_reduce_type == 'psl') {
         dm_names <- dimnames(rge_res$Y)
@@ -1971,10 +2029,9 @@ multi_component_RGE <- function(cds,
 
   row.names(R) <- R_row_names
   R <- R[colnames(cds), ] # reorder the colnames 
-  pr_graph_cell_proj_closest_vertex <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(R), function(x) {
-    which.max(x)
-  })
-
+  # pr_graph_cell_proj_closest_vertex <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(R), function(x) {
+  #   which.max(x)
+  # })
   cds@auxOrderingData[[rge_method]] <- list(stree = stree, Q = merge_rge_res$Q, R = R, objective_vals = merge_rge_res$objective_vals, history = merge_rge_res$history) # rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')] # 
   cds@auxOrderingData[[rge_method]]$pr_graph_cell_proj_closest_vertex <- as.data.frame(pr_graph_cell_proj_closest_vertex)[colnames(cds), , drop = F] # Ensure the row order matches up that of the column order of the cds 
   

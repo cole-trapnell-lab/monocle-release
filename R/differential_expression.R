@@ -248,11 +248,12 @@ differentialGeneTest <- function(cds,
 
 #' Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
 #' @param cds The cellDataSet object where the neighbors list is calculated from 
-#' @param verbose A logic flag that determines whether or not to print execution details
 #' @param  k The maximum number of nearest neighbors to compute
+#' @param verbose A logic flag that determines whether or not to print execution details
 #' @param return_sparse_matrix A logic flag that controls whether or not to return a sparse matrix
+#' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
 #' @importFrom igraph get.adjacency
-calculateLW <- function(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE, interactive = FALSE) {
+calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive = FALSE, verbose = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
@@ -420,7 +421,7 @@ principalGraphTest <- function(cds,
                                cores=1, 
                                interactive = FALSE, 
                                verbose=FALSE) { 
-  lw <- calculateLW(cds, verbose = verbose, k = k, interactive = interactive)
+  lw <- calculateLW(cds, k = k, interactive = interactive, verbose = verbose)
   
   if(verbose) {
     message("Performing Moran's test: ...")
