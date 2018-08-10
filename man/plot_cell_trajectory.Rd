@@ -42,7 +42,7 @@ plot_cell_trajectory(cds, x = 1, y = 2, color_by = "Pseudotime",
 
 \item{state_number_size}{the size of the state number}
 
-\item{show_branch_points}{Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)}
+\item{show_branch_points}{Whether to show icons for each branch point (only available after running assign_cell_states)}
 
 \item{theta}{How many degrees you want to rotate the trajectory}
 

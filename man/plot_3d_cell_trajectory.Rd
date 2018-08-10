@@ -8,9 +8,9 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
   palette = NULL, markers = NULL, markers_linear = FALSE, cell_size = 5,
   cell_alpha = 0.5, backbone_segment_color = "#77B6EA",
   backbone_vertex_color = NULL, show_group_labels = TRUE,
-  webGL_filename = NULL, image_filename = NULL, obj_filename = NULL,
-  scale_expr = TRUE, width = 800, height = 600, view_matrix = NULL,
-  useNULL_GLdev = !interactive(), ...)
+  show_branch_points = TRUE, webGL_filename = NULL, image_filename = NULL,
+  obj_filename = NULL, scale_expr = TRUE, width = 800, height = 600,
+  view_matrix = NULL, useNULL_GLdev = !interactive(), ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -34,6 +34,8 @@ plot_3d_cell_trajectory(cds, dim = c(1, 2, 3), color_by = NULL,
 \item{backbone_vertex_color}{Color for the vertex on the principal graph backbone}
 
 \item{show_group_labels}{Whether or not to show labels of groups}
+
+\item{show_branch_points}{Whether to show icons for each branch point (only available after running assign_cell_states)}
 
 \item{webGL_filename}{the name of a file to which you'd to write a webGL file containing the plot}
 

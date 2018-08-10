@@ -4,17 +4,19 @@
 \alias{calculateLW}
 \title{Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object}
 \usage{
-calculateLW(cds, verbose = FALSE, k = 25, return_sparse_matrix = FALSE,
-  interactive = FALSE)
+calculateLW(cds, k = 25, return_sparse_matrix = FALSE,
+  interactive = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{cds}{The cellDataSet object where the neighbors list is calculated from}
 
-\item{verbose}{A logic flag that determines whether or not to print execution details}
-
 \item{k}{The maximum number of nearest neighbors to compute}
 
 \item{return_sparse_matrix}{A logic flag that controls whether or not to return a sparse matrix}
+
+\item{interactive}{Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells.}
+
+\item{verbose}{A logic flag that determines whether or not to print execution details}
 }
 \description{
 Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object

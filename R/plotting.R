@@ -31,7 +31,7 @@ monocle_theme_opts <- function()
 #' @param cell_link_size The size of the line segments connecting cells (when used with ICA) or the principal graph (when used with DDRTree)
 #' @param cell_name_size the size of cell name labels
 #' @param state_number_size the size of the state number
-#' @param show_branch_points Whether to show icons for each branch point (only available when reduceDimension was called with DDRTree)
+#' @param show_branch_points Whether to show icons for each branch point (only available after running assign_cell_states)
 #' @param theta How many degrees you want to rotate the trajectory
 #' @param alpha The alpha aesthetics for the original cell points, useful to highlight the learned principal graph 
 #' @param ... Additional arguments passed into scale_color_viridis function 
@@ -2923,6 +2923,7 @@ plot_cell_fdl <- function(cds,
 #' @param height the height of the plot in pixels
 #' @param useNULL_GLdev if TRUE, don't show the plot on the screen (to be used with webGL or movie output)
 #' @param show_group_labels Whether or not to show labels of groups
+#' @param show_branch_points Whether to show icons for each branch point (only available after running assign_cell_states)
 #' @param cell_size size of cells, default value is 5
 #' @param backbone_segment_color color of backbone, value is a string containing a hex color value
 #' @param backbone_vertex_color Color for the vertex on the principal graph backbone 
@@ -2950,6 +2951,7 @@ plot_3d_cell_trajectory <- function(cds,
                                     backbone_segment_color="#77B6EA",
                                     backbone_vertex_color=NULL,
                                     show_group_labels=TRUE,
+                                    show_branch_points=TRUE,
                                     webGL_filename=NULL,
                                     image_filename=NULL,
                                     obj_filename=NULL,
@@ -3101,7 +3103,23 @@ plot_3d_cell_trajectory <- function(cds,
       text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
     }
   }
+  if (show_branch_points && cds@rge_method %in% c('DDRTree', 'SimplePPT', 'L1graph')){
+    mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
+    branch_point_df <- edge_df %>%
+      slice(match(mst_branch_nodes, sample_name)) %>%
+      mutate(branch_point_idx = seq_len(n()))
   
+    points3d(branch_point_df[,c("source_prin_graph_dim_1", "source_prin_graph_dim_2", "source_prin_graph_dim_3")], 
+          size = 20,
+          col='black',
+          alpha=0.3,
+          shininess=75,
+         point_antialias=TRUE)
+    
+    text3d(x=branch_point_df$source_prin_graph_dim_1, y=branch_point_df$source_prin_graph_dim_2, z=branch_point_df$source_prin_graph_dim_3, 
+      texts=as.character(branch_point_df$branch_point_idx), color = 'red', cex = 1)
+  }
+
   if (is.null(obj_filename) == FALSE){
     writeOBJ(obj_filename)
   }

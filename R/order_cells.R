@@ -1321,7 +1321,7 @@ project2MST <- function(cds, Projection_Method, verbose){
       data_df <- NULL
 
       if(verbose) {
-        message('Projecting cells to principal points for louvain component: ', cur_louvain_comp)
+        message('\nProjecting cells to principal points for louvain component: ', cur_louvain_comp)
       }
 
       subset_cds_col_names <- colnames(cds)[pData(cds)$louvain_component == cur_louvain_comp]
