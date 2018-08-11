@@ -344,7 +344,12 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
     # remove edges across cells belong to two disconnected principal points
-    tmp <- get.adjacency(knn_res_graph) * feasible_space
+    # tmp <- get.adjacency(knn_res_graph) * feasible_space
+    # tmp_a <- get.adjacency(knn_res_graph)
+    # zero_index <- !(tmp_a@i %in% feasible_space@i)
+    # tmp <- tmp_a
+    tmp <- get.adjacency(knn_res_graph) & feasible_space
+    tmp <- as(tmp, 'dgCMatrix')
     
     if(interactive) {
       if('Marked' %in% names(pData(cds))) {

@@ -894,6 +894,7 @@ learnGraph <- function(cds,
     if (kmean_res$ifault != 0){
       message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
     }
+    browser()
     nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
     medioids = reduced_dim_res[,unique(nearest_center)]
     reduced_dim_res <- medioids
@@ -1861,7 +1862,20 @@ multi_component_RGE <- function(cds,
       }
       
       if(!close_loop) {
+        stree_ori <- stree
+
         if(rge_method == 'L1graph') {
+          connectTips_res <- connectTips(pData(cds)[louvain_component == cur_comp, ], 
+                                           R = rge_res$R, 
+                                           stree = stree, 
+                                           reducedDimK_old = rge_res$Y, 
+                                           reducedDimS_old = cds@reducedDimS[, louvain_component == cur_comp],
+                                           kmean_res = kmean_res, 
+                                           euclidean_distance_ratio = euclidean_distance_ratio, 
+                                           geodestic_distance_ratio = geodestic_distance_ratio, 
+                                           medioids = medioids,
+                                           verbose = verbose)
+          
           # use PAGA graph to start with a better initial graph? 
           G <- connectTips_res$G
           if(all(G == 0)) { # if the number of centroids are too much to calculate PAGA graph, simply use kNN graph 
@@ -1946,7 +1960,7 @@ multi_component_RGE <- function(cds,
         stree <- as(rge_res$W, 'sparseMatrix')
       }
        
-      if(prune_graph) { 
+      if(prune_graph & rge_method != 'DDRTree') { 
         if(verbose) {
           message('Running graph pruning ...')
         }
@@ -1954,6 +1968,7 @@ multi_component_RGE <- function(cds,
         # remove the points in Y; mediods, etc. 
         rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
         rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
+        medioids <- medioids[, row.names(stree)]
       }
 
       if(cds@dim_reduce_type == 'psl') {
@@ -2059,6 +2074,8 @@ connectTips <- function(pd,
                         medioids, 
                         verbose = FALSE,
                         ...) {
+  stree <- as.matrix(stree)
+  stree[stree != 0] <- 1
   mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
   if(is.null(kmean_res)) {
     tmp <- matrix(apply(R, 1, which.max))
