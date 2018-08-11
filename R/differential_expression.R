@@ -343,14 +343,43 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
     relations <- as.data.frame(links)
     colnames(relations) <- c("from", "to", "weight")
     knn_res_graph <- igraph::graph.data.frame(relations, directed = T)
+
     # remove edges across cells belong to two disconnected principal points
     # tmp <- get.adjacency(knn_res_graph) * feasible_space
-    # tmp_a <- get.adjacency(knn_res_graph)
-    # zero_index <- !(tmp_a@i %in% feasible_space@i)
-    # tmp <- tmp_a
-    tmp <- get.adjacency(knn_res_graph) & feasible_space
-    tmp <- as(tmp, 'dgCMatrix')
+    tmp_a <- get.adjacency(knn_res_graph)
+    block_size <- 10000
+    num_blocks = ceiling(nrow(tmp_a) / block_size)
+    if(verbose) {
+      message('start calculating valid kNN graph ...')
+    }
+
+    pb_feasible_knn <- txtProgressBar(max = num_blocks, file = "", style = 3, min = 0)
+    tmp <- NULL 
     
+    for (j in 1:num_blocks){
+      if (j < num_blocks){
+        block_a <- tmp_a[((((j-1) * block_size)+1):(j*block_size)), ]
+        block_b <- feasible_space[((((j-1) * block_size)+1):(j*block_size)), ]
+      }else{
+        block_a <- tmp_a[((((j-1) * block_size)+1):(nrow(tmp_a))), ]
+        block_b <- feasible_space[((((j-1) * block_size)+1):(nrow(tmp_a))), ]
+      }
+
+      cur_tmp <- block_a * block_b
+
+      if(is.null(tmp)) {
+        tmp <- cur_tmp
+      } else {     
+        tmp <- rBind(tmp, cur_tmp)
+      }
+      setTxtProgressBar(pb = pb_feasible_knn, value = pb_feasible_knn$getVal() + 1)
+    }
+
+    close(pb_feasible_knn)
+    if(verbose) {
+      message('Calculating valid kNN graph, done ...')
+    }
+
     if(interactive) {
       if('Marked' %in% names(pData(cds))) {
         points_selected <- which(pData(cds)$Marked)
