@@ -1054,7 +1054,6 @@ learnGraph <- function(cds,
       medioids <- X[, tmp$rowname] # select representative cells by highest density
       reduced_dim_res <- t(medioids)
 
-
       if(verbose) {
         message('Running generalized SimplePPT ...')
       }
@@ -1109,10 +1108,8 @@ learnGraph <- function(cds,
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
 
       # stree <- ddrtree_res$W
-
       # ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
-      #               extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
-      
+      #               extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])     
       # ddrtree_res <- do.call(DDRTree, ddr_args)
       
       if(ncol(rge_res$Y) == ncol(cds)) {
@@ -1121,13 +1118,12 @@ learnGraph <- function(cds,
       }
       else {
         colnames(rge_res$Y) <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
-        dimnames(rge_res$W) <- list(paste("Y_", 1:ncol(rge_res$Y), sep = ""), paste("Y_", 1:ncol(rge_res$Y), sep = ""))
+        dimnames(rge_res$W) <- list(colnames(rge_res$Y), colnames(rge_res$Y))
       }
       # colnames(rge_res$Z) <- colnames(FM)
-      
       # dimnames(rge_res$W) <- dimnames(rge_res$Y)
       rge_res_W <- rge_res$W
-      rge_res_Z <- rge_res$Z
+      rge_res_Z <- rge_res$X
       rge_res_Y <- rge_res$Y
       
       # adjusted_K <- t(rge_res_Y)
@@ -1142,26 +1138,13 @@ learnGraph <- function(cds,
       row.names(rge_res$R) <- colnames(cds); # colnames(rge_res$R) <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
       # colnames(rge_res$Q) <- colnames(cds)
       cds@auxOrderingData[[rge_method]] <- rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-      
-      if(ncol(cds) < 100) { 
-        cds <- findNearestPointOnMST(cds)
-      } else {
-        tmp <- matrix(apply(rge_res$R, 1, which.max))
-        row.names(tmp) <- colnames(cds)
-        cds@auxOrderingData[[rge_method]]$pr_graph_cell_proj_closest_vertex <- tmp
-      }
     }
     
     reducedDimW(cds) <- as.matrix(rge_res_W)
-    reducedDimS(cds) <- as.matrix(rge_res$X)
+    reducedDimS(cds) <- as.matrix(rge_res_Z)
     reducedDimK(cds) <- as.matrix(rge_res_Y)
     
-    minSpanningTree(cds) <- dp_mst
-    
-    #cds@dim_reduce_type <- "SimplePPT"
-    
-  } else if(rge_method == 'L1_SimplePPT') {
-
+    minSpanningTree(cds) <- dp_mst    
   } else if(rge_method == 'DDRTree') {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
@@ -1208,7 +1191,6 @@ learnGraph <- function(cds,
           ncenter <- extra_arguments$ncenter
         else
           ncenter <- cal_ncenter(nrow(irlba_pca_res))
-        
       } 
       
       if(scale) 
@@ -1219,7 +1201,6 @@ learnGraph <- function(cds,
       #add other parameters...
       ddr_args <- c(list(X=X, dimensions=max_components, ncenter=ncenter, verbose = verbose),
                     extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol", "no_reduction")])
-      #browser()
       ddrtree_res <- do.call(DDRTree, ddr_args)
       
       if(ncol(ddrtree_res$Y) == ncol(cds))
@@ -1260,24 +1241,13 @@ learnGraph <- function(cds,
       }
 
       cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
-      
-      if(ncol(cds) < 100) { 
-        cds <- findNearestPointOnMST(cds)
-      } else {
-        tmp <- matrix(apply(cds@auxOrderingData$DDRTree$R, 1, which.max))
-        row.names(tmp) <- colnames(cds)
-        cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- tmp
-      }
     }
     
     reducedDimW(cds) <- ddrtree_res_W
     reducedDimS(cds) <- ddrtree_res_Z
     reducedDimK(cds) <- ddrtree_res_Y
     
-    minSpanningTree(cds) <- dp_mst
-    
-    #cds@dim_reduce_type <- "DDRTree"
-    
+    minSpanningTree(cds) <- dp_mst    
   }
   
   cds@rge_method = rge_method
