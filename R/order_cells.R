@@ -894,7 +894,7 @@ learnGraph <- function(cds,
     if (kmean_res$ifault != 0){
       message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
     }
-    browser()
+    # browser()
     nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
     medioids = reduced_dim_res[,unique(nearest_center)]
     reduced_dim_res <- medioids
@@ -996,9 +996,9 @@ learnGraph <- function(cds,
         minimal_branch_len = minimal_branch_len, 
         verbose = verbose)
       
-      ddrtree_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
-      ddrtree_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
-      ddrtree_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
+      rge_res_W <- multi_tree_DDRTree_res$ddrtree_res_W
+      rge_res_Z <- multi_tree_DDRTree_res$ddrtree_res_Z
+      rge_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
       cds <- multi_tree_DDRTree_res$cds
       dp_mst <- multi_tree_DDRTree_res$dp_mst
     } else {  ## need to change the following to SimplePPT soon! 
@@ -1018,47 +1018,143 @@ learnGraph <- function(cds,
         X <- t(irlba_pca_res)
       }
       
-      ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
-                    extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
+      centers <- t(X)[seq(1, ncol(X), length.out=ncenter), , drop = F]
+      centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
       
-      ddrtree_res <- do.call(DDRTree, ddr_args)
+      kmean_res <- tryCatch({
+        kmeans(t(X), centers=centers, iter.max = 100)
+        }, error = function(err) {
+          kmeans(t(X), centers = ncenter, iter.max = 100)  
+        })
       
-      # ddrtree_res <- DDRTree(as.matrix(scale(t(irlba_pca_res))), max_components, no_reduction = T, verbose = verbose, ...)
-      if(ncol(ddrtree_res$Y) == ncol(cds))
-        colnames(ddrtree_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      else
-        colnames(ddrtree_res$Y) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+      if (kmean_res$ifault != 0){
+        message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
+      }
+      # nearest_center <- findNearestVertex(t(kmean_res$centers), X, process_targets_in_blocks=TRUE)
+      # medioids <- X[, unique(nearest_center)]
+      # reduced_dim_res <- t(medioids)
+      k <- 25
+      mat <- t(X)
+      if (is.null(k)) {
+        k <- round(sqrt(nrow(mat))/2)
+        k <- max(10, k)
+      }
+      if (verbose)
+        message("Finding kNN using RANN with ", k, " neighbors")
+      dx <- RANN::nn2(mat, k = min(k, nrow(mat) - 1))
+      nn.index <- dx$nn.idx[, -1]
+      nn.dist <- dx$nn.dists[, -1]
+
+      if (verbose) 
+        message("Calculating the local density for each sample based on kNNs ...")
+
+      rho <- exp(-rowMeans(nn.dist))
+      mat_df <- as.data.frame(mat)
+      tmp <- mat_df %>% dplyr::add_rownames() %>% dplyr::mutate(cluster = kmean_res$cluster, density = rho) %>% dplyr::group_by(cluster) %>% dplyr::top_n(n = 1, wt = density) %>% arrange(-desc(cluster))
+      medioids <- X[, tmp$rowname] # select representative cells by highest density
+      reduced_dim_res <- t(medioids)
+
+
+      if(verbose) {
+        message('Running generalized SimplePPT ...')
+      }
+
+      L1graph_args <- c(list(X = X, C0 = medioids, G = NULL, gstruct = 'span-tree', verbose = verbose),
+                        extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
       
-      colnames(ddrtree_res$Z) <- colnames(FM)
+      rge_res <- do.call(principal_graph, L1graph_args)
+
+      G <- NULL
+      if(close_loop) {
+        stree_ori <- rge_res$W
+        connectTips_res <- connectTips(pData(cds), 
+                                             R = rge_res$R, 
+                                             stree = stree_ori, 
+                                             reducedDimK_old = rge_res$C, 
+                                             reducedDimS_old = cds@reducedDimS,
+                                             kmean_res = kmean_res, 
+                                             euclidean_distance_ratio = euclidean_distance_ratio, 
+                                             geodestic_distance_ratio = geodestic_distance_ratio, 
+                                             medioids = medioids,
+                                             verbose = verbose)
+        stree <- connectTips_res$stree    
+        
+        if(rge_method == 'L1graph') {
+          # use PAGA graph to start with a better initial graph? 
+          G <- connectTips_res$G
+          if(all(G == 0)) { # if the number of centroids are too much to calculate PAGA graph, simply use kNN graph 
+            G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+          }
+        }
+
+        rge_res$W <- stree
+      }
+
+      if(rge_method == 'L1graph') {
+        if(is.null(G)) {
+          G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+        }
+        if(verbose) {
+          message('Running constrainted L1-graph ...')
+        }
+
+        stree <- as(rge_res$W, 'sparseMatrix')
+
+        L1graph_args <- c(list(X = X, G = G + as.matrix(stree), C0 = medioids, stree = as.matrix(stree), gstruct = 'l1-graph', verbose = verbose),
+                            extra_arguments[names(extra_arguments) %in% c('eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')]) # , "maxiter"
+     
+        rge_res <- do.call(principal_graph, L1graph_args)
+      } 
+
+      names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
+
+      # stree <- ddrtree_res$W
+
+      # ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
+      #               extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
       
-      ddrtree_res_W <- ddrtree_res$W
-      ddrtree_res_Z <- ddrtree_res$Z
-      ddrtree_res_Y <- ddrtree_res$Y
+      # ddrtree_res <- do.call(DDRTree, ddr_args)
       
-      adjusted_K <- t(ddrtree_res_Y)
-      dp <- as.matrix(dist(adjusted_K))
-      cellPairwiseDistances(cds) <- dp
-      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      dp_mst <- minimum.spanning.tree(gp)
+      if(ncol(rge_res$Y) == ncol(cds)) {
+        colnames(rge_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
+        dimnames(rge_res$W) <- list(colnames(FM), colnames(FM))
+      }
+      else {
+        colnames(rge_res$Y) <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
+        dimnames(rge_res$W) <- list(paste("Y_", 1:ncol(rge_res$Y), sep = ""), paste("Y_", 1:ncol(rge_res$Y), sep = ""))
+      }
+      # colnames(rge_res$Z) <- colnames(FM)
       
-      ddrtree_res$stree <- ddrtree_res$stree[1:ncol(ddrtree_res$Y), 1:ncol(ddrtree_res$Y)]
-      dimnames(ddrtree_res$stree) <- list(paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""), paste("Y_", 1:ncol(ddrtree_res$Y), sep = ""))
-      row.names(ddrtree_res$R) <- colnames(cds); colnames(ddrtree_res$R) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
-      colnames(ddrtree_res$Q) <- colnames(cds)
-      cds@auxOrderingData[["SimplePPT"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
+      # dimnames(rge_res$W) <- dimnames(rge_res$Y)
+      rge_res_W <- rge_res$W
+      rge_res_Z <- rge_res$Z
+      rge_res_Y <- rge_res$Y
+      
+      # adjusted_K <- t(rge_res_Y)
+      # dp <- as.matrix(dist(adjusted_K))
+      # cellPairwiseDistances(cds) <- dp
+      # gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      # # dp_mst <- minimum.spanning.tree(gp)
+      dp_mst <- graph.adjacency(rge_res$W, mode = "undirected", weighted = TRUE)
+
+      # rge_res$stree <- rge_res$stree[1:ncol(rge_res$Y), 1:ncol(rge_res$Y)]
+      # dimnames(rge_res$stree) <- list(paste("Y_", 1:ncol(rge_res$Y), sep = ""), paste("Y_", 1:ncol(rge_res$Y), sep = ""))
+      row.names(rge_res$R) <- colnames(cds); # colnames(rge_res$R) <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
+      # colnames(rge_res$Q) <- colnames(cds)
+      cds@auxOrderingData[[rge_method]] <- rge_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
       
       if(ncol(cds) < 100) { 
         cds <- findNearestPointOnMST(cds)
       } else {
-        tmp <- matrix(apply(ddrtree_res$R, 1, which.max))
+        tmp <- matrix(apply(rge_res$R, 1, which.max))
         row.names(tmp) <- colnames(cds)
-        cds@auxOrderingData[["SimplePPT"]]$pr_graph_cell_proj_closest_vertex <- tmp
+        cds@auxOrderingData[[rge_method]]$pr_graph_cell_proj_closest_vertex <- tmp
       }
     }
     
-    reducedDimW(cds) <- ddrtree_res_W
-    reducedDimS(cds) <- ddrtree_res_Z
-    reducedDimK(cds) <- ddrtree_res_Y
+    reducedDimW(cds) <- as.matrix(rge_res_W)
+    reducedDimS(cds) <- as.matrix(rge_res$X)
+    reducedDimK(cds) <- as.matrix(rge_res_Y)
     
     minSpanningTree(cds) <- dp_mst
     
@@ -1148,6 +1244,21 @@ learnGraph <- function(cds,
       row.names(ddrtree_res$R) <- colnames(cds); colnames(ddrtree_res$R) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       colnames(ddrtree_res$Q) <- colnames(cds)
 
+      if(close_loop) {
+        stree_ori <- ddrtree_res$stree
+        connectTips_res <- connectTips(pData(cds), 
+                                             R = ddrtree_res$R, 
+                                             stree = stree_ori, 
+                                             reducedDimK_old = ddrtree_res$Y, 
+                                             reducedDimS_old = cds@reducedDimS,
+                                             kmean_res = NULL, 
+                                             euclidean_distance_ratio = euclidean_distance_ratio, 
+                                             geodestic_distance_ratio = geodestic_distance_ratio, 
+                                             medioids = medioids,
+                                             verbose = verbose)
+        ddrtree_res$stree <- connectTips_res$stree    
+      }
+
       cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
       
       if(ncol(cds) < 100) { 
@@ -1227,13 +1338,21 @@ findNearestPointOnMST <- function(cds){
   dp_mst <- minSpanningTree(cds)
   dp_mst_list <- decompose.graph(dp_mst) 
   
+  if(length(unique(pData(cds)$louvain_component)) != length(dp_mst_list)) {
+    dp_mst_list <- list(dp_mst)
+  } 
+  
   closest_vertex_df <- NULL
   cur_start_index <- 0 
 
   for(i in 1:length(dp_mst_list)) {
     cur_dp_mst <- dp_mst_list[[i]]
     
-    Z <- reducedDimS(cds)[, pData(cds)$louvain_component == i]
+    if(length(dp_mst_list) == 1) {
+      Z <- reducedDimS(cds)
+    } else {
+      Z <- reducedDimS(cds)[, pData(cds)$louvain_component == i]
+    }
     Y <- reducedDimK(cds)[, igraph::V(cur_dp_mst)$name]
   
     tip_leaves <- names(which(degree(cur_dp_mst) == 1))
@@ -1316,6 +1435,10 @@ project2MST <- function(cds, Projection_Method, verbose){
   dp_mst_list <- decompose.graph(dp_mst)
   dp_mst_df <- NULL
   louvain_component <- pData(cds)$louvain_component
+  
+  if(length(dp_mst_list) == 1 & length(unique(louvain_component)) > 1) {
+    louvain_component <- 1
+  }
 
   if(!is.null(louvain_component)) {
     for(cur_louvain_comp in sort(unique(louvain_component))) {
@@ -2074,6 +2197,10 @@ connectTips <- function(pd,
                         medioids, 
                         verbose = FALSE,
                         ...) {
+  if(is.null(row.names(stree)) & is.null(row.names(stree))) {
+    dimnames(stree) <- list(paste0('Y_', 1:ncol(stree)), paste0('Y_', 1:ncol(stree)))
+  }
+
   stree <- as.matrix(stree)
   stree[stree != 0] <- 1
   mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
@@ -2145,7 +2272,6 @@ connectTips <- function(pd,
     edge_vec_in_tip_pc_point <- igraph::V(mst_g_old)$name[edge_vec]
     
     if(length(edge_vec_in_tip_pc_point) == 1) next; 
-    
     if(all(edge_vec %in% tip_pc_points) & (igraph::distances(mst_g_old, edge_vec_in_tip_pc_point[1], edge_vec_in_tip_pc_point[2]) >= geodestic_distance_ratio * diameter_dis) & 
                                            (euclidean_distance_ratio * max_node_dist > dist(t(reducedDimK_old[, edge_vec]))) ) {
       if(verbose) message('edge_vec is ', edge_vec[1], '\t', edge_vec[2])

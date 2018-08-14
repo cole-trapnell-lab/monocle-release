@@ -695,6 +695,9 @@ find_cluster_markers <- function(cds,
   gene_ids <- row.names(subset(pr_graph_test_res, qval < qval_threshold & morans_I > morans_I_threshold))
   num_blocks = ceiling(length(gene_ids) / block_size)
   specificity_res <- NULL
+  
+  pb_cell_blocks <- txtProgressBar(max = num_blocks, file = "", style = 3, min = 0)
+
   for(i in 1:num_blocks) {
     if (i < num_blocks){
       exprs_mat = as.matrix(cds@assayData$exprs[gene_ids[((((i-1) * block_size)+1):(i*block_size))], ])
@@ -732,7 +735,11 @@ find_cluster_markers <- function(cds,
     })
     
     specificity_res <- rbind(tmp, specificity_res)
+
+    setTxtProgressBar(pb = pb_cell_blocks, value = pb_cell_blocks$getVal() + 1)
   }
+  
+  close(pb_cell_blocks)
   
   specificity_res <- specificity_res %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
   if(!is.null(top_n_by_group)) {
