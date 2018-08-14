@@ -1872,7 +1872,14 @@ multi_component_RGE <- function(cds,
       #browser()
       rge_res <- do.call(DDRTree, ddr_args)
       medioids <- rge_res$Y
-      stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+      # stree <- rge_res$stree[1:ncol(medioids), 1:ncol(medioids)]
+
+      dp <- as.matrix(dist(t(rge_res$Y)))
+      gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+      dp_mst_g <- minimum.spanning.tree(gp)
+      stree <- get.adjacency(dp_mst_g)
+      rge_res$stree <- stree 
+      
       if(cds@dim_reduce_type == 'psl') {
         dm_names <- dimnames(rge_res$Y)
         rge_res$Y <- medioids
@@ -2105,7 +2112,6 @@ multi_component_RGE <- function(cds,
     }
     
     curr_reducedDimK_coord <- rge_res$Y
-    
     dimnames(stree) <- list(curr_cell_names, curr_cell_names)
     cur_dp_mst <- graph.adjacency(stree, mode = "undirected", weighted = TRUE)
     
@@ -2214,8 +2220,10 @@ connectTips <- function(pd,
   
   if(all(G == 0)) { # if no connection based on PAGA (only existed in simulated data), use the kNN graph instead  
     G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
-    valid_connection <- which(G > 0, arr.ind = T) 
-    valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+    if(!is.null(kmean_res)) {
+      valid_connection <- which(G > 0, arr.ind = T) 
+      valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+    }
   }
 
   if(nrow(valid_connection) == 0) {
