@@ -1182,6 +1182,7 @@ pruneTree <- function(cds, minimal_branch_len = 10){
 #' Function to prune the graph 
 pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branch_len = 10){
   dimnames(stree_loop_clousre) <- dimnames(stree_ori)
+  stree_ori[stree_ori != 0] <- 1
   stree_ori <- graph_from_adjacency_matrix(stree_ori, mode = 'undirected', weight = NULL)
   stree_loop_clousre[stree_loop_clousre != 0] <- 1
   stree_loop_clousre <- graph_from_adjacency_matrix(stree_loop_clousre, mode = 'undirected', weight = NULL)

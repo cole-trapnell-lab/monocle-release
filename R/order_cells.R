@@ -1001,14 +1001,13 @@ learnGraph <- function(cds,
       rge_res_Y <- multi_tree_DDRTree_res$ddrtree_res_Y
       cds <- multi_tree_DDRTree_res$cds
       dp_mst <- multi_tree_DDRTree_res$dp_mst
-    } else {  ## need to change the following to SimplePPT soon! 
+    } else { 
       ncenter <- NULL
       if(auto_param_selection & ncol(cds) >= 100) {
         if("ncenter" %in% names(extra_arguments)) #avoid overwrite the ncenter parameter
           ncenter <- extra_arguments$ncenter
         else
           ncenter <- cal_ncenter(nrow(irlba_pca_res))
-        
       } 
       
       if(scale) {
@@ -1064,8 +1063,10 @@ learnGraph <- function(cds,
       rge_res <- do.call(principal_graph, L1graph_args)
 
       G <- NULL
+      stree <- rge_res$W
+      stree_ori <- stree
+
       if(close_loop) {
-        stree_ori <- rge_res$W
         connectTips_res <- connectTips(pData(cds), 
                                              R = rge_res$R, 
                                              stree = stree_ori, 
@@ -1107,11 +1108,6 @@ learnGraph <- function(cds,
 
       names(rge_res)[c(2, 4, 5)] <- c('Y', 'R','objective_vals')
 
-      # stree <- ddrtree_res$W
-      # ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
-      #               extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])     
-      # ddrtree_res <- do.call(DDRTree, ddr_args)
-      
       if(ncol(rge_res$Y) == ncol(cds)) {
         colnames(rge_res$Y) <- colnames(FM) #paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
         dimnames(rge_res$W) <- list(colnames(FM), colnames(FM))
@@ -1120,6 +1116,26 @@ learnGraph <- function(cds,
         colnames(rge_res$Y) <- paste("Y_", 1:ncol(rge_res$Y), sep = "")
         dimnames(rge_res$W) <- list(colnames(rge_res$Y), colnames(rge_res$Y))
       }
+      
+      stree <- as(rge_res$W, 'sparseMatrix')
+      
+      if(prune_graph) { 
+        if(verbose) {
+          message('Running graph pruning ...')
+        }
+        stree <- pruneTree_in_learnGraph(stree_ori, as.matrix(stree), minimal_branch_len = minimal_branch_len)
+        # remove the points in Y; mediods, etc. 
+        rge_res$W <- stree
+        rge_res$Y <- rge_res$Y[, match(row.names(stree), row.names(stree_ori))]
+        rge_res$R <- rge_res$R[, match(row.names(stree), row.names(stree_ori))]
+        dimnames(rge_res$W) <- list(colnames(rge_res$Y), colnames(rge_res$Y))
+      }
+
+      # stree <- ddrtree_res$W
+      # ddr_args <- c(list(X=X, dimensions=ncol(X), ncenter=ncenter, no_reduction = T, verbose = verbose),
+      #               extra_arguments[names(extra_arguments) %in% c("initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])     
+      # ddrtree_res <- do.call(DDRTree, ddr_args)
+      
       # colnames(rge_res$Z) <- colnames(FM)
       # dimnames(rge_res$W) <- dimnames(rge_res$Y)
       rge_res_W <- rge_res$W
@@ -1225,8 +1241,9 @@ learnGraph <- function(cds,
       row.names(ddrtree_res$R) <- colnames(cds); colnames(ddrtree_res$R) <- paste("Y_", 1:ncol(ddrtree_res$Y), sep = "")
       colnames(ddrtree_res$Q) <- colnames(cds)
 
+      stree <- ddrtree_res$stree
+      stree_ori <- stree
       if(close_loop) {
-        stree_ori <- ddrtree_res$stree
         connectTips_res <- connectTips(pData(cds), 
                                              R = ddrtree_res$R, 
                                              stree = stree_ori, 
@@ -1238,6 +1255,21 @@ learnGraph <- function(cds,
                                              medioids = medioids,
                                              verbose = verbose)
         ddrtree_res$stree <- connectTips_res$stree    
+        dp_mst <- graph.adjacency(ddrtree_res$stree, mode = "undirected", weighted = TRUE)
+      }
+
+      if(prune_graph) { 
+        if(verbose) {
+          message('Running graph pruning ...')
+        }
+        stree <- pruneTree_in_learnGraph(stree_ori, as.matrix(stree), minimal_branch_len = minimal_branch_len)
+        # remove the points in Y; mediods, etc. 
+        ddrtree_res$Y <- ddrtree_res$Y[, match(row.names(stree), row.names(stree_ori))]
+        ddrtree_res$R <- ddrtree_res$R[, match(row.names(stree), row.names(stree_ori))]
+
+        ddrtree_res$stree <- stree    
+        dimnames(ddrtree_res$stree) <- list(colnames(ddrtree_res$Y), colnames(ddrtree_res$Y))
+        dp_mst <- graph.adjacency(ddrtree_res$stree, mode = "undirected", weighted = TRUE)
       }
 
       cds@auxOrderingData[["DDRTree"]] <- ddrtree_res[c('stree', 'Q', 'R', 'objective_vals', 'history')]
@@ -2176,7 +2208,7 @@ connectTips <- function(pd,
   if(is.null(row.names(stree)) & is.null(row.names(stree))) {
     dimnames(stree) <- list(paste0('Y_', 1:ncol(stree)), paste0('Y_', 1:ncol(stree)))
   }
-
+  
   stree <- as.matrix(stree)
   stree[stree != 0] <- 1
   mst_g_old <- igraph::graph_from_adjacency_matrix(stree, mode = 'undirected')
@@ -2218,7 +2250,7 @@ connectTips <- function(pd,
   G[cluster_graph_res$cluster_mat > 0] <- 0
   G <- - G
   
-  if(all(G == 0)) { # if no connection based on PAGA (only existed in simulated data), use the kNN graph instead  
+  if(all(G == 0, na.rm = T)) { # if no connection based on PAGA (only existed in simulated data), use the kNN graph instead  
     G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
     if(!is.null(kmean_res)) {
       valid_connection <- which(G > 0, arr.ind = T) 
