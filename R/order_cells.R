@@ -96,6 +96,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param root_pr_nodes The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process. 
 #' @param root_cells The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.
+#' @param reverse Whether to reverse the direction of the trajectory
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -104,7 +105,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' @export
 orderCells <- function(cds,
                        root_pr_nodes=NULL,
-                       root_cells=NULL){
+                       root_cells=NULL,
+                       reverse = FALSE){
   
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
@@ -166,6 +168,10 @@ orderCells <- function(cds,
   pData(cds)$Pseudotime = cc_ordering[row.names(pData(cds)), ]$pseudo_time
   # closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   # pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
+  if(reverse) {
+    finite_cells <- is.finite(pData(cds)$Pseudotime)
+    pData(cds)$Pseudotime[finite_cells] <- max(pData(cds)$Pseudotime[finite_cells]) - pData(cds)$Pseudotime[finite_cells] 
+  }
 
   cds
 }
@@ -719,7 +725,6 @@ partitionCells <- function(cds,
                            return_all = FALSE, 
                            verbose = FALSE, ...){
   extra_arguments <- list(...)
-  FM <- cds@auxOrderingData$normalize_expr_data
   irlba_pca_res <- cds@normalized_data_projection
   
   Y <- reducedDimS(cds)
@@ -736,7 +741,7 @@ partitionCells <- function(cds,
     reduced_dim_res <- t(cds@normalized_data_projection)
   }
 
-  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[colnames(FM), ], k = k, 
+  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[row.names(irlba_pca_res), ], k = k, 
                                     resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
   louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
   
@@ -749,7 +754,7 @@ partitionCells <- function(cds,
   
   cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
   louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-  names(louvain_component) = colnames(FM)
+  names(louvain_component) = row.names(irlba_pca_res)
   louvain_component = as.factor(louvain_component)
   pData(cds)$louvain_component <- louvain_component
   
@@ -1468,7 +1473,7 @@ project2MST <- function(cds, Projection_Method, verbose){
               arrange(group, desc(-distance_2_source)) 
 
       # add the links from the source to the nearest points belong to the principal edge and also all following connections between those points  
-      data_df <- data_df %>% group_by(group) %>% mutate(new_source = lag(rowname), new_target = rowname) # NA  1  2  3 -- lag(1:3)
+      data_df <- data_df %>% group_by(group) %>% mutate(new_source = dplyr::lag(rowname), new_target = rowname) # NA  1  2  3 -- lag(1:3)
       # use the correct name of the source point 
       data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) 
 

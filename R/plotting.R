@@ -1915,18 +1915,24 @@ plot_cell_clusters <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-      g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      # g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      #       scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+      #       guides(alpha = FALSE) + facet_wrap(~feature_label)
+            # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
+      g <- g + geom_point_rast(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
             scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
             guides(alpha = FALSE) + facet_wrap(~feature_label)
-            # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
-
     }else{
-      g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      # g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      #   scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
+      #   guides(alpha = FALSE) + facet_wrap(~feature_label)
+      g <- g + geom_point_rast(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
         scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
         guides(alpha = FALSE) + facet_wrap(~feature_label)
     }
   }else {
-    g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
+    # g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
+    g <- g + geom_point_rast(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
     
     if(show_group_id) {
       g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
@@ -2941,6 +2947,7 @@ plot_cell_fdl <- function(cds,
 #' }
 #' 
 plot_3d_cell_trajectory <- function(cds, 
+                                    downsample_size = NULL,
                                     dim=c(1, 2, 3),
                                     color_by=NULL,
                                     palette = NULL,
@@ -2960,16 +2967,29 @@ plot_3d_cell_trajectory <- function(cds,
                                     height=600,
                                     view_matrix=NULL,
                                     useNULL_GLdev = !interactive(),
+                                    text_cex = 1, 
+                                    use_plotly = FALSE,
                                     ...){
   gene_short_name <- NA
   sample_name <- NA
-  sample_state <- pData(cds)$State
-  data_dim_1 <- NA
-  data_dim_2 <- NA
-  
+
   #TODO: need to validate cds as ready for this plot (need mst, pseudotime, etc)
-  lib_info_with_pseudo <- pData(cds)
-  
+  if(is.null(downsample_size)) {
+    cell_sampled <- 1:ncol(cds)
+  } else {
+    if(class(downsample_size) %in% c('integer', 'numeric')) { 
+      if(downsample_size < 2) {
+        stop('Error: downsample_size must be at least larger 2!')
+      }
+      cell_sampled <- sample(1:ncol(cds), downsample_size) 
+    } else {
+      stop('Error: downsample_size must be an integer!')
+    }
+  }
+
+  lib_info_with_pseudo <- pData(cds)[cell_sampled, ]
+  sample_state <- pData(cds)$State[cell_sampled]   
+
   if (is.null(cds@dim_reduce_type)){
     stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
   }
@@ -2995,13 +3015,13 @@ plot_3d_cell_trajectory <- function(cds,
   edge_list <- as.data.frame(get.edgelist(dp_mst))
   colnames(edge_list) <- c("source", "target")
   
-  edge_df <- merge(ica_space_df, edge_list, by.x="sample_name", by.y="source", all=TRUE)
+  edge_df <- merge(edge_list, ica_space_df, by.x="source", by.y="sample_name", all=F)
   #edge_df <- ica_space_df
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="source_prin_graph_dim_1", "prin_graph_dim_2"="source_prin_graph_dim_2", "prin_graph_dim_3"="source_prin_graph_dim_3"))
-  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")], by.x="target", by.y="sample_name", all=TRUE)
+  edge_df <- merge(edge_df, ica_space_df[,c("sample_name", "prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")], by.x="target", by.y="sample_name", all=F)
   edge_df <- plyr::rename(edge_df, c("prin_graph_dim_1"="target_prin_graph_dim_1", "prin_graph_dim_2"="target_prin_graph_dim_2", "prin_graph_dim_3"="target_prin_graph_dim_3"))
   
-  S_matrix <- reducedDimS(cds)
+  S_matrix <- reducedDimS(cds)[, cell_sampled]
   data_df <- data.frame(t(S_matrix[dim,]))
   #data_df <- cbind(data_df, sample_state)
   colnames(data_df) <- c("data_dim_1", "data_dim_2", "data_dim_3")
@@ -3013,7 +3033,7 @@ plot_3d_cell_trajectory <- function(cds,
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
       
-      markers_expr_val <- exprs(cds[row.names(markers_fData),])
+      markers_expr_val <- exprs(cds[row.names(markers_fData), cell_sampled])
       markers_expr_val <- Matrix::colSums(markers_expr_val)
       markers_expr_val <- markers_expr_val / pData(cds)$Size_Factor
       nz_points = markers_expr_val != 0
@@ -3024,7 +3044,7 @@ plot_3d_cell_trajectory <- function(cds,
       }
       markers_expr_val[markers_expr_val == 0] = NA
       
-      markers_exprs <- data.frame(cell_id = row.names(pData(cds)))
+      markers_exprs <- data.frame(cell_id = colnames(cds)[cell_sampled])
       markers_exprs$value <- markers_expr_val
     }
   }
@@ -3058,10 +3078,14 @@ plot_3d_cell_trajectory <- function(cds,
       hues = seq(15, 375, length = n + 1)
       hcl(h = hues, l = 65, c = 100)[1:n]
     }
-    num_colors = length(levels(pData(cds)[,color_by]))
+    num_colors = length(unique(pData(cds)[,color_by]))
     if (is.null(palette)){
       colors = gg_color_hue(num_colors)
-      names(colors) = levels(pData(cds)[,color_by])
+      if(is.factor(pData(cds)[,color_by])) {
+        names(colors) = levels(pData(cds)[,color_by])
+      } else {
+        
+      }
     }else{
       colors = palette
     }
@@ -3093,6 +3117,7 @@ plot_3d_cell_trajectory <- function(cds,
             shininess=75,
            point_antialias=TRUE)
   #bg3d(fogtype="linear")
+  medoid_df <- NULL 
   if (is.null(point_colors_df$color_by) == FALSE){
     point_colors_df = inner_join(point_colors_df, data_df)
     
@@ -3103,6 +3128,7 @@ plot_3d_cell_trajectory <- function(cds,
       text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
     }
   }
+  branch_point_df <- NULL 
   if (show_branch_points && cds@rge_method %in% c('DDRTree', 'SimplePPT', 'L1graph')){
     mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     branch_point_df <- edge_df %>%
@@ -3117,7 +3143,7 @@ plot_3d_cell_trajectory <- function(cds,
          point_antialias=TRUE)
     
     text3d(x=branch_point_df$source_prin_graph_dim_1, y=branch_point_df$source_prin_graph_dim_2, z=branch_point_df$source_prin_graph_dim_3, 
-      texts=as.character(branch_point_df$branch_point_idx), color = 'red', cex = 1)
+      texts=as.character(branch_point_df$branch_point_idx), color = 'red', cex = text_cex)
   }
 
   if (is.null(obj_filename) == FALSE){
@@ -3126,6 +3152,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if (is.null(image_filename) == FALSE){
     rgl.snapshot(image_filename)
+    graphics.off()
   }
   
   widget = NULL
@@ -3135,9 +3162,136 @@ plot_3d_cell_trajectory <- function(cds,
                         sizingPolicy = htmlwidgets::sizingPolicy(
                           browser.fill = TRUE
                         ))
-    htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=FALSE)
+    htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=TRUE)
   }
   
+  if(use_plotly){  
+    p <- plotly::plot_ly(data_df, x = ~data_dim_1, y = ~data_dim_2, z = ~data_dim_3)  %>%
+        add_markers(
+            type = "scatter", mode = "markers", text = ~sample_name,
+            # color = point_colors,
+            opacity = cell_alpha, 
+            color = I(point_colors_df$point_colors), marker  = list(size = cell_size), hoverinfo = 'text')
+
+    if(nrow(edge_df) > 2000 | is.null(backbone_segment_color)) {
+      for (i in 1:nrow(edge_df)) { # add_segments(x = ~x, xend = ~x, y = ~ymin, yend = ~ymax)
+          p <- p %>% add_trace(x = as.vector(t(edge_df[i, c(3, 7)])), y = as.vector(t(edge_df[i, c(4, 8)])), z = as.vector(t(edge_df[i, c(5, 9)])),
+                               line = list(color = I(backbone_segment_color), width = 4),
+                               marker = list(color = I(backbone_vertex_color), size = 5),
+                               mode = 'lines+markers', type = 'scatter3d') # +markers
+          # p <- p %>% add_segments(x = edge_df[i, 3], xend = edge_df[i, 7],
+          #             y = edge_df[i, 4], yend = edge_df[i, 8],
+          #             z = edge_df[i, 5], edge_df[i, 9],
+          # color = I(backbone_segment_color), size = I(1))
+      } 
+    }
+    p <- p %>% hide_legend
+  
+    axx <- list(
+      title = paste0('component ', 1) #, showgrid = F
+    )
+    
+    axy <- list(
+      title = paste0('component ', 2) #, showgrid = F
+    )
+    
+    axz <- list(
+      title = paste0('component ', 3) #, showgrid = F
+    )
+    
+    p <- p %>% layout(scene = list(xaxis=axx,yaxis=axy,zaxis=axz))
+    if(nrow(medoid_df) > 0) {
+      p <- p %>% add_trace(x = medoid_df$mean_d1, y = medoid_df$mean_d2, z = medoid_df$mean_d3, type = "scatter3d", text = as.character(medoid_df$color_by), mode = "text")
+    }
+    
+    if(nrow(branch_point_df) > 0) {
+      p <- p %>% add_trace(x = branch_point_df$source_prin_graph_dim_1, y = branch_point_df$source_prin_graph_dim_2, z = branch_point_df$source_prin_graph_dim_3, type = "scatter3d", text = as.character(branch_point_df$branch_point_idx), mode = "text", color = I('black'))
+      p <- p %>% add_trace(x = branch_point_df$source_prin_graph_dim_1, y = branch_point_df$source_prin_graph_dim_2, z = branch_point_df$source_prin_graph_dim_3, type = "scatter3d", mode = "markers", color = I('red'), size = 20)
+    }
+  #   p <- p %>%
+  #     add_trace(
+  #       x = ~source_prin_graph_dim_1,
+  #       y = ~source_prin_graph_dim_2,
+  #       z = ~source_prin_graph_dim_3,
+  #       text = ~branch_point_idx,
+  #       name = "branch_points", 
+  #       type = "scatter3d",
+  #       data = branch_point_df
+  #     ) %>% 
+  #     layout(
+  #     scene = list(
+  #       aspectratio = list(
+  #         x = 1,
+  #         y = 1,
+  #         z = 1
+  #       ),
+  #       camera = list(
+  #         center = list(
+  #           x = 0,
+  #           y = 0,
+  #           z = 0
+  #         ),
+  #         up = list(
+  #           x = 0,
+  #           y = 0,
+  #           z = 1
+  #         )
+  #       ),
+  #       dragmode = "turntable",
+  #       xaxis = list(
+  #         title = paste0('Component ', dim[1])
+  #       ),
+  #       yaxis = list(
+  #         title = paste0('Component ', dim[2])
+  #         # type = "category"
+  #       ),
+  #       zaxis = list(
+  #         title = paste0('Component ', dim[3])
+  #         # type = "log"
+  #       ),
+  #       annotations = list(list(
+  #           showarrow = F,
+  #           x = medoid_df$mean_d1,
+  #           y = medoid_df$mean_d2,
+  #           z = medoid_df$mean_d3,
+  #           text = as.character(medoid_df$color_by), size = 10, 
+  #           xanchor = "left",
+  #           xshift = 0, 
+  #           opacity = 0.7
+  #       ), list(
+  #           showarrow = F,
+  #           x = branch_point_df$source_prin_graph_dim_1,
+  #           y = branch_point_df$source_prin_graph_dim_2,
+  #           z = branch_point_df$source_prin_graph_dim_3,
+  #           text = as.character(branch_point_df$branch_point_idx),
+  #           xanchor = "left",
+  #           xshift = 0,
+  #           opacity = 0.7
+  #       )
+  #       )),
+  #     xaxis = paste0('Component ', dim[1]),
+  #     yaxis = paste0('Component ', dim[2]),
+  #     zaxis = paste0('Component ', dim[3])
+  # )
+
+  #     p <- p %>% layout(annotations = list(
+  #       ))
+  #   }
+  #   if(!is.null(branch_point_df)) {
+  #     p <- p %>% layout(annotations = list(
+  #         showarrow = F,
+  #         x = branch_point_df$source_prin_graph_dim_1,
+  #         y = branch_point_df$source_prin_graph_dim_2,
+  #         z = branch_point_df$source_prin_graph_dim_3,
+  #         text = as.character(branch_point_df$branch_point_idx),
+  #         xanchor = "left",
+  #         xshift = 0,
+  #         opacity = 0.7
+  #       ))
+  #   }
+
+    print(p)
+  } 
 
   return(widget)
 }
