@@ -943,12 +943,20 @@ tenx_to_cds = function(pipeline_dirs,
 #' plot_cell_trajectory(tmp)
 #' }
 
-subset_cds <- function(cds, cells){
+subsetCDS <- function(cds, cells, principal_nodes = NULL){
+  # Note that this function doesn't really `subset` every element in the cds as some of them are not subsettable (for example, the kNN graph, etc.)
   cells <- unique(intersect(cells, colnames(cds)))
   if(length(cells) == 0) {
     stop("Cannot find any cell from the cds matches with the cell name from the cells argument! Please make sure the cell name you input is correct.")
   }
   
+  if(is.null(principal_nodes)) {
+    corresponding_cells <- which(paste0('Y_', cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex) %in% principal_nodes)
+    cells_tmp <- row.names(cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex)[corresponding_cells]
+
+    cells <- c(cells, cells_tmp)
+  }
+
   exprs_mat <- exprs(cds[, cells])
   cds_subset <- newCellDataSet(exprs_mat,
                                  phenoData = new("AnnotatedDataFrame", data = pData(cds)[cells, ]),
@@ -959,52 +967,78 @@ subset_cds <- function(cds, cells){
   cds_subset@dispFitInfo <- cds@dispFitInfo
   
   if(ncol(cds@reducedDimS) == ncol(cds)) {
-    cds_subset@reducedDimS <- cds@reducedDimS[, cells]
+    cds_subset@reducedDimS <- cds@reducedDimS[, cells, drop = F]
   } else {
     cds_subset@reducedDimS <- cds@reducedDimS
   }
   if(ncol(cds@reducedDimW) == ncol(cds)) {
-    cds_subset@reducedDimW <- cds@reducedDimW[, cells]
+    cds_subset@reducedDimW <- cds@reducedDimW[, cells, drop = F]
   } else {
     cds_subset@reducedDimW <- cds@reducedDimW
   }
   if(ncol(cds@reducedDimA) == ncol(cds)) {
-    cds_subset@reducedDimA <- cds@reducedDimA[, cells]
+    cds_subset@reducedDimA <- cds@reducedDimA[, cells, drop = F]
   } else {
     cds_subset@reducedDimA <- cds@reducedDimA
   }
 
   if(nrow(cds@normalized_data_projection) == ncol(cds)) {
-    cds_subset@normalized_data_projection <- cds@normalized_data_projection[cells, ]
+    cds_subset@normalized_data_projection <- cds@normalized_data_projection[cells, , drop = F]
   } else {
     cds_subset@normalized_data_projection <- cds@normalized_data_projection
   }
   
+  cds_subset@auxOrderingData <- new.env( hash=TRUE ) # cds@auxOrderingData
   # we may also subset results from any RGE methods 
   if('DDRTree' %in% names(cds@auxOrderingData)) {
-    principal_node_ids <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, 1]
-    cds_subset@auxOrderingData$DDRTree$stree <- cds@auxOrderingData$DDRTree$stree[principal_node_ids, principal_node_ids]
-    cds_subset@auxOrderingData$DDRTree$R <- cds@auxOrderingData$DDRTree$R[cells, principal_node_ids]
+    principal_node_ids <- c(principal_nodes, paste0('Y_', cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, 1]))
+    #cds_subset@auxOrderingData$DDRTree$stree <- cds_subset@auxOrderingData$DDRTree$stree[principal_node_ids, principal_node_ids]
+    #cds_subset@auxOrderingData$DDRTree$R <- cds_subset@auxOrderingData$DDRTree$R[cells, principal_node_ids, drop = F]
     cds_subset@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$DDRTree$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
   }
   if('SimplePPT' %in% names(cds@auxOrderingData)) {
-    principal_node_ids <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, 1]
-    cds_subset@auxOrderingData$SimplePPT$stree <- cds@auxOrderingData$SimplePPT$stree[principal_node_ids, principal_node_ids]
-    cds_subset@auxOrderingData$SimplePPT$R <- cds@auxOrderingData$SimplePPT$R[principal_node_ids, principal_node_ids]
+    principal_node_ids <- c(principal_nodes, paste0('Y_', cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, 1]))
+    #cds_subset@auxOrderingData$SimplePPT$stree <- cds_subset@auxOrderingData$SimplePPT$stree[principal_node_ids, principal_node_ids]
+    #cds_subset@auxOrderingData$SimplePPT$R <- cds_subset@auxOrderingData$SimplePPT$R[principal_node_ids, principal_node_ids, drop = F]
     cds_subset@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$SimplePPT$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
   }
   if('L1graph' %in% names(cds@auxOrderingData)) {
-    principal_node_ids <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]
-    cds_subset@auxOrderingData$L1graph$stree <- cds@auxOrderingData$L1graph$stree[principal_node_ids, principal_node_ids]
-    cds_subset@auxOrderingData$L1graph$R <- cds@auxOrderingData$L1graph$R[cells, principal_node_ids]
+    principal_node_ids <- c(principal_nodes, paste0('Y_', cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, 1]))
+    #cds_subset@auxOrderingData$L1graph$stree <- cds_subset@auxOrderingData$L1graph$stree[principal_node_ids, principal_node_ids]
+    #cds_subset@auxOrderingData$L1graph$R <- cds_subset@auxOrderingData$L1graph$R[cells, principal_node_ids, drop = F]
     cds_subset@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex <- cds@auxOrderingData$L1graph$pr_graph_cell_proj_closest_vertex[cells, , drop = F]
   }
   
+  if(ncol(cds@auxOrderingData$normalize_expr_data) == ncol(cds)) {
+    cds_subset@auxOrderingData$normalize_expr_data <- cds@auxOrderingData$normalize_expr_data[, cells]
+  }
+
+  cds_subset@minSpanningTree <- cds@minSpanningTree
   # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
-  principal_graph_points <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex[cells, 1]
-  cds_subset@minSpanningTree <- induced_subgraph(cds@minSpanningTree, paste0('Y_', principal_graph_points))
+  if(length(cds@rge_method) > 0) {
+    principal_graph_points <- c(principal_nodes, paste0('Y_', cds_subset@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex[cells, 1, drop = F]))
+    tmp <- induced_subgraph(cds@minSpanningTree, principal_graph_points)
+    cds_subset@minSpanningTree <- tmp
+    V(cds_subset@minSpanningTree)$name <- paste0('Y_', 1:vcount(cds_subset@minSpanningTree))
+  }
   
-  cds_subset@reducedDimK <- cds@reducedDimK[, principal_graph_points]
+  # find the corresponding principal graph nodes for those selected cells, followed by subseting the trajectories 
+  cds_subset@auxClusteringData <- new.env( hash=TRUE ) # cds@auxClusteringData
+  # browser()
+  if('louvain' %in% names(cds@auxClusteringData)) {
+    cds_subset@auxClusteringData$louvain$louvain_res$g <- induced_subgraph(cds@auxClusteringData$louvain$louvain_res$g, cells)
+    cds_subset@auxClusteringData$louvain$louvain_res$relations <- subset(cds@auxClusteringData$louvain$louvain_res$relations, from %in% cells & to %in% cells)
+    cds_subset@auxClusteringData$louvain$louvain_res$distMatrix <- cds@auxClusteringData$louvain$louvain_res$distMatrix[match(cells, colnames(cds)), , drop = F]
+    cds_subset@auxClusteringData$louvain$louvain_res$optim_res$membership <- cds@auxClusteringData$louvain$louvain_res$optim_res$membership[match(cells, colnames(cds))]
+  } else if('partitionCells' %in% names(cds@auxClusteringData)) {
+    cds_subset@auxClusteringData$partitionCells$g <- induced_subgraph(cds@auxClusteringData$partitionCells$g, cells)
+    cds_subset@auxClusteringData$partitionCells$relations <- subset(cds@auxClusteringData$partitionCells$relations, from %in% cells & to %in% cells)
+    cds_subset@auxClusteringData$partitionCells$distMatrix <- cds@auxClusteringData$partitionCells$distMatrix[match(cells, colnames(cds)), , drop = F]
+    cds_subset@auxClusteringData$partitionCells$optim_res$membership <- cds@auxClusteringData$partitionCells$optim_res$membership[match(cells, colnames(cds))]
+  }
+  
+  cds_subset@reducedDimK <- cds@reducedDimK[, V(tmp)$name, drop = F]
+  colnames(cds_subset@reducedDimK) <- paste0('Y_', 1:ncol(cds_subset@reducedDimK))
   cds_subset@dim_reduce_type <- cds@dim_reduce_type
   cds_subset@rge_method <- cds@rge_method
   cds_subset 

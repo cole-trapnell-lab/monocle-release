@@ -65,7 +65,8 @@ Imports:
     pbapply,
     IRanges,
     viridisLite,
-    sse
+    sse,
+    ggrastr
 LinkingTo: Rcpp
 Suggests:
     destiny,

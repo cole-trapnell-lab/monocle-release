@@ -3084,7 +3084,7 @@ plot_3d_cell_trajectory <- function(cds,
       if(is.factor(pData(cds)[,color_by])) {
         names(colors) = levels(pData(cds)[,color_by])
       } else {
-        
+        names(colors) = unique(pData(cds)[,color_by])
       }
     }else{
       colors = palette
