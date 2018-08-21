@@ -2448,7 +2448,7 @@ plot_multiple_branches_heatmap <- function(cds,
     root_cell <- root_state_cells[which(degree(g, v = root_state_cells) == 1)]
     tip_cell <- branches_cells[which(degree(g, v = branches_cells) == 1)]
     
-    traverse_res <- traverseTree(g, root_cell, tip_cell)
+    traverse_res <- traverseGraph(g, root_cell, tip_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
     
     if(cds@dim_reduce_type != 'ICA') {
@@ -2662,7 +2662,7 @@ plot_multiple_branches_pseudotime <- function(cds,
         root_cell <- root_state_cells[which(degree(g, v = root_state_cells) == 1)]
         tip_cell <- branches_cells[which(degree(g, v = branches_cells) == 1)]
         
-        traverse_res <- traverseTree(g, root_cell, tip_cell)
+        traverse_res <- traverseGraph(g, root_cell, tip_cell)
         path_cells <- names(traverse_res$shortest_path[[1]])
         
         if(cds@dim_reduce_type != 'ICA') {
@@ -3132,7 +3132,7 @@ plot_3d_cell_trajectory <- function(cds,
   if (show_branch_points && cds@rge_method %in% c('DDRTree', 'SimplePPT', 'L1graph')){
     mst_branch_nodes <- cds@auxOrderingData[[cds@rge_method]]$branch_points
     branch_point_df <- edge_df %>%
-      slice(match(mst_branch_nodes, sample_name)) %>%
+      slice(match(mst_branch_nodes, source)) %>%
       mutate(branch_point_idx = seq_len(n()))
   
     points3d(branch_point_df[,c("source_prin_graph_dim_1", "source_prin_graph_dim_2", "source_prin_graph_dim_3")], 
@@ -3144,6 +3144,20 @@ plot_3d_cell_trajectory <- function(cds,
     
     text3d(x=branch_point_df$source_prin_graph_dim_1, y=branch_point_df$source_prin_graph_dim_2, z=branch_point_df$source_prin_graph_dim_3, 
       texts=as.character(branch_point_df$branch_point_idx), color = 'red', cex = text_cex)
+    
+    branch_point_df <- edge_df %>%
+      slice(match(mst_branch_nodes, target)) %>%
+      mutate(branch_point_idx = seq_len(n()))
+    
+    points3d(branch_point_df[,c("target_prin_graph_dim_1", "target_prin_graph_dim_2", "target_prin_graph_dim_3")], 
+             size = 20,
+             col='black',
+             alpha=0.3,
+             shininess=75,
+             point_antialias=TRUE)
+    
+    text3d(x=branch_point_df$target_prin_graph_dim_1, y=branch_point_df$target_prin_graph_dim_2, z=branch_point_df$target_prin_graph_dim_3, 
+           texts=as.character(branch_point_df$branch_point_idx), color = 'red', cex = text_cex)
   }
 
   if (is.null(obj_filename) == FALSE){

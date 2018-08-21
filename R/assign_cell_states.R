@@ -742,7 +742,7 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' lung <- load_lung()
 #' lung <- assign_cell_states(lung)
 #' }
-assign_cell_states <- function(cds, minimal_branch_len = 10){
+setStates <- function(cds, minimal_branch_len = 10){
   
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
@@ -919,15 +919,14 @@ assign_cell_states <- function(cds, minimal_branch_len = 10){
   cds$State <- tmp[cds$State]
   pData(cds)$State <- as.factor(pData(cds)$State)
   
-  cds@auxOrderingData[[cds@rge_method]]$branch_points <- branch_points 
+  cds@auxOrderingData[[cds@rge_method]]$branch_points <- unique(branch_points) 
 
-  min
-  if(state_degree[curr_node] == 1) {
-    dp_mst <- delete_vertices(dp_mst, V(cur_g)[curr_node]$cell_names[[1]]) 
-    principal_points_coord <- principal_points_coord[, setdiff(colnames(principal_points_coord), V(cur_g)[curr_node]$cell_names[[1]])]
-  }
-  cds@minSpanningTree <- dp_mst
-  cds@reducedDimK <- principal_points_coord
+  # if(state_degree[curr_node] == 1) {
+  #   dp_mst <- delete_vertices(dp_mst, V(cur_g)[curr_node]$cell_names[[1]]) 
+  #   principal_points_coord <- principal_points_coord[, setdiff(colnames(principal_points_coord), V(cur_g)[curr_node]$cell_names[[1]])]
+  # }
+  # cds@minSpanningTree <- dp_mst
+  # cds@reducedDimK <- principal_points_coord
   cds
 }
 

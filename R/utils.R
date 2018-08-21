@@ -963,7 +963,7 @@ subsetCDS <- function(cds, cells, principal_nodes = NULL){
                                  featureData = new("AnnotatedDataFrame", data = fData(cds)),
                                  lowerDetectionLimit=cds@lowerDetectionLimit, 
                                  expressionFamily=cds@expressionFamily)
-  
+  pData(cds_subset)$Size_Factor <- pData(cds)[cells, 'Size_Factor']
   cds_subset@dispFitInfo <- cds@dispFitInfo
   
   if(ncol(cds@reducedDimS) == ncol(cds)) {

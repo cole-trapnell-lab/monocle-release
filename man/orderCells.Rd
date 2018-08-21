@@ -4,7 +4,7 @@
 \alias{orderCells}
 \title{Orders cells according to pseudotime.}
 \usage{
-orderCells(cds, root_pr_nodes = NULL, root_cells = NULL)
+orderCells(cds, root_pr_nodes = NULL, root_cells = NULL, reverse = FALSE)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -12,6 +12,8 @@ orderCells(cds, root_pr_nodes = NULL, root_cells = NULL)
 \item{root_pr_nodes}{The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process.}
 
 \item{root_cells}{The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.}
+
+\item{reverse}{Whether to reverse the direction of the trajectory}
 }
 \value{
 an updated CellDataSet object, in which phenoData contains values for State and Pseudotime for each cell
