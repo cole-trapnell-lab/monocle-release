@@ -2936,6 +2936,7 @@ plot_cell_fdl <- function(cds,
 #' @param ... Extra arguments passed to the function 
 #' @return a ggplot2 plot object
 #' @import rgl
+#' @import plotly
 #' @import htmltools
 #' @import viridisLite
 #' @importFrom grDevices hcl
