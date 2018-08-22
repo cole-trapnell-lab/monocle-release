@@ -1617,24 +1617,154 @@ traverseGraph <- function(g, starting_cell, end_cells){
 #' Make a cds by traversing from one cell to another cell
 #'
 #' @param cds a cell dataset after trajectory reconstruction
+#' @param interactive whether to run this function in an interactive mode. If running with an interactive mode, arguments starting_cell and end_cells will be ignored. 
 #' @param starting_cell the initial vertex for traversing on the graph
 #' @param end_cells the terminal vertex for traversing on the graph
 #' @return a new cds containing only the cells traversed from the intial cell to the end cell
-traverseGraphCDS <- function(cds, starting_cell, end_cells){
+traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_cells = NULL, ...){
+  if(interactive) {
+    lib_info_with_pseudo <- pData(cds)
+    
+    if (is.null(cds@dim_reduce_type)){
+      stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+    }
+    
+    if (cds@rge_method %in% c("SimplePPT", "DDRTree", "UMAP", 'L1graph') ){
+      reduced_dim_coords <- reducedDimK(cds)
+    } else {
+      stop("Error: unrecognized reversed graph embedding method.")
+    }
+    
+    ica_space_df <- Matrix::t(reduced_dim_coords) %>%
+      as.data.frame() 
+    use_3d = ncol(ica_space_df) >= 3
+    if (use_3d){
+      colnames(ica_space_df) = c("prin_graph_dim_1", "prin_graph_dim_2", "prin_graph_dim_3")
+    }
+    else{
+      colnames(ica_space_df) = c("prin_graph_dim_1", "prin_graph_dim_2")
+    }
+    ica_space_df = ica_space_df %>% mutate(sample_name = rownames(.), sample_state = rownames(.))
+    
+    dp_mst <- minSpanningTree(cds)
+    
+    if (is.null(dp_mst)){
+      stop("You must first call orderCells() before using this function")
+    }
+    
+    if (use_3d){
+      edge_df <- dp_mst %>%
+        igraph::as_data_frame() %>%
+        select_(source = "from", target = "to") %>%
+        left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2", source_prin_graph_dim_3="prin_graph_dim_3"), by = "source") %>%
+        left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2", target_prin_graph_dim_3="prin_graph_dim_3"), by = "target")
+    }else{
+      edge_df <- dp_mst %>%
+        igraph::as_data_frame() %>%
+        select_(source = "from", target = "to") %>%
+        left_join(ica_space_df %>% select_(source="sample_name", source_prin_graph_dim_1="prin_graph_dim_1", source_prin_graph_dim_2="prin_graph_dim_2"), by = "source") %>%
+        left_join(ica_space_df %>% select_(target="sample_name", target_prin_graph_dim_1="prin_graph_dim_1", target_prin_graph_dim_2="prin_graph_dim_2"), by = "target")
+    }
+
+    num_roots = nrow(ica_space_df)
+
+    #xy <- xy.coords(x, y); x <- xy$x; y <- xy$y
+    sel <- rep(FALSE, nrow(ica_space_df))
+
+    if (use_3d){
+      open3d(windowRect=c(0,0,1024,1024))
+      # title(main = 'Selecting one source node', line = 3)
+      legend3d("topright", legend = 'Selecting one source node', pch = 16, col = 'black', cex=1, inset=c(0.02))
+
+      segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5,6,7,8)])), ncol=3, byrow=T), lwd=2, 
+                 col="black",
+                 line_antialias=TRUE)
+      points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
+      while(sum(sel) < 1) {
+        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+        if(!length(ans)) break
+        ans <- which(!sel)[ans]
+        #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
+        sel[ans] <- TRUE
+      }
+      starting_cell  <- ica_space_df$sample_name[which(sel)]
+
+      Sys.sleep(3)  
+
+      sel <- rep(FALSE, nrow(ica_space_df))
+      open3d(windowRect=c(0,0,1024,1024))
+      legend3d("topright", legend = 'Selecting one or more target node(s)', pch = 16, col = 'black', cex=1, inset=c(0.02))
+
+      segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5,6,7,8)])), ncol=3, byrow=T), lwd=2, 
+                 col="black",
+                 line_antialias=TRUE)
+      points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
+      while(sum(sel) < num_roots) {
+        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+        if(!length(ans)) break
+        ans <- which(!sel)[ans]
+        #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
+        sel[ans] <- TRUE
+      }
+
+      end_cells  <- ica_space_df$sample_name[which(sel)]
+
+    }else{
+      title(main = 'Selecting one source node')
+      plot(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], xlab="Component 1", ylab="Component 2");
+      segments(edge_df$source_prin_graph_dim_1, edge_df$source_prin_graph_dim_2, edge_df$target_prin_graph_dim_1, edge_df$target_prin_graph_dim_2)
+
+      while(sum(sel) < 2) {
+        ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
+        if(!length(ans)) break
+        ans <- which(!sel)[ans]
+        points(ica_space_df$prin_graph_dim_1[ans], ica_space_df$prin_graph_dim_2[ans], pch = pch)
+        sel[ans] <- TRUE
+      }
+      starting_cell  <- ica_space_df$sample_name[which(sel)]
+
+      Sys.sleep(3)  
+
+      sel <- rep(FALSE, nrow(ica_space_df))
+
+      while(sum(sel) < num_roots) {
+        ans <- identify(ica_space_df$prin_graph_dim_1[!sel], ica_space_df$prin_graph_dim_2[!sel], labels = which(!sel), n = 1, ...)
+        if(!length(ans)) break
+        ans <- which(!sel)[ans]
+        points(ica_space_df$prin_graph_dim_1[ans], ica_space_df$prin_graph_dim_2[ans], pch = pch)
+        sel[ans] <- TRUE
+      }
+
+      end_cells  <- ica_space_df$sample_name[which(sel)]
+
+    }
+
+  } else {
+    if(is.null(starting_cell) | is.null(end_cells)) {
+      stop('Error: if interactive is set to be FALSE, you must provide starting_cell and end_cells, for example, something like Y_1')
+    }
+  }
   subset_principal_nodes <- c()
   dp_mst <- cds@minSpanningTree
+
+  browser()
   for(end_cell in end_cells) {
     traverse_res <- traverseGraph(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])
-
+    if(length(path_cells) == 0) {
+      stop(paste0('Error: ', 'source principal node ', starting_cell, ' and target principal node ',  end_cell, ', you selected is not connected.'))
+    }
+      
     subset_principal_nodes <- c(subset_principal_nodes, path_cells)
   }
   subset_principal_nodes <- unique(subset_principal_nodes)
   corresponding_cells <- which(paste0('Y_', cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex) %in% subset_principal_nodes)
   subset_cell <- row.names(cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex)[corresponding_cells]
   cds_subset <- subsetCDS(cds, subset_cell, subset_principal_nodes)
-
-  cds_subset <- orderCells(cds_subset, root_pr_nodes = starting_cell)
+  
+  ind <- which(V(cds@minSpanningTree)$name[V(cds@minSpanningTree)$name %in% subset_principal_nodes] == starting_cell)
+  new_starting_cell <- paste0('Y_', ind)
+  cds_subset <- orderCells(cds_subset, root_pr_nodes = new_starting_cell)
 
   return(cds_subset)
 }

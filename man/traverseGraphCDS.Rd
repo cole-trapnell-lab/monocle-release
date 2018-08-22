@@ -4,10 +4,13 @@
 \alias{traverseGraphCDS}
 \title{Make a cds by traversing from one cell to another cell}
 \usage{
-traverseGraphCDS(cds, starting_cell, end_cells)
+traverseGraphCDS(cds, interactive = TRUE, starting_cell = NULL,
+  end_cells = NULL, ...)
 }
 \arguments{
 \item{cds}{a cell dataset after trajectory reconstruction}
+
+\item{interactive}{whether to run this function in an interactive mode. If running with an interactive mode, arguments starting_cell and end_cells will be ignored.}
 
 \item{starting_cell}{the initial vertex for traversing on the graph}
 

@@ -763,7 +763,7 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
 #' @param show_pp_only whether to show only the principal points. You should always turn this on for large datasets to avoid computational overloading.
 #' @param return_index whether to return the index or return the cds. Default to be FALSE
 #' @export
-select_cells <- function(cds, show_pp_only = FALSE, return_index = FALSE) {
+selectCells <- function(cds, show_pp_only = FALSE, return_index = FALSE) {
   if(show_pp_only) {
     data_matrix <- reducedDimK(cds)
   }
