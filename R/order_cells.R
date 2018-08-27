@@ -702,6 +702,7 @@ smoothEmbedding <- function(cds,
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
+#' @param partition_names Which partiton groups (column in the pData) should be used to calculate the connectivity between partitions
 #' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
@@ -716,6 +717,7 @@ smoothEmbedding <- function(cds,
 #'
 #' @export
 partitionCells <- function(cds,
+                           partition_names = NULL, 
                            use_pca = FALSE,
                            k = 20, 
                            weight = F, 
@@ -741,24 +743,38 @@ partitionCells <- function(cds,
     reduced_dim_res <- t(cds@normalized_data_projection)
   }
 
-  louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[row.names(irlba_pca_res), ], k = k, 
-                                    resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
-  louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+  if(is.null(partition_names)) {
+    louvain_clustering_args <- c(list(data = t(reduced_dim_res), pd = pData(cds)[row.names(irlba_pca_res), ], k = k, 
+                                      resolution = resolution, weight = weight, louvain_iter = louvain_iter, verbose = verbose)) # , extra_arguments[names(extra_arguments) %in% c("k", "weight", "louvain_iter")]
+    louvain_res <- do.call(louvain_clustering, louvain_clustering_args)
+
+    if(length(unique(louvain_res$optim_res$membership)) == 1) {
+      pData(cds)$louvain_component <- 1
+      cds@auxClusteringData$partitionCells <- louvain_res
+      
+      return(cds)
+    }
   
-  if(length(unique(louvain_res$optim_res$membership)) == 1) {
-    pData(cds)$louvain_component <- 1
-    cds@auxClusteringData$partitionCells <- louvain_res
-    
-    return(cds)
+  } else {
+    build_asym_kNN_graph_args <- c(list(data = t(reduced_dim_res), k = k, return_graph = T), 
+                  extra_arguments[names(extra_arguments) %in% c('dist_type', 'return_graph')])
+    louvain_res <- list(g = do.call(build_asym_kNN_graph, build_asym_kNN_graph_args), optim_res = list(membership = NULL))
   }
+
   
+  if(! is.null(partition_names)) {
+    if(partition_names %in% colnames(pData(cds))) {
+      louvain_res$optim_res$membership <- pData(cds)[, partition_names]      
+    } 
+  }
+
   cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
   louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
   names(louvain_component) = row.names(irlba_pca_res)
   louvain_component = as.factor(louvain_component)
   pData(cds)$louvain_component <- louvain_component
   
-  cds@auxClusteringData$partitionCells <- louvain_res
+  cds@auxClusteringData$partitionCells <- list(cluster_graph_res = cluster_graph_res, louvain_res = louvain_res)
   
   if(return_all) {
     return(list(cds = cds, cluster_graph_res = cluster_graph_res))
@@ -1747,7 +1763,6 @@ traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_
   subset_principal_nodes <- c()
   dp_mst <- cds@minSpanningTree
 
-  browser()
   for(end_cell in end_cells) {
     traverse_res <- traverseGraph(dp_mst, starting_cell, end_cell)
     path_cells <- names(traverse_res$shortest_path[[1]])

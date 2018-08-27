@@ -1918,20 +1918,20 @@ plot_cell_clusters <- function(cds,
       #       scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
       #       guides(alpha = FALSE) + facet_wrap(~feature_label)
             # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
-      g <- g + geom_point_rast(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      g <- g + ggrastr::geom_point_rast(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
             scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
             guides(alpha = FALSE) + facet_wrap(~feature_label)
     }else{
       # g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
       #   scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
       #   guides(alpha = FALSE) + facet_wrap(~feature_label)
-      g <- g + geom_point_rast(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+      g <- g + ggrastr::geom_point_rast(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
         scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
         guides(alpha = FALSE) + facet_wrap(~feature_label)
     }
   }else {
     # g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
-    g <- g + geom_point_rast(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
+    g <- g + ggrastr::geom_point_rast(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
     
     if(show_group_id) {
       g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
@@ -3932,3 +3932,45 @@ plot_markers_cluster <- function(cds,
   }
     
 }
+
+#' Function used to plot the PAGA graph 
+plot_PAGA_graph <- function(cds, 
+                            partition_names = 'Cluster', 
+                            color_by = 'Cluster', 
+                            layout = layout.drl,
+                            max_vertex.size = 10, 
+                            max_edge_width = 2) {  
+  if(!(partition_names %in% colnames(pData(cds)))) {
+    stop(paste0('Error: please make sure pData has a column with the name ', partition_names))
+  }
+
+  if(!(color_by %in% colnames(pData(cds)))) {
+    stop(paste0('Error: please make sure pData has a column with the name ', color_by))
+  }
+
+  partition_names_vec <- pData(cds)[, partition_names]
+  
+  cluster_graph_res <- cds@auxClusteringData$partitionCells$cluster_graph_res
+
+  if(vcount(cluster_graph_res$g) != length(unique(partition_names_vec))) {
+    stop('Error: please make sure partition_names is the same you used during the partitionCells step')
+  }
+
+  cell_num_in_gp_df <- pData(cds) %>% dplyr::arrange_(partition_names) %>% dplyr::group_by_(partition_names) %>% 
+    dplyr::mutate(cell_num_in_gp = dplyr::n()) %>% dplyr::select_(partition_names, color_by, "cell_num_in_gp") %>% dplyr::unique()
+  
+  color_by_vec <- cell_num_in_gp_df[, color_by]
+  col_vec <- viridisLite::viridis(length(unique(color_by_vec)), option = 'D')
+  names(col_vec) <- unique(color_by_vec)
+  
+  V(cluster_graph_res$cluster_g)$color <- col_vec[cell_num_in_gp_df[, color_by]]
+
+  igraph::plot.igraph(cluster_graph_res$cluster_g, vertex.color = col_vec[cell_num_in_gp_df[, color_by]], 
+    vertex.size = cell_num_in_gp_df$cell_num_in_gp / max(test$cell_num_in_gp) * 10, 
+    vertex.label.color = 'darkgray', vertex.label.cex = 1, layout = layout, 
+    edge.width = -log(E(cluster_graph_res$cluster_g)$weight) / 
+                max(-log(E(cluster_graph_res$cluster_g)$weight)) * 2) 
+  
+}
+
+

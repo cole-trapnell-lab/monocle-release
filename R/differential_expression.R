@@ -258,9 +258,12 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
   # remove edges that connected between groups that disconnected in the corresponding principal graph and
   # finally use this kNN graph to calculate a global Moran’s I and get the p-value
   # interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
-  if(verbose) {
-    message("retrieve the matrices for Moran's test...")
-  }
+    if(verbose) {
+      message("retrieve the matrices for Moran's I test...")
+    }
+    knn_res <- NULL
+    principal_g <- NULL 
+    
    if(length(cds@rge_method) == 0 & cds@dim_reduce_type %in% c('UMAP')) {
     cds@rge_method <- 'UMAP'
     cell_coords <- t(reducedDimS(cds))
@@ -274,8 +277,11 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
   }
   
   exprs_mat <- exprs(cds)
-  cell2pp_map <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
-  if(is.null(cell2pp_map)) {
+  if(cds@rge_method  == 'UMAP') {
+    if(is.null(knn_res)) {
+      cell_coords <- t(reducedDimS(cds))
+      knn_res <- RANN::nn2(cell_coords, cell_coords, min(k + 1, nrow(cell_coords)), searchtype = "standard")[[1]]
+    }
     links <- monocle:::jaccard_coeff(knn_res[, -1], F)
     links <- links[links[, 1] > 0, ]
     relations <- as.data.frame(links)
@@ -315,6 +321,11 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
 
     knn_list <- lapply(points_selected, function(x) id_map[as.character(knn_res[x, -1])])
   } else {
+    cell2pp_map <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex # mapping from each cell to the principal points
+    if(is.null(cell2pp_map)) {
+      stop("Error: projection matrix for each cell to principal points doesn't exist, you may need to rerun learnGraph")
+    }
+    
     # This cds object might be a subset of the one on which ordering was performed,
     # so we may need to subset the nearest vertex and low-dim coordinate matrices:
     cell2pp_map <-  cell2pp_map[row.names(cell2pp_map) %in% row.names(pData(cds)),, drop=FALSE]
@@ -458,7 +469,7 @@ principalGraphTest <- function(cds,
   lw <- calculateLW(cds, k = k, interactive = interactive, verbose = verbose)
   
   if(verbose) {
-    message("Performing Moran's test: ...")
+    message("Performing Moran's I test: ...")
   }
   exprs_mat <- exprs(cds)[, attr(lw, "region.id")]
   sz <- sizeFactors(cds)[attr(lw, "region.id")]
