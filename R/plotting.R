@@ -3934,12 +3934,21 @@ plot_markers_cluster <- function(cds,
 }
 
 #' Function used to plot the PAGA graph 
+#' @param cds CellDataSet for the experiment
+#' @param partition_names Which partiton groups (column in the pData) should be used to calculate the connectivity between partitions
+#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
+#' @param layout A layout function from igraph to layout the PAGA graph 
+#' @param max_vertex_size The maximum value for the vertex size 
+#' @param max_edge_width The maximum value for the edge width 
+#' @param vertex_label_cex The size of vertex label 
+#' @export
 plot_PAGA_graph <- function(cds, 
                             partition_names = 'Cluster', 
                             color_by = 'Cluster', 
                             layout = layout.drl,
-                            max_vertex.size = 10, 
-                            max_edge_width = 2) {  
+                            max_vertex_size = 10, 
+                            max_edge_width = 2,
+                            vertex_label_cex = 1) {  
   if(!(partition_names %in% colnames(pData(cds)))) {
     stop(paste0('Error: please make sure pData has a column with the name ', partition_names))
   }
@@ -3952,24 +3961,24 @@ plot_PAGA_graph <- function(cds,
   
   cluster_graph_res <- cds@auxClusteringData$partitionCells$cluster_graph_res
 
-  if(vcount(cluster_graph_res$g) != length(unique(partition_names_vec))) {
+  if(vcount(cluster_graph_res$cluster_g) != length(unique(partition_names_vec))) {
     stop('Error: please make sure partition_names is the same you used during the partitionCells step')
   }
 
   cell_num_in_gp_df <- pData(cds) %>% dplyr::arrange_(partition_names) %>% dplyr::group_by_(partition_names) %>% 
-    dplyr::mutate(cell_num_in_gp = dplyr::n()) %>% dplyr::select_(partition_names, color_by, "cell_num_in_gp") %>% dplyr::unique()
+    dplyr::mutate(cell_num_in_gp = dplyr::n()) %>% dplyr::select_(partition_names, color_by, "cell_num_in_gp") %>% unique
   
-  color_by_vec <- cell_num_in_gp_df[, color_by]
+  color_by_vec <- unlist(cell_num_in_gp_df[, color_by])
   col_vec <- viridisLite::viridis(length(unique(color_by_vec)), option = 'D')
   names(col_vec) <- unique(color_by_vec)
   
-  V(cluster_graph_res$cluster_g)$color <- col_vec[cell_num_in_gp_df[, color_by]]
+  V(cluster_graph_res$cluster_g)$color <- col_vec[unlist(cell_num_in_gp_df[, color_by])]
 
-  igraph::plot.igraph(cluster_graph_res$cluster_g, vertex.color = col_vec[cell_num_in_gp_df[, color_by]], 
-    vertex.size = cell_num_in_gp_df$cell_num_in_gp / max(test$cell_num_in_gp) * 10, 
-    vertex.label.color = 'darkgray', vertex.label.cex = 1, layout = layout, 
+  igraph::plot.igraph(cluster_graph_res$cluster_g, vertex.color = col_vec[unlist(cell_num_in_gp_df[, color_by])], 
+    vertex.size = cell_num_in_gp_df$cell_num_in_gp / max(cell_num_in_gp_df$cell_num_in_gp) * max_vertex_size, 
+    vertex.label.color = 'darkgray', vertex.label.cex = vertex_label_cex, layout = layout, 
     edge.width = -log(E(cluster_graph_res$cluster_g)$weight) / 
-                max(-log(E(cluster_graph_res$cluster_g)$weight)) * 2) 
+                max(-log(E(cluster_graph_res$cluster_g)$weight)) * max_edge_width) 
   
 }
 
