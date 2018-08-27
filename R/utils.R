@@ -605,7 +605,9 @@ load_lung <- function(){
   
   # DDRTree based ordering:
   lung <- preprocessCDS(lung, num_dim = 5)
-  lung <- reduceDimension(lung, norm_method="log", method = 'DDRTree', pseudo_expr = 1) #
+  lung <- reduceDimension(lung, norm_method="log", reduction_method = 'none') 
+  lung <- partitionCells(lung)
+  lung <- learnGraph(lung, rge_method = 'DDRTree')
   lung <- orderCells(lung, root_pr_nodes = get_correct_root_state(lung, 
                                                            cell_phenotype = 'Time', 
                                                            "E14.5"))

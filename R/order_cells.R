@@ -726,10 +726,6 @@ partitionCells <- function(cds,
                            louvain_qval = 0.05, 
                            return_all = FALSE, 
                            verbose = FALSE, ...){
-  if(!(partition_names %in% colnames(pData(cds)))) {
-    stop(paste0('Error: please make sure pData has a column with the name ', partition_names))
-  }
-
   extra_arguments <- list(...)
   irlba_pca_res <- cds@normalized_data_projection
   
@@ -766,7 +762,10 @@ partitionCells <- function(cds,
   }
 
   
-  if(! is.null(partition_names)) {
+  if(!is.null(partition_names)) {
+    if(!(partition_names %in% colnames(pData(cds)))) {
+      stop(paste0('Error: please make sure pData has a column with the name ', partition_names))
+    }
     if(partition_names %in% colnames(pData(cds))) {
       louvain_res$optim_res$membership <- pData(cds)[, partition_names]      
     } 
