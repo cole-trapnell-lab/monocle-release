@@ -1442,6 +1442,9 @@ project2MST <- function(cds, Projection_Method, verbose){
         else {
           tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])
         }
+        if(any(is.na(tmp))) { # in case coordinates for nodes closest_vertex_names[i] and neighbor are the same  
+          tmp <- Y[, neighbor]
+        }
         projection <- rbind(projection, tmp)
         distance <- c(distance, dist(rbind(Z_i, tmp)))
       }
@@ -1450,6 +1453,10 @@ project2MST <- function(cds, Projection_Method, verbose){
       }
       
       which_min <- which.min(distance)
+      
+      if(length(which_min) == 0) 
+        browser()
+
       P[, i] <- projection[which_min, ] #use only the first index to avoid assignment error
       nearest_edges[i, ] <- c(closest_vertex_names[i], neighbors[which_min])
     }

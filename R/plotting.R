@@ -1796,6 +1796,8 @@ plot_ordering_genes <- function(cds){
 #' @param cell_name_size the size of cell name labels
 #' @param min_expr the minimum (untransformed) expression level to use in plotted the genes.
 #' @param show_group_id A logic flag signifying whether or not you'd like the plot to display the id of each group
+#' @param nrow the number of rows used when laying out the panels for each gene's expression
+#' @param ncol the number of columns used when laying out the panels for each gene's expression
 #' @param ... additional arguments passed into the scale_color_viridis function
 #' @return a ggplot2 plot object
 #' @import ggplot2
@@ -1822,6 +1824,8 @@ plot_cell_clusters <- function(cds,
                                cell_name_size=2, 
                                min_expr=0.1,
                                show_group_id = FALSE, 
+                               nrow = NULL, 
+                               ncol = NULL,
                                ...){
   
   if (length(pData(cds)$Cluster) == 0){ 
@@ -1920,14 +1924,14 @@ plot_cell_clusters <- function(cds,
             # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
       g <- g + ggrastr::geom_point_rast(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
             scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
-            guides(alpha = FALSE) + facet_wrap(~feature_label)
+            guides(alpha = FALSE) + facet_wrap(~feature_label, nrow = nrow, ncol = ncol)
     }else{
       # g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
       #   scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
       #   guides(alpha = FALSE) + facet_wrap(~feature_label)
       g <- g + ggrastr::geom_point_rast(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
         scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
-        guides(alpha = FALSE) + facet_wrap(~feature_label)
+        guides(alpha = FALSE) + facet_wrap(~feature_label, nrow = nrow, ncol = ncol)
     }
   }else {
     # g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
@@ -3171,7 +3175,7 @@ plot_3d_cell_trajectory <- function(cds,
       }
     }
   }
-  browser()
+  
   if(use_plotly){  
     p <- plotly::plot_ly(data_df, x = ~data_dim_1, y = ~data_dim_2, z = ~data_dim_3)  %>%
         add_markers(
