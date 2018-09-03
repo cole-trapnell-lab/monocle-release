@@ -40,7 +40,7 @@ diff_test_helper <- function(x,
           expressionFamily <- negbinomial.size(size=1/disp_guess)
       }
     }
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+  }else if (expressionFamily@vfamily %in% c("uninormal")){
     f_expression <- x
   }else if (expressionFamily@vfamily %in% c("binomialff")){
     f_expression <- x
@@ -478,7 +478,7 @@ principalGraphTest <- function(cds,
   test_res <- pbmclapply(row.names(exprs_mat), FUN = function(x, sz, alternative, method) {
     exprs_val <- exprs_mat[x, ]
     
-    if (cds@expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")){
+    if (cds@expressionFamily@vfamily %in% c("uninormal", "binomialff")){
       exprs_val <- exprs_val
     }else{
       if(relative_expr) {

@@ -24,8 +24,7 @@ Depends:
     igraph,
     DDRTree (>= 0.1.4),
     VGAM (>= 1.0-1),
-    L1Graph, 
-    PSL
+    L1Graph
 Imports:
     parallel,
     igraph (>= 1.0.1),
@@ -65,8 +64,6 @@ Imports:
     pbapply,
     IRanges,
     viridisLite,
-    sse,
-    ggrastr,
     plotly
 LinkingTo: Rcpp
 Suggests:
@@ -78,7 +75,8 @@ Suggests:
     testthat, 
     reticulate,
     SingleCellExperiment,
-    magick
+    ggrastr,
+    PSL
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
 LazyData: true

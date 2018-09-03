@@ -116,6 +116,7 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
 #' importCDS(scater_lung_all, import_all = T)
 #' }
 #' @importFrom Matrix as.matrix
+#' @importFrom VGAM uninormal
 importCDS <- function(otherCDS, import_all = FALSE) {
   if(class(otherCDS)[1] == 'seurat') {
     requireNamespace("Seurat")
@@ -150,7 +151,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
-      expressionFamily <- gaussianff()
+      expressionFamily <- uninormal()
     } else {
       expressionFamily <- tobit()
     }
@@ -233,7 +234,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
-      expressionFamily <- gaussianff()
+      expressionFamily <- uninormal()
     } else {
       expressionFamily <- tobit()
     }

@@ -261,7 +261,7 @@ normalize_expr_data <- function(cds,
     }else{
       stop("Error: the only normalization methods supported with Tobit-distributed (e.g. FPKM/TPM) data are 'log' (recommended) or 'none'")
     }
-  }else if (cds@expressionFamily@vfamily == "gaussianff") {
+  }else if (cds@expressionFamily@vfamily == "uninormal") {
     if (norm_method == "none"){
       FM <- FM + pseudo_expr
     }else{
@@ -649,7 +649,6 @@ reduceDimension <- function(cds,
 #' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
 #' @seealso \code{\link[monocle]{patchEmbedding}}
-#' @export 
 smoothEmbedding <- function(cds,
                            max_components = 2, 
                            do_partition = FALSE, 
@@ -2399,7 +2398,6 @@ connectTips <- function(pd,
 #' @importFrom viridis scale_color_viridis
 #' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
-#' @export
 patchEmbedding <- function(cds, 
                            max_components = 2, 
                            do_partition = FALSE, 

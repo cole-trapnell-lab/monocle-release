@@ -2940,7 +2940,7 @@ plot_cell_fdl <- function(cds,
 #' @param ... Extra arguments passed to the function 
 #' @return a ggplot2 plot object
 #' @import rgl
-#' @import plotly
+#' @importFrom plotly plot_ly add_markers
 #' @import htmltools
 #' @import viridisLite
 #' @importFrom grDevices hcl
@@ -3178,7 +3178,7 @@ plot_3d_cell_trajectory <- function(cds,
   
   if(use_plotly){  
     p <- plotly::plot_ly(data_df, x = ~data_dim_1, y = ~data_dim_2, z = ~data_dim_3)  %>%
-        add_markers(
+      plotly::add_markers(
             type = "scatter", mode = "markers", text = ~sample_name,
             # color = point_colors,
             opacity = cell_alpha, 
@@ -3753,6 +3753,7 @@ plot_gene_pair_spatial_correlation <- function(cds, x, y, log = T) {
 #' @importFrom reshape2 melt dcast
 #' @importFrom viridis scale_color_viridis
 #' @importFrom plyr summarise
+#' @importFrom VGAM uninormal
 #' @export
 plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...) {
   gene_ids <- row.names(subset(fData(cds), gene_short_name %in% markers))
@@ -3769,7 +3770,7 @@ plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...)
   fd <- new("AnnotatedDataFrame",data=pData(cds_subset)[row.names(mat), ])
 
   cell_by_gene <- newCellDataSet(mat, phenoData = pd, featureData =fd,
-                               expressionFamily = gaussianff(),
+                               expressionFamily = uninormal(),
                                lowerDetectionLimit = 0)
 
   cell_by_gene <- preprocessCDS(cell_by_gene, norm_method = 'none', pseudo_expr = 0)
@@ -3791,7 +3792,7 @@ plot_avgerage_markers_cluster <- function(cds, markers, return_all = FALSE, ...)
             row.names = colnames(attach_to_pd)))
 
   meta_gene_cds <- newCellDataSet(t(attach_to_pd), phenoData = pd,featureData = fd,
-                               expressionFamily = gaussianff(),
+                               expressionFamily = uninormal(),
                                lowerDetectionLimit = 0)
 
   meta_gene_cds@reducedDimA <- cds@reducedDimA

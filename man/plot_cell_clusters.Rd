@@ -6,7 +6,8 @@
 \usage{
 plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
   markers = NULL, show_cell_names = FALSE, cell_size = 1.5,
-  cell_name_size = 2, min_expr = 0.1, show_group_id = FALSE, ...)
+  cell_name_size = 2, min_expr = 0.1, show_group_id = FALSE,
+  nrow = NULL, ncol = NULL, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
@@ -28,6 +29,10 @@ plot_cell_clusters(cds, x = 1, y = 2, color_by = "Cluster",
 \item{min_expr}{the minimum (untransformed) expression level to use in plotted the genes.}
 
 \item{show_group_id}{A logic flag signifying whether or not you'd like the plot to display the id of each group}
+
+\item{nrow}{the number of rows used when laying out the panels for each gene's expression}
+
+\item{ncol}{the number of columns used when laying out the panels for each gene's expression}
 
 \item{...}{additional arguments passed into the scale_color_viridis function}
 }
