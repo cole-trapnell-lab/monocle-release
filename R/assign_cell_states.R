@@ -1180,6 +1180,8 @@ pruneTree <- function(cds, minimal_branch_len = 10){
 
 #' Function to prune the graph 
 pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branch_len = 10){
+  if (ncol(stree_ori) < minimal_branch_len)
+    return(stree_loop_clousre);
   dimnames(stree_loop_clousre) <- dimnames(stree_ori)
   stree_ori[stree_ori != 0] <- 1
   stree_ori <- graph_from_adjacency_matrix(stree_ori, mode = 'undirected', weight = NULL)
@@ -1215,49 +1217,52 @@ pruneTree_in_learnGraph <- function(stree_ori, stree_loop_clousre, minimal_branc
   vertex_to_be_deleted <- c()
 
   # further remove other small branches? 
-
-  for (i in 1:length(mst_traversal$order)){
-    curr_node <- mst_traversal$order[i]
-    curr_node_name <- V(stree_ori)[curr_node]$name
-
-    if (is.na(mst_traversal$father[curr_node]) == FALSE){
-      parent_node <- mst_traversal$father[curr_node]
-      parent_node_name <- V(stree_ori)[parent_node]$name
-
-      if (degree(stree_ori, v=parent_node_name) > 2){
-        parent_neighbors <- neighbors(stree_ori, v=parent_node_name, mode = 'all')
+  if (length(mst_traversal$order) > 0){
+    for (i in 1:length(mst_traversal$order)){
+      curr_node <- tryCatch({mst_traversal$order[i]}, error = function(e) { NA })
+      if (is.na(curr_node))
+        next;
+      curr_node_name <- V(stree_ori)[curr_node]$name
+      
+      if (is.na(mst_traversal$father[curr_node]) == FALSE){
+        parent_node <- mst_traversal$father[curr_node]
+        parent_node_name <- V(stree_ori)[parent_node]$name
         
-        parent_neighbors_index <- sort(match(parent_neighbors$name, mst_traversal$order$name)) # follow the order of gene expression 
-        parent_neighbors <- mst_traversal$order$name[parent_neighbors_index]
-
-        tmp <- delete.edges(stree_ori, paste0(parent_node_name, "|", parent_neighbors))
-        tmp_decomposed <- decompose.graph(tmp)
-
-        comp_a <- tmp_decomposed[unlist(lapply(tmp_decomposed, function(x) {
-                      parent_neighbors[2] %in% V(x)$name
-                  }))][[1]]
-
-        comp_b <- tmp_decomposed[unlist(lapply(tmp_decomposed, function(x) {
-                    parent_neighbors[3] %in% V(x)$name
-                  }))][[1]]
-
-        diameter_len_a <- diameter(comp_a) + 1
-        diameter_len_b <- diameter(comp_b) + 1
-
-        if(diameter_len_a < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
-          vertex_to_be_deleted <- c(vertex_to_be_deleted, V(comp_a)$name)
-        } else {
-          # browser()
-          # vertex_top_keep <- c(vertex_top_keep, get_diameter(comp_a)$name)
-        }
-        if(diameter_len_b < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
-          # browser()
+        if (degree(stree_ori, v=parent_node_name) > 2){
+          parent_neighbors <- neighbors(stree_ori, v=parent_node_name, mode = 'all')
           
-          vertex_to_be_deleted <- c(vertex_to_be_deleted, V(comp_b)$name)
-        } else {
-          # vertex_top_keep <- c(vertex_top_keep, get_diameter(comp_b)$name)
+          parent_neighbors_index <- sort(match(parent_neighbors$name, mst_traversal$order$name)) # follow the order of gene expression 
+          parent_neighbors <- mst_traversal$order$name[parent_neighbors_index]
+          
+          tmp <- delete.edges(stree_ori, paste0(parent_node_name, "|", parent_neighbors))
+          tmp_decomposed <- decompose.graph(tmp)
+          
+          comp_a <- tmp_decomposed[unlist(lapply(tmp_decomposed, function(x) {
+            parent_neighbors[2] %in% V(x)$name
+          }))][[1]]
+          
+          comp_b <- tmp_decomposed[unlist(lapply(tmp_decomposed, function(x) {
+            parent_neighbors[3] %in% V(x)$name
+          }))][[1]]
+          
+          diameter_len_a <- diameter(comp_a) + 1
+          diameter_len_b <- diameter(comp_b) + 1
+          
+          if(diameter_len_a < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
+            vertex_to_be_deleted <- c(vertex_to_be_deleted, V(comp_a)$name)
+          } else {
+            # browser()
+            # vertex_top_keep <- c(vertex_top_keep, get_diameter(comp_a)$name)
+          }
+          if(diameter_len_b < minimal_branch_len) {# if loop closure is not applied to cells on this branch 
+            # browser()
+            
+            vertex_to_be_deleted <- c(vertex_to_be_deleted, V(comp_b)$name)
+          } else {
+            # vertex_top_keep <- c(vertex_top_keep, get_diameter(comp_b)$name)
+          }
+          
         }
-
       }
     }
   }

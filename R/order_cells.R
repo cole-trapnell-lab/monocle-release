@@ -1484,67 +1484,71 @@ project2MST <- function(cds, Projection_Method, verbose){
       cur_z <- Z[, subset_cds_col_names]
       cur_p <- P[, subset_cds_col_names]
       
-      cur_centroid_name <- V(dp_mst_list[[as.numeric(cur_louvain_comp)]])$name
+      if (ncol(cur_p) > 0 && nrow(cur_p) > 0){
+        cur_centroid_name <- V(dp_mst_list[[as.numeric(cur_louvain_comp)]])$name
       
-      cur_nearest_edges <- nearest_edges[subset_cds_col_names, ] # the nearest edge for each cell
-      data_df <- cbind(as.data.frame(t(cur_p)), apply(cur_nearest_edges, 1, sort) %>% t()) # cell by coord + edge (sorted)
-      row.names(data_df) <- colnames(cur_p)
-      colnames(data_df) <- c(paste0("P_", 1:nrow(cur_p)), 'source', 'target') 
-      # colnames(data_df)[(ncol(data_df) - (nrow(cur_p) - 1)):ncol(data_df)] <- paste0('S_', 1:nrow(cur_p))
+        cur_nearest_edges <- nearest_edges[subset_cds_col_names, ] # the nearest edge for each cell
+        data_df <- cbind(as.data.frame(t(cur_p)), apply(cur_nearest_edges, 1, sort) %>% t()) # cell by coord + edge (sorted)
+        row.names(data_df) <- colnames(cur_p)
+        colnames(data_df) <- c(paste0("P_", 1:nrow(cur_p)), 'source', 'target') 
+        # colnames(data_df)[(ncol(data_df) - (nrow(cur_p) - 1)):ncol(data_df)] <- paste0('S_', 1:nrow(cur_p))
 
-      # sort each cell's distance to the source in each principal edge group 
-      data_df$distance_2_source <-  sqrt(colSums((cur_p - cds@reducedDimK[, data_df[, 'source']])^2)) 
-      data_df <- data_df %>% rownames_to_column() %>% mutate(group = paste(source, target, sep = '_')) %>%
-              arrange(group, desc(-distance_2_source)) 
+        # sort each cell's distance to the source in each principal edge group 
+        data_df$distance_2_source <-  sqrt(colSums((cur_p - cds@reducedDimK[, data_df[, 'source']])^2)) 
+        data_df <- data_df %>% rownames_to_column() %>% mutate(group = paste(source, target, sep = '_')) %>%
+                arrange(group, desc(-distance_2_source)) 
 
-      # add the links from the source to the nearest points belong to the principal edge and also all following connections between those points  
-      data_df <- data_df %>% group_by(group) %>% mutate(new_source = dplyr::lag(rowname), new_target = rowname) # NA  1  2  3 -- lag(1:3)
-      # use the correct name of the source point 
-      data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) 
+        # add the links from the source to the nearest points belong to the principal edge and also all following connections between those points  
+        data_df <- data_df %>% group_by(group) %>% mutate(new_source = dplyr::lag(rowname), new_target = rowname) # NA  1  2  3 -- lag(1:3)
+        # use the correct name of the source point 
+        data_df[is.na(data_df$new_source), "new_source"] <- as.character(as.matrix(data_df[is.na(data_df$new_source), 'source'])) 
+  
+        # add the links from the last point on the principal edge to the target point of the edge
+        data_df <- data_df %>% group_by(group) %>% do(dplyr::add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
+        added_rows <- which(is.na(data_df$new_source) & is.na(data_df$new_target)) # find those rows 
+        data_df <- as.data.frame(data_df, stringsAsFactors = F) # ???????? 
+        data_df <- as.data.frame(as.matrix(data_df), stringsAsFactors = F)
+        data_df[added_rows, c('new_source', 'new_target')] <- data_df[added_rows - 1, c('rowname', 'target')] # assign names for the points  
 
-      # add the links from the last point on the principal edge to the target point of the edge
-      data_df <- data_df %>% group_by(group) %>% do(dplyr::add_row(., new_source = NA, new_target = NA)) # add new edges for each point 
-      added_rows <- which(is.na(data_df$new_source) & is.na(data_df$new_target)) # find those rows 
-      data_df <- as.data.frame(data_df, stringsAsFactors = F) # ???????? 
-      data_df <- as.data.frame(as.matrix(data_df), stringsAsFactors = F)
-      data_df[added_rows, c('new_source', 'new_target')] <- data_df[added_rows - 1, c('rowname', 'target')] # assign names for the points  
-
-      # calculate distance between each pair 
-      cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the coordinates of principal graph points 
-      data_df$weight <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
-      # add the minimal positive distance between any points to the distance matrix
-      data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0]) 
-
-      # create the graph 
-      # cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'weight')], directed = FALSE)
-      # union with the principal graph 
+        # calculate distance between each pair 
+        cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the coordinates of principal graph points 
+        data_df$weight <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
+        # add the minimal positive distance between any points to the distance matrix
+        data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0]) 
+  
+        # create the graph 
+        # cur_dp_mst <- igraph::graph.data.frame(data_df[, c("new_source", "new_target", 'weight')], directed = FALSE)
+        # union with the principal graph 
+        
+        # code to get the get.edgelist with weight 
+        ## the trick is that we might need to swap the columns of the
+        ## edge lists, because they are ordered according to numeric
+        ## vertex ids and not names
+        reordel <- function(graph) {
+         el <- cbind(as.data.frame(get.edgelist(graph), stringsAsFactors=FALSE),
+                     E(graph)$weight)
+          swap <- which(el[,1] > el[,2])
+          if (length(swap) > 0) { el[swap,1:2] <- cbind(el[swap,2], el[swap,1]) }
+          el
+        }
       
-      # code to get the get.edgelist with weight 
-      ## the trick is that we might need to swap the columns of the
-      ## edge lists, because they are ordered according to numeric
-      ## vertex ids and not names
-      reordel <- function(graph) {
-        el <- cbind(as.data.frame(get.edgelist(graph), stringsAsFactors=FALSE),
-                    E(graph)$weight)
-        swap <- which(el[,1] > el[,2])
-        if (length(swap) > 0) { el[swap,1:2] <- cbind(el[swap,2], el[swap,1]) }
-        el
-      }
+        # Calculate distance between two connected nodes directly from the original graph 
+        edge_list <- as.data.frame(get.edgelist(dp_mst_list[[as.numeric(cur_louvain_comp)]]), stringsAsFactors=FALSE)
+        dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
+        edge_list$weight <- dp[cbind(edge_list[, 1], edge_list[, 2])]      
+        colnames(edge_list) <- c("new_source", "new_target", 'weight')
+        # browser()
+        # dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
+        # gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+        # dp_mst_pc <- minimum.spanning.tree(gp)
+        # dp <- reordel(dp_mst_pc)
+        # colnames(dp) <- c("new_source", "new_target", 'weight')
       
-      # Calculate distance between two connected nodes directly from the original graph 
-      edge_list <- as.data.frame(get.edgelist(dp_mst_list[[as.numeric(cur_louvain_comp)]]), stringsAsFactors=FALSE)
-      dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
-      edge_list$weight <- dp[cbind(edge_list[, 1], edge_list[, 2])]      
-      colnames(edge_list) <- c("new_source", "new_target", 'weight')
-      # browser()
-      # dp <- as.matrix(dist(t(reducedDimK(cds)[, cur_centroid_name])))
-      # gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
-      # dp_mst_pc <- minimum.spanning.tree(gp)
-      # dp <- reordel(dp_mst_pc)
-      # colnames(dp) <- c("new_source", "new_target", 'weight')
-      
-      dp_mst_df <- Reduce(rbind, list(dp_mst_df, data_df[, c("new_source", "new_target", 'weight')], edge_list))
+        dp_mst_df <- Reduce(rbind, list(dp_mst_df, data_df[, c("new_source", "new_target", 'weight')], edge_list))
       # dp_mst <- graph.union(dp_mst, cur_dp_mst, dp_mst_pc)
+      }else{
+      
+      }
     }
   } else {
     stop('Error: please run partitionCells before running project2MST')
@@ -1959,10 +1963,10 @@ multi_component_RGE <- function(cds,
 
     X_subset <- X[, louvain_component == cur_comp]
     if(verbose) message('Current louvain_component is ', cur_comp)
-    if(ncol(X_subset) < 10) {
-      message('Louvain component with less than 10 cells will be ignored!')
-      next; 
-    }
+    #if(ncol(X_subset) < 10) {
+    #  message('Louvain component with less than 10 cells will be ignored!')
+    #  next; 
+    #}
     #add other parameters...
     if(scale) {
       X_subset <- t(as.matrix(scale(t(X_subset))))
@@ -2256,6 +2260,7 @@ multi_component_RGE <- function(cds,
 
   row.names(R) <- R_row_names
   R <- R[colnames(cds), ] # reorder the colnames 
+  #row.names(R) = colnames(cds)
   # pr_graph_cell_proj_closest_vertex <- slam::rowapply_simple_triplet_matrix(slam::as.simple_triplet_matrix(R), function(x) {
   #   which.max(x)
   # })
@@ -2332,11 +2337,12 @@ connectTips <- function(pd,
   G <- - G
   
   if(all(G == 0, na.rm = T)) { # if no connection based on PAGA (only existed in simulated data), use the kNN graph instead  
-    G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
-    if(!is.null(kmean_res)) {
-      valid_connection <- which(G > 0, arr.ind = T) 
-      valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
-    }
+    return(list(stree = igraph::get.adjacency(mst_g_old), Y = reducedDimK_old, G = G))
+    #G <- get_knn(medioids, K = min(5, ncol(medioids)))$G
+    #if(!is.null(kmean_res)) {
+    #  valid_connection <- which(G > 0, arr.ind = T) 
+    #  valid_connection <- valid_connection[apply(valid_connection, 1, function(x) all(x %in% tip_pc_points)), ] # only the tip cells 
+    #}
   }
 
   if(nrow(valid_connection) == 0) {
