@@ -3056,21 +3056,22 @@ plot_3d_cell_trajectory <- function(cds,
   point_colors_df <- data.frame(sample_name = data_df$sample_name,
                                point_colors = "darkgray")
   
+  map2color<-function(x, limits=NULL){
+    
+    if (is.null(limits) == FALSE){
+      x[x < limits[1]] = limits[1]
+      x[x > limits[2]] = limits[2]
+    }
+    
+    ii <- cut(x, breaks = seq(min(x, na.rm=T), max(x, na.rm=T), len = 100), 
+              include.lowest = TRUE)
+    #colors <- colorRampPalette(c("white", "#E05263"))(99)[ii]
+    colors = viridisLite::viridis(99)[ii]
+    return(colors)
+  }
+  
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     data_df <- merge(data_df, markers_exprs, by.x="sample_name", by.y="cell_id")
-    map2color<-function(x, limits=NULL){
-
-      if (is.null(limits) == FALSE){
-        x[x < limits[1]] = limits[1]
-        x[x > limits[2]] = limits[2]
-      }
-      
-      ii <- cut(x, breaks = seq(min(x, na.rm=T), max(x, na.rm=T), len = 100), 
-                include.lowest = TRUE)
-      #colors <- colorRampPalette(c("white", "#E05263"))(99)[ii]
-      colors = viridisLite::viridis(99)[ii]
-      return(colors)
-    }
 
     if(markers_linear || scale_expr){        
       point_colors_df$point_colors = map2color(data_df$value, c(-3, 3))
@@ -3078,26 +3079,33 @@ plot_3d_cell_trajectory <- function(cds,
       point_colors_df$point_colors = map2color(log10(data_df$value+0.1))
     }
   }else if (is.null(color_by) == FALSE && color_by %in% colnames(pData(cds))){
-    gg_color_hue <- function(n) {
-      hues = seq(15, 375, length = n + 1)
-      hcl(h = hues, l = 65, c = 100)[1:n]
-    }
-    num_colors = length(unique(pData(cds)[,color_by]))
-    if (is.null(palette)){
-      colors = gg_color_hue(num_colors)
-      if(is.factor(pData(cds)[,color_by])) {
-        names(colors) = levels(pData(cds)[,color_by])
-      } else {
-        names(colors) = unique(pData(cds)[,color_by])
-      }
-    }else{
-      colors = palette
-    }
     point_colors_df = dplyr::data_frame(sample_name=data_df$sample_name, 
-                                 color_by=as.character(pData(cds)[data_df$sample_name,color_by]))
-    point_colors_df$point_colors = colors[point_colors_df$color_by]
-    #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
-    point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
+                                        color_by=as.character(pData(cds)[data_df$sample_name,color_by]))
+    
+    if (class(pData(cds)[,color_by]) == "numeric"){
+      point_colors_df$point_colors = map2color(pData(cds)[data_df$sample_name,color_by])
+      point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
+    }else{
+      gg_color_hue <- function(n) {
+        hues = seq(15, 375, length = n + 1)
+        hcl(h = hues, l = 65, c = 100)[1:n]
+      }
+      num_colors = length(unique(pData(cds)[,color_by]))
+      if (is.null(palette)){
+        colors = gg_color_hue(num_colors)
+        if(is.factor(pData(cds)[,color_by])) {
+          names(colors) = levels(pData(cds)[,color_by])
+        } else {
+          names(colors) = unique(pData(cds)[,color_by])
+        }
+      }else{
+        colors = palette
+      }
+      
+      point_colors_df$point_colors = colors[point_colors_df$color_by]
+      #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
+      point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
+    }
   }
 
   if(!use_plotly) {
@@ -3134,7 +3142,7 @@ plot_3d_cell_trajectory <- function(cds,
     medoid_df = point_colors_df %>% dplyr::group_by(color_by, point_colors) %>% dplyr::summarize(mean_d1 = median(data_dim_1), 
                                                                      mean_d2 = median(data_dim_2),
                                                                      mean_d3 = median(data_dim_3))
-    if (show_group_labels){
+    if (show_group_labels && color_by %in% colnames(pData(cds)) && class(pData(cds)[,color_by]) != "numeric"){
       if(!use_plotly) {
         text3d(x=medoid_df$mean_d1, y=medoid_df$mean_d2, z=medoid_df$mean_d3, texts=as.character(medoid_df$color_by))
       }
@@ -3187,7 +3195,7 @@ plot_3d_cell_trajectory <- function(cds,
 
     if(nrow(edge_df) > 2000 | !is.null(backbone_segment_color)) {
       for (i in 1:nrow(edge_df)) { # add_segments(x = ~x, xend = ~x, y = ~ymin, yend = ~ymax)
-          p <- p %>% add_trace(x = as.vector(t(edge_df[i, c(3, 7)])), y = as.vector(t(edge_df[i, c(4, 8)])), z = as.vector(t(edge_df[i, c(5, 9)])),
+          p <- p %>% plotly::add_trace(x = as.vector(t(edge_df[i, c(3, 7)])), y = as.vector(t(edge_df[i, c(4, 8)])), z = as.vector(t(edge_df[i, c(5, 9)])),
                                line = list(color = I(backbone_segment_color), width = 4),
                                marker = list(color = I(backbone_vertex_color), size = 5),
                                mode = 'lines+markers', type = 'scatter3d') # +markers

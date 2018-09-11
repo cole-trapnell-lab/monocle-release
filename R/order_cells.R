@@ -1511,8 +1511,9 @@ project2MST <- function(cds, Projection_Method, verbose){
         data_df[added_rows, c('new_source', 'new_target')] <- data_df[added_rows - 1, c('rowname', 'target')] # assign names for the points  
 
         # calculate distance between each pair 
-        cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the coordinates of principal graph points 
-        data_df$weight <-  sqrt(colSums((cur_p[, data_df$new_source] - cur_p[, data_df$new_target]))^2)
+        #cur_p <- cbind(cur_p, cds@reducedDimK[, cur_centroid_name]) # append the coordinates of principal graph points 
+        aug_P = cbind(cur_p, cds@reducedDimK)
+        data_df$weight <-  sqrt(colSums((aug_P[, data_df$new_source] - aug_P[, data_df$new_target]))^2)
         # add the minimal positive distance between any points to the distance matrix
         data_df$weight <- data_df$weight + min(data_df$weight[data_df$weight > 0]) 
   
