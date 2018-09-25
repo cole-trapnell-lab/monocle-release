@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/cole-trapnell-lab/monocle-release.svg?branch=master)](https://travis-ci.com/cole-trapnell-lab/monocle-release)
 
 MONOCLE
 =======================
