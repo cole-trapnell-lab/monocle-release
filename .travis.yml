@@ -1,12 +1,6 @@
 language: r
-sudo: required
-dist: trusty
-bioc_required: true
 cache: packages
 warnings_are_errors: true
 r:
   - bioc-devel
   - bioc-release
-install:
- - R -e 'install.packages("devtools")'
- - R -e 'devtools::install(dependencies = TRUE, upgrade_dependencies = TRUE)'
