@@ -1,7 +1,13 @@
 language: r
 cache: packages
 before_install:
-- sudo apt-get install libhdf5-dev
+- wget https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.20.tar.gz
+- gunzip < hdf5-1.8.20.tar.gz | tar xf -
+- cd hdf5-1.8.20
+- ./configure --prefix=/usr/local/hdf5
+- make
+- make install
+- cd ..
 r:
 - bioc-devel
 - bioc-release
