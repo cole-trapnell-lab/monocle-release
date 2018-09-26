@@ -11,5 +11,5 @@ else # install from source
   cd "hdf5-$HDF5_VERSION"
   ./configure --prefix=/usr/local
   sudo make install
-  cd ../hdf5r
+  cd ../monocle-release
 fi
