@@ -1,7 +1,7 @@
 language: r
 cache: packages
 before_install:
-- sudo apt-get install hdf5
+- sudo apt-get install hdf5-tools
 r:
 - bioc-devel
 - bioc-release
