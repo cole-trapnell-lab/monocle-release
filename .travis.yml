@@ -3,14 +3,14 @@ sudo: required
 cache: packages
 env:
   global:
-    - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
-    - HDF5_VERSION=1.8.13
-before_install: 
-  - chmod +x travis_setup.sh
-  - ./travis_setup.sh
+  - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
+  - HDF5_VERSION=1.8.13
+before_install:
+- chmod +x travis_setup.sh
+- "./travis_setup.sh"
 r:
 - bioc-devel
 - bioc-release
 notifications:
   slack:
-    secure: QGjH5zchv1QuuRt7gqUmMsSUKDQflFnRbVod8ItURFZzdwIjpuvXQ42lZgot/42xCnL5mls029RTXA2YMh2DBkEq2tnay8O994FKmYC6jRv+hwBAkmJV2plOR6YgwLM2NZAsvKeH3XltEAJnOeqDSHRCovm6q93Nk3K5JhrM7+ANWg3b9rbg5UQ13r08+oBZiCUaM7jF+HTiUgtJ8314nWa7zy51zeJerTcjrxAqvsoAK0pV2F1Fb93g1kFx20cCPpPkL4hc+LN/QQqTFRE/XMkCE4LMLesHHhkQ6sOFvMbBqNn6U5oZEKNV/9CZ79l6miEJcudcMzt2zrxI/CAqgaZbEdK3u+bXGb+bk6dfgidj/O0l4MSYTewmjSatEcypZnnZElhMGWtY9kX/Lipel37cuATUT1AJMVzjJOKwgxrMt+vQCr8KXKZAs1kQft1NDuPVR6GRvsAKzDrFBUfeltqY4EUQWG1HLddie5aqMzQ65nnmMtxGXVGpRadaFi5aAV3o1WC3QJWrqiV5dopS+GFdBuuQcGtM8suw6qrVxj16xeXekGmim7tU2a/1zOoaviVURcm3NMQz27o87ki3H0gen1wUnKhQtv93uj8J+21L2QcyJjt8Elc8GA5fFHcK7iLC5nb25X9x8nCaaLuuBxawFg5+bcl4cL7kOp+SEH0=
+    secure: hpLF333dNXWR0yWrDIr5VBeodsS4iqy2l+GoON1FFv2Evo9uaP6Ddlge0IRlmGfaRGw9Etf1/3TczpwzXIaPoIJeEv2zskPAC2KYYufcEqAPIknoEzDEYoI4IDWd52QpawJmVX/K2mJCl0iwkbKCRhUt95QYgvm869sTceuEw2nK0aW++tzw+HDx2qVzdf4L2t34MP5DPveYtlY+55ADbT2odaJw+wFrDpBxbUYauon7C3ZzQW9nHrTidTVnyaHfj2ivCz8LK8k9sTCRzdGBkSD3yOZEtHnfluocICpronsNDskP8arevpu6RJ6ecD2glc5mUPUoqvHVUI7AaDYe/zhqtAZics1H+0x+SP7cwYibNmjVJoGYOklfQ43a9PbscZrHzmIL6CqWMlotFJT5H1StDSJ/oaDyRAZDtdH9OHEQpyHUhlvRPPjhb24JjDEOMU//olLk0y++UrodGb+q+oqod8PvyXSNrH6vDAaBVz/5X1i8Utwm/ozQ27Wb3ExgPTIwdXM9hMn/z6nBznA1DIXg1QoYBvURy6PIrZ1fPuk5TyqylDvskAgWqby4BeDVcluiFzx0t0RLZDPfui84gsxdu9duTsnGYBk5pQUoXUx7QI/Pi3X0OTeRZiu87EiDRffRIloNqAgdprMDoAHfRqu7Qi56JKvMy/wumSHpwzI=
