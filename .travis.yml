@@ -1,15 +1,13 @@
 language: r
 sudo: required
 cache: packages
-install:
-- wget https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-1.8.20.tar.gz
-- gunzip < hdf5-1.8.20.tar.gz | tar xf -
-- cd hdf5-1.8.20
-- ./configure --prefix=/usr/local/hdf5
-- make
-- make check
-- make install
-- cd ..
+env:
+  global:
+    - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
+    - HDF5_VERSION=1.8.13
+before_install: 
+  - chmod +x travis_setup.sh
+  - ./travis_setup.sh
 r:
 - bioc-devel
 - bioc-release
