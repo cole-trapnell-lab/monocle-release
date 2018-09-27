@@ -14,6 +14,6 @@ r:
 - bioc-release
 notifications:
   slack:
-    secure: ILX0FYC9nLbrZbMiiShWTnMhxUXEJBtcPvsU9Tfwvb1211ehP6GY9XU3RrauKtoEImvA/AIImRca3W7nBYhA76Cf1VAOvizLVL6ZIVuI5YnFFvJp7gMkQv3h0DNJ3HeOI+3XDWvg7GUE8WhTXrhV5IzMDOR9ecanqkLLn5BM0LIAEN+RkJSKVn60AwNnOhaaWvAN+H+AR+a3C/umxo07OarIIML9KIXtAI1r5XI4Jr7kw2+V6QfIPfWaJjavuTdN2g/t5vw3slc8ksG67GCCNrX5bpGYzOzWx5DTbD5C7HIaHaFrAgKmIYBMMVIH1TEP1Oyu+2avP1Z3roWNAbi2ia5MkAKs+BBigmFKybCu4IuBMHeBG8flWGbrFfioxoDzxyPWqgLL2xn1IqIxcfADGLjcX5GjWA2dShA2x72wZHfHbQqWC5Z+m18NC0eYKz6gP2thgHzQLi6sxF7sy5czjk11CsMzdDW7sk+whve09syKvclGOI4QpT1j5WpjdxESLNNtut5BKS0GcMnmwsCJHI8Ee//oIlgF/qLpdiLDFacZcxIpFyOzdt6nC4te09hTyTOjZmw5iBx/wKMpbncmCR5frX0S+Vlhu+y/jR/P+7aUM7BEKTnjF3BYr6E6mYx0e5KbVaF6zlBHGfgEB4egqXwhnMLdJROE6MgVs0B+Zx0=
-  on_success: always
-  on_failure: always
+    rooms:
+      - trapnell-lab:Dq2NoPKxteM8gLwIt9usY7mL#cicero
+      - trapnell-lab:Dq2NoPKxteM8gLwIt9usY7mL#monocle
