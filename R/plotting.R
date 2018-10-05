@@ -2974,6 +2974,7 @@ plot_3d_cell_trajectory <- function(cds,
                                     useNULL_GLdev = !interactive(),
                                     text_cex = 1, 
                                     use_plotly = FALSE,
+                                    selfcontained=FALSE,
                                     ...){
   gene_short_name <- NA
   sample_name <- NA
@@ -3271,9 +3272,9 @@ plot_3d_cell_trajectory <- function(cds,
                           sizingPolicy = htmlwidgets::sizingPolicy(
                             browser.fill = TRUE
                           ))
-      htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=TRUE)
+      htmlwidgets::saveWidget(widget, webGL_filename, selfcontained=selfcontained)
     } else {
-      htmlwidgets::saveWidget(p, webGL_filename, selfcontained=TRUE)
+      htmlwidgets::saveWidget(p, webGL_filename, selfcontained=selfcontained)
     }
   }
 
