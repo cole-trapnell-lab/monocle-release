@@ -2960,6 +2960,7 @@ plot_3d_cell_trajectory <- function(cds,
                                     cell_size=5,
                                     cell_alpha=0.5,
                                     backbone_segment_color="#77B6EA",
+                                    backbone_segment_width=2,
                                     backbone_vertex_color=NULL,
                                     show_group_labels=TRUE,
                                     show_branch_points=TRUE,
@@ -3057,16 +3058,18 @@ plot_3d_cell_trajectory <- function(cds,
                                point_colors = "darkgray")
   
   map2color<-function(x, limits=NULL){
+    inf_vals = is.infinite(x)
     
     if (is.null(limits) == FALSE){
       x[x < limits[1]] = limits[1]
       x[x > limits[2]] = limits[2]
     }
-    
+    x[inf_vals] = median(x) 
     ii <- cut(x, breaks = seq(min(x, na.rm=T), max(x, na.rm=T), len = 100), 
               include.lowest = TRUE)
     #colors <- colorRampPalette(c("white", "#E05263"))(99)[ii]
     colors = viridisLite::viridis(99)[ii]
+    colors[inf_vals] = "darkgray"
     return(colors)
   }
   
@@ -3090,19 +3093,23 @@ plot_3d_cell_trajectory <- function(cds,
         hues = seq(15, 375, length = n + 1)
         hcl(h = hues, l = 65, c = 100)[1:n]
       }
-      num_colors = length(unique(pData(cds)[,color_by]))
+     
       if (is.null(palette)){
-        colors = gg_color_hue(num_colors)
+        
         if(is.factor(pData(cds)[,color_by])) {
-          names(colors) = levels(pData(cds)[,color_by])
+          num_colors = length(levels(pData(cds)[,color_by]))
+          point_colors = gg_color_hue(num_colors)
+          names(point_colors) = levels(pData(cds)[,color_by])
         } else {
-          names(colors) = unique(pData(cds)[,color_by])
+          num_colors = length(unique(pData(cds)[,color_by]))
+          point_colors = gg_color_hue(num_colors)
+          names(point_colors) = unique(pData(cds)[,color_by])
         }
       }else{
-        colors = palette
+        point_colors = palette
       }
       
-      point_colors_df$point_colors = colors[point_colors_df$color_by]
+      point_colors_df$point_colors = point_colors[point_colors_df$color_by]
       #point_colors = colors[as.character(pData(cds)[data_df$sample_name,color_by])]
       point_colors_df$point_colors[is.na(point_colors_df$point_colors)] = "darkgray"
     }
@@ -3115,7 +3122,7 @@ plot_3d_cell_trajectory <- function(cds,
       view3d(userMatrix=view_matrix)
     }
     if (is.null(backbone_segment_color) == FALSE){
-      segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=2, 
+      segments3d(matrix(as.matrix(t(edge_df[,c(3,4,5, 7,8,9)])), ncol=3, byrow=T), lwd=backbone_segment_width, 
                  col=backbone_segment_color,
                  line_antialias=TRUE)
       if (is.null(backbone_vertex_color) == FALSE)
@@ -3205,7 +3212,7 @@ plot_3d_cell_trajectory <- function(cds,
           # color = I(backbone_segment_color), size = I(1))
       } 
     }
-    p <- p %>% hide_legend
+    p <- plotly::hide_legend(p)
   
     axx <- list(
       title = paste0('component ', 1) #, showgrid = F
@@ -3219,20 +3226,20 @@ plot_3d_cell_trajectory <- function(cds,
       title = paste0('component ', 3) #, showgrid = F
     )
     
-    p <- p %>% layout(scene = list(xaxis=axx,yaxis=axy,zaxis=axz))
+    p <- p %>% plotly::layout(scene = list(xaxis=axx,yaxis=axy,zaxis=axz))
     if(is.null(point_colors_df$color_by) == FALSE) {
-      p <- p %>% add_trace(x = medoid_df$mean_d1, y = medoid_df$mean_d2, z = medoid_df$mean_d3, type = "scatter3d", text = as.character(medoid_df$color_by), mode = "text")
+      p <- p %>% plotly::add_trace(x = medoid_df$mean_d1, y = medoid_df$mean_d2, z = medoid_df$mean_d3, type = "scatter3d", text = as.character(medoid_df$color_by), mode = "text")
     }
     
     if(nrow(branch_point_df_source) > 0) {
-      p <- p %>% add_trace(x = branch_point_df_source$source_prin_graph_dim_1, y = branch_point_df_source$source_prin_graph_dim_2, z = branch_point_df_source$source_prin_graph_dim_3, type = "scatter3d", text = as.character(branch_point_df_source$branch_point_idx), mode = "text", color = I('black'))
-      p <- p %>% add_trace(x = branch_point_df_source$source_prin_graph_dim_1, y = branch_point_df_source$source_prin_graph_dim_2, z = branch_point_df_source$source_prin_graph_dim_3, 
+      p <- p %>% plotly::add_trace(x = branch_point_df_source$source_prin_graph_dim_1, y = branch_point_df_source$source_prin_graph_dim_2, z = branch_point_df_source$source_prin_graph_dim_3, type = "scatter3d", text = as.character(branch_point_df_source$branch_point_idx), mode = "text", color = I('black'))
+      p <- p %>% plotly::add_trace(x = branch_point_df_source$source_prin_graph_dim_1, y = branch_point_df_source$source_prin_graph_dim_2, z = branch_point_df_source$source_prin_graph_dim_3, 
         type = "scatter3d", mode = "markers", marker = list(color = I('red'), size = 10))
     }
     
     if(nrow(branch_point_df_target) > 0) {
-      p <- p %>% add_trace(x = branch_point_df_target$target_prin_graph_dim_1, y = branch_point_df_target$target_prin_graph_dim_2, z = branch_point_df_target$target_prin_graph_dim_3, type = "scatter3d", text = as.character(branch_point_df_target$branch_point_idx), mode = "text", color = I('black'))
-      p <- p %>% add_trace(x = branch_point_df_target$target_prin_graph_dim_1, y = branch_point_df_target$target_prin_graph_dim_2, z = branch_point_df_target$target_prin_graph_dim_3, 
+      p <- p %>% plotly::add_trace(x = branch_point_df_target$target_prin_graph_dim_1, y = branch_point_df_target$target_prin_graph_dim_2, z = branch_point_df_target$target_prin_graph_dim_3, type = "scatter3d", text = as.character(branch_point_df_target$branch_point_idx), mode = "text", color = I('black'))
+      p <- p %>% plotly::add_trace(x = branch_point_df_target$target_prin_graph_dim_1, y = branch_point_df_target$target_prin_graph_dim_2, z = branch_point_df_target$target_prin_graph_dim_3, 
         type = "scatter3d", mode = "markers",  marker = list(color = I('red'), size = 10))
     }
 
@@ -3252,7 +3259,7 @@ plot_3d_cell_trajectory <- function(cds,
       rgl.snapshot(image_filename)
       graphics.off()
     } else {
-      orca(p, image_filename)    
+      plotly::orca(p, image_filename)    
     }
   }
   
@@ -3944,55 +3951,6 @@ plot_markers_cluster <- function(cds,
     return(g)
   }
     
-}
-
-#' Function used to plot the PAGA graph 
-#' @param cds CellDataSet for the experiment
-#' @param partition_names Which partiton groups (column in the pData) should be used to calculate the connectivity between partitions
-#' @param color_by the cell attribute (e.g. the column of pData(cds)) to map to each cell's color
-#' @param layout A layout function from igraph to layout the PAGA graph 
-#' @param max_vertex_size The maximum value for the vertex size 
-#' @param max_edge_width The maximum value for the edge width 
-#' @param vertex_label_cex The size of vertex label 
-#' @export
-plot_PAGA_graph <- function(cds, 
-                            partition_names = 'Cluster', 
-                            color_by = 'Cluster', 
-                            layout = layout.drl,
-                            max_vertex_size = 10, 
-                            max_edge_width = 2,
-                            vertex_label_cex = 1) {  
-  if(!(partition_names %in% colnames(pData(cds)))) {
-    stop(paste0('Error: please make sure pData has a column with the name ', partition_names))
-  }
-
-  if(!(color_by %in% colnames(pData(cds)))) {
-    stop(paste0('Error: please make sure pData has a column with the name ', color_by))
-  }
-
-  partition_names_vec <- pData(cds)[, partition_names]
-  
-  cluster_graph_res <- cds@auxClusteringData$partitionCells$cluster_graph_res
-
-  if(vcount(cluster_graph_res$cluster_g) != length(unique(partition_names_vec))) {
-    stop('Error: please make sure partition_names is the same you used during the partitionCells step')
-  }
-
-  cell_num_in_gp_df <- pData(cds) %>% dplyr::arrange_(partition_names) %>% dplyr::group_by_(partition_names) %>% 
-    dplyr::mutate(cell_num_in_gp = dplyr::n()) %>% dplyr::select_(partition_names, color_by, "cell_num_in_gp") %>% unique
-  
-  color_by_vec <- unlist(cell_num_in_gp_df[, color_by])
-  col_vec <- viridisLite::viridis(length(unique(color_by_vec)), option = 'D')
-  names(col_vec) <- unique(color_by_vec)
-  
-  V(cluster_graph_res$cluster_g)$color <- col_vec[unlist(cell_num_in_gp_df[, color_by])]
-
-  igraph::plot.igraph(cluster_graph_res$cluster_g, vertex.color = col_vec[unlist(cell_num_in_gp_df[, color_by])], 
-    vertex.size = cell_num_in_gp_df$cell_num_in_gp / max(cell_num_in_gp_df$cell_num_in_gp) * max_vertex_size, 
-    vertex.label.color = 'darkgray', vertex.label.cex = vertex_label_cex, layout = layout, 
-    edge.width = -log(E(cluster_graph_res$cluster_g)$weight) / 
-                max(-log(E(cluster_graph_res$cluster_g)$weight)) * max_edge_width) 
-  
 }
 
 

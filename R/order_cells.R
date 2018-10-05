@@ -1711,7 +1711,7 @@ traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_
                  line_antialias=TRUE)
       points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
       while(sum(sel) < 1) {
-        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
         if(!length(ans)) break
         ans <- which(!sel)[ans]
         #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
@@ -1730,7 +1730,7 @@ traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_
                  line_antialias=TRUE)
       points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
       while(sum(sel) < num_roots) {
-        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+        ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
         if(!length(ans)) break
         ans <- which(!sel)[ans]
         #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
@@ -1907,7 +1907,7 @@ selectTrajectoryRoots <- function(cds, x=1, y=2, num_roots = NULL, pch = 19, ...
                line_antialias=TRUE)
     points3d(Matrix::t(reduced_dim_coords[1:3,]), col="black")
     while(sum(sel) < num_roots) {
-      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("left", "right"), ...)  
+      ans <- identify3d(Matrix::t(reduced_dim_coords[1:3,!sel]), labels = which(!sel), n = 1, buttons = c("right", "middle"), ...)  
       if(!length(ans)) break
       ans <- which(!sel)[ans]
       #points3d(Matrix::t(reduced_dim_coords[1:3,ans]), col="red")
