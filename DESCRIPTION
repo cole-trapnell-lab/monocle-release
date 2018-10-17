@@ -60,7 +60,7 @@ Imports:
     matrixStats,
     doParallel,
     pbmcapply,
-    VGAM,
+    VGAM (== 1.0-5),
     IRanges,
     pbapply,
     viridisLite
