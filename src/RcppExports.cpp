@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // jaccard_coeff
 NumericMatrix jaccard_coeff(SEXP R_idx, SEXP R_weight);
-RcppExport SEXP monocle_jaccard_coeff(SEXP R_idxSEXP, SEXP R_weightSEXP) {
+RcppExport SEXP _monocle_jaccard_coeff(SEXP R_idxSEXP, SEXP R_weightSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +19,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"monocle_jaccard_coeff", (DL_FUNC) &monocle_jaccard_coeff, 2},
+    {"_monocle_jaccard_coeff", (DL_FUNC) &_monocle_jaccard_coeff, 2},
     {NULL, NULL, 0}
 };
 

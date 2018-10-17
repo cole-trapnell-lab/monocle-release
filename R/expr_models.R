@@ -39,7 +39,7 @@ fit_model_helper <- function(x,
             }
         }
     }
-    else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal", "binomialff")) {
+    else if (expressionFamily@vfamily %in% c("uninormal", "binomialff")) {
         f_expression <- x
     }
     else {
@@ -64,7 +64,7 @@ fit_model_helper <- function(x,
         if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
             disp_guess <- calculate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
             backup_expression_family <- negbinomial()
-        }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+        }else if (expressionFamily@vfamily %in% c("uninormal")){
           backup_expression_family <- NULL
         }else if (expressionFamily@vfamily %in% c("binomialff")){
           backup_expression_family <- NULL
@@ -152,7 +152,7 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
       if (is.null(x)) { NA } else {
           if (x@family@vfamily %in% c("negbinomial", "negbinomial.size")) {
               predict(x, newdata = newdata, type = response_type)
-          } else if (x@family@vfamily %in% c("gaussianff")) {
+          } else if (x@family@vfamily %in% c("uninormal")) {
               predict(x, newdata = newdata, type = response_type)
           }
           else {
@@ -402,27 +402,6 @@ parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=
   #coefs
   list(fit, coefs)
 }
-
-# parametricDispersionFit <- function( means, disps )
-# {
-#   coefs <- c( 1e-6, 1 )
-#   iter <- 0
-#
-#     residuals <- disps / ( coefs[1] + coefs[2] / means )
-#     good <- which( (residuals > 1e-4) & (residuals < 10000) )
-#     fit <- vglm( log(disps[good]) ~ log(means[good]), family=gaussianff())
-#     oldcoefs <- coefs
-#     coefs <- coefficients(fit)
-#
-#     iter <- iter + 1
-#     print(coefs)
-#   names( coefs ) <- c( "asymptDisp", "extraPois" )
-#   ans <- function( q )
-#     exp(coefs[1] + coefs[2] * log(q))
-#   #ans
-#   coefs
-# }
-
 
 #' Return a variance-stabilized matrix of expression values
 #'

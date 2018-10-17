@@ -20,7 +20,7 @@ Depends:
     Matrix (>= 1.2-6),
     Biobase,
     ggplot2 (>= 1.0.0),
-    VGAM (>= 1.0-1),
+    VGAM (>= 1.0-6),
     DDRTree (>= 0.1.4),
 Imports:
     parallel,

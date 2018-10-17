@@ -42,7 +42,7 @@ diff_test_helper <- function(x,
           expressionFamily <- negbinomial.size(size=1/disp_guess)
       }
     }
-  }else if (expressionFamily@vfamily %in% c("gaussianff", "uninormal")){
+  }else if (expressionFamily@vfamily %in% c("uninormal")){
     f_expression <- x
   }else if (expressionFamily@vfamily %in% c("binomialff")){
     f_expression <- x

@@ -149,7 +149,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
-      expressionFamily <- gaussianff()
+      expressionFamily <- uninormal()
     } else {
       expressionFamily <- tobit()
     }
@@ -232,7 +232,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     if(all(data == floor(data))) {
       expressionFamily <- negbinomial.size()
     } else if(any(data < 0)){
-      expressionFamily <- gaussianff()
+      expressionFamily <- uninormal()
     } else {
       expressionFamily <- tobit()
     }

@@ -1263,7 +1263,7 @@ normalize_expr_data <- function(cds,
     }else{
       stop("Error: the only normalization methods supported with Tobit-distributed (e.g. FPKM/TPM) data are 'log' (recommended) or 'none'")
     }
-  }else if (cds@expressionFamily@vfamily == "gaussianff") {
+  }else if (cds@expressionFamily@vfamily == "uninormal") {
     if (norm_method == "none"){
       FM <- FM + pseudo_expr
     }else{

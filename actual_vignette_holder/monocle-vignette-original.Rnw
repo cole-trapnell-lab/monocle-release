@@ -422,7 +422,7 @@ Monocle works well with both relative expression data and count-based measures (
  \hline
  \noalign{\smallskip}
 
- \Rfunction{gaussianff()} & log-transformed FPKM/TPMs, Ct values from single-cell qPCR & If you want to use Monocle on data you have already transformed to be normally distributed, you can use this function, though some Monocle features may not work well. 
+ \Rfunction{uninormal()} & log-transformed FPKM/TPMs, Ct values from single-cell qPCR & If you want to use Monocle on data you have already transformed to be normally distributed, you can use this function, though some Monocle features may not work well. 
  \end{tabular}
  
  \textbf{Using the wrong expressionFamily for your data will lead to bad results}, errors from Monocle, or both. However, if you have FPKM/TPM data, you can still use negative binomial if you first convert your relative expression values to transcript counts using \Rfunction{relative2abs}. This often leads to much more accurate results than using \Rfunction{tobit()}. See \ref{conv_rel2abs} for details. 
