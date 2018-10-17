@@ -1,12 +1,17 @@
 language: r
 sudo: required
-dist: trusty
-bioc_required: true
 cache: packages
-warnings_are_errors: true
+env:
+  global:
+  - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
+  - HDF5_VERSION=1.8.13
+  - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+before_install:
+- chmod +x travis_setup.sh
+- "./travis_setup.sh"
 r:
-  - bioc-devel
-  - bioc-release
-install:
- - R -e 'install.packages("devtools")'
- - R -e 'devtools::install(dependencies = TRUE, upgrade_dependencies = TRUE)'
+- bioc-devel
+- bioc-release
+notifications:
+  slack:
+    secure: 0hpl3DycxCRsPhOzZFhZshixrWJmoYvFkk8c+9948oWfxhvE+g8i9HanJbB3UY8QA6g4yqRWsqpBbD09T62FvV8j1TcuF4bq03RkjGt2cpQyzkwKVpxPVLddt+YzH1heke+bczOQBgPUscJfum2/dPgtw452NsmqLlmZuMSSHcVAjiDlfF3OkXdpj2YTAHSRFdMu2UQosevbSAZMIGWUPMimKeEVgsJhoa3+D+etq+k91+Dilfgm4NlNf914A1I4i2ppImst0Z+QjAFFSjnKzqLbf0dpWz/imZzWp06uZFAWoKTp2HK/FK627+Kh3yofOIOhqgz4YjHCffNSdZ45cDSuQ/05UMeaaZL5OsowG1Lw0V1t56C3GTLHyey8Ex5Pvq4JT3rS7lIRLtg+H/3oeKMhJYyJfXgoiz+WQHm4q5Hfrn+DEOnS5do3RMw1cobmF4HkGwz4UP3EBco7gJNyfCVacm1TTWw4zNxSoLtuk8h3Rg0/S7YNzzXNI9OtuUC+FQML692MXTR4xBiu0P/gFNPykNwKa+L8ouLrvxmRpthrzBilWxXNdAeyqZoc61O8aUk2dWk8iwF0pNtCcdQnOnU7Atif4H0NkD31r3UY+lWDg5l2GN7EGEQ6e6gbbPP8dWy2PoY16ycDuzsUZl3zVnZTi8/6+bPxShNXt9kyM+s=
