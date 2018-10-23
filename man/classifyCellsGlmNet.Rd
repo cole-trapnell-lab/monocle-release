@@ -4,8 +4,8 @@
 \alias{classifyCellsGlmNet}
 \title{classifyCellsGlmNet}
 \usage{
-classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2, min_observations = 8,
-  max_training_samples = 10000, cores = 1)
+classifyCellsGlmNet(cds, cth, rank_prob_ratio = 2,
+  min_observations = 8, max_training_samples = 10000, cores = 1)
 }
 \arguments{
 \item{cds}{CellDataSet containing cells that will be clustered}

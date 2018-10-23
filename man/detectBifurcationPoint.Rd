@@ -5,12 +5,13 @@
 \title{Calculate divergence times for branch-dependent genes}
 \usage{
 detectBifurcationPoint(str_log_df = NULL, ILRs_threshold = 0.1,
-  detect_all = T, cds = cds, Branch = "Branch", branch_point = NULL,
-  branch_states = c(2, 3), stretch = T, cores = 1,
-  trend_formula = "~sm.ns(Pseudotime, df = 3)", ILRs_limit = 3,
-  relative_expr = TRUE, label_by_short_name = TRUE, useVST = FALSE,
-  round_exprs = FALSE, output_type = "all", return_cross_point = T,
-  file = "bifurcation_heatmap", verbose = FALSE, ...)
+  detect_all = T, cds = cds, Branch = "Branch",
+  branch_point = NULL, branch_states = c(2, 3), stretch = T,
+  cores = 1, trend_formula = "~sm.ns(Pseudotime, df = 3)",
+  ILRs_limit = 3, relative_expr = TRUE, label_by_short_name = TRUE,
+  useVST = FALSE, round_exprs = FALSE, output_type = "all",
+  return_cross_point = T, file = "bifurcation_heatmap",
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{str_log_df}{the ILRs dataframe calculated from calILRs function. If this data.frame is provided, all the following parameters are ignored. Note that we need to only use the ILRs after the bifurcation point if we duplicated the progenitor cell state.}

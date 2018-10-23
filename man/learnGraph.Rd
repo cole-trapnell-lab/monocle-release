@@ -4,12 +4,13 @@
 \alias{learnGraph}
 \title{Learn principal graph from the reduced space using reversed graph embedding}
 \usage{
-learnGraph(cds, max_components = 2, rge_method = c("SimplePPT", "L1graph",
-  "DDRTree"), auto_param_selection = TRUE,
+learnGraph(cds, max_components = 2, rge_method = c("SimplePPT",
+  "L1graph", "DDRTree"), auto_param_selection = TRUE,
   partition_group = "louvain_component", do_partition = TRUE,
   scale = FALSE, close_loop = FALSE, euclidean_distance_ratio = 1,
   geodestic_distance_ratio = 1/3, prune_graph = TRUE,
-  minimal_branch_len = 10, verbose = FALSE, ...)
+  minimal_branch_len = 10, orthogonal_proj_tip = FALSE,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}
@@ -38,6 +39,8 @@ need to be satisfied to introduce the edge for loop closure.)}
 \item{prune_graph}{Whether or not to perform an additional run of graph pruning to remove small insignificant branches}
 
 \item{minimal_branch_len}{The minimal length of the diameter path for a branch to be preserved during graph pruning procedure}
+
+\item{orthogonal_proj_tip}{Whether to perform orthogonal projection for cells corresponding to the tip principal points. Default to be FALSE}
 
 \item{verbose}{Whether to emit verbose output during dimensionality reduction}
 

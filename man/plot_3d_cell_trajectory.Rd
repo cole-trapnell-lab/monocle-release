@@ -11,7 +11,8 @@ plot_3d_cell_trajectory(cds, downsample_size = NULL, dim = c(1, 2, 3),
   show_group_labels = TRUE, show_branch_points = TRUE,
   webGL_filename = NULL, image_filename = NULL, obj_filename = NULL,
   scale_expr = TRUE, width = 800, height = 600, view_matrix = NULL,
-  useNULL_GLdev = !interactive(), text_cex = 1, use_plotly = FALSE, ...)
+  useNULL_GLdev = !interactive(), text_cex = 1, use_plotly = FALSE,
+  ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

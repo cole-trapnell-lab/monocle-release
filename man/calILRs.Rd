@@ -6,10 +6,10 @@
 \usage{
 calILRs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
   branch_point = 1, trajectory_states = NULL, relative_expr = TRUE,
-  stretch = TRUE, cores = 1, ILRs_limit = 3, label_by_short_name = TRUE,
-  useVST = FALSE, round_exprs = FALSE, output_type = "all",
-  branch_labels = NULL, file = NULL, return_all = F, verbose = FALSE,
-  ...)
+  stretch = TRUE, cores = 1, ILRs_limit = 3,
+  label_by_short_name = TRUE, useVST = FALSE, round_exprs = FALSE,
+  output_type = "all", branch_labels = NULL, file = NULL,
+  return_all = F, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}
