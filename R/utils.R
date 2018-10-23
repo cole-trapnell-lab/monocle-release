@@ -669,12 +669,11 @@ sparse_prcomp_irlba <- function(x, n = 3, retx = TRUE, center = TRUE, scale. = F
 
 #' Select cells in an RGL scene
 #' 
-#' This function provides an interactive session to allow the users to select multiple cells or region for downsampling analysis  
+#' This function provides an interactive session to allow the users to select multiple cells or region
 #' @param cds CellDataSet that you'd like to select cells from
 #' @param show_pp_only whether to show only the principal points. You should always turn this on for large datasets to avoid computational overloading.
-#' @param return_index whether to return the index or return the cds. Default to be FALSE
 #' @export
-selectCells <- function(cds, show_pp_only = FALSE, return_index = FALSE) {
+selectCells <- function(cds, show_pp_only = FALSE) {
   if(show_pp_only) {
     data_matrix <- reducedDimK(cds)
   }
@@ -691,18 +690,24 @@ selectCells <- function(cds, show_pp_only = FALSE, return_index = FALSE) {
   radius <- min(diff(apply(data_matrix, 1, range))) * 0.05
   ids <- plot3d(data_df)
   id <- selectpoints3d(ids["data"], value = FALSE,
+                       button="right",
                        multiple = function(ids) {
                          spheres3d(data_df[ids[, "index"], , drop = FALSE], color = "red", 
                                    alpha = 0.3, radius = radius)
                          TRUE
                        })
-  if(return_index) {
-    return(id[, 'index'])
-  } else { 
-    pData(cds)$Marked <- FALSE
-    pData(cds)$Marked[id[, 'index']] <- TRUE      
+  
+  closest_vertex <- V(minSpanningTree(cds))[cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex]$name
+  if (show_pp_only){
+    cell_indices = which(closest_vertex %in% colnames(data_matrix)[id[, 'index']])
+  }else{
+    cell_indices = id[, 'index']
   }
-  return(cds)
+  
+  marked = rep(FALSE, ncol(cds)) 
+  marked[cell_indices] = TRUE
+  names(marked) = row.names(pData(cds))
+  return(marked)
 }
 
 #' This function reads in a list of 10X pipeline output directories and output a Monocle cell dataset for downstream analysis
