@@ -33,7 +33,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   # 3. run the distance function to assign pseudotime for each cell 
   closest_vertex <- findNearestVertex(Y[, root_cell, drop = F], Z)
   closest_vertex_id <- colnames(cds)[closest_vertex]
-  cds <- project2MST(cds, project_point_to_line_segment, verbose)
+  # We shouldn't need to re-project. This is done at the end of learnGraph.
+  #cds <- project2MST(cds, project_point_to_line_segment, verbose)
   cell_wise_graph <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree
   cell_wise_distances <- distances(cell_wise_graph, v = closest_vertex_id)
   
