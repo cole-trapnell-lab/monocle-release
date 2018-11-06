@@ -947,7 +947,7 @@ subsetCDS <- function(cds, cells, principal_nodes = NULL){
     cds_subset@auxClusteringData$louvain$louvain_res$distMatrix <- cds@auxClusteringData$louvain$louvain_res$distMatrix[match(cells, colnames(cds)), , drop = F]
     cds_subset@auxClusteringData$louvain$louvain_res$optim_res$membership <- cds@auxClusteringData$louvain$louvain_res$optim_res$membership[match(cells, colnames(cds))]
   } else if('partitionCells' %in% names(cds@auxClusteringData)) {
-    cds_subset@auxClusteringData$partitionCells$g <- induced_subgraph(cds@auxClusteringData$partitionCells$g, cells)
+    cds_subset@auxClusteringData$partitionCells$g <- induced_subgraph(cds@auxClusteringData$partitionCells$cluster_graph_res$cluster_g, cells)
     cds_subset@auxClusteringData$partitionCells$relations <- subset(cds@auxClusteringData$partitionCells$relations, from %in% cells & to %in% cells)
     cds_subset@auxClusteringData$partitionCells$distMatrix <- cds@auxClusteringData$partitionCells$distMatrix[match(cells, colnames(cds)), , drop = F]
     cds_subset@auxClusteringData$partitionCells$optim_res$membership <- cds@auxClusteringData$partitionCells$optim_res$membership[match(cells, colnames(cds))]

@@ -678,38 +678,38 @@ weight_of_ordering <- function(ordering, dist_matrix)
   return(time_delta)
 }
 
-#' @importFrom igraph V distances
-extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
-{
-  pr_graph <- minSpanningTree(cds)
-  
-  res <- list(subtree = pr_graph, root = root_cell)
-
-  parents = rep(NA, length(V(pr_graph)))
-  states = rep(NA, length(V(pr_graph)))
-
-  if(any(is.na(E(pr_graph)$weight))) {
-    E(pr_graph)$weight <- 1
-  }  
-  pr_graph_node_distances = distances(pr_graph, v=root_cell)
-  if (length(root_cell) > 1){
-    node_names = colnames(pr_graph_node_distances)
-    pseudotimes = apply(pr_graph_node_distances, 2, min)
-  }else{
-    node_names = names(pr_graph_node_distances)
-    pseudotimes = pr_graph_node_distances
-  }
-  
-  
-  names(pseudotimes) <- node_names
-  
-  ordering_df <- data.frame(sample_name = V(pr_graph)$name,
-                            cell_state = states,
-                            pseudo_time = as.vector(pseudotimes),
-                            parent = parents)
-  row.names(ordering_df) <- ordering_df$sample_name
-  return(ordering_df)
-}
+#' #' @importFrom igraph V distances
+#' extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
+#' {
+#'   pr_graph <- minSpanningTree(cds)
+#'   
+#'   res <- list(subtree = pr_graph, root = root_cell)
+#' 
+#'   parents = rep(NA, length(V(pr_graph)))
+#'   states = rep(NA, length(V(pr_graph)))
+#' 
+#'   if(any(is.na(E(pr_graph)$weight))) {
+#'     E(pr_graph)$weight <- 1
+#'   }  
+#'   pr_graph_node_distances = distances(pr_graph, v=root_cell)
+#'   if (length(root_cell) > 1){
+#'     node_names = colnames(pr_graph_node_distances)
+#'     pseudotimes = apply(pr_graph_node_distances, 2, min)
+#'   }else{
+#'     node_names = names(pr_graph_node_distances)
+#'     pseudotimes = pr_graph_node_distances
+#'   }
+#'   
+#'   
+#'   names(pseudotimes) <- node_names
+#'   
+#'   ordering_df <- data.frame(sample_name = V(pr_graph)$name,
+#'                             cell_state = states,
+#'                             pseudo_time = as.vector(pseudotimes),
+#'                             parent = parents)
+#'   row.names(ordering_df) <- ordering_df$sample_name
+#'   return(ordering_df)
+#' }
 
 #' Assign a state for each cell.
 #'
