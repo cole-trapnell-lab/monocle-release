@@ -4,8 +4,9 @@
 \alias{plot_clusters}
 \title{Plots kinetic clusters of genes.}
 \usage{
-plot_clusters(cds, clustering, drawSummary = TRUE, sumFun = mean_cl_boot,
-  ncol = NULL, nrow = NULL, row_samples = NULL, callout_ids = NULL)
+plot_clusters(cds, clustering, drawSummary = TRUE,
+  sumFun = mean_cl_boot, ncol = NULL, nrow = NULL,
+  row_samples = NULL, callout_ids = NULL)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

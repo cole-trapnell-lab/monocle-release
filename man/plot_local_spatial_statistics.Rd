@@ -4,8 +4,9 @@
 \alias{plot_local_spatial_statistics}
 \title{plot the local moran's I or the local g for the cells}
 \usage{
-plot_local_spatial_statistics(cds, markers, method = "local_G", log = TRUE,
-  tabulate = TRUE, zero.policy = TRUE, return_all = FALSE, ...)
+plot_local_spatial_statistics(cds, markers, method = "local_G",
+  log = TRUE, tabulate = TRUE, zero.policy = TRUE,
+  return_all = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

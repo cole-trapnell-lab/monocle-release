@@ -4,8 +4,8 @@
 \alias{plot_cell_fdl}
 \title{Plots force directed layout of cells .}
 \usage{
-plot_cell_fdl(cds, layout = NULL, color_by = "Pseudotime", markers = NULL,
-  cell_size = 0.5, cell_link_size = 1)
+plot_cell_fdl(cds, layout = NULL, color_by = "Pseudotime",
+  markers = NULL, cell_size = 0.5, cell_link_size = 1)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

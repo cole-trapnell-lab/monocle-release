@@ -12,7 +12,7 @@ setOrderingFilter <- function(cds, ordering_genes){
 }
 
 #' @importFrom igraph V distances
-extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
+extract_general_graph_ordering <- function(cds, root_cell, orthogonal_proj_tip = FALSE, verbose=T)
 {
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
@@ -33,8 +33,10 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
   # 3. run the distance function to assign pseudotime for each cell 
   closest_vertex <- findNearestVertex(Y[, root_cell, drop = F], Z)
   closest_vertex_id <- colnames(cds)[closest_vertex]
+
   # We shouldn't need to re-project. This is done at the end of learnGraph.
   #cds <- project2MST(cds, project_point_to_line_segment, verbose)
+
   cell_wise_graph <- cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_tree
   cell_wise_distances <- distances(cell_wise_graph, v = closest_vertex_id)
   
@@ -98,6 +100,8 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 #' @param root_pr_nodes The starting principal points. We learn a principal graph that passes through the middle of the data points and use it to represent the developmental process. 
 #' @param root_cells The starting cells. Each cell corresponds to a principal point and multiple cells can correspond to the same principal point.
 #' @param reverse Whether to reverse the direction of the trajectory
+#' @param orthogonal_proj_tip Whether to perform orthogonal projection for cells corresponding to the tip principal points. Default to be FALSE 
+#' @param verbose Whether to show running information for orderCells 
 #' 
 #' @importFrom stats dist
 #' @importFrom igraph graph.adjacency V as.undirected
@@ -107,10 +111,12 @@ extract_general_graph_ordering <- function(cds, root_cell, verbose=T)
 orderCells <- function(cds,
                        root_pr_nodes=NULL,
                        root_cells=NULL,
-                       reverse = FALSE){
+                       reverse = FALSE,
+                       orthogonal_proj_tip = FALSE,
+                       verbose = FALSE){
   
   if(class(cds)[1] != "CellDataSet") {
-    stop("Error cds is not of type 'CellDataSet'")
+    stop("Error: cds is not of type 'CellDataSet'")
   }
   
   if (is.null(cds@dim_reduce_type)){
@@ -165,7 +171,7 @@ orderCells <- function(cds,
 # =======
   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
   
-  cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
+  cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes, orthogonal_proj_tip, verbose)
   pData(cds)$Pseudotime = cc_ordering[row.names(pData(cds)), ]$pseudo_time
   # closest_vertex = cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_closest_vertex
   # pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
@@ -834,6 +840,7 @@ partitionCells <- function(cds,
 #' need to be satisfied to introduce the edge for loop closure.)    
 #' @param prune_graph Whether or not to perform an additional run of graph pruning to remove small insignificant branches
 #' @param minimal_branch_len The minimal length of the diameter path for a branch to be preserved during graph pruning procedure
+#' @param orthogonal_proj_tip Whether to perform orthogonal projection for cells corresponding to the tip principal points. Default to be FALSE 
 #' @param verbose Whether to emit verbose output during dimensionality reduction
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
@@ -863,6 +870,7 @@ learnGraph <- function(cds,
                        geodestic_distance_ratio = 1/3, 
                        prune_graph = TRUE, 
                        minimal_branch_len = 10, 
+                       orthogonal_proj_tip = FALSE, 
                        verbose = FALSE, 
                        ...){
   rge_method <- rge_method[1]
@@ -1308,7 +1316,7 @@ learnGraph <- function(cds,
   
   cds@rge_method = rge_method
   
-  cds <- project2MST(cds, project_point_to_line_segment, verbose) # recalculate the pr_graph_cell_proj_closest_vertex using the projection method instead of relying on the R matrix
+  cds <- project2MST(cds, project_point_to_line_segment, orthogonal_proj_tip, verbose) # recalculate the pr_graph_cell_proj_closest_vertex using the projection method instead of relying on the R matrix
   
   cds 
 }
@@ -1406,7 +1414,7 @@ findNearestPointOnMST <- function(cds){
 #' @importFrom igraph graph.adjacency V neighborhood
 #' @importFrom stats dist
 #' @importFrom dplyr do group_by add_row mutate
-project2MST <- function(cds, Projection_Method, verbose){
+project2MST <- function(cds, Projection_Method, orthogonal_proj_tip = FALSE, verbose){
   dp_mst <- minSpanningTree(cds)
   Z <- reducedDimS(cds)
   Y <- reducedDimK(cds)
@@ -1437,7 +1445,11 @@ project2MST <- function(cds, Projection_Method, verbose){
 
       for(neighbor in neighbors) {
         if(closest_vertex_names[i] %in% tip_leaves) {
-          tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #projPointOnLine: always perform orthogonal projection to the line
+          if(orthogonal_proj_tip) {
+            tmp <- projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #projPointOnLine: always perform orthogonal projection to the line            
+          } else {
+            tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)]) #projPointOnLine: always perform orthogonal projection to the line            
+          }
         }
         else {
           tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], neighbor)])

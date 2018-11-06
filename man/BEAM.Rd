@@ -7,8 +7,8 @@
 BEAM(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
   branch_states = NULL, branch_point = 1, relative_expr = TRUE,
-  branch_labels = NULL, group_by = NULL, verbose = FALSE, cores = 1,
-  ...)
+  branch_labels = NULL, group_by = NULL, verbose = FALSE,
+  cores = 1, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
