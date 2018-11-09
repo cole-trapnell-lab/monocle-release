@@ -744,7 +744,7 @@ find_cluster_markers <- function(cds,
         perfect_specificity <- rep(0.0, nrow(class_df))
         perfect_specificity[cell_type_i] <- 1.0
         if(sum(class_df$percentage) > 0) {
-          specificity[cell_type_i] <- 1 - monocle:::JSdistVec(monocle:::makeprobsvec(class_df$percentage), perfect_specificity)
+          specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$percentage), perfect_specificity)
         } else {
           specificity[cell_type_i] <- 0
         }
