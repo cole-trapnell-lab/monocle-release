@@ -85,4 +85,4 @@ biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Infrastructure, DataImport, DataRepresentation, Visualization,
     Clustering, MultipleComparison, QualityControl
 Packaged: 2014-04-07 21:31:54 UTC; sarora
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1

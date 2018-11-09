@@ -246,7 +246,10 @@ differentialGeneTest <- function(cds,
   diff_test_res[row.names(cds), ] # make sure gene name ordering in the DEG test result is the same as the CDS
 }
 
-#' Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
+#' @title Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
+#' @description This function first retrieves the association from each cell to any principal points, then builds kNN graph for all cells
+#' while removing edges that connected between groups that disconnected in the corresponding principal graph and
+#' finally uses this kNN graph to calculate a global Moran’s I and get the p-value
 #' @param cds The cellDataSet object where the neighbors list is calculated from 
 #' @param  k The maximum number of nearest neighbors to compute
 #' @param verbose A logic flag that determines whether or not to print execution details
@@ -254,10 +257,8 @@ differentialGeneTest <- function(cds,
 #' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
 #' @importFrom igraph get.adjacency
 calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive = FALSE, verbose = FALSE) {
-  # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
-  # remove edges that connected between groups that disconnected in the corresponding principal graph and
-  # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  # interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
+# interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
+
     if(verbose) {
       message("retrieve the matrices for Moran's I test...")
     }
@@ -653,12 +654,9 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 
 #' Find marker genes for each group of cells
 #'
-#' @description Tests each gene for differential expression as a function of pseudo time
-#' or according to other covariates are specified. \code{differentialGeneTest} is
-#' Monocle's main differential analysis routine.
-#' It accepts a CellDataSet and two model formulae as input, which specify generalized
-#' lineage models as implemented by the \code{VGAM} package.
-#' In Monocle 3, we incorporated the find_cluster_markers to find marker genes for each group of cells.
+#' @description 
+#' In Monocle 3, we incorporated the find_cluster_markers to find marker genes for each group of cells. 
+#' This function can be integrated either with \code{with principalGraphTest()} or \code{differentialGeneTest()} function (or none). 
 #' In order to calculate the specificity of each gene to each cluster, we first create a perfect specific
 #' distribution (Q) of each gene by assigning probability 1 to one particular cluster while all 0 to any
 #' other clusters. Then we calculate the percentage of cells expressed in each cluster and convert this percentage
@@ -670,26 +668,29 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
 #' where \eqn{M \cdot \frac{1}{2} \cdot P + Q}{} and \eqn{D(A|B)}{} is the Kullback-Leibler divergence.
 
 #' @param cds a CellDataSet object upon which to perform this operation
-#' @param pr_graph_test_res the result returned from principalGraphTest
-#' @param group_by a column in the pData specifying the groups for calculating the specificities. Its default value is Cluster.
-#' @param qval_threshold The q-value threshold for genes to be selected
-#' @param morans_I_threshold The lowest Morans' I threshold for selecting genes
+#' @param pr_graph_test_res the result returned from principalGraphTest. Default to be NULL.  
+#' @param deg_test_res the result returned from differentialGeneTest. Default to be NULL. 
+#' @param group_by a column in the pData specifying the groups for calculating the specificities. Its default value is "Cluster".
+#' @param qval_threshold The q-value threshold for genes to be selected. Used only when either pr_graph_test_res or deg_test_res provided
+#' @param morans_I_threshold The lowest Morans' I threshold for selecting genes. Used only when either pr_graph_test_res provided
 #' @param lower_threshold The lowest gene expression threshold for genes to be considered as expressed
 #' @param pseudocount Pseduo-count added to gene expression before calculating the log
 #' @param top_n_by_group Select top_n_by_group from each group based on the specificity
 #' @param block_size the number of genes to process per bloclk which dramatically reduces the memory footprints. Default to be 100.
 #' @param verbose Whether to show VGAM errors and warnings. Only valid for cores = 1.
 #' @param ... Additional arguments passed to function
-#' @return a tibble (Tibbles are a modern take on data frame) containing mean expression in each group (mean), percentage of cells 
-#' expressed in each group (percentage), specifity score (specifity) for each gene in each cluster and the principalGraphTest statistics 
-#' (by default, the Moran's I test), together with the information from pData. 
-#' @importFrom dplyr group_by summarize desc arrange top_n do select everything 
+#' @return a tibble (Tibbles are a modern take on data frame) containing mean expression in each group (mean), percentage of cells
+#' expressed in each group (percentage), specifity score (specifity) for each gene in each cluster and additionally, the principalGraphTest statistics
+#' (by default, the Moran's I test) if pr_graph_test_res is given or differential gene expression test result if deg_test_res is given or the fData information,
+#' together with the information from pData.
+#' @importFrom dplyr group_by summarize desc arrange top_n do select everything
 #' @importFrom reshape2 melt
 #' @seealso \code{\link[monocle]{principalGraphTest}}
 #' @export
 #'
 find_cluster_markers <- function(cds,
-                                pr_graph_test_res,
+                                pr_graph_test_res = NULL,
+                                deg_test_res = NULL, 
                                 group_by = 'Cluster',
                                 qval_threshold = 0.05,
                                 morans_I_threshold = 0.25,
@@ -703,10 +704,16 @@ find_cluster_markers <- function(cds,
     stop('Please ensure group_by is included in the pData')
   }
 
-  gene_ids <- row.names(subset(pr_graph_test_res, qval < qval_threshold & morans_I > morans_I_threshold))
+  if(is.null(pr_graph_test_res) & is.null(deg_test_res)) {
+      gene_ids <- row.names(cds) 
+  } else if(!(is.null(pr_graph_test_res))) {
+      gene_ids <- row.names(subset(pr_graph_test_res, qval < qval_threshold & morans_I > morans_I_threshold))
+  } else if(!(is.null(deg_test_res))) {
+      gene_ids <- row.names(subset(deg_test_res, qval < qval_threshold))      
+  }
   num_blocks = ceiling(length(gene_ids) / block_size)
   specificity_res <- NULL
-  
+
   pb_cell_blocks <- txtProgressBar(max = num_blocks, file = "", style = 3, min = 0)
 
   for(i in 1:num_blocks) {
@@ -721,7 +728,13 @@ find_cluster_markers <- function(cds,
     exprs_mat$Group <- pData(cds)[exprs_mat$Cell, group_by]
     ExpVal <- exprs_mat %>% group_by(Group, Gene) %>% summarize(mean = log(mean(Expression) + pseudocount), percentage = sum(Expression > lower_threshold) / length(Expression), num_cells_expressed_in_group = sum(Expression > lower_threshold))
 
-    ExpVal <- merge(ExpVal, pr_graph_test_res, by.x = 'Gene', by = "row.names")
+    if(!is.null(pr_graph_test_res)) {
+        ExpVal <- merge(ExpVal, pr_graph_test_res, by.x = 'Gene', by = "row.names")
+    } else if(!is.null(deg_test_res)){
+        ExpVal <- merge(ExpVal, deg_test_res, by.x = 'Gene', by = "row.names")        
+    } else {
+        ExpVal <- merge(ExpVal, fData(cds), by.x = 'Gene', by = "row.names")        
+    }
     ExpVal$Group <- ExpVal$Group
     FUN <- function(df) {
       class_df <- data.frame(Group = df$Group, percentage = df$percentage)
@@ -731,31 +744,44 @@ find_cluster_markers <- function(cds,
         perfect_specificity <- rep(0.0, nrow(class_df))
         perfect_specificity[cell_type_i] <- 1.0
         if(sum(class_df$percentage) > 0) {
-          specificity[cell_type_i] <- 1 - JSdistVec(makeprobsvec(class_df$percentage), perfect_specificity)
+          specificity[cell_type_i] <- 1 - monocle:::JSdistVec(monocle:::makeprobsvec(class_df$percentage), perfect_specificity)
         } else {
           specificity[cell_type_i] <- 0
         }
       }
       specificity
     }
-    
+
     tmp <- ExpVal %>% group_by(Gene) %>% do({
       tmp <- dplyr::as_data_frame(.)
       tmp$specificity = FUN(tmp)
       tmp
     })
-    
+
     specificity_res <- rbind(tmp, specificity_res)
 
     setTxtProgressBar(pb = pb_cell_blocks, value = pb_cell_blocks$getVal() + 1)
   }
-  
+
   close(pb_cell_blocks)
-  
-  specificity_res <- specificity_res %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
+
+  if(!is.null(pr_graph_test_res)) {  
+      specificity_res <- specificity_res %>% arrange(Group, desc(specificity), desc(-qval), desc(morans_I))
+  } else if(!is.null(deg_test_res)) {
+     specificity_res <- specificity_res %>% arrange(Group, desc(specificity), desc(-qval))
+  } else {
+     specificity_res <- specificity_res %>% arrange(Group, desc(specificity))
+  }
+    
   if(!is.null(top_n_by_group)) {
     specificity_res <- specificity_res %>% group_by(Group) %>% top_n(n = top_n_by_group, wt = specificity)
   }
-  specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed_in_group", "percentage", everything())
+      
+  if(!is.null(pr_graph_test_res)) {
+      specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "morans_I", "morans_test_statistic",  "pval", "qval", "mean", "num_cells_expressed_in_group", "percentage", everything())
+  } else if(!is.null(deg_test_res)) {
+      specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "pval", "qval", "mean", "num_cells_expressed_in_group", "percentage", everything())
+  } else {
+      specificity_res %>% select("Group", "Gene", "gene_short_name", "specificity", "mean", "num_cells_expressed_in_group", "percentage", everything())
+  }
 }
-
