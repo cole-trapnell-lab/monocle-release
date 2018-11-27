@@ -55,6 +55,11 @@ fit_model_helper <- function(x,
             FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
                 family = expressionFamily, epsilon=1e-1))
         }
+        #FM_fit$model = NULL
+      rm(f_expression)
+      rm(disp_func)
+      rm(x)
+      rm(orig_x)
         FM_fit
     }, error = function(e) {
         print (e);
@@ -81,6 +86,10 @@ fit_model_helper <- function(x,
           }else{
             FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon = 1e-1, checkwz = TRUE))
           }
+            rm(f_expression)
+            rm(disp_func)
+            rm(x)
+            rm(orig_x)
             FM_fit
           },
           #warning = function(w) { FM_fit },
@@ -185,45 +194,6 @@ responseMatrix <- function(models, newdata = NULL, response_type="response", cor
     res_matrix
 }
 
-#' Response values
-#'
-#' Generates a matrix of response values for a set of fitted models
-#' @param models a list of models, e.g. as returned by fitModels()
-#' @param residual_type the response desired, as accepted by VGAM's predict function
-#' @param cores number of cores used for calculation
-#' @return a matrix where each row is a vector of response values for a particular feature's model, and columns are cells.
-#' @importFrom parallel detectCores mclapply
-residualMatrix <- function(models,  residual_type="response", cores = 1) {
-  res_list <- mclapply(models, function(x) {
-    if (is.null(x)) { NA } else {
-        resid(x, type = residual_type)
-    }
-  }, mc.cores = cores)
-
-  res_list_lengths <- lapply(res_list[is.na(res_list) == FALSE],
-                             length)
-  stopifnot(length(unique(res_list_lengths)) == 1)
-  num_na_fits <- length(res_list[is.na(res_list)])
-  if (num_na_fits > 0) {
-    na_matrix <- matrix(rep(rep(NA, res_list_lengths[[1]]),
-                            num_na_fits), nrow = num_na_fits)
-    row.names(na_matrix) <- names(res_list[is.na(res_list)])
-    non_na_matrix <- Matrix::t(do.call(cbind, lapply(res_list[is.na(res_list) ==
-                                                                FALSE], unlist)))
-    row.names(non_na_matrix) <- names(res_list[is.na(res_list) ==
-                                                 FALSE])
-    res_matrix <- rbind(non_na_matrix, na_matrix)
-    res_matrix <- res_matrix[names(res_list), ]
-  }
-  else {
-    res_matrix <- Matrix::t(do.call(cbind, lapply(res_list, unlist)))
-    row.names(res_matrix) <- names(res_list[is.na(res_list) ==
-                                              FALSE])
-  }
-  res_matrix
-}
-
-
 #' Fit smooth spline curves and return the response matrix
 #'
 #' This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return
@@ -288,69 +258,6 @@ genSmoothCurves <- function(cds,  new_data, trend_formula = "~sm.ns(Pseudotime, 
       }
 
 }
-#' Fit smooth spline curves and return the residuals matrix
-#'
-#' This function will fit smooth spline curves for the gene expression dynamics along pseudotime in a gene-wise manner and return
-#' the corresponding residuals matrix. This function is build on other functions (fit_models and residualsMatrix)
-#'
-#' @param cds a CellDataSet object upon which to perform this operation
-#' @param trend_formula a formula string specifying the model formula used in fitting the spline curve for each gene/feature.
-#' @param relative_expr a logic flag to determine whether or not the relative gene expression should be used
-#' @param residual_type the response desired, as accepted by VGAM's predict function
-#' @param cores the number of cores to be used while testing each gene for differential expression
-#' @importFrom Biobase pData fData
-#' @return a data frame containing the data for the fitted spline curves.
-#'
-genSmoothCurveResiduals <- function(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-                            relative_expr = T,  residual_type="response", cores = 1) {
-
-  expressionFamily <- cds@expressionFamily
-
-  if(cores > 1) {
-    expression_curve_matrix <- mcesApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr, fit_model_helper, residualMatrix,
-                                                    calculate_NB_dispersion_hint, calculate_QP_dispersion_hint){
-      environment(fit_model_helper) <- environment()
-      environment(responseMatrix) <- environment()
-      model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-                                     relative_expr = relative_expr, disp_func = cds@dispFitInfo[['blind']]$disp_func)
-      if(is.null(model_fits))
-        expression_curve <- as.data.frame(matrix(rep(NA, nrow(pData(cds))), nrow = 1))
-      else
-        expression_curve <- as.data.frame(residualMatrix(list(model_fits), residual_type=residual_type))
-      #colnames(expression_curve) <- row.names(pData(cds))
-      expression_curve
-      #return(expression_curve)
-    }, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr"), cores=cores,
-    trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr,
-    fit_model_helper = fit_model_helper, residualMatrix = residualMatrix, calculate_NB_dispersion_hint = calculate_NB_dispersion_hint,
-    calculate_QP_dispersion_hint = calculate_QP_dispersion_hint
-    )
-    expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
-    return(expression_curve_matrix)
-  }
-  else {
-    expression_curve_matrix <- smartEsApply(cds, 1, function(x, trend_formula, expressionFamily, relative_expr){
-      environment(fit_model_helper) <- environment()
-      environment(residualMatrix) <- environment()
-      model_fits <- fit_model_helper(x, modelFormulaStr = trend_formula, expressionFamily = expressionFamily,
-                                     relative_expr = relative_expr, disp_func = cds@dispFitInfo[['blind']]$disp_func)
-      if(is.null(model_fits))
-        expression_curve <-  as.data.frame(matrix(rep(NA, nrow(pData(cds))), nrow = 1))
-      else
-        expression_curve <-  as.data.frame(residualMatrix(list(model_fits), residual_type=residual_type))
-      #colnames(expression_curve) <- row.names(pData(cds))
-      expression_curve
-    },
-    convert_to_dense=TRUE,
-    trend_formula = trend_formula, expressionFamily = expressionFamily, relative_expr = relative_expr
-    )
-    expression_curve_matrix <- do.call(rbind, expression_curve_matrix)
-    row.names(expression_curve_matrix) <- row.names(fData(cds))
-    return(expression_curve_matrix)
-  }
-
-}
-
 
 ## This function was swiped from DESeq (Anders and Huber) and modified for our purposes
 #' @importFrom stats glm Gamma
