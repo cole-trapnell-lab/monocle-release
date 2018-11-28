@@ -16,93 +16,93 @@ fit_model_helper <- function(x,
                              disp_func=NULL,
                              verbose=FALSE,
                              ...){
-
-    modelFormulaStr <- paste("f_expression", modelFormulaStr,
-    sep = "")
-    orig_x <- x
-    # FIXME: should we be using this here?
-    # x <- x + pseudocount
-    if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
-        if (relative_expr) {
-            x <- x/Size_Factor
-        }
-        f_expression <- round(x)
-        if (is.null(disp_func) == FALSE) {
-            disp_guess <- calculate_NB_dispersion_hint(disp_func,
-                round(orig_x))
-            if (is.null(disp_guess) == FALSE && disp_guess >
-                0 && is.na(disp_guess) == FALSE) {
-                size_guess <- 1/disp_guess
-                if (expressionFamily@vfamily == "negbinomial")
-                  expressionFamily <- negbinomial(isize=1/disp_guess, ...)
-                else
-                  expressionFamily <- negbinomial.size(size=1/disp_guess, ...)
-            }
-        }
+  
+  modelFormulaStr <- paste("f_expression", modelFormulaStr,
+                           sep = "")
+  orig_x <- x
+  # FIXME: should we be using this here?
+  # x <- x + pseudocount
+  if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+    if (relative_expr) {
+      x <- x/Size_Factor
     }
-    else if (expressionFamily@vfamily %in% c("uninormal", "binomialff")) {
-        f_expression <- x
+    f_expression <- round(x)
+    if (is.null(disp_func) == FALSE) {
+      disp_guess <- calculate_NB_dispersion_hint(disp_func,
+                                                 round(orig_x))
+      if (is.null(disp_guess) == FALSE && disp_guess >
+          0 && is.na(disp_guess) == FALSE) {
+        size_guess <- 1/disp_guess
+        if (expressionFamily@vfamily == "negbinomial")
+          expressionFamily <- negbinomial(isize=1/disp_guess, ...)
+        else
+          expressionFamily <- negbinomial.size(size=1/disp_guess, ...)
+      }
+    }
+  }
+  else if (expressionFamily@vfamily %in% c("uninormal", "binomialff")) {
+    f_expression <- x
+  }
+  else {
+    f_expression <- log10(x)
+  }
+  tryCatch({
+    if (verbose) {
+      FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
+                           family = expressionFamily, epsilon=1e-1)
     }
     else {
-        f_expression <- log10(x)
+      FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
+                                            family = expressionFamily, epsilon=1e-1))
     }
-    tryCatch({
-        if (verbose) {
-            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr),
-                family = expressionFamily, epsilon=1e-1)
-        }
-        else {
-            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr),
-                family = expressionFamily, epsilon=1e-1))
-        }
-        #FM_fit$model = NULL
-      rm(f_expression)
-      rm(disp_func)
-      rm(x)
-      rm(orig_x)
-        FM_fit
-    }, error = function(e) {
-        print (e);
-        # If we threw an exception, re-try with a simpler model.  Which one depends on
-        # what the user has specified for expression family
-        #print(disp_guess)
-        backup_expression_family <- NULL
-        if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-            disp_guess <- calculate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
-            backup_expression_family <- negbinomial()
-        }else if (expressionFamily@vfamily %in% c("uninormal")){
-          backup_expression_family <- NULL
-        }else if (expressionFamily@vfamily %in% c("binomialff")){
-          backup_expression_family <- NULL
+    #FM_fit$model = NULL
+    rm(f_expression)
+    rm(disp_func)
+    rm(x)
+    rm(orig_x)
+    FM_fit
+  }, error = function(e) {
+    print (e);
+    # If we threw an exception, re-try with a simpler model.  Which one depends on
+    # what the user has specified for expression family
+    #print(disp_guess)
+    backup_expression_family <- NULL
+    if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+      disp_guess <- calculate_NB_dispersion_hint(disp_func, round(orig_x), expr_selection_func = max)
+      backup_expression_family <- negbinomial()
+    }else if (expressionFamily@vfamily %in% c("uninormal")){
+      backup_expression_family <- NULL
+    }else if (expressionFamily@vfamily %in% c("binomialff")){
+      backup_expression_family <- NULL
+    }else{
+      backup_expression_family <- NULL
+    }
+    if (is.null(backup_expression_family) == FALSE){
+      
+      #FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, trace=T, epsilon=1e-1, checkwz=F)
+      test_res <- tryCatch({
+        if (verbose){
+          FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon = 1e-1, checkwz= TRUE)
         }else{
-          backup_expression_family <- NULL
+          FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon = 1e-1, checkwz = TRUE))
         }
-        if (is.null(backup_expression_family) == FALSE){
-
-          #FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, trace=T, epsilon=1e-1, checkwz=F)
-          test_res <- tryCatch({
-          if (verbose){
-            FM_fit <- VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon = 1e-1, checkwz= TRUE)
-          }else{
-            FM_fit <- suppressWarnings(VGAM::vglm(as.formula(modelFormulaStr), family=backup_expression_family, epsilon = 1e-1, checkwz = TRUE))
-          }
-            rm(f_expression)
-            rm(disp_func)
-            rm(x)
-            rm(orig_x)
-            FM_fit
-          },
-          #warning = function(w) { FM_fit },
-          error = function(e) {
-            #print (e);
-            NULL
-          })
-          #print(test_res)
-          test_res
-        } else {
-          #print(e);
-          NULL
-        }
+        rm(f_expression)
+        rm(disp_func)
+        rm(x)
+        rm(orig_x)
+        FM_fit
+      },
+      #warning = function(w) { FM_fit },
+      error = function(e) {
+        #print (e);
+        NULL
+      })
+      #print(test_res)
+      test_res
+    } else {
+      #print(e);
+      NULL
+    }
   })
 }
 
@@ -312,6 +312,12 @@ parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=
   #  coefs[1] + coefs[2] / q
   #ans
   #coefs
+  rm(ans)
+  rm(disp_table)
+  rm(cds_pdata)
+  rm(res)
+  rm(cds)
+  
   list(fit, coefs)
 }
 

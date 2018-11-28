@@ -161,14 +161,7 @@ orderCells <- function(cds,
     stop("Error: no valid root principal graph nodes.")
   }
   
-# <<<<<<< HEAD
-#   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
-  
-#   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-#   closest_vertex = cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
-#   pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-#   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
-# =======
+
   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
   
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes, orthogonal_proj_tip, verbose)

@@ -333,7 +333,6 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                        relative_expr = TRUE,
                        cores = 1, 
                        branch_labels = NULL, 
-                       group_by = NULL, 
                        verbose = FALSE,
                        ...) {
   
@@ -352,7 +351,6 @@ branchTest <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Br
                                          reducedModelFormulaStr = reducedModelFormulaStr, 
                                          cores = cores, 
                                          relative_expr = relative_expr, 
-                                         group_by = group_by, 
                                          verbose=verbose)
   
   return(branchTest_res)
@@ -844,7 +842,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 					branch_point=1,
 					relative_expr = TRUE, 
 					branch_labels = NULL, 
-          group_by = NULL, 
 					verbose = FALSE,
 					cores = 1, 
 					...) {
@@ -856,7 +853,6 @@ BEAM <- function(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
 	                       relative_expr = relative_expr,
 	                       cores = cores, 
 	                       branch_labels = branch_labels, 
-                         group_by = group_by, 
 	                       verbose=verbose, 
 	                       ...)
 	cmbn_df <- branchTest_res[, 1:4] 
