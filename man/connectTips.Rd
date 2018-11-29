@@ -5,9 +5,8 @@
 \title{functions to connect the tip points after learning the DDRTree or simplePPT tree}
 \usage{
 connectTips(pd, R, stree, reducedDimK_old, reducedDimS_old, k = 25,
-  weight = F, qval_thresh = 0.05, kmean_res,
-  euclidean_distance_ratio = 1, geodestic_distance_ratio = 1/3,
-  medioids, verbose = FALSE, ...)
+  weight = F, qval_thresh = 0.05, kmean_res, euclidean_distance_ratio = 1,
+  geodestic_distance_ratio = 1/3, medioids, verbose = FALSE, ...)
 }
 \description{
 functions to connect the tip points after learning the DDRTree or simplePPT tree

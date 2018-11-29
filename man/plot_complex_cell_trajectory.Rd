@@ -8,8 +8,8 @@ plot_complex_cell_trajectory(cds, x = 1, y = 2, root_states = NULL,
   layout = NULL, color_by = "State", show_backbone = TRUE,
   backbone_color = "black", markers = NULL, show_cell_names = FALSE,
   cell_size = 1.5, cell_link_size = 0.75, cell_name_size = 2,
-  show_branch_points = TRUE, jitter_width = NULL,
-  jitter_height = NULL, ...)
+  show_branch_points = TRUE, jitter_width = NULL, jitter_height = NULL,
+  ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

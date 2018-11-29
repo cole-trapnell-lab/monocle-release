@@ -17,7 +17,7 @@ fitModel(cds, modelFormulaStr = "~sm.ns(Pseudotime, df=3)",
 \item{cores}{the number of processor cores to be used during fitting.}
 }
 \value{
-a list of VGAM model objects
+a tibble containing VGAM model objects
 }
 \description{
 This function fits a vector generalized additive model (VGAM) from the VGAM package for each gene in a CellDataSet.

@@ -6,7 +6,7 @@
 \usage{
 diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
   expressionFamily, relative_expr, weights, disp_func = NULL,
-  group_by = NULL, verbose = FALSE)
+  verbose = FALSE)
 }
 \arguments{
 \item{x}{test}

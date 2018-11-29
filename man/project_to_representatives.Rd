@@ -7,8 +7,8 @@ cells (if number of samples is large than 2000) and then project other non-repre
 UMAP or PCA space) representive cells' coordinates.}
 \usage{
 project_to_representatives(data, data_ori, landmark_id, louvain_res, pd,
-  method = c("PSL", "drl", "fr", "kk", "SSE"), start.temp = NULL,
-  k = 20, do_partition = F, max_components = 2, verbose, ...)
+  method = c("PSL", "drl", "fr", "kk", "SSE"), start.temp = NULL, k = 20,
+  do_partition = F, max_components = 2, verbose, ...)
 }
 \arguments{
 \item{data}{(dowmsampled) data to perform Louvain clustering and kNN graph construction}

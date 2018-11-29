@@ -9,6 +9,7 @@
 #' @name fit_model_helper
 #' @description test
 #' @importFrom stats formula
+#' @importFrom VGAM negbinomial negbinomial.size binomialff vglm vgam
 fit_model_helper <- function(x,
                              modelFormulaStr,
                              expressionFamily,
@@ -95,13 +96,13 @@ fit_model_helper <- function(x,
       #warning = function(w) { FM_fit },
       error = function(e) {
         #print (e);
-        NULL
+        NA
       })
       #print(test_res)
       test_res
     } else {
       #print(e);
-      NULL
+      NA
     }
   })
 }
@@ -122,7 +123,7 @@ fit_model_helper <- function(x,
 #' @param modelFormulaStr a formula string specifying the model to fit for the genes.
 #' @param relative_expr Whether to fit a model to relative or absolute expression. Only meaningful for count-based expression data. If TRUE, counts are normalized by Size_Factor prior to fitting.
 #' @param cores the number of processor cores to be used during fitting.
-#' @return a list of VGAM model objects
+#' @return a tibble containing VGAM model objects
 #' @importFrom qlcMatrix rowMax
 #' @export
 fitModel <- function(cds,
@@ -145,7 +146,45 @@ fitModel <- function(cds,
                disp_func=cds@dispFitInfo[["blind"]]$disp_func)
     f
   }
+  term_labels =  unlist(head(lapply( lapply(f[which(is.na(f) == FALSE)], coef), names), n=1))
+  
+  M_f = as_tibble(fData(cds))
+  M_f$model = f
+  M_f
 }
+
+extract_coefficient_helper = function(model, term_labels){
+  if (class(model) %in% c("vglm", "vgam")){
+    SM = summary(model)
+    coef_mat = SM@coef3 # first row is intercept
+    log_eff_over_int = log2(model@family@linkinv(coef_mat[,1] + coef_mat[1,1]) / rep(model@family@linkinv(coef_mat[1,1]), times=nrow(coef_mat)))
+    log_eff_over_int[1] = 0
+    coef_mat = as_tibble(coef_mat, rownames="term")
+    coef_mat$normalized_effect = log_eff_over_int
+    return (coef_mat)
+  }else{
+    coef_mat = matrix(NA, nrow=length(term_labels), ncol=5)
+    row.names(coef_mat) = term_labels
+    colnames(coef_mat) = c('Estimate', 'Std. Error', 'z value', 'Pr(>|z|)', 'normalized_effect')
+    coef_mat = as_tibble(coef_mat, rownames="term")
+    return(coef_mat)
+  }       
+}
+
+#' Extracts a table of coefficients from a tibble containing model objects
+
+#' @importFrom purrr map
+#' @importFrom tidyr unnest
+#' @importFrom tibble as_tibble
+#' @export
+coefficientTable <- function(model_tbl){
+  
+  M_f = model_tbl %>%
+    mutate(terms = purrr::map(.f = extract_coefficient_helper, .x = model, term_labels)) %>% tidyr::unnest(terms)
+  return(M_f)
+}
+
+
 
 #' Calculates response values.
 #'
@@ -312,11 +351,11 @@ parametricDispersionFit <- function( disp_table, verbose = FALSE, initial_coefs=
   #  coefs[1] + coefs[2] / q
   #ans
   #coefs
-  rm(ans)
+  #rm(ans)
   rm(disp_table)
-  rm(cds_pdata)
-  rm(res)
-  rm(cds)
+  #rm(cds_pdata)
+  #rm(res)
+  #rm(cds)
   
   list(fit, coefs)
 }

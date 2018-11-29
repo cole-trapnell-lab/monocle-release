@@ -5,10 +5,9 @@
 \title{Plots the percentage of variance explained by the each component based on PCA from the normalized expression
 data using the same procedure used in reduceDimension function.}
 \usage{
-plot_pc_variance_explained(cds, max_components = 100,
-  norm_method = c("log", "vstExprs", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = NULL, return_all = F,
-  use_existing_pc_variance = FALSE, verbose = FALSE, ...)
+plot_pc_variance_explained(cds, max_components = 100, norm_method = c("log",
+  "vstExprs", "none"), residualModelFormulaStr = NULL, pseudo_expr = NULL,
+  return_all = F, use_existing_pc_variance = FALSE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment after running reduceDimension with reduction_method as tSNE}

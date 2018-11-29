@@ -6,9 +6,8 @@
 \usage{
 smoothEmbedding(cds, max_components = 2, do_partition = FALSE,
   use_pca = FALSE, method = c("PSL", "drl", "fr", "kk", "SSE"),
-  merge_coords_method = c("dla", "procrutes"), start.temp = NULL,
-  k = 20, landmark_num = 2000, cell_num_threshold = 0,
-  verbose = FALSE, ...)
+  merge_coords_method = c("dla", "procrutes"), start.temp = NULL, k = 20,
+  landmark_num = 2000, cell_num_threshold = 0, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

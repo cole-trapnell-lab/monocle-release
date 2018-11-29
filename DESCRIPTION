@@ -23,6 +23,7 @@ Depends:
     ggplot2 (>= 1.0.0),
     igraph,
     DDRTree (>= 0.1.4),
+    VGAM,
     L1Graph
 Imports:
     parallel,
@@ -42,6 +43,7 @@ Imports:
     limma,
     tibble,
     dplyr,
+    tidyr,
     qlcMatrix,
     pheatmap,
     stringr,
@@ -65,7 +67,8 @@ Imports:
     pbapply,
     IRanges,
     viridisLite,
-    plotly
+    plotly,
+    purrr,
 LinkingTo: Rcpp
 Suggests:
     destiny,

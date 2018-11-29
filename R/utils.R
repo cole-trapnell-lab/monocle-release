@@ -155,7 +155,7 @@ mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_den
   if (platform == "Windows")
     cl <- makeCluster(cores)
   if (platform %in% c("Linux", "Darwin")) 
-    cl <- makeCluster(cores)
+    cl <- makeCluster(cores, type="FORK")
   
   cleanup <- function(){
     stopCluster(cl)

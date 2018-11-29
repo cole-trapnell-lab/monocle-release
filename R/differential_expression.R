@@ -10,7 +10,7 @@
 #' @name diff_test_helper
 #' @description A helper function for differentialGeneTest
 #' @importFrom stats formula
-#' @importFrom VGAM vglm
+#' @importFrom VGAM vglm negbinomial negbinomial.size
 diff_test_helper <- function(x,
                              fullModelFormulaStr,
                              reducedModelFormulaStr,

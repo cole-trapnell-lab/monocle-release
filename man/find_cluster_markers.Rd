@@ -5,9 +5,9 @@
 \title{Find marker genes for each group of cells}
 \usage{
 find_cluster_markers(cds, pr_graph_test_res, group_by = "Cluster",
-  qval_threshold = 0.05, morans_I_threshold = 0.25,
-  lower_threshold = 0, pseudocount = 1, top_n_by_group = NULL,
-  block_size = 100, verbose = FALSE, ...)
+  qval_threshold = 0.05, morans_I_threshold = 0.25, lower_threshold = 0,
+  pseudocount = 1, top_n_by_group = NULL, block_size = 100,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

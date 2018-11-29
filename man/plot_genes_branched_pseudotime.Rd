@@ -4,11 +4,10 @@
 \alias{plot_genes_branched_pseudotime}
 \title{Plot the branch genes in pseduotime with separate branch curves.}
 \usage{
-plot_genes_branched_pseudotime(cds, branch_states = NULL,
-  branch_point = 1, branch_labels = NULL, method = "fitting",
-  min_expr = NULL, cell_size = 0.75, nrow = NULL, ncol = 1,
-  panel_order = NULL, color_by = "State",
-  expression_curve_linetype_by = "Branch",
+plot_genes_branched_pseudotime(cds, branch_states = NULL, branch_point = 1,
+  branch_labels = NULL, method = "fitting", min_expr = NULL,
+  cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
+  color_by = "State", expression_curve_linetype_by = "Branch",
   trend_formula = "~ sm.ns(Pseudotime, df=3) * Branch",
   reducedModelFormulaStr = NULL, label_by_short_name = TRUE,
   relative_expr = TRUE, ...)

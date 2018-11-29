@@ -4,10 +4,9 @@
 \alias{differentialGeneTest}
 \title{Test genes for differential expression}
 \usage{
-differentialGeneTest(cds,
-  fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
+differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
   reducedModelFormulaStr = "~1", relative_expr = TRUE, cores = 1,
-  group_by = NULL, verbose = FALSE)
+  verbose = FALSE)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
