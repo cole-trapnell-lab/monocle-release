@@ -23,7 +23,6 @@ Depends:
     ggplot2 (>= 1.0.0),
     igraph,
     DDRTree (>= 0.1.4),
-    VGAM,
     L1Graph
 Imports:
     parallel,
@@ -62,13 +61,13 @@ Imports:
     matrixStats,
     doParallel,
     pbmcapply,
-    VGAM (>= 1.0-6),
     IRanges,
     pbapply,
     IRanges,
     viridisLite,
     plotly,
     purrr,
+    VGAM (>= 1.0-6)
 LinkingTo: Rcpp
 Suggests:
     destiny,

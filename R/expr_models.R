@@ -153,11 +153,11 @@ fitModel <- function(cds,
   M_f
 }
 
-extract_coefficient_helper = function(model, term_labels){
+extract_coefficient_helper = function(model, term_labels, pseudo_expr=0.01){
   if (class(model) %in% c("vglm", "vgam")){
     SM = summary(model)
     coef_mat = SM@coef3 # first row is intercept
-    log_eff_over_int = log2(model@family@linkinv(coef_mat[,1] + coef_mat[1,1]) / rep(model@family@linkinv(coef_mat[1,1]), times=nrow(coef_mat)))
+    log_eff_over_int = log2((model@family@linkinv(coef_mat[,1] + coef_mat[1,1]) + pseudo_expr) / rep(model@family@linkinv(coef_mat[1,1]) + pseudo_expr, times=nrow(coef_mat)))
     log_eff_over_int[1] = 0
     coef_mat = as_tibble(coef_mat, rownames="term")
     coef_mat$normalized_effect = log_eff_over_int
