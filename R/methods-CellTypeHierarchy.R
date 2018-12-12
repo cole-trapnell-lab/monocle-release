@@ -285,6 +285,7 @@ classifyCellsHelperCell <- function(cds, cth){
 #' @export
 newCellTypeHierarchy <- function()
 {
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   cth <- new( "CellTypeHierarchy",
               classificationTree = graph.empty())
   
@@ -312,6 +313,7 @@ newCellTypeHierarchy <- function()
 #' @export
 addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_name="root") 
 {
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   if (cell_type_name %in% V(cth@classificationTree)$name){
     stop(paste("Error: cell type",cell_type_name, "already exists."))
   }
@@ -331,7 +333,7 @@ addCellType <- function(cth, cell_type_name, classify_func, parent_cell_type_nam
 #' @importFrom glmnet cv.glmnet
 #' @export
 classifyCellsHelperCellGlmNet <- function(cds, cth){
-  
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   cds_sub = cds[,pData(cds)$CellType %in% c("Unknown", "Ambiguous") == FALSE]
   cds_sub = cds_sub[fData(cds_sub)$use_for_ordering,]
   test_cells = row.names(pData(cds_sub))[sample(ncol(cds_sub), round(0.2 * ncol(cds_sub)))]
@@ -581,7 +583,7 @@ cth_train_glmnet <- function(cds, cth, curr_node, gate_res, rank_prob_ratio = 2,
 #' @param cores Number of cores computer should use to execute function
 #' @export
 classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations = 8,  max_training_samples = 10000, cores=1){
-  
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   gate_res <- list()
   for (v in V(cth@classificationTree)){
     cell_class_func <- V(cth@classificationTree) [ v ]$classify_func[[1]]
@@ -696,6 +698,7 @@ classifyCellsGlmNet <- function(cds, cth, rank_prob_ratio = 2, min_observations 
 #' }
 #' 
 classifyCells <- function(cds, cth, method=c("glmnet", "markers-only"), rank_prob_ratio = 2, min_observations=8, max_training_samples=10000, cores=1) {
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   if(is.null(method)) {
     method = "glmnet"
   }
@@ -784,6 +787,7 @@ classifyClustersHelperCds <- function(cds_subset, cth, frequency_thresh){
 #' @description Impute cell type classifications using clustering results
 #' @export
 classifyCellClusters <- function(cds, cth, frequency_thresh=0.80, grouping_var = "Cluster") {
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   progress_opts <- options()$dplyr.show_progress
   options(dplyr.show_progress = F)
   
@@ -837,7 +841,7 @@ classifyCellClusters <- function(cds, cth, frequency_thresh=0.80, grouping_var =
 #' @importFrom Biobase exprs fData pData
 #' @export
 calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unknown=TRUE){
-  
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
   }
@@ -894,6 +898,7 @@ calculateMarkerSpecificity <- function(cds, cth, remove_ambig=TRUE, remove_unkno
 #' @importFrom dplyr top_n %>%
 #' @export
 selectTopMarkers <- function(marker_specificities, num_markers = 10){
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   specificity <- NA
   as.data.frame(marker_specificities %>%
     group_by_("CellType") %>%
@@ -922,6 +927,7 @@ selectTopMarkers <- function(marker_specificities, num_markers = 10){
 #' @importFrom Biobase pData pData<-
 #' @export 
 markerDiffTable <- function (cds, cth, residualModelFormulaStr="~1", balanced=FALSE, reclassify_cells=TRUE, remove_ambig=TRUE, remove_unknown=TRUE, verbose=FALSE, cores=1) {
+  .Deprecated(msg="Cell classification is now handled by the garnett package.")
   if(class(cds)[1] != "CellDataSet") {
     stop("Error cds is not of type 'CellDataSet'")
   }
