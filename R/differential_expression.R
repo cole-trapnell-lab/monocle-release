@@ -220,6 +220,7 @@ differentialGeneTest <- function(cds,
 #' @param return_sparse_matrix A logic flag that controls whether or not to return a sparse matrix
 #' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
 #' @importFrom igraph get.adjacency
+#' @keywords internal
 calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive = FALSE, verbose = FALSE) {
   # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
   # remove edges that connected between groups that disconnected in the corresponding principal graph and

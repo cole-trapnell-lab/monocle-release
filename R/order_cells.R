@@ -1318,6 +1318,7 @@ learnGraph <- function(cds,
 #' @param target_points the target points
 #' @param block_size the number of input matrix rows to process per bloclk
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
+#' @keywords internal
 findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
@@ -1579,23 +1580,6 @@ projPointOnLine <- function(point, line) {
   return(res)
 }
 
-# projPointOnLine <- function(point, line){
-#   vx = line[1, 2]
-#   vy = line[2, 2]
-
-#   # difference of point with line origin
-#   dx = point[1] - line[1,1]
-#   dy = point[2] - line[2,1]
-
-#   # Position of projection on line, using dot product
-#   tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
-
-#   # convert position on line to cartesian coordinates
-#   point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
-
-#   return(point)
-# }
-
 # Project point to line segment (in >= 2 dimensions)
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B
@@ -1635,13 +1619,14 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-# #' traverse from one cell to another cell
-# #'
-# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+#' traverse from one cell to another cell
+#'
+#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @importFrom igraph shortest.paths shortest_paths degree
+#' @keywords internal
 traverseGraph <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -1657,6 +1642,7 @@ traverseGraph <- function(g, starting_cell, end_cells){
 #' @param starting_cell the initial vertex for traversing on the graph
 #' @param end_cells the terminal vertex for traversing on the graph
 #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+#' @keywords internal
 traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_cells = NULL, ...){
   if(interactive) {
     lib_info_with_pseudo <- pData(cds)
@@ -2411,6 +2397,7 @@ connectTips <- function(pd,
 #' @importFrom viridis scale_color_viridis
 #' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
+#' @keywords internal
 patchEmbedding <- function(cds, 
                            max_components = 2, 
                            do_partition = FALSE, 
@@ -2638,6 +2625,7 @@ patchEmbedding <- function(cds,
 #' @param max_components the dimensionality of the reduced space
 #' @param verbose Wheter to print all running details 
 #' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
+#' @keywords internal
 project_to_representatives <- function(data, 
                                        data_ori, 
                                        landmark_id, 
@@ -2759,6 +2747,7 @@ project_to_representatives <- function(data,
 #' @param Y Matrix to be rotated.
 #' @param scale Allow scaling of axes of Y.
 #' @param symmetric Use symmetric Procrustes statistic (the rotation will still be non-symmetric).
+#' @keywords internal
 procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE) 
 {
   # X <- scores(X, display = scores, ...)

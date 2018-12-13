@@ -37,13 +37,6 @@ weight_of_ordering <- function(ordering, dist_matrix)
 #' root cell. Note that this function also assigns pseudotime by default. But the orderCells function should be 
 #' used in order to obtain correct ordering of the developmental trajectory under study. 
 #'
-#' in order to remove small branch, this is what I did:
-#' build a graph for the state graph mentioned above where each node corresponds to a state with an attribute of the 
-#' node `size` corresponds to number of cells in that state and the edge corresponds to the vertex connecting two states.
-#' then we do a DFS again to assign the `final state` for each cell, if the size attribute of the node is large than a 
-#' threshold (like 10 principal points or so), we will increase the `final state` assignment for all the cells corresponds
-#' to the `original state` , otherwise the `final state` of inherits the state  from the previous’s node’s `final state` in the `state graph`
-#'
 #' @param cds the CellDataSet upon which to perform this operation
 #' @param minimal_branch_len the minimal length of the principal tree segment to be treated as a true branch. Default to be 10. 
 #' @importFrom stats dist

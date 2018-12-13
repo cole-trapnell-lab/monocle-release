@@ -37,11 +37,8 @@ integer value in the range 2 to 100.}
 
 \item{metric}{string or function (optional, default 'correlation')
 The metric to use to compute distances in high dimensional space.
-If a string is passed it must match a valid predefined metric. If
-a general metric is required a function that takes two 1d arrays and
-returns a float can be provided. For performance purposes it is
-required that this be a numba jit'd function. Valid string metrics
-include:
+If a string is passed it must match a valid predefined metric.
+Valid string metrics include:
     * euclidean
     * manhattan
     * chebyshev
@@ -186,7 +183,7 @@ embedding_, initial_alpha, n_neighbors, fit, local_connectivity, negative_sample
 }
 \description{
 Finds a low dimensional embedding of the data that approximates an underlying manifold.
-This functions relies on the python implementation of UMAP (https://github.com/lmcinnes/umap). 
+This functions relies on the python implementation of UMAP (https://github.com/lmcinnes/umap). This function is a pass through to the python code. Documentation is reproduced from the UMAP package here for convenience.
 The original publication of UMAP can be found here: 
 https://arxiv.org/abs/1802.03426 (McInnes, L, Healy, J, UMAP: Uniform Manifold Approximation and Projection for Dimension Reduction, ArXiv e-prints 1802.03426, 2018).
 A useful notebook (written in python) to check for the effects of each parameter in UMAP can be found here: https://nbviewer.jupyter.org/github/CrakeNotSnowman/umapNotebooks/blob/master/UMAP%20Usage.ipynb.
