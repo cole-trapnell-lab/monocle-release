@@ -378,24 +378,24 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
     if (verbose)
       message("Remove noise by PCA ...")
     
-    if(use_tf_idf == TRUE) {
-      FM <- as(FM, "dgCMatrix")
-      cds_dfm <- new("dfmSparse", FM)
-      cds_dfm <- dfm_tfidf(cds_dfm)
-      FM <- sparseMatrix(i = cds_dfm@i, p = cds_dfm@p, x = cds_dfm@x, dimnames = cds_dfm@Dimnames, dims = cds_dfm@Dim, index1 = F)
-    }
+    # if(use_tf_idf == TRUE) {
+    #   FM <- as(FM, "dgCMatrix")
+    #   cds_dfm <- new("dfmSparse", FM)
+    #   cds_dfm <- dfm_tfidf(cds_dfm)
+    #   FM <- sparseMatrix(i = cds_dfm@i, p = cds_dfm@p, x = cds_dfm@x, dimnames = cds_dfm@Dimnames, dims = cds_dfm@Dim, index1 = F)
+    # }
     
     irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                      center = scaling, scale. = scaling)
     irlba_pca_res <- irlba_res$x
     row.names(irlba_pca_res) <- colnames(cds)
     # reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
-  } else if(method == 'LSI') {
-    FM <- as(FM, "dgCMatrix")
-    cds_dfm <- new("dfmSparse", FM)
-    cds_dfm <- dfm_tfidf(cds_dfm)
-    cds_dfm_lsa <- textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
-    irlba_pca_res <- cds_dfm_lsa$features
+  # } else if(method == 'LSI') {
+  #   FM <- as(FM, "dgCMatrix")
+  #   cds_dfm <- new("dfmSparse", FM)
+  #   cds_dfm <- dfm_tfidf(cds_dfm)
+  #   cds_dfm_lsa <- textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
+  #   irlba_pca_res <- cds_dfm_lsa$features
     
   } else if(method == 'none') {
     irlba_pca_res <- t(FM)
