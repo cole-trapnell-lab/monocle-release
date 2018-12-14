@@ -351,20 +351,6 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
   #f_expression_var <- DelayedMatrixStats::rowVars(FM)
   #FM <- FM[f_expression_var > 0,]
   
-  if (is.null(residualModelFormulaStr) == FALSE) {
-    if (verbose)
-      message("Removing batch effects")
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
-                                       data = pData(cds), drop.unused.levels = TRUE)
-    
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-  }else{
-    X.model_mat <- NULL
-  }
-  
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
   }
@@ -403,6 +389,21 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
     stop('unknown preprocessing method, stop!')
   }
   row.names(irlba_pca_res) <- colnames(cds)
+  
+  if (is.null(residualModelFormulaStr) == FALSE) {
+    if (verbose)
+      message("Removing batch effects")
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
+                                       data = pData(cds), drop.unused.levels = TRUE)
+    
+    fit <- limma::lmFit(irlba_pca_res, X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    irlba_pca_res <- as.matrix(irlba_pca_res) - beta %*% t(X.model_mat[, -1])
+  }else{
+    X.model_mat <- NULL
+  }
+  
   cds@normalized_data_projection <- irlba_pca_res
   
   cds
