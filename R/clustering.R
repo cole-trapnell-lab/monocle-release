@@ -457,9 +457,10 @@ compute_louvain_connected_components <- function(g, optim_res, qval_thresh=0.05,
 #'
 #' @param data low dimensional space used to perform graph clustering 
 #' @param k number of nearest neighbors used for Louvain clustering 
+#' @param dist_type metric used to compute distances between cells
 #' @param return_graph whether or not to return the kNN graph instead of the asymmetric adjacency matrix 
 #' @return Either a sparse asymmetric adjacent matrix or a corresponding directed weighted kNN graph 
-#' 
+#' @keywords internal
 build_asym_kNN_graph <- function(data, k = 20, dist_type = c('raw', 'euclidean', 'cosine'), return_graph = F) {
   # build an asymmetric kNN graph -- replace with the louvain_clustering one 
   nbrs <- RANN::nn2(data, k = k + 1)

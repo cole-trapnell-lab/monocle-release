@@ -45,3 +45,4 @@ PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structur
 
 SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
 }
+\keyword{internal}

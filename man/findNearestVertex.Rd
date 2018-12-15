@@ -19,3 +19,4 @@ findNearestVertex(data_matrix, target_points, block_size = 50000,
 \description{
 Finds the nearest principal graph node
 }
+\keyword{internal}

@@ -12,6 +12,8 @@ build_asym_kNN_graph(data, k = 20, dist_type = c("raw", "euclidean",
 
 \item{k}{number of nearest neighbors used for Louvain clustering}
 
+\item{dist_type}{metric used to compute distances between cells}
+
 \item{return_graph}{whether or not to return the kNN graph instead of the asymmetric adjacency matrix}
 }
 \value{
@@ -20,3 +22,4 @@ Either a sparse asymmetric adjacent matrix or a corresponding directed weighted 
 \description{
 function to run build asymmetric kNN graph
 }
+\keyword{internal}

@@ -4,8 +4,8 @@
 \alias{preprocessCDS}
 \title{project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data}
 \usage{
-preprocessCDS(cds, method = c("PCA", "none"), use_tf_idf = FALSE,
-  num_dim = 50, norm_method = c("log", "vstExprs", "none"),
+preprocessCDS(cds, method = c("PCA", "none"), num_dim = 50,
+  norm_method = c("log", "vstExprs", "none"),
   residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
   scaling = TRUE, verbose = FALSE, ...)
 }
@@ -17,8 +17,6 @@ it converts the (sparse) expression matrix into tf-idf (term-frequency-inverse d
 which increases proportionally to the gene expression value appears in the cell and is offset by the frequency of 
 the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules}
-
-\item{use_tf_idf}{a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA}
 
 \item{num_dim}{the dimensionality of the reduced space}
 

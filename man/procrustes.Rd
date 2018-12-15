@@ -18,3 +18,4 @@ procrustes(X, Y, scale = TRUE, symmetric = FALSE)
 \description{
 Function procrustes rotates a configuration to maximum similarity with another configuration. Function protest tests the non-randomness (significance) between two configurations.
 }
+\keyword{internal}
