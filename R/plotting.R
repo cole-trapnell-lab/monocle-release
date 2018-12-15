@@ -1827,6 +1827,11 @@ plot_cell_clusters <- function(cds,
                                nrow = NULL, 
                                ncol = NULL,
                                ...){
+  if (require("ggrastr",character.only = TRUE)){
+    plotting_func = ggrastr::geom_point_rast
+  }else{
+    plotting_func = ggplot2::geom_point
+  }
   
   if (length(pData(cds)$Cluster) == 0){ 
     stop("Error: Clustering is not performed yet. Please call clusterCells() before calling this function.")
@@ -1918,24 +1923,17 @@ plot_cell_clusters <- function(cds,
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
     if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
-      # g <- g + geom_point(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
-      #       scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
-      #       guides(alpha = FALSE) + facet_wrap(~feature_label)
-            # scale_color_viridis(name = paste0("log10(value + 0.1)"), ...)
-      g <- g + ggrastr::geom_point_rast(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+       g <- g + plotting_func(aes(color=log10(value + min_expr), alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
             scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
             guides(alpha = FALSE) + facet_wrap(~feature_label, nrow = nrow, ncol = ncol)
     }else{
-      # g <- g + geom_point(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
-      #   scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
-      #   guides(alpha = FALSE) + facet_wrap(~feature_label)
-      g <- g + ggrastr::geom_point_rast(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
+       g <- g + plotting_func(aes(color=value, alpha = ifelse(!is.na(value), "2", "1")), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE) + 
         scale_color_viridis(option = "viridis", name = "log10(values + 0.1)", na.value = "grey80", end = 0.8) + 
         guides(alpha = FALSE) + facet_wrap(~feature_label, nrow = nrow, ncol = ncol)
     }
   }else {
     # g <- g + geom_point(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
-    g <- g + ggrastr::geom_point_rast(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
+    g <- g + plotting_func(aes_string(color = color_by), size=I(cell_size), stroke = I(cell_size / 2), na.rm = TRUE, ...)
     
     if(show_group_id) {
       g <- g + geom_text(data = text_df, mapping = aes_string(x = "text_x", y = "text_y", label = "label"), size = 4)
