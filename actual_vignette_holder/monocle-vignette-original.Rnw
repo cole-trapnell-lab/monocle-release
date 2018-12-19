@@ -441,17 +441,12 @@ To work with your data in a sparse format, simply provide it to Monocle as a spa
                         expressionFamily=negbinomial.size())
  @ %def
  
-\textbf{NOTE:} The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX). If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via \Rfunction(as.matrix)), because that may exceed your available memeory. If you have 10X Genomics data and are using \Rpackage{cellrangerRkit}, you can use it to load your data and then pass that to Monocle as follows:
+\textbf{NOTE:} If you have 10X Genomics data, you can load it directly for Monocle as follows:
 
  <<chromium_load, eval=FALSE>>=
 cellranger_pipestance_path <- "/path/to/your/pipeline/output/directory"
-gbm <- load_cellranger_matrix(cellranger_pipestance_path)
+gbm_cds <- load_cellranger_data(cellranger_pipestance_path)
 
-gbm_cds <- newCellDataSet(exprs(gbm),
-                          phenoData = new("AnnotatedDataFrame", pData(gbm)), 
-                          featureData = new("AnnotatedDataFrame", fData(gbm)),
-                          lowerDetectionLimit=0.5,
-                          expressionFamily=negbinomial.size())
  @ %de
  
 Monocle's sparse matrix support is provided by the \Rpackage{Matrix} package. Other sparse matrix packages, such as \Rpackage{slam} or \Rpackage{SparseM} are not supported.
