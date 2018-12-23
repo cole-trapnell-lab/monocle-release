@@ -6,9 +6,9 @@ env:
   - HDF5_RELEASE_URL="https://support.hdfgroup.org/ftp/HDF5/releases"
   - HDF5_VERSION=1.8.13
   - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-before_install:
-- chmod +x travis_setup.sh
-- "./travis_setup.sh"
+#before_install:
+#- chmod +x travis_setup.sh
+#- "./travis_setup.sh"
 r:
 - bioc-devel
 - bioc-release
