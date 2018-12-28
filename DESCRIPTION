@@ -80,7 +80,7 @@ Suggests:
     PSL
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
-Remotes: cole-trapnell-lab/L1-graph, VPetukhov/ggrastr
+Remotes: cole-trapnell-lab/L1-graph, VPetukhov/ggrastr, cole-trapnell-lab/PSL
 LazyData: true
 biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Infrastructure, DataImport, DataRepresentation, Visualization,
