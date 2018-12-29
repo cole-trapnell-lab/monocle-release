@@ -6,8 +6,8 @@
  
  @importFrom stats median}
 \usage{
-estimateSizeFactorsForMatrix(counts, locfunc = median, round_exprs = TRUE,
-  method = "mean-geometric-mean-total")
+estimateSizeFactorsForMatrix(counts, locfunc = median,
+  round_exprs = TRUE, method = "mean-geometric-mean-total")
 }
 \arguments{
 \item{counts}{The matrix for the gene expression data, either read counts or FPKM values or transcript counts}

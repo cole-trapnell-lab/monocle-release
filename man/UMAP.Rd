@@ -4,16 +4,16 @@
 \alias{UMAP}
 \title{Uniform Manifold Approximation and Projection}
 \usage{
-UMAP(X, python_home = system("which python", intern = TRUE), log = TRUE,
-  n_neighbors = 15L, n_component = 2L, metric = "correlation",
-  n_epochs = NULL, negative_sample_rate = 5L, learning_rate = 1,
-  init = "spectral", min_dist = 0.1, spread = 1, set_op_mix_ratio = 1,
-  local_connectivity = 1L, repulsion_strength = 1, a = NULL, b = NULL,
-  random_state = 0L, metric_kwds = reticulate::dict(),
-  angular_rp_forest = FALSE, target_n_neighbors = -1L,
-  target_metric = "categorical", target_metric_kwds = reticulate::dict(),
-  target_weight = 0.5, transform_seed = 42L, verbose = FALSE,
-  return_all = FALSE)
+UMAP(X, python_home = system("which python", intern = TRUE),
+  log = TRUE, n_neighbors = 15L, n_component = 2L,
+  metric = "correlation", n_epochs = NULL, negative_sample_rate = 5L,
+  learning_rate = 1, init = "spectral", min_dist = 0.1, spread = 1,
+  set_op_mix_ratio = 1, local_connectivity = 1L,
+  repulsion_strength = 1, a = NULL, b = NULL, random_state = 0L,
+  metric_kwds = reticulate::dict(), angular_rp_forest = FALSE,
+  target_n_neighbors = -1L, target_metric = "categorical",
+  target_metric_kwds = reticulate::dict(), target_weight = 0.5,
+  transform_seed = 42L, verbose = FALSE, return_all = FALSE)
 }
 \arguments{
 \item{X}{the dataset upon which to perform umap dimension reduction}

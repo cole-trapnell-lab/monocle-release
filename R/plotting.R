@@ -3447,7 +3447,7 @@ plot_markers_cluster <- function(cds,
                                  return_heatmap=FALSE,
                                  verbose = FALSE,
                                  ...) {
-  markers <- rev(as.character(markers)) #Ensure to show the first marker on the top of the heatmap
+  markers <- rev(unique(as.character(markers))) #Ensure to show the first marker on the top of the heatmap
   
   if(!is.null(minimal_cluster_fraction)) {
     cluster_cell_num <- pData(cds) %>% dplyr::mutate(index = 1:ncol(cds)) %>% dplyr::group_by_(group_by) %>% dplyr::summarise(n = n())
@@ -3514,12 +3514,13 @@ plot_markers_cluster <- function(cds,
   # grid::grid.rect(gp=grid::gpar("fill", col=NA))
   # grid::grid.draw(ph$gtable)
 
-  mlt_norm_mat <- melt(norm_mat)
+  mlt_norm_mat <- melt(norm_mat, stringsAsFactors = F)
   colnames(mlt_norm_mat) <- c('Gene', 'Cell', 'Expression')
+  mlt_norm_mat[, 1:2] <- lapply(mlt_norm_mat[, 1:2], as.character) 
   mlt_norm_mat$Gene <- fData(cds)[mlt_norm_mat$Gene, 'gene_short_name']
   mlt_norm_mat$Cluster <- pData(cds)[as.character(mlt_norm_mat$Cell), group_by]
 
-  mlt_norm_mat %>% dplyr::mutate(Cell = factor(Cell, levels = colnames(norm_mat)))
+  mlt_norm_mat <- mlt_norm_mat %>% dplyr::mutate(Cell = factor(Cell, levels = colnames(norm_mat)), Gene = factor(Gene, levels = markers))
                 
   g <- ggplot(data = mlt_norm_mat, mapping = aes(x = Cell,y = Gene, fill = Expression)) + geom_tile() + 
   scale_fill_gradient2(low = 'cyan', mid = 'black', high = 'red') +

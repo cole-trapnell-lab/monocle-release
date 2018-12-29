@@ -4,12 +4,13 @@
 \alias{learnGraph}
 \title{Learn principal graph from the reduced space using reversed graph embedding}
 \usage{
-learnGraph(cds, max_components = 2, rge_method = c("SimplePPT", "DDRTree"),
-  auto_param_selection = TRUE, partition_group = "louvain_component",
-  do_partition = TRUE, scale = FALSE, close_loop = FALSE,
-  euclidean_distance_ratio = 1, geodestic_distance_ratio = 1/3,
-  prune_graph = TRUE, minimal_branch_len = 10,
-  orthogonal_proj_tip = FALSE, verbose = FALSE, ...)
+learnGraph(cds, max_components = 2, rge_method = c("SimplePPT",
+  "DDRTree"), auto_param_selection = TRUE,
+  partition_group = "louvain_component", do_partition = TRUE,
+  scale = FALSE, close_loop = FALSE, euclidean_distance_ratio = 1,
+  geodestic_distance_ratio = 1/3, prune_graph = TRUE,
+  minimal_branch_len = 10, orthogonal_proj_tip = FALSE,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

@@ -4,8 +4,8 @@
 \alias{orderCells}
 \title{Orders cells according to pseudotime.}
 \usage{
-orderCells(cds, root_pr_nodes = NULL, root_cells = NULL, reverse = FALSE,
-  orthogonal_proj_tip = FALSE, verbose = FALSE)
+orderCells(cds, root_pr_nodes = NULL, root_cells = NULL,
+  reverse = FALSE, orthogonal_proj_tip = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

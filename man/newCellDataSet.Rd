@@ -5,7 +5,8 @@
 \title{Creates a new CellDateSet object.}
 \usage{
 newCellDataSet(cellData, phenoData = NULL, featureData = NULL,
-  lowerDetectionLimit = 0.1, expressionFamily = VGAM::negbinomial.size())
+  lowerDetectionLimit = 0.1,
+  expressionFamily = VGAM::negbinomial.size())
 }
 \arguments{
 \item{cellData}{expression data matrix for an experiment}

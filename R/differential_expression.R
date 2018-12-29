@@ -214,6 +214,9 @@ differentialGeneTest <- function(cds,
 }
 
 #' Function to calculate the neighbors list with spatial weights for the chosen coding scheme from a cell dataset object
+#' @description This function first retrieves the association from each cell to any principal points, then builds a kNN graph for all cells
+#' and removes edges that connected between groups that disconnected in the corresponding principal graph and
+#' finally uses this kNN graph to calculate a global Moran’s I and get the p-value
 #' @param cds The cellDataSet object where the neighbors list is calculated from 
 #' @param  k The maximum number of nearest neighbors to compute
 #' @param verbose A logic flag that determines whether or not to print execution details
@@ -221,12 +224,10 @@ differentialGeneTest <- function(cds,
 #' @param interactive Whether or not to allow the user to choose a point or region in the scene, then to only identify genes spatially correlated for those selected cells. 
 #' @importFrom igraph get.adjacency
 #' @keywords internal
+#' 
 calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive = FALSE, verbose = FALSE) {
-  # first retrieve the association from each cell to any principal points, then build kNN graph for all cells
-  # remove edges that connected between groups that disconnected in the corresponding principal graph and
-  # finally use this kNN graph to calculate a global Moran’s I and get the p-value
-  # interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
-    if(verbose) {
+  #' interactive <- ifelse('Marked' %in% names(pData(cds)), T, F)
+  if(verbose) {
       message("retrieve the matrices for Moran's I test...")
     }
     knn_res <- NULL
@@ -400,9 +401,9 @@ calculateLW <- function(cds, k = 25, return_sparse_matrix = FALSE, interactive =
   lw
 }
 
-#' Test genes for differential expression based on the low dimensional embedding and the principal graph 
+#' @title Test genes for differential expression based on the low dimensional embedding and the principal graph 
 #' 
-#' We are often interested in finding genes that are differentially expressed across a single-cell trajectory. 
+#' @description We are often interested in finding genes that are differentially expressed across a single-cell trajectory. 
 #' Monocle 3 introduces a new approach for finding such genes that draws on a powerful technique in spatial 
 #' correlation analysis, the Moran’s I test. Moran’s I is a measure of multi-directional and multi-dimensional
 #' spatial autocorrelation. The statistic tells you whether cells at nearby positions on a trajectory will have 
@@ -619,7 +620,7 @@ my.geary.test <- function (x, listw, wc, randomisation = TRUE, alternative = "gr
   res
 }
 
-#' Find marker genes for each group of cells
+#' @title Find marker genes for each group of cells
 #'
 #' @description Tests each gene for differential expression as a function of pseudo time
 #' or according to other covariates are specified. \code{differentialGeneTest} is

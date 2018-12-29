@@ -8,11 +8,8 @@
 \alias{sizeFactors,CellDataSet-method}
 \alias{CellDataSet,ANY,ANY-method}
 \alias{sizeFactors<-,CellDataSet,numeric-method}
-\alias{CellDataSet,ANY,ANY-method}
 \alias{estimateSizeFactors,CellDataSet-method}
-\alias{CellDataSet,ANY,ANY-method}
 \alias{estimateDispersions,CellDataSet-method}
-\alias{CellDataSet,ANY,ANY-method}
 \title{Methods for the CellDataSet class}
 \usage{
 \S4method{[}{CellDataSet,ANY,ANY,ANY}(x, i, j, ..., drop = FALSE)
@@ -21,11 +18,12 @@
 
 \S4method{sizeFactors}{CellDataSet,numeric}(object) <- value
 
-\S4method{estimateSizeFactors}{CellDataSet}(object, locfunc = median, ...)
+\S4method{estimateSizeFactors}{CellDataSet}(object, locfunc = median,
+  ...)
 
-\S4method{estimateDispersions}{CellDataSet}(object, modelFormulaStr = "~ 1",
-  relative_expr = TRUE, min_cells_detected = 1, remove_outliers = TRUE,
-  cores = 1, ...)
+\S4method{estimateDispersions}{CellDataSet}(object,
+  modelFormulaStr = "~ 1", relative_expr = TRUE,
+  min_cells_detected = 1, remove_outliers = TRUE, cores = 1, ...)
 }
 \arguments{
 \item{x}{the CellDataset object}

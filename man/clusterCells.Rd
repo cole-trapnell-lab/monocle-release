@@ -7,9 +7,9 @@
 clusterCells(cds, use_pca = FALSE, skip_rho_sigma = F,
   num_clusters = NULL, inspect_rho_sigma = F, rho_threshold = NULL,
   delta_threshold = NULL, peaks = NULL, gaussian = T,
-  clustering_genes = NULL, k = 20, louvain_iter = 1, weight = FALSE,
-  res = NULL, method = c("densityPeak", "louvain"), random_seed = 0L,
-  verbose = F, cores = 1, ...)
+  clustering_genes = NULL, k = 20, louvain_iter = 1,
+  weight = FALSE, res = NULL, method = c("densityPeak", "louvain"),
+  random_seed = 0L, verbose = F, cores = 1, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

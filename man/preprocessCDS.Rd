@@ -6,8 +6,8 @@
 \usage{
 preprocessCDS(cds, method = c("PCA", "none"), num_dim = 50,
   norm_method = c("log", "vstExprs", "none"),
-  residualModelFormulaStr = NULL, pseudo_expr = 1, relative_expr = TRUE,
-  scaling = TRUE, verbose = FALSE, ...)
+  residualModelFormulaStr = NULL, pseudo_expr = 1,
+  relative_expr = TRUE, scaling = TRUE, verbose = FALSE, ...)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

@@ -4,10 +4,10 @@
 \alias{plot_genes_positive_cells}
 \title{Plots the number of cells expressing one or more genes as a barplot}
 \usage{
-plot_genes_positive_cells(cds_subset, grouping = "State", min_expr = 0.1,
-  nrow = NULL, ncol = 1, panel_order = NULL, plot_as_fraction = TRUE,
-  label_by_short_name = TRUE, relative_expr = TRUE, plot_limits = c(0,
-  100))
+plot_genes_positive_cells(cds_subset, grouping = "State",
+  min_expr = 0.1, nrow = NULL, ncol = 1, panel_order = NULL,
+  plot_as_fraction = TRUE, label_by_short_name = TRUE,
+  relative_expr = TRUE, plot_limits = c(0, 100))
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}

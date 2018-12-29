@@ -4,7 +4,8 @@
 \alias{differentialGeneTest}
 \title{Test genes for differential expression}
 \usage{
-differentialGeneTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
+differentialGeneTest(cds,
+  fullModelFormulaStr = "~sm.ns(Pseudotime, df=3)",
   reducedModelFormulaStr = "~1", relative_expr = TRUE, cores = 1,
   verbose = FALSE)
 }
