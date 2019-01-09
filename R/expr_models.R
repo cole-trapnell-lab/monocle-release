@@ -129,13 +129,15 @@ fit_model_helper <- function(x,
 fitModel <- function(cds,
                      modelFormulaStr="~sm.ns(Pseudotime, df=3)",
                      relative_expr=TRUE,
-                     cores=1){
+                     cores=1,
+                     verbose=FALSE){
   if (cores > 1){
     f<-mcesApply(cds, 1, fit_model_helper, required_packages=c("BiocGenerics", "Biobase", "VGAM", "plyr", "Matrix"), cores=cores,
                  modelFormulaStr=modelFormulaStr,
                  expressionFamily=cds@expressionFamily,
                  relative_expr=relative_expr,
-                 disp_func=cds@dispFitInfo[["blind"]]$disp_func)
+                 disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+                 verbose=verbose)
     f
   }else{
     f<-smartEsApply(cds,1,fit_model_helper,
@@ -143,7 +145,8 @@ fitModel <- function(cds,
                modelFormulaStr=modelFormulaStr,
                expressionFamily=cds@expressionFamily,
                relative_expr=relative_expr,
-               disp_func=cds@dispFitInfo[["blind"]]$disp_func)
+               disp_func=cds@dispFitInfo[["blind"]]$disp_func,
+               verbose=verbose)
     f
   }
   term_labels =  unlist(head(lapply( lapply(f[which(is.na(f) == FALSE)], coef), names), n=1))
@@ -155,7 +158,7 @@ fitModel <- function(cds,
 
 extract_coefficient_helper = function(model, term_labels, pseudo_expr=0.01){
   if (class(model) %in% c("vglm", "vgam")){
-    SM = summary(model)
+    SM = summary(model, HDEtest=FALSE)
     coef_mat = SM@coef3 # first row is intercept
     log_eff_over_int = log2((model@family@linkinv(coef_mat[,1] + coef_mat[1,1]) + pseudo_expr) / rep(model@family@linkinv(coef_mat[1,1]) + pseudo_expr, times=nrow(coef_mat)))
     log_eff_over_int[1] = 0
