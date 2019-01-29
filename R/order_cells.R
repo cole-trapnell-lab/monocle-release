@@ -1080,7 +1080,7 @@ orderCells <- function(cds,
   root_cell <- select_root_cell(cds, root_state, reverse)
 
   cds@auxOrderingData <- new.env( hash=TRUE )
-  if (cds@dim_reduce_type == "ICA"){
+  if (cds@dim_reduce_type %in% c("ICA", "function_passed")){
     if (is.null(num_paths)){
       num_paths = 1
     }
@@ -1171,6 +1171,8 @@ orderCells <- function(cds,
     pData(cds)$Pseudotime <-  cc_ordering[row.names(pData(cds)),]$pseudo_time
     pData(cds)$State <- cc_ordering[row.names(pData(cds)),]$cell_state
 
+    mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
+  } else {
     mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 2)]$name
   }
 
@@ -1391,7 +1393,7 @@ reduceDimension <- function(cds,
     reducedDimA(cds) <- as.matrix(reducedDim)
     reducedDimS(cds) <- as.matrix(reducedDim)
     reducedDimK(cds) <- as.matrix(reducedDim)
-    dp <- as.matrix(dist(reducedDim))
+    dp <- as.matrix(dist(t(reducedDimS(cds))))
     cellPairwiseDistances(cds) <- dp
     gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
     dp_mst <- minimum.spanning.tree(gp)
