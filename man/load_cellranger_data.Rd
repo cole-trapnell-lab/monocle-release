@@ -30,6 +30,6 @@ CRISPR features), only the Gene Expression data is returned.
 \examples{
 \dontrun{
 # Load from a Cell Ranger output directory
-gene_bc_matrix <- load_cellranger_matrix("/home/user/cellranger_output")
+gene_bc_matrix <- load_cellranger_data("/home/user/cellranger_output")
 }
 }

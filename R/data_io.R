@@ -35,7 +35,7 @@ get_genome_in_matrix_path <- function(matrix_path, genome=NULL) {
 #' @examples
 #' \dontrun{
 #' # Load from a Cell Ranger output directory
-#' gene_bc_matrix <- load_cellranger_matrix("/home/user/cellranger_output")
+#' gene_bc_matrix <- load_cellranger_data("/home/user/cellranger_output")
 #' }
 load_cellranger_data <- function(pipestance_path=NULL, genome=NULL, barcode_filtered=TRUE, lowerDetectionLimit=0.5, expressionFamily=negbinomial.size()) {
   # check for correct directory structure
