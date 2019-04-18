@@ -161,14 +161,7 @@ orderCells <- function(cds,
     stop("Error: no valid root principal graph nodes.")
   }
   
-# <<<<<<< HEAD
-#   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
-  
-#   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes)
-#   closest_vertex = cds@auxOrderingData[[cds@rge_method]]$pr_graph_cell_proj_closest_vertex
-#   pData(cds)$Pseudotime = cc_ordering[closest_vertex[row.names(pData(cds)),],]$pseudo_time
-#   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
-# =======
+
   cds@auxOrderingData[[cds@rge_method]]$root_pr_nodes <- root_pr_nodes
   
   cc_ordering <- extract_general_graph_ordering(cds, root_pr_nodes, orthogonal_proj_tip, verbose)
@@ -253,9 +246,10 @@ normalize_expr_data <- function(cds,
   }else if (cds@expressionFamily@vfamily == "binomialff") {
     if (norm_method == "none"){
       #If this is binomial data, transform expression values into TF-IDF scores.
-      ncounts <- FM > 0
-      ncounts[ncounts != 0] <- 1
-      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
+      FM <- tfidf(FM)
+      #ncounts <- FM > 0
+      #ncounts[ncounts != 0] <- 1
+      #FM <- ncounts * log(1 + ncol(ncounts)/rowSums(ncounts))
     }else{
       stop("Error: the only normalization method supported with binomial data is 'none'")
     }
@@ -278,6 +272,54 @@ normalize_expr_data <- function(cds,
   # if(norm_method != "none")
     #normalize_expr_data
   return (FM)
+}
+
+# tf-idf calc from Andrew Hill
+tfidf <- function(count_matrix, frequencies=TRUE, log_scale_tf=TRUE,
+                  scale_factor=100000, block_size=2000e6) {
+  # Use either raw counts or divide by total counts in each cell
+  if (frequencies) {
+    # "term frequency" method
+    tf <- Matrix::t(Matrix::t(count_matrix) / Matrix::colSums(count_matrix))
+  } else {
+    # "raw count" method
+    tf <- count_matrix
+  }
+  
+  # Either TF method can optionally be log scaled
+  if (log_scale_tf) {
+    if (frequencies) {
+      tf@x = log1p(tf@x * scale_factor)
+    } else {
+      tf@x = log1p(tf@x * 1)
+    }
+  }
+  
+  # IDF w/ "inverse document frequency smooth" method
+  idf = log(1 + ncol(count_matrix) / Matrix::rowSums(count_matrix))
+  
+  # Try to just to the multiplication and fall back on delayed array
+  # TODO hopefully this actually falls back and not get jobs killed in SGE
+  tf_idf_counts = tryCatch({
+    #print('TF*IDF multiplication, attempting in-memory computation')
+    tf_idf_counts = tf * idf
+    tf_idf_counts
+  }, error = function(e) {
+    print("TF*IDF multiplication too large for in-memory, falling back on DelayedArray.")
+    options(DelayedArray.block.size=block_size)
+    DelayedArray:::set_verbose_block_processing(TRUE)
+    
+    tf = DelayedArray(tf)
+    idf = as.matrix(idf)
+    
+    tf_idf_counts = tf * idf
+    tf_idf_counts
+  })
+  
+  rownames(tf_idf_counts) = rownames(count_matrix)
+  colnames(tf_idf_counts) = colnames(count_matrix)
+  tf_idf_counts = as(tf_idf_counts, "sparseMatrix")
+  return(tf_idf_counts)
 }
 
 #' project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data 
@@ -322,7 +364,6 @@ normalize_expr_data <- function(cds,
 #' the gene in the entire dataset, which helps to adjust for the fact that some gene appear more frequently across cell in general.) matrix and then performs a 
 #' SVD to decompose the gene expression / cells into certain modules / topics. This method can be used to find associated gene modules 
 #  and cell clusters at the same time. It removes noise in the data and thus makes the UMAP result even better. 
-#' @param use_tf_idf a logic argument to determine whether we should convert the normalized gene expression value into tf-idf value before performing PCA 
 #' @param num_dim the dimensionality of the reduced space
 #' @param norm_method Determines how to transform expression values prior to reducing dimensionality
 #' @param residualModelFormulaStr A model formula specifying the effects to subtract from the data before clustering.
@@ -333,14 +374,11 @@ normalize_expr_data <- function(cds,
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @import methods
-#' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
-#' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @importFrom stats dist prcomp
 #' @export
 preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
-                          use_tf_idf = FALSE, 
                           num_dim=50,
                           norm_method = c("log", "vstExprs", "none"),
                           residualModelFormulaStr=NULL,
@@ -350,6 +388,8 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
                           verbose=FALSE,
                           ...) {
   extra_arguments <- list(...)
+  method <- match.arg(method)
+  norm_method <- match.arg(norm_method)
   set.seed(2016) #ensure results from RNG sensitive algorithms are the same on all calls
   
   FM <- normalize_expr_data(cds, norm_method, pseudo_expr, relative_expr)
@@ -357,20 +397,6 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
   # For NB: Var(Y)=mu*(1+mu/k)
   #f_expression_var <- DelayedMatrixStats::rowVars(FM)
   #FM <- FM[f_expression_var > 0,]
-  
-  if (is.null(residualModelFormulaStr) == FALSE) {
-    if (verbose)
-      message("Removing batch effects")
-    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
-                                       data = pData(cds), drop.unused.levels = TRUE)
-    
-    fit <- limma::lmFit(FM, X.model_mat, ...)
-    beta <- fit$coefficients[, -1, drop = FALSE]
-    beta[is.na(beta)] <- 0
-    FM <- as.matrix(FM) - beta %*% t(X.model_mat[, -1])
-  }else{
-    X.model_mat <- NULL
-  }
   
   if (nrow(FM) == 0) {
     stop("Error: all rows have standard deviation zero")
@@ -385,24 +411,25 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
     if (verbose)
       message("Remove noise by PCA ...")
     
-    if(use_tf_idf == TRUE) {
-      FM <- as(FM, "dgCMatrix")
-      cds_dfm <- new("dfmSparse", FM)
-      cds_dfm <- dfm_tfidf(cds_dfm)
-      FM <- sparseMatrix(i = cds_dfm@i, p = cds_dfm@p, x = cds_dfm@x, dimnames = cds_dfm@Dimnames, dims = cds_dfm@Dim, index1 = F)
-    }
+    # if(use_tf_idf == TRUE) {
+    #   FM <- as(FM, "dgCMatrix")
+    #   cds_dfm <- new("dfmSparse", FM)
+    #   cds_dfm <- dfm_tfidf(cds_dfm)
+    #   FM <- sparseMatrix(i = cds_dfm@i, p = cds_dfm@p, x = cds_dfm@x, dimnames = cds_dfm@Dimnames, dims = cds_dfm@Dim, index1 = F)
+    # }
     
     irlba_res <- sparse_prcomp_irlba(t(FM), n = min(num_dim, min(dim(FM)) - 1),
                                      center = scaling, scale. = scaling)
     irlba_pca_res <- irlba_res$x
     row.names(irlba_pca_res) <- colnames(cds)
+    
     # reducedDimA(cds) <- t(irlba_pca_res) # get top 50 PCs, which can be used for louvain clustering later 
-  } else if(method == 'LSI') {
-    FM <- as(FM, "dgCMatrix")
-    cds_dfm <- new("dfmSparse", FM)
-    cds_dfm <- dfm_tfidf(cds_dfm)
-    cds_dfm_lsa <- textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
-    irlba_pca_res <- cds_dfm_lsa$features
+  # } else if(method == 'LSI') {
+  #   FM <- as(FM, "dgCMatrix")
+  #   cds_dfm <- new("dfmSparse", FM)
+  #   cds_dfm <- dfm_tfidf(cds_dfm)
+  #   cds_dfm_lsa <- textmodel_lsa(cds_dfm, nd = num_dim, margin = c("both"))
+  #   irlba_pca_res <- cds_dfm_lsa$features
     
   } else if(method == 'none') {
     irlba_pca_res <- t(FM)
@@ -410,7 +437,22 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
     stop('unknown preprocessing method, stop!')
   }
   row.names(irlba_pca_res) <- colnames(cds)
-  cds@normalized_data_projection <- irlba_pca_res
+  
+  if (is.null(residualModelFormulaStr) == FALSE) {
+    if (verbose)
+      message("Removing batch effects")
+    X.model_mat <- sparse.model.matrix(as.formula(residualModelFormulaStr),
+                                       data = pData(cds), drop.unused.levels = TRUE)
+    
+    fit <- limma::lmFit(t(irlba_pca_res), X.model_mat, ...)
+    beta <- fit$coefficients[, -1, drop = FALSE]
+    beta[is.na(beta)] <- 0
+    irlba_pca_res <- t(as.matrix(t(irlba_pca_res)) - beta %*% t(X.model_mat[, -1]))
+  }else{
+    X.model_mat <- NULL
+  }
+  
+  cds@normalized_data_projection <- as.matrix(irlba_pca_res)
   
   cds
 }
@@ -466,9 +508,7 @@ preprocessCDS <- function(cds, method = c('PCA', 'none'), #, 'LSI' , 'NMF'
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @import methods
-#' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
-#' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
 #' @import Rtsne
@@ -656,6 +696,7 @@ reduceDimension <- function(cds,
 #' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
 #' @seealso \code{\link[monocle]{patchEmbedding}}
+#' @keywords internal
 smoothEmbedding <- function(cds,
                            max_components = 2, 
                            do_partition = FALSE, 
@@ -708,7 +749,7 @@ smoothEmbedding <- function(cds,
 #' consider any clusters with p-value larger than 0.05 by default as not disconnected. 
 #' 
 #' @param cds the CellDataSet upon which to perform this operation
-#' @param partition_names Which partiton groups (column in the pData) should be used to calculate the connectivity between partitions
+#' @param partition_names Which partition groups (column in the pData) should be used to calculate the connectivity between partitions
 #' @param use_pca Whether or not to cluster cells based on top PCA component. Default to be FALSE. 
 #' @param k number of nearest neighbors used for Louvain clustering (pass to louvain_clustering function)
 #' @param weight whether or not to calculate the weight for each edge in the kNN graph (pass to louvain_clustering function)
@@ -845,9 +886,7 @@ partitionCells <- function(cds,
 #' @param ... additional arguments to pass to the dimensionality reduction function
 #' @return an updated CellDataSet object
 #' @import methods
-#' @importFrom matrixStats rowSds
 #' @importFrom limma removeBatchEffect
-#' @importFrom fastICA  ica.R.def ica.R.par
 #' @import irlba
 #' @import DDRTree
 #' @import Rtsne
@@ -860,7 +899,7 @@ partitionCells <- function(cds,
 #' @export
 learnGraph <- function(cds,
                        max_components=2,
-                       rge_method = c('SimplePPT', 'L1graph', 'DDRTree'), 
+                       rge_method = c('SimplePPT','DDRTree'), # 'L1graph' 
                        auto_param_selection = TRUE, 
                        partition_group = 'louvain_component', 
                        do_partition = TRUE, 
@@ -897,118 +936,7 @@ learnGraph <- function(cds,
   louvain_component <- pData(cds)$louvain_component
   names(louvain_component) <- colnames(cds)
   
-  if(rge_method == 'L1graph_old') { 
-    # FIXME: This case is broken, because I didn't have time to update the landmark
-    # stuff during the refactor.
-    if(cds@dim_reduce_type != "UMAP") {
-      stop('L1graph can be only applied to the UMAP space, please first call reduceDimension() using UMAP!')
-    } 
-    
-    if("ncenter" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
-      ncenter <- extra_arguments$ncenter
-    }else{
-      if("L1.pr_graph_vertex_per_louvain_module" %in% names(extra_arguments)){ #avoid overwrite the ncenter parameter
-        L1.pr_graph_vertex_per_louvain_module <- extra_arguments$L1.pr_graph_vertex_per_louvain_module
-      }else{
-        L1.pr_graph_vertex_per_louvain_module = 3
-      }
-      ncenter = L1.pr_graph_vertex_per_louvain_module * louvain_module_length
-      ncenter = min(ncol(FM) / 2, ncenter)
-    }
-    
-    if (ncenter > ncol(Y))
-      stop("Error: ncenters must be less than or equal to ncol(X)")
-    
-    centers <- reduced_dim_res[, seq(1, ncol(reduced_dim_res), length.out=ncenter), drop = F]
-    #centers <- centers + matrix(rnorm(length(centers), sd = 1e-10), nrow = nrow(centers)) # add random noise 
-    
-    kmean_res <- kmeans(t(reduced_dim_res), ncenter, centers=t(centers), iter.max = 100)
-    if (kmean_res$ifault != 0){
-      message(paste("Warning: kmeans returned ifault =", kmean_res$ifault))
-    }
-    # browser()
-    nearest_center = findNearestVertex(t(kmean_res$centers), reduced_dim_res, process_targets_in_blocks=TRUE)
-    medioids = reduced_dim_res[,unique(nearest_center)]
-    reduced_dim_res <- medioids
-    
-    if(verbose)
-      message('running L1-graph ...')
-    
-    #X <- t(reduced_dim_res)
-    
-    if('C0' %in% names(extra_arguments)){
-      C0 <- extra_arguments$C0
-    }
-    else
-      C0 <- reduced_dim_res
-    Nz <- ncol(C0)
-    
-    if('nn' %in% names(extra_arguments))
-      G_T = get_mst_with_shortcuts(C0, K = extra_arguments$nn)
-    else
-      G_T = get_mst_with_shortcuts(C0, K = 5)
-    
-    
-    G = G_T$G #+ G_knn$G
-    
-    G[G > 0] = 1
-    W = G_T$W #+ G_knn$W
-    
-    if("louvain_qval" %in% names(extra_arguments)){ 
-      louvain_qval <- extra_arguments$louvain_qval 
-    }
-    else{
-      louvain_qval <- 0.05
-    }
-    
-    # cluster_graph_res <- compute_louvain_connected_components(louvain_res$g, louvain_res$optim_res, louvain_qval, verbose)
-    # louvain_component = components(cluster_graph_res$cluster_g)$membership[louvain_res$optim_res$membership]
-    # cds@auxOrderingData[["L1graph"]]$louvain_component = louvain_component
-    # names(louvain_component) <- colnames(cds)
-    louvain_component_for_medioids <- louvain_component[colnames(reduced_dim_res)]
-    #louvain_component_for_medioids <- as.factor(louvain_component_for_medioids)
-    if (do_partition && length(levels(louvain_component_for_medioids)) > 1){
-      louvain_component_mask = as.matrix(tcrossprod(sparse.model.matrix( ~ louvain_component_for_medioids + 0)))
-      
-      G = G * louvain_component_mask
-      W = W * louvain_component_mask
-      rownames(G) = rownames(W)
-      colnames(G) = colnames(W)
-    }
-    
-    L1graph_args <- c(list(X = reduced_dim_res, C0 = C0, G = G, gstruct = 'l1-graph', verbose = verbose),
-                      extra_arguments[names(extra_arguments) %in% c('maxiter', 'eps', 'L1.lambda', 'L1.gamma', 'L1.sigma', 'nn')])
-    
-    
-    l1_graph_res <- do.call(principal_graph, L1graph_args)
-    
-    colnames(l1_graph_res$C) <-  colnames(reduced_dim_res)
-    #DCs <- reduced_dim_res #FM
-    
-    colnames(l1_graph_res$W) <- colnames(reduced_dim_res)
-    rownames(l1_graph_res$W) <- colnames(reduced_dim_res)
-    
-    
-    # row.names(l1_graph_res$X) <- colnames(cds)
-    reducedDimW(cds) <- l1_graph_res$W
-    # reducedDimS(cds) <- DCs
-    reducedDimK(cds) <- l1_graph_res$C
-    cds@auxOrderingData[["L1graph"]]$objective_vals <- tail(l1_graph_res$objs, 1)
-    cds@auxOrderingData[["L1graph"]]$W <- l1_graph_res$W
-    cds@auxOrderingData[["L1graph"]]$P <- l1_graph_res$P
-    
-    adjusted_K <- Matrix::t(reducedDimK(cds))
-    dp <- as.matrix(dist(adjusted_K))
-    cellPairwiseDistances(cds) <- dp
-    
-    W <- l1_graph_res$W
-    dimnames(l1_graph_res$W) <- list(paste('cell_', 1:nrow(W), sep = ''), paste('cell_', 1:nrow(W), sep = ''))
-    W[W < 1e-5] <- 0
-    gp <- graph.adjacency(W, mode = "undirected", weighted = TRUE)
-    # dp_mst <- minimum.spanning.tree(gp)
-    minSpanningTree(cds) <- gp
-    cds <- findNearestPointOnMST(cds)
-  } else if(rge_method %in% c('SimplePPT', 'L1graph') ) {
+  if(rge_method %in% c('SimplePPT', 'L1graph') ) {
     if(ncol(cds@reducedDimS) > 1) {
       irlba_pca_res <- t(cds@reducedDimS)
     }
@@ -1325,6 +1253,7 @@ learnGraph <- function(cds,
 #' @param target_points the target points
 #' @param block_size the number of input matrix rows to process per bloclk
 #' @param process_targets_in_blocks whether to process the targets points in blocks instead
+#' @keywords internal
 findNearestVertex = function(data_matrix, target_points, block_size=50000, process_targets_in_blocks=FALSE){
   closest_vertex = c()
   if (process_targets_in_blocks == FALSE){
@@ -1586,23 +1515,6 @@ projPointOnLine <- function(point, line) {
   return(res)
 }
 
-# projPointOnLine <- function(point, line){
-#   vx = line[1, 2]
-#   vy = line[2, 2]
-
-#   # difference of point with line origin
-#   dx = point[1] - line[1,1]
-#   dy = point[2] - line[2,1]
-
-#   # Position of projection on line, using dot product
-#   tp = (dx * vx + dy * vy ) / (vx * vx + vy * vy)
-
-#   # convert position on line to cartesian coordinates
-#   point = c(line[1,1] + tp * vx, line[2,1] + tp * vy)
-
-#   return(point)
-# }
-
 # Project point to line segment (in >= 2 dimensions)
 project_point_to_line_segment <- function(p, df){
   # returns q the closest point to p on the line segment from A to B
@@ -1642,13 +1554,14 @@ project_point_to_line_segment <- function(p, df){
   return(q)
 }
 
-# #' traverse from one cell to another cell
-# #'
-# #' @param g the tree graph learned from monocle 2 during trajectory reconstruction
-# #' @param starting_cell the initial vertex for traversing on the graph
-# #' @param end_cells the terminal vertex for traversing on the graph
-# #' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
+#' traverse from one cell to another cell
+#'
+#' @param g the tree graph learned from monocle 2 during trajectory reconstruction
+#' @param starting_cell the initial vertex for traversing on the graph
+#' @param end_cells the terminal vertex for traversing on the graph
+#' @return a list of shortest path from the initial cell and terminal cell, geodestic distance between initial cell and terminal cells and branch point passes through the shortest path
 #' @importFrom igraph shortest.paths shortest_paths degree
+#' @keywords internal
 traverseGraph <- function(g, starting_cell, end_cells){
   distance <- shortest.paths(g, v=starting_cell, to=end_cells)
   branchPoints <- which(degree(g) == 3)
@@ -1664,6 +1577,7 @@ traverseGraph <- function(g, starting_cell, end_cells){
 #' @param starting_cell the initial vertex for traversing on the graph
 #' @param end_cells the terminal vertex for traversing on the graph
 #' @return a new cds containing only the cells traversed from the intial cell to the end cell
+#' @keywords internal
 traverseGraphCDS <- function(cds, interactive = TRUE, starting_cell = NULL, end_cells = NULL, ...){
   if(interactive) {
     lib_info_with_pseudo <- pData(cds)
@@ -2418,6 +2332,7 @@ connectTips <- function(pd,
 #' @importFrom viridis scale_color_viridis
 #' @references PSL: Li Wang, Qi Mao (2018). Probabilistic Dimensionality Reduction via Structure Learning. IEEE Transactions on Pattern Analysis and Machine Intelligence
 #' @references SSE: Li Wang, Qi Mao, Ivor W. Tsang (2017). Latent Smooth Skeleton Embedding. Proceedings of the 31th AAAI Conference on Artificial Intelligence. 2017.
+#' @keywords internal
 patchEmbedding <- function(cds, 
                            max_components = 2, 
                            do_partition = FALSE, 
@@ -2645,6 +2560,7 @@ patchEmbedding <- function(cds,
 #' @param max_components the dimensionality of the reduced space
 #' @param verbose Wheter to print all running details 
 #' @param ... additional arguments passed to functions (louvain_clustering) called by this function. 
+#' @keywords internal
 project_to_representatives <- function(data, 
                                        data_ori, 
                                        landmark_id, 
@@ -2766,6 +2682,7 @@ project_to_representatives <- function(data,
 #' @param Y Matrix to be rotated.
 #' @param scale Allow scaling of axes of Y.
 #' @param symmetric Use symmetric Procrustes statistic (the rotation will still be non-symmetric).
+#' @keywords internal
 procrustes <- function (X, Y, scale = TRUE, symmetric = FALSE) 
 {
   # X <- scores(X, display = scores, ...)
