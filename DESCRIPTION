@@ -78,10 +78,10 @@ Suggests:
     testthat, 
     reticulate,
     SingleCellExperiment,
-    ggrastr
+    ggrastr,
+    PSL
 VignetteBuilder: knitr
 Roxygen: list(wrap = FALSE)
-Remotes: cole-trapnell-lab/L1-graph, VPetukhov/ggrastr
 LazyData: true
 biocViews: Sequencing, RNASeq, GeneExpression, DifferentialExpression,
     Infrastructure, DataImport, DataRepresentation, Visualization,
