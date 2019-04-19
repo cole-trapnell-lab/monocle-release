@@ -246,9 +246,7 @@ normalize_expr_data <- function(cds,
   }else if (cds@expressionFamily@vfamily == "binomialff") {
     if (norm_method == "none"){
       #If this is binomial data, transform expression values into TF-IDF scores.
-      ncounts <- FM > 0
-      ncounts[ncounts != 0] <- 1
-      FM <- Matrix::t(Matrix::t(ncounts) * log(1 + ncol(ncounts)/rowSums(ncounts)))
+      FM <- tfidf(FM)
     }else{
       stop("Error: the only normalization method supported with binomial data is 'none'")
     }
@@ -272,6 +270,56 @@ normalize_expr_data <- function(cds,
     #normalize_expr_data
   return (FM)
 }
+
+# tf-idf calc from Andrew Hill
+tfidf <- function(count_matrix, frequencies=TRUE, log_scale_tf=TRUE,
+                  scale_factor=100000, block_size=2000e6) {
+  # Use either raw counts or divide by total counts in each cell
+  if (frequencies) {
+    # "term frequency" method
+    tf <- Matrix::t(Matrix::t(count_matrix) / Matrix::colSums(count_matrix))
+  } else {
+    # "raw count" method
+    tf <- count_matrix
+  }
+  
+  # Either TF method can optionally be log scaled
+  if (log_scale_tf) {
+    if (frequencies) {
+      tf@x = log1p(tf@x * scale_factor)
+    } else {
+      tf@x = log1p(tf@x * 1)
+    }
+  }
+  
+  # IDF w/ "inverse document frequency smooth" method
+  idf = log(1 + ncol(count_matrix) / Matrix::rowSums(count_matrix))
+  
+  # Try to just to the multiplication and fall back on delayed array
+  # TODO hopefully this actually falls back and not get jobs killed in SGE
+  tf_idf_counts = tryCatch({
+    #print('TF*IDF multiplication, attempting in-memory computation')
+    tf_idf_counts = tf * idf
+    tf_idf_counts
+  }, error = function(e) {
+    print("TF*IDF multiplication too large for in-memory, falling back on DelayedArray.")
+    options(DelayedArray.block.size=block_size)
+    DelayedArray:::set_verbose_block_processing(TRUE)
+    
+    tf = DelayedArray(tf)
+    idf = as.matrix(idf)
+    
+    tf_idf_counts = tf * idf
+    tf_idf_counts
+  })
+  
+  rownames(tf_idf_counts) = rownames(count_matrix)
+  colnames(tf_idf_counts) = colnames(count_matrix)
+  tf_idf_counts = as(tf_idf_counts, "sparseMatrix")
+  return(tf_idf_counts)
+}
+
+
 
 #' project a CellDataSet object into a lower dimensional PCA (or ISI) space after normalize the data 
 #'
