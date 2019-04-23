@@ -588,19 +588,13 @@ To work with your data in a sparse format, simply provide it to Monocle as a spa
 \end{kframe}
 \end{knitrout}
  
-\textbf{NOTE:} The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX). If so, you should just pass it directly to newCellDataSet without first converting it to a dense matrix (via \Rfunction(as.matrix)), because that may exceed your available memeory. If you have 10X Genomics data and are using \Rpackage{cellrangerRkit}, you can use it to load your data and then pass that to Monocle as follows:
+\textbf{NOTE:} The output from a number of RNA-Seq pipelines, including CellRanger, is already in a sparseMatrix format (e.g. MTX).  You can load this data into a \Rfunction{newCellDataSet} using the function \Rfunction(load_cellranger_data) as follows:
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{cellranger_pipestance_path} \hlkwb{<-} \hlstr{"/path/to/your/pipeline/output/directory"}
-\hlstd{gbm} \hlkwb{<-} \hlkwd{load_cellranger_matrix}\hlstd{(cellranger_pipestance_path)}
-
-\hlstd{gbm_cds} \hlkwb{<-} \hlkwd{newCellDataSet}\hlstd{(}\hlkwd{exprs}\hlstd{(gbm),}
-                         \hlkwc{phenoData} \hlstd{=} \hlkwd{new}\hlstd{(}\hlstr{"AnnotatedDataFrame"}\hlstd{,} \hlkwd{pData}\hlstd{(gbm)),}
-                         \hlkwc{featureData} \hlstd{=} \hlkwd{new}\hlstd{(}\hlstr{"AnnotatedDataFrame"}\hlstd{,} \hlkwd{fData}\hlstd{(gbm)),}
-                         \hlkwc{lowerDetectionLimit}\hlstd{=}\hlnum{0.5}\hlstd{,}
-                         \hlkwc{expressionFamily}\hlstd{=}\hlkwd{negbinomial.size}\hlstd{())}
+\hlstd{gbm} \hlkwb{<-} \hlkwd{load_cellranger_data}\hlstd{(cellranger_pipestance_path)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
