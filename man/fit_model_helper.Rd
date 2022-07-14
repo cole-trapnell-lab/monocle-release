@@ -4,8 +4,15 @@
 \alias{fit_model_helper}
 \title{Helper function for parallel VGAM fitting}
 \usage{
-fit_model_helper(x, modelFormulaStr, expressionFamily, relative_expr,
-  disp_func = NULL, verbose = FALSE, ...)
+fit_model_helper(
+  x,
+  modelFormulaStr,
+  expressionFamily,
+  relative_expr,
+  disp_func = NULL,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{test}

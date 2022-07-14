@@ -4,8 +4,14 @@
 \alias{estimateDispersionsForCellDataSet}
 \title{Helper function to estimate dispersions}
 \usage{
-estimateDispersionsForCellDataSet(cds, modelFormulaStr, relative_expr,
-  min_cells_detected, removeOutliers, verbose = FALSE)
+estimateDispersionsForCellDataSet(
+  cds,
+  modelFormulaStr,
+  relative_expr,
+  min_cells_detected,
+  removeOutliers,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{cds}{a CellDataSet that contains all cells user wants evaluated}

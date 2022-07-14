@@ -4,8 +4,14 @@
 \alias{clusterGenes}
 \title{Clusters genes by pseudotime trend.}
 \usage{
-clusterGenes(expr_matrix, k, method = function(x) {     as.dist((1 -
-  cor(Matrix::t(x)))/2) }, ...)
+clusterGenes(
+  expr_matrix,
+  k,
+  method = function(x) {
+     as.dist((1 - cor(Matrix::t(x)))/2)
+ },
+  ...
+)
 }
 \arguments{
 \item{expr_matrix}{A matrix of expression values to cluster together. Rows 

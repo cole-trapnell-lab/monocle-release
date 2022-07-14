@@ -4,8 +4,12 @@
 \alias{fitModel}
 \title{Fits a model for each gene in a CellDataSet object.}
 \usage{
-fitModel(cds, modelFormulaStr = "~sm.ns(Pseudotime, df=3)",
-  relative_expr = TRUE, cores = 1)
+fitModel(
+  cds,
+  modelFormulaStr = "~sm.ns(Pseudotime, df=3)",
+  relative_expr = TRUE,
+  cores = 1
+)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

@@ -5,9 +5,17 @@
 \title{Not sure we're ready to release this one quite yet:
 Plot the branch genes in pseduotime with separate branch curves}
 \usage{
-plot_coexpression_matrix(cds, rowgenes, colgenes, relative_expr = TRUE,
-  min_expr = NULL, cell_size = 0.85, label_by_short_name = TRUE,
-  show_density = TRUE, round_expr = FALSE)
+plot_coexpression_matrix(
+  cds,
+  rowgenes,
+  colgenes,
+  relative_expr = TRUE,
+  min_expr = NULL,
+  cell_size = 0.85,
+  label_by_short_name = TRUE,
+  show_density = TRUE,
+  round_expr = FALSE
+)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

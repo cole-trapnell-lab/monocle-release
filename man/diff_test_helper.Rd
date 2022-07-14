@@ -4,9 +4,16 @@
 \alias{diff_test_helper}
 \title{Helper function for parallel differential expression testing}
 \usage{
-diff_test_helper(x, fullModelFormulaStr, reducedModelFormulaStr,
-  expressionFamily, relative_expr, weights, disp_func = NULL,
-  verbose = FALSE)
+diff_test_helper(
+  x,
+  fullModelFormulaStr,
+  reducedModelFormulaStr,
+  expressionFamily,
+  relative_expr,
+  weights,
+  disp_func = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{x}{test}

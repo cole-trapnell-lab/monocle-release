@@ -4,10 +4,19 @@
 \alias{plot_genes_jitter}
 \title{Plots expression for one or more genes as a jittered, grouped points}
 \usage{
-plot_genes_jitter(cds_subset, grouping = "State", min_expr = NULL,
-  cell_size = 0.75, nrow = NULL, ncol = 1, panel_order = NULL,
-  color_by = NULL, plot_trend = FALSE, label_by_short_name = TRUE,
-  relative_expr = TRUE)
+plot_genes_jitter(
+  cds_subset,
+  grouping = "State",
+  min_expr = NULL,
+  cell_size = 0.75,
+  nrow = NULL,
+  ncol = 1,
+  panel_order = NULL,
+  color_by = NULL,
+  plot_trend = FALSE,
+  label_by_short_name = TRUE,
+  relative_expr = TRUE
+)
 }
 \arguments{
 \item{cds_subset}{CellDataSet for the experiment}

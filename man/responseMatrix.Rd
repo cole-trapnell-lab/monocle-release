@@ -4,8 +4,7 @@
 \alias{responseMatrix}
 \title{Calculates response values.}
 \usage{
-responseMatrix(models, newdata = NULL, response_type = "response",
-  cores = 1)
+responseMatrix(models, newdata = NULL, response_type = "response", cores = 1)
 }
 \arguments{
 \item{models}{a list of models, e.g. as returned by fitModels()}

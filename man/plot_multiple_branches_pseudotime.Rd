@@ -4,11 +4,22 @@
 \alias{plot_multiple_branches_pseudotime}
 \title{Create a kinetic curves to demonstrate the bifurcation of gene expression along multiple branches}
 \usage{
-plot_multiple_branches_pseudotime(cds, branches, branches_name = NULL,
-  min_expr = NULL, cell_size = 0.75, norm_method = c("vstExprs", "log"),
-  nrow = NULL, ncol = 1, panel_order = NULL, color_by = "Branch",
-  trend_formula = "~sm.ns(Pseudotime, df=3)", label_by_short_name = TRUE,
-  TPM = FALSE, cores = 1)
+plot_multiple_branches_pseudotime(
+  cds,
+  branches,
+  branches_name = NULL,
+  min_expr = NULL,
+  cell_size = 0.75,
+  norm_method = c("vstExprs", "log"),
+  nrow = NULL,
+  ncol = 1,
+  panel_order = NULL,
+  color_by = "Branch",
+  trend_formula = "~sm.ns(Pseudotime, df=3)",
+  label_by_short_name = TRUE,
+  TPM = FALSE,
+  cores = 1
+)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment (normally only the branching genes detected with BEAM)}

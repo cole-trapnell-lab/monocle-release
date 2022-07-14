@@ -4,11 +4,19 @@
 \alias{reduceDimension}
 \title{Compute a projection of a CellDataSet object into a lower dimensional space}
 \usage{
-reduceDimension(cds, max_components = 2, reduction_method = c("DDRTree",
-  "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"), norm_method = c("log",
-  "vstExprs", "none"), residualModelFormulaStr = NULL, pseudo_expr = 1,
-  relative_expr = TRUE, auto_param_selection = TRUE, verbose = FALSE,
-  scaling = TRUE, ...)
+reduceDimension(
+  cds,
+  max_components = 2,
+  reduction_method = c("DDRTree", "ICA", "tSNE", "SimplePPT", "L1-graph", "SGL-tree"),
+  norm_method = c("log", "vstExprs", "none"),
+  residualModelFormulaStr = NULL,
+  pseudo_expr = 1,
+  relative_expr = TRUE,
+  auto_param_selection = TRUE,
+  verbose = FALSE,
+  scaling = TRUE,
+  ...
+)
 }
 \arguments{
 \item{cds}{the CellDataSet upon which to perform this operation}

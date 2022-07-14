@@ -4,10 +4,21 @@
 \alias{calABCs}
 \title{Compute the area between curves (ABC) for branch-dependent genes}
 \usage{
-calABCs(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
-  branch_point = 1, trajectory_states = NULL, relative_expr = TRUE,
-  stretch = TRUE, cores = 1, verbose = F, min_expr = 0.5,
-  integer_expression = FALSE, num = 5000, branch_labels = NULL, ...)
+calABCs(
+  cds,
+  trend_formula = "~sm.ns(Pseudotime, df = 3)*Branch",
+  branch_point = 1,
+  trajectory_states = NULL,
+  relative_expr = TRUE,
+  stretch = TRUE,
+  cores = 1,
+  verbose = F,
+  min_expr = 0.5,
+  integer_expression = FALSE,
+  num = 5000,
+  branch_labels = NULL,
+  ...
+)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}
