@@ -1065,7 +1065,7 @@ orderCells <- function(cds,
                        num_paths = NULL,
                        reverse=NULL){
   
-  if(class(cds)[1] != "CellDataSet") {
+  if(!is(cds, "CellDataSet")) {
     stop("Error cds is not of type 'CellDataSet'")
   }
   
@@ -1618,7 +1618,7 @@ project2MST <- function(cds, Projection_Method){
         projection <- rbind(projection, tmp)
         distance <- c(distance, dist(rbind(Z_i, tmp)))
       }
-      if(class(projection) != 'matrix')
+      if(!is.matrix(projection))
         projection <- as.matrix(projection)
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
     }

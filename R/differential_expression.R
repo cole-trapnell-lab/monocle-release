@@ -139,7 +139,7 @@ differentialGeneTest <- function(cds,
                                  ){
   status <- NA
   
-  if(class(cds)[1] != "CellDataSet") {
+  if(!is(cds, "CellDataSet")) {
     stop("Error cds is not of type 'CellDataSet'")
   }
   

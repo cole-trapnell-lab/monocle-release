@@ -116,11 +116,11 @@ exportCDS <- function(monocle_cds, export_to = c('Seurat', 'Scater'), export_all
 #' importCDS(scater_lung_all, import_all = T)
 #' }
 importCDS <- function(otherCDS, import_all = FALSE) {
-  if(class(otherCDS)[1] == 'seurat') {
+  if(is(otherCDS, 'seurat')) {
     requireNamespace("Seurat")
     data <- otherCDS@raw.data
 
-    if(class(data) == "data.frame") {
+    if(is.data.frame(data)) {
       data <- as(as.matrix(data), "sparseMatrix")
     }
     
@@ -215,7 +215,7 @@ importCDS <- function(otherCDS, import_all = FALSE) {
     }
     monocle_cds@auxClusteringData$seurat <- mist_list
     
-  } else if (class(otherCDS)[1] == 'SCESet') {
+  } else if (is(otherCDS, 'SCESet')) {
     requireNamespace("scater")
     
     message('Converting the exprs data in log scale back to original scale ...')    

@@ -1885,7 +1885,7 @@ plot_genes_branched_heatmap <- function(cds_subset,
 #' @param cds The CellDataSet to be used for the plot.
 #' @export
 plot_ordering_genes <- function(cds){
-  if(class(cds)[1] != "CellDataSet") {
+  if(!is(cds, "CellDataSet")) {
     stop("Error input object is not of type 'CellDataSet'")
   }
   disp_table <- dispersionTable(cds)
@@ -2344,14 +2344,14 @@ plot_complex_cell_trajectory <- function(cds,
   # FIXME: setting size here overrides the marker expression funtionality. 
   # Don't do it!
   if (is.null(markers_exprs) == FALSE && nrow(markers_exprs) > 0){
-    if(class(data_df[, color_by]) == 'numeric') {
+    if(is.numeric(data_df[[color_by]])) {
       g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
                              scale_color_viridis(name = paste0("log10(", color_by, ")"), ...)
     } else {
       g <- g + geom_jitter(aes_string(color = color_by), size=I(cell_size), na.rm = TRUE, height=5) 
     }
   }else {
-    if(class(data_df[, color_by]) == 'numeric') {
+    if(is.numeric(data_df[[color_by]])) {
       g <- g + geom_jitter(aes_string(color = paste0("log10(", color_by, " + 0.1)")), size=I(cell_size), na.rm = TRUE, height=5) + 
         scale_color_viridis(name = paste0("log10(", color_by, " + 0.1)"), ...)
     } else {

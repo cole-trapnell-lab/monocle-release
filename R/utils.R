@@ -32,7 +32,7 @@ newCellDataSet <- function( cellData,
     warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
   }
   
-  if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
+  if (!is.matrix(cellData) && isSparseMatrix(cellData) == FALSE){
     stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
   }
   
@@ -311,7 +311,7 @@ asSlamMatrix = function (sp_mat) {
 # Convert a sparseMatrix from Matrix package to a slam matrix
 #' @import Matrix
 isSparseMatrix <- function(x){
-  class(x) %in% c("dgCMatrix", "dgTMatrix")
+  any(class(x) %in% c("dgCMatrix", "dgTMatrix"))
 }
 
 # Estimate size factors for each column, given a sparseMatrix from the Matrix
