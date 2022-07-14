@@ -72,6 +72,7 @@ clusterGenes<-function(expr_matrix, k, method=function(x){as.dist((1 - cor(Matri
 #' @return an updated CellDataSet object, in which phenoData contains values for Cluster for each cell
 #' @importFrom densityClust densityClust findClusters
 #' @importFrom igraph graph.data.frame cluster_louvain modularity membership
+#' @importFrom stats quantile
 #' @import ggplot2
 #' @importFrom RANN nn2
 #' @references Rodriguez, A., & Laio, A. (2014). Clustering by fast search and find of density peaks. Science, 344(6191), 1492-1496. doi:10.1126/science.1242072

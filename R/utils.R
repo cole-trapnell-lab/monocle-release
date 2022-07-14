@@ -105,7 +105,7 @@ splitCols <- function (x, ncl) {
   lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
-#' @importFrom BiocGenerics clusterApply
+#' @importFrom parallel clusterApply
 sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
@@ -114,7 +114,7 @@ sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...)
   par_res
 }
 
-#' @importFrom BiocGenerics clusterApply
+#' @importFrom parallel clusterApply
 sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
@@ -139,7 +139,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...)
 #' 
 #' @return The result of with(pData(X) apply(exprs(X)), MARGIN, FUN, ...))
 #' @importFrom parallel makeCluster stopCluster
-#' @importFrom BiocGenerics clusterCall parRapply parCapply
+#' @importFrom parallel clusterCall parRapply parCapply
 #' @importFrom Biobase pData exprs multiassign
 #' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
