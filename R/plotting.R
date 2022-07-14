@@ -308,8 +308,8 @@ plot_genes_violin <- function (cds_subset, grouping = "State", min_expr = NULL, 
                               plot_trend = FALSE, label_by_short_name = TRUE, relative_expr = TRUE, 
                               log_scale = TRUE) 
 {
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", 
-                                                 "negbinomial.size")) {
+  if (any(cds_subset@expressionFamily@vfamily %in%
+          c("negbinomial", "negbinomial.size"))) {
     integer_expression = TRUE
   }
   else {
@@ -444,7 +444,7 @@ plot_genes_jitter <- function(cds_subset,
                               label_by_short_name=TRUE,
                               relative_expr=TRUE){
   
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+  if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))){
 
     integer_expression <- TRUE
   }else{
@@ -573,7 +573,7 @@ plot_genes_positive_cells <- function(cds_subset,
   
   percent <- NULL
 
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+  if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -686,7 +686,7 @@ plot_genes_in_pseudotime <-function(cds_subset,
     
   f_id <- NA
   Cell <- NA
-    if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+    if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))) {
         integer_expression <- TRUE
     }
     else {
@@ -1349,7 +1349,7 @@ plot_genes_branched_pseudotime <- function (cds,
     cds_subset <- cds
     pData(cds_subset)$Branch <- pData(cds_subset)$State
   }
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+  if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))) {
     integer_expression <- TRUE
   }
   else {
@@ -1523,7 +1523,7 @@ plot_coexpression_matrix <- function(cds,
   
   cds_subset <- cds[union(row_gene_ids, col_gene_ids),]
   
-  if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+  if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))){
     integer_expression <- TRUE
   }else{
     integer_expression <- FALSE
@@ -1963,7 +1963,7 @@ plot_cell_clusters <- function(cds,
     markers_fData <- subset(fData(cds), gene_short_name %in% markers)
     if (nrow(markers_fData) >= 1){
       cds_subset <- cds[row.names(markers_fData),]
-      if (cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+      if (any(cds_subset@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))) {
         integer_expression <- TRUE
       }
       else {
