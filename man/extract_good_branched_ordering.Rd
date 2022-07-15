@@ -4,8 +4,13 @@
 \alias{extract_good_branched_ordering}
 \title{Extract a linear ordering of cells from a PQ tree}
 \usage{
-extract_good_branched_ordering(orig_pq_tree, curr_node, dist_matrix,
-  num_branches, reverse_main_path = FALSE)
+extract_good_branched_ordering(
+  orig_pq_tree,
+  curr_node,
+  dist_matrix,
+  num_branches,
+  reverse_main_path = FALSE
+)
 }
 \arguments{
 \item{orig_pq_tree}{The PQ object to use for ordering}

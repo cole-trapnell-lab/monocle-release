@@ -4,8 +4,7 @@
 \alias{vstExprs}
 \title{Return a variance-stabilized matrix of expression values}
 \usage{
-vstExprs(cds, dispModelName = "blind", expr_matrix = NULL,
-  round_vals = TRUE)
+vstExprs(cds, dispModelName = "blind", expr_matrix = NULL, round_vals = TRUE)
 }
 \arguments{
 \item{cds}{A CellDataSet to use for variance stabilization.}

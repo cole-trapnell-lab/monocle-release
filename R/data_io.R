@@ -32,6 +32,7 @@ get_genome_in_matrix_path <- function(matrix_path, genome=NULL) {
 #' @return a new CellDataSet object
 #' @export
 #' @importFrom Matrix readMM
+#' @importFrom utils read.delim
 #' @examples
 #' \dontrun{
 #' # Load from a Cell Ranger output directory

@@ -4,8 +4,14 @@
 \alias{genSmoothCurves}
 \title{Fit smooth spline curves and return the response matrix}
 \usage{
-genSmoothCurves(cds, new_data, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-  relative_expr = T, response_type = "response", cores = 1)
+genSmoothCurves(
+  cds,
+  new_data,
+  trend_formula = "~sm.ns(Pseudotime, df = 3)",
+  relative_expr = T,
+  response_type = "response",
+  cores = 1
+)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

@@ -4,8 +4,7 @@
 \alias{exportCDS}
 \title{Export a monocle CellDataSet object to other popular single cell analysis toolkit.}
 \usage{
-exportCDS(monocle_cds, export_to = c("Seurat", "Scater"),
-  export_all = FALSE)
+exportCDS(monocle_cds, export_to = c("Seurat", "Scater"), export_all = FALSE)
 }
 \arguments{
 \item{monocle_cds}{the Monocle CellDataSet you would like to export into a type used in another package}

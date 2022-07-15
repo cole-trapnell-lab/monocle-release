@@ -4,9 +4,14 @@
 \alias{buildBranchCellDataSet}
 \title{Build a CellDataSet that splits cells among two branches}
 \usage{
-buildBranchCellDataSet(cds, progenitor_method = c("sequential_split",
-  "duplicate"), branch_states = NULL, branch_point = 1,
-  branch_labels = NULL, stretch = TRUE)
+buildBranchCellDataSet(
+  cds,
+  progenitor_method = c("sequential_split", "duplicate"),
+  branch_states = NULL,
+  branch_point = 1,
+  branch_labels = NULL,
+  stretch = TRUE
+)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment}

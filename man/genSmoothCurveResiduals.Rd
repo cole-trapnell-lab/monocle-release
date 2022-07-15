@@ -4,8 +4,13 @@
 \alias{genSmoothCurveResiduals}
 \title{Fit smooth spline curves and return the residuals matrix}
 \usage{
-genSmoothCurveResiduals(cds, trend_formula = "~sm.ns(Pseudotime, df = 3)",
-  relative_expr = T, residual_type = "response", cores = 1)
+genSmoothCurveResiduals(
+  cds,
+  trend_formula = "~sm.ns(Pseudotime, df = 3)",
+  relative_expr = T,
+  residual_type = "response",
+  cores = 1
+)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

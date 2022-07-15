@@ -4,10 +4,18 @@
 \alias{branchTest}
 \title{Test for branch-dependent expression}
 \usage{
-branchTest(cds, fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
+branchTest(
+  cds,
+  fullModelFormulaStr = "~sm.ns(Pseudotime, df = 3)*Branch",
   reducedModelFormulaStr = "~sm.ns(Pseudotime, df = 3)",
-  branch_states = NULL, branch_point = 1, relative_expr = TRUE,
-  cores = 1, branch_labels = NULL, verbose = FALSE, ...)
+  branch_states = NULL,
+  branch_point = 1,
+  relative_expr = TRUE,
+  cores = 1,
+  branch_labels = NULL,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{cds}{a CellDataSet object upon which to perform this operation}

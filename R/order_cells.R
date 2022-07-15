@@ -1065,7 +1065,7 @@ orderCells <- function(cds,
                        num_paths = NULL,
                        reverse=NULL){
   
-  if(class(cds)[1] != "CellDataSet") {
+  if(!is(cds, "CellDataSet")) {
     stop("Error cds is not of type 'CellDataSet'")
   }
   
@@ -1200,7 +1200,7 @@ normalize_expr_data <- function(cds,
   }
 
   norm_method <- match.arg(norm_method)
-  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")) {
+  if (any(cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))) {
 
     # If we're going to be using log, and the user hasn't given us a pseudocount
     # set it to 1 by default.
@@ -1245,7 +1245,7 @@ normalize_expr_data <- function(cds,
       FM <- Matrix::t(Matrix::t(FM)/sizeFactors(cds))
       FM <- FM + pseudo_expr
     }
-  }else if (cds@expressionFamily@vfamily == "binomialff") {
+  }else if (any(cds@expressionFamily@vfamily == "binomialff")) {
     if (norm_method == "none"){
       #If this is binomial data, transform expression values into TF-IDF scores.
       ncounts <- FM > 0
@@ -1254,7 +1254,7 @@ normalize_expr_data <- function(cds,
     }else{
       stop("Error: the only normalization method supported with binomial data is 'none'")
     }
-  }else if (cds@expressionFamily@vfamily == "Tobit") {
+  }else if (any(cds@expressionFamily@vfamily == "Tobit")) {
     FM <- FM + pseudo_expr
     if (norm_method == "none"){
 
@@ -1263,7 +1263,7 @@ normalize_expr_data <- function(cds,
     }else{
       stop("Error: the only normalization methods supported with Tobit-distributed (e.g. FPKM/TPM) data are 'log' (recommended) or 'none'")
     }
-  }else if (cds@expressionFamily@vfamily == "uninormal") {
+  }else if (any(cds@expressionFamily@vfamily == "uninormal")) {
     if (norm_method == "none"){
       FM <- FM + pseudo_expr
     }else{
@@ -1415,7 +1415,7 @@ reduceDimension <- function(cds,
       #FM <- FM[genes_to_keep,]
       #expression_means <- expression_means[genes_to_keep]
       #expression_vars <- expression_vars[genes_to_keep]
-      # Here✬s how to take the top PCA loading genes, but using
+      # Here's how to take the top PCA loading genes, but using
       # sparseMatrix operations the whole time, using irlba.
 
 
@@ -1618,7 +1618,7 @@ project2MST <- function(cds, Projection_Method){
         projection <- rbind(projection, tmp)
         distance <- c(distance, dist(rbind(Z_i, tmp)))
       }
-      if(class(projection) != 'matrix')
+      if(!is.matrix(projection))
         projection <- as.matrix(projection)
       P[, i] <- projection[which(distance == min(distance))[1], ] #use only the first index to avoid assignment error
     }

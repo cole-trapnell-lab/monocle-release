@@ -4,8 +4,12 @@
 \alias{calibrate_per_cell_total_proposal}
 \title{Calibrate_per_cell_total_proposal}
 \usage{
-calibrate_per_cell_total_proposal(relative_exprs_matrix, t_estimate,
-  expected_capture_rate, method = c("num_genes", "tpm_fraction"))
+calibrate_per_cell_total_proposal(
+  relative_exprs_matrix,
+  t_estimate,
+  expected_capture_rate,
+  method = c("num_genes", "tpm_fraction")
+)
 }
 \arguments{
 \item{relative_exprs_matrix}{The matrix of relative TPM expression values}

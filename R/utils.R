@@ -32,7 +32,7 @@ newCellDataSet <- function( cellData,
     warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
   }
   
-  if (class(cellData) != "matrix" && isSparseMatrix(cellData) == FALSE){
+  if (!is.matrix(cellData) && isSparseMatrix(cellData) == FALSE){
     stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
   }
   
@@ -105,7 +105,7 @@ splitCols <- function (x, ncl) {
   lapply(splitIndices(ncol(x), ncl), function(i) x[, i, drop = FALSE])
 }
 
-#' @importFrom BiocGenerics clusterApply
+#' @importFrom parallel clusterApply
 sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitRows(x, length(cl)), 
@@ -114,7 +114,7 @@ sparseParRApply <- function (cl, x, FUN, convert_to_dense, ...)
   par_res
 }
 
-#' @importFrom BiocGenerics clusterApply
+#' @importFrom parallel clusterApply
 sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...) 
 {
   par_res <- do.call(c, clusterApply(cl = cl, x = splitCols(x, length(cl)), 
@@ -139,7 +139,7 @@ sparseParCApply <- function (cl = NULL, x, FUN, convert_to_dense, ...)
 #' 
 #' @return The result of with(pData(X) apply(exprs(X)), MARGIN, FUN, ...))
 #' @importFrom parallel makeCluster stopCluster
-#' @importFrom BiocGenerics clusterCall parRapply parCapply
+#' @importFrom parallel clusterCall parRapply parCapply
 #' @importFrom Biobase pData exprs multiassign
 #' @export
 mcesApply <- function(X, MARGIN, FUN, required_packages, cores=1, convert_to_dense=TRUE, ...) {
@@ -311,7 +311,7 @@ asSlamMatrix = function (sp_mat) {
 # Convert a sparseMatrix from Matrix package to a slam matrix
 #' @import Matrix
 isSparseMatrix <- function(x){
-  class(x) %in% c("dgCMatrix", "dgTMatrix")
+  any(class(x) %in% c("dgCMatrix", "dgTMatrix"))
 }
 
 # Estimate size factors for each column, given a sparseMatrix from the Matrix

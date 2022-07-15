@@ -25,7 +25,7 @@ diff_test_helper <- function(x,
   x_orig <- x
   disp_guess <- 0
   
-  if (expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+  if (any(expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))){
     if (relative_expr == TRUE)
     {
       x <- x / Size_Factor
@@ -36,15 +36,15 @@ diff_test_helper <- function(x,
       if (is.null(disp_guess) == FALSE && disp_guess > 0 && is.na(disp_guess) == FALSE  ) {
         # FIXME: In theory, we could lose some user-provided parameters here
         # e.g. if users supply zero=NULL or something. 
-        if (expressionFamily@vfamily == "negbinomial")
+        if (any(expressionFamily@vfamily == "negbinomial"))
           expressionFamily <- negbinomial(isize=1/disp_guess)
         else
           expressionFamily <- negbinomial.size(size=1/disp_guess)
       }
     }
-  }else if (expressionFamily@vfamily %in% c("uninormal")){
+  }else if (any(expressionFamily@vfamily %in% c("uninormal"))){
     f_expression <- x
-  }else if (expressionFamily@vfamily %in% c("binomialff")){
+  }else if (any(expressionFamily@vfamily %in% c("binomialff"))){
     f_expression <- x
     #f_expression[f_expression > 1] <- 1
   }else{
@@ -52,7 +52,7 @@ diff_test_helper <- function(x,
   }
   
   test_res <- tryCatch({
-    if (expressionFamily@vfamily %in% c("binomialff")){
+    if (any(expressionFamily@vfamily %in% c("binomialff"))){
       if (verbose){
         full_model_fit <- VGAM::vglm(as.formula(fullModelFormulaStr), epsilon=1e-1, family=expressionFamily)
         reduced_model_fit <- VGAM::vglm(as.formula(reducedModelFormulaStr), epsilon=1e-1, family=expressionFamily)                         
@@ -78,7 +78,7 @@ diff_test_helper <- function(x,
   error = function(e) { 
     if(verbose)
       print (e);
-      data.frame(status = "FAIL", family=expressionFamily@vfamily, pval=1.0, qval=1.0)
+      data.frame(status = "FAIL", family=expressionFamily@vfamily[1], pval=1.0, qval=1.0)
     #data.frame(status = "FAIL", pval=1.0) 
   }
   )
@@ -139,7 +139,7 @@ differentialGeneTest <- function(cds,
                                  ){
   status <- NA
   
-  if(class(cds)[1] != "CellDataSet") {
+  if(!is(cds, "CellDataSet")) {
     stop("Error cds is not of type 'CellDataSet'")
   }
   
@@ -155,7 +155,7 @@ differentialGeneTest <- function(cds,
   }
   
   
-  if (relative_expr && cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")){
+  if (relative_expr && cds@any(expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))){
     if (is.null(sizeFactors(cds)) || sum(is.na(sizeFactors(cds)))){
       stop("Error: to call this function with relative_expr==TRUE, you must first call estimateSizeFactors() on the CellDataSet.")
     }

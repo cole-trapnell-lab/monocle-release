@@ -4,13 +4,25 @@
 \alias{plot_multiple_branches_heatmap}
 \title{Create a heatmap to demonstrate the bifurcation of gene expression along multiple branches}
 \usage{
-plot_multiple_branches_heatmap(cds, branches, branches_name = NULL,
-  cluster_rows = TRUE, hclust_method = "ward.D2", num_clusters = 6,
-  hmcols = NULL, add_annotation_row = NULL, add_annotation_col = NULL,
-  show_rownames = FALSE, use_gene_short_name = TRUE,
-  norm_method = c("vstExprs", "log"), scale_max = 3, scale_min = -3,
-  trend_formula = "~sm.ns(Pseudotime, df=3)", return_heatmap = FALSE,
-  cores = 1)
+plot_multiple_branches_heatmap(
+  cds,
+  branches,
+  branches_name = NULL,
+  cluster_rows = TRUE,
+  hclust_method = "ward.D2",
+  num_clusters = 6,
+  hmcols = NULL,
+  add_annotation_row = NULL,
+  add_annotation_col = NULL,
+  show_rownames = FALSE,
+  use_gene_short_name = TRUE,
+  norm_method = c("vstExprs", "log"),
+  scale_max = 3,
+  scale_min = -3,
+  trend_formula = "~sm.ns(Pseudotime, df=3)",
+  return_heatmap = FALSE,
+  cores = 1
+)
 }
 \arguments{
 \item{cds}{CellDataSet for the experiment (normally only the branching genes detected with BEAM)}

@@ -95,7 +95,7 @@ function(object, modelFormulaStr="~ 1", relative_expr=TRUE, min_cells_detected=1
 #' @importFrom BiocGenerics sizeFactors
 checkSizeFactors <- function(cds)
 {
-  if (cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size"))
+  if (any(cds@expressionFamily@vfamily %in% c("negbinomial", "negbinomial.size")))
   {
     if (is.null(sizeFactors(cds))){
       stop("Error: you must call estimateSizeFactors() before calling this function.")

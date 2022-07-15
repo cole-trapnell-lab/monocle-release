@@ -4,8 +4,7 @@
 \alias{addCellType}
 \title{Add a new cell type}
 \usage{
-addCellType(cth, cell_type_name, classify_func,
-  parent_cell_type_name = "root")
+addCellType(cth, cell_type_name, classify_func, parent_cell_type_name = "root")
 }
 \arguments{
 \item{cth}{The CellTypeHierarchy object}

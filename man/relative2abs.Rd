@@ -4,12 +4,22 @@
 \alias{relative2abs}
 \title{Transform relative expression values into absolute transcript counts.}
 \usage{
-relative2abs(relative_cds, t_estimate = estimate_t(exprs(relative_cds)),
-  modelFormulaStr = "~1", ERCC_controls = NULL, ERCC_annotation = NULL,
-  volume = 10, dilution = 40000, mixture_type = 1,
-  detection_threshold = 800, expected_capture_rate = 0.25,
-  verbose = FALSE, return_all = FALSE, method = c("num_genes",
-  "tpm_fraction"), cores = 1)
+relative2abs(
+  relative_cds,
+  t_estimate = estimate_t(exprs(relative_cds)),
+  modelFormulaStr = "~1",
+  ERCC_controls = NULL,
+  ERCC_annotation = NULL,
+  volume = 10,
+  dilution = 40000,
+  mixture_type = 1,
+  detection_threshold = 800,
+  expected_capture_rate = 0.25,
+  verbose = FALSE,
+  return_all = FALSE,
+  method = c("num_genes", "tpm_fraction"),
+  cores = 1
+)
 }
 \arguments{
 \item{relative_cds}{the cds object of relative expression values for single cell RNA-seq with each row and column representing genes/isoforms and cells. Row and column names should be included}

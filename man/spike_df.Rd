@@ -4,7 +4,8 @@
 \name{spike_df}
 \alias{spike_df}
 \title{Spike-in transcripts data.}
-\format{A data frame with 92 rows and 9 variables:
+\format{
+A data frame with 92 rows and 9 variables:
 \describe{
   \item{ERCC_ID}{ID for ERCC transcripts}
   \item{subgroup}{Subgroup for ERCC transcript}
@@ -13,7 +14,8 @@
   \item{exp_fch_ratio}{expected fold change between mix 1 over mix 2}
   \item{numMolecules}{number of molecules calculated from concentration and volume}
   \item{rounded_numMolecules}{number in rounded digit of molecules calculated from concentration and volume}
-}}
+}
+}
 \usage{
 spike_df
 }

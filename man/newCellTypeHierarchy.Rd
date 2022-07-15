@@ -8,11 +8,14 @@
 \usage{
 newCellTypeHierarchy()
 
-classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL,
-  ...)
+classifyCells(cds, cth, frequency_thresh = NULL, enrichment_thresh = NULL, ...)
 
-calculateMarkerSpecificity(cds, cth, remove_ambig = TRUE,
-  remove_unknown = TRUE)
+calculateMarkerSpecificity(
+  cds,
+  cth,
+  remove_ambig = TRUE,
+  remove_unknown = TRUE
+)
 }
 \arguments{
 \item{cds}{The CelllDataSet you want to classify}
